@@ -1,6 +1,7 @@
 # Release of Pipesmith Registry. A tag v<VERSION> builds the release files
 # with tools/release.sh (binaries, bills of materials, image, SHA256SUMS and
-# a cosign bundle over it) and publishes them as a GitHub release.
+# a cosign bundle over it), publishes them as a GitHub release and pushes the
+# container image to ghcr.io/<owner>/pipesmith-registry.
 #
 # With the secrets COSIGN_PRIVATE_KEY and COSIGN_PASSWORD and the matching
 # public key committed as release/cosign.pub, SHA256SUMS is signed with cosign.
@@ -13,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -47,6 +49,19 @@ jobs:
       - name: Remove the key
         if: always()
         run: rm -rf work/release-key
+      - name: Container image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(cat VERSION)"
+          image="ghcr.io/${GITHUB_REPOSITORY}"
+          loaded="$(docker load --input "dist/$version/image.tar" | sed -n 's/^Loaded image: //p')"
+          test -n "$loaded"
+          docker tag "$loaded" "$image:$version"
+          docker tag "$loaded" "$image:latest"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          docker push "$image:$version"
+          docker push "$image:latest"
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
