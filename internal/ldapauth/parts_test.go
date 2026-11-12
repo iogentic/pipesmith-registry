@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-ldap/ldap/v3"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 func TestPasswordVariable(t *testing.T) {

@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
-	"github.com/mirosso25/pipesmith-registry/internal/rest"
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
-	"github.com/mirosso25/pipesmith-registry/internal/version"
+	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/rest"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/version"
 )
 
 // Security on: the routes of the interface, of internal/rest and of the

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/index"
 )
 
 // The directory that Open creates for the index gives no access to other

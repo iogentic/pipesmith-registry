@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/maven"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
 
 // unavailable is StoreUnavailable: a store that holds the asset cannot be

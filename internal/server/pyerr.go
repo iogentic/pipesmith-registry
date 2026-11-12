@@ -10,12 +10,12 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/mirosso25/pipesmith-registry/internal/blobprops"
-	"github.com/mirosso25/pipesmith-registry/internal/docker"
-	"github.com/mirosso25/pipesmith-registry/internal/listeners"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/blobprops"
+	"github.com/iogentic/pipesmith-registry/internal/docker"
+	"github.com/iogentic/pipesmith-registry/internal/listeners"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
 
 // Logger names, as the Python modules name theirs.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // MaxIntDigits is sys.get_int_max_str_digits() of Python.

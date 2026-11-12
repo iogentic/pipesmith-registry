@@ -7,7 +7,7 @@ import (
 	"sort"
 	"syscall"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // blobStoreXO is GenericBlobStoreApiResponse.

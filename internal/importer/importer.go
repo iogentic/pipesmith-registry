@@ -23,11 +23,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/model"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
-	"github.com/mirosso25/pipesmith-registry/internal/state"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/state"
 )
 
 const (

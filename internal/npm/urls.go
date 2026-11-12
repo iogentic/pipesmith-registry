@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 func isHex(c byte) bool {

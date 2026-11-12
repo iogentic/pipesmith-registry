@@ -4,6 +4,7 @@
 package notify
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -12,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -69,11 +71,27 @@ func (n *Notifier) Send(state string) error {
 		return err
 	}
 	defer conn.Close()
-	if err := conn.SetWriteDeadline(time.Now().Add(sendTimeout)); err != nil {
+	raw, err := conn.SyscallConn()
+	if err != nil {
 		return err
 	}
-	_, err = conn.Write([]byte(state))
-	return err
+	// Each send carries MSG_DONTWAIT: a write deadline only works on a socket
+	// the poller holds, and a write on the GitHub runner (kernel 7.0) blocked
+	// in the system call for good. A full queue is tried again until the
+	// deadline.
+	deadline := time.Now().Add(sendTimeout)
+	for {
+		var sendErr error
+		if err := raw.Control(func(fd uintptr) {
+			sendErr = syscall.Sendmsg(int(fd), []byte(state), nil, nil, syscall.MSG_DONTWAIT)
+		}); err != nil {
+			return err
+		}
+		if !errors.Is(sendErr, syscall.EAGAIN) || time.Now().After(deadline) {
+			return sendErr
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 // WatchdogInterval is half of WATCHDOG_USEC, as sd_watchdog_enabled(3)

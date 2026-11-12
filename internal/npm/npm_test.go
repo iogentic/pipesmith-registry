@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 type file struct {

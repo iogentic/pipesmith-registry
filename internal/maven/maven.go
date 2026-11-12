@@ -18,7 +18,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 const (

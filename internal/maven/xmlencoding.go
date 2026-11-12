@@ -5,7 +5,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // How expat inside Python 3.12 reads the bytes of a document: the encoding

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
 
 func sized(path string, size, created int64, location string) stores.Entry {

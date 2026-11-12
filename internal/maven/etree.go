@@ -3,7 +3,7 @@ package maven
 import (
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // element is an xml.etree.ElementTree.Element after _parse of maven.py:

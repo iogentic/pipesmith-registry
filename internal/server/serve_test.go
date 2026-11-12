@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/listeners"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/listeners"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // records keeps the log records of the default logger during a test.

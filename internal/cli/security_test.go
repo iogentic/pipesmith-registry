@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/auth"
-	"github.com/mirosso25/pipesmith-registry/internal/ldapauth"
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/auth"
+	"github.com/iogentic/pipesmith-registry/internal/ldapauth"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // The LDAP connection of the fixture export and the variable of its bind

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
-	"github.com/mirosso25/pipesmith-registry/internal/state"
+	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/state"
 	_ "modernc.org/sqlite"
 )
 

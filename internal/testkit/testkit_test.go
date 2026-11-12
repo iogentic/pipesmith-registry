@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/testkit"
+	"github.com/iogentic/pipesmith-registry/internal/testkit"
 )
 
 // The vectors come from tools/vectors/testkit.py, which builds the same

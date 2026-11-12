@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // maxSignInBody bounds the body of POST /api/session (8 KiB).

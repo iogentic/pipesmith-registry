@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/model"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
-	"github.com/mirosso25/pipesmith-registry/internal/scan"
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
-	"github.com/mirosso25/pipesmith-registry/internal/testkit"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/scan"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/testkit"
 )
 
 // Invented test data: two stores, repositories of the four formats, a

@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // This file ports what the Python module takes from pathlib: Path.is_dir,

@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 const style = `:root { color-scheme: light dark; --bg: #ffffff; --fg: #1b1f24; --muted: #59636e; --line: #d1d9e0; --link: #0550ae; }

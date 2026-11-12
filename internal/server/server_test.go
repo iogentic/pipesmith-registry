@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
-	"github.com/mirosso25/pipesmith-registry/internal/testkit"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/testkit"
 )
 
 const jarURL = "/repository/demo-releases/" + jarPath

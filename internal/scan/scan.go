@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
 
 // ProgressEvery is the number of live blobs between two progress calls.

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // served is Serve on a free port over the directory store of the gate

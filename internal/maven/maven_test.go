@@ -11,8 +11,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/maven"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // The vectors come from tools/vectors/maven.py, which runs maven.py of the

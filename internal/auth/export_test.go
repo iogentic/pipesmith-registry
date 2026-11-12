@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // HashRuns is the number of digests VerifyPassword computed so far.

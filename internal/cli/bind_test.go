@@ -3,7 +3,7 @@ package cli
 import (
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/state"
+	"github.com/iogentic/pipesmith-registry/internal/state"
 )
 
 func TestServeNetworkBindNeedsUsersAndHostNames(t *testing.T) {

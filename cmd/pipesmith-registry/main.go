@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/mirosso25/pipesmith-registry/internal/cli"
+	"github.com/iogentic/pipesmith-registry/internal/cli"
 )
 
 func main() {

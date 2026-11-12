@@ -3,8 +3,8 @@ package maven
 import (
 	"math/big"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // maxSnapshotDepth is the deepest snapshot document, in elements with the

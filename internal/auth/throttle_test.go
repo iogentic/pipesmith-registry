@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/auth"
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/auth"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // gate is a directory that holds every sign in until the test opens it, then

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/rest"
+	"github.com/iogentic/pipesmith-registry/internal/rest"
 )
 
 type areasAnswer struct {

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // Repr is repr() of a value as internal/pyjson decodes it: nil, bool,

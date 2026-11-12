@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // The str methods of Python 3.12 that maven.py calls: lower and isdigit.

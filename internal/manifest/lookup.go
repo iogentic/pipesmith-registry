@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 	_ "modernc.org/sqlite" // the "sqlite" driver
 )
 

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
 )
 
 // The directory that WriteDefinitions creates gives no access to other

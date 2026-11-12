@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/maven"
 )
 
 // The vectors come from tools/vectors/server.py, which runs the helpers of

@@ -7,7 +7,7 @@ COPY go.mod go.sum* ./
 COPY cmd ./cmd
 COPY internal ./internal
 COPY VERSION ./
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X github.com/mirosso25/pipesmith-registry/internal/version.Version=$(cat VERSION)" \
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X github.com/iogentic/pipesmith-registry/internal/version.Version=$(cat VERSION)" \
     -o /out/pipesmith-registry ./cmd/pipesmith-registry
 
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab

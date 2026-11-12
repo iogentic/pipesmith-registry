@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/manifest"
-	"github.com/mirosso25/pipesmith-registry/internal/testkit"
+	"github.com/iogentic/pipesmith-registry/internal/manifest"
+	"github.com/iogentic/pipesmith-registry/internal/testkit"
 )
 
 // The cache directory that Open creates for the lookup table gives no access

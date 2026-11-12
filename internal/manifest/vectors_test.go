@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/manifest"
+	"github.com/iogentic/pipesmith-registry/internal/manifest"
 	_ "modernc.org/sqlite"
 )
 

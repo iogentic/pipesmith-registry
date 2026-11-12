@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/index"
 	_ "modernc.org/sqlite" // the driver of the index
 )
 

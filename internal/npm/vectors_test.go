@@ -10,7 +10,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // The vectors come from tools/vectors/npm.py, which runs npm.py of the

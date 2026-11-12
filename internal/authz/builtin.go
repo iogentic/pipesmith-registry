@@ -1,6 +1,6 @@
 package authz
 
-import "github.com/mirosso25/pipesmith-registry/internal/model"
+import "github.com/iogentic/pipesmith-registry/internal/model"
 
 // The built in privileges and roles of the old product, from the security
 // contributors of the public source of the old product, tag release-3.70.1-02

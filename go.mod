@@ -1,5 +1,5 @@
 // The module path is provisional: the GitHub handle of the project is not chosen yet.
-module github.com/mirosso25/pipesmith-registry
+module github.com/iogentic/pipesmith-registry
 
 go 1.27
 

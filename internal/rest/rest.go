@@ -16,9 +16,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/model"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
 )
 
 // UnknownFormat is the format of the permission asked for a repository

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // PrePart is one dot separated part of a pre-release, as _pre_part orders

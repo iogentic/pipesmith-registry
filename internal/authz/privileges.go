@@ -3,7 +3,7 @@ package authz
 import (
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // Privilege kinds of the old product.

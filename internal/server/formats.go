@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"net/http"
 
-	"github.com/mirosso25/pipesmith-registry/internal/listing"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/listing"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
 )
 
 // The read bounds of server.py: what the read path reads into memory, and

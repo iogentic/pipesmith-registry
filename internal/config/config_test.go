@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // The vectors come from tools/vectors/config.py, which runs config.load and

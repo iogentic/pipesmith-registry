@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
 )
 
 // segments name a format in the repository paths of the REST API; a

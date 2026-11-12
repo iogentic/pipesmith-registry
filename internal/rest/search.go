@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/maven"
-	"github.com/mirosso25/pipesmith-registry/internal/npm"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/npm"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
 )
 
 // searchPage is the number of components of one page. A variable, so a

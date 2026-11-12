@@ -3,7 +3,7 @@ package authz_test
 import (
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/authz"
+	"github.com/iogentic/pipesmith-registry/internal/authz"
 )
 
 // The cases follow Shiro 1.13.0 WildcardPermission (setParts and implies)

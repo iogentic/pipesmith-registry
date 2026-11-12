@@ -8,10 +8,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/auth"
-	"github.com/mirosso25/pipesmith-registry/internal/ldapauth"
-	"github.com/mirosso25/pipesmith-registry/internal/model"
-	"github.com/mirosso25/pipesmith-registry/internal/state"
+	"github.com/iogentic/pipesmith-registry/internal/auth"
+	"github.com/iogentic/pipesmith-registry/internal/ldapauth"
+	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/state"
 )
 
 const securityLogger = "pipesmith_registry.security"

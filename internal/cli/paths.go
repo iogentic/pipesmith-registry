@@ -8,8 +8,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // osExpandUser is os.path.expanduser of a string.

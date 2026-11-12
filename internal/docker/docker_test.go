@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/docker"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/docker"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // The vectors come from tools/vectors/docker.py, which runs docker.py of the

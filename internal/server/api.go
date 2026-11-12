@@ -11,12 +11,12 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
-	"github.com/mirosso25/pipesmith-registry/internal/repos"
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
-	"github.com/mirosso25/pipesmith-registry/internal/version"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/repos"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/version"
 )
 
 // The JSON API: /api/status, /api/repositories, /api/browse/<repo> and

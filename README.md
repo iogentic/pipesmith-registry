@@ -47,7 +47,7 @@ The release has binaries for `linux-amd64`, `linux-arm64` and `darwin-arm64`. Do
 
 ```bash
 VERSION=0.1.0
-BASE=https://github.com/mirosso25/pipesmith-registry/releases/download/v$VERSION
+BASE=https://github.com/iogentic/pipesmith-registry/releases/download/v$VERSION
 curl -fLO "$BASE/pipesmith-registry-linux-amd64"
 curl -fLO "$BASE/SHA256SUMS"
 sha256sum --check --ignore-missing SHA256SUMS
@@ -73,7 +73,7 @@ Without imported users there is no sign in, and the server stays on the local ad
 
 ## Manual
 
-The manual is at [mirosso25.github.io/pipesmith-registry](https://mirosso25.github.io/pipesmith-registry/). It covers install, configuration, users, the systemd service, the interface, the API, client settings, security and the limits of this release.
+The manual is at [iogentic.github.io/pipesmith-registry](https://iogentic.github.io/pipesmith-registry/). It covers install, configuration, users, the systemd service, the interface, the API, client settings, security and the limits of this release.
 
 ## Build From Source
 

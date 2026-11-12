@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // Cases of tools/vectors/maven.py for the unexported pieces: str.lower,

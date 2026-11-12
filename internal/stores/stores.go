@@ -12,10 +12,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/blobprops"
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/manifest"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/blobprops"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/manifest"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // Store kinds.

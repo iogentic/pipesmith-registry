@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/blobprops"
+	"github.com/iogentic/pipesmith-registry/internal/blobprops"
 )
 
 func TestPyClassOfBlobpropsValueError(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // Rank of a qualifier against the release itself (rank of ""). Unknown

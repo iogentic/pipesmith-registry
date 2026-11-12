@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/notify"
+	"github.com/iogentic/pipesmith-registry/internal/notify"
 )
 
 // serviceManager is the socket a test gives as NOTIFY_SOCKET.

@@ -26,7 +26,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
 	"modernc.org/sqlite"
 )
 

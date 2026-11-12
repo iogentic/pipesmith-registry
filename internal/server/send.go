@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/maven"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // body is Body of the Python module: what _send answers with, either an

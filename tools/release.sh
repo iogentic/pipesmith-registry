@@ -129,7 +129,7 @@ cp "$TMP/out/sbom.spdx.json" "$TMP/out/sbom.cdx.json" "$STAGE/"
 
 echo "== image from Dockerfile"
 docker build --file "$TMP/src/Dockerfile" --tag "$TAG" \
-  --label "org.opencontainers.image.source=https://github.com/mirosso25/pipesmith-registry" \
+  --label "org.opencontainers.image.source=https://github.com/iogentic/pipesmith-registry" \
   --label "org.opencontainers.image.version=$VERSION" --label "org.opencontainers.image.licenses=Apache-2.0" "$TMP/src"
 docker save --output "$STAGE/image.tar" "$TAG"
 docker image rm "$TAG" > /dev/null

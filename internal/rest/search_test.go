@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/testkit"
+	"github.com/iogentic/pipesmith-registry/internal/testkit"
 )
 
 const jar = "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar"

@@ -21,7 +21,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 	_ "modernc.org/sqlite" // the driver "sqlite"
 )
 

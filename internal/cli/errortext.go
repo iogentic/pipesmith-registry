@@ -7,7 +7,7 @@ import (
 
 	"modernc.org/sqlite"
 
-	"github.com/mirosso25/pipesmith-registry/internal/server"
+	"github.com/iogentic/pipesmith-registry/internal/server"
 )
 
 // sqliteCode is the result code the driver appends to a message.

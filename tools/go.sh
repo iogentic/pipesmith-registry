@@ -68,7 +68,7 @@ build() {
     for target in darwin/arm64 linux/amd64 linux/arm64; do
       os="${target%/*}"; arch="${target#*/}"
       CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath \
-        -ldflags "-s -w -X github.com/mirosso25/pipesmith-registry/internal/version.Version=$PSR_VERSION" \
+        -ldflags "-s -w -X github.com/iogentic/pipesmith-registry/internal/version.Version=$PSR_VERSION" \
         -o "bin/pipesmith-registry-$os-$arch" ./cmd/pipesmith-registry
     done
     ls -l bin

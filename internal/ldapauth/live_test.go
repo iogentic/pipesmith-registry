@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/ldapauth"
-	"github.com/mirosso25/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/ldapauth"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // Invented passwords of tests/ldap/fixture.ldif.

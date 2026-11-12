@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/auth"
+	"github.com/iogentic/pipesmith-registry/internal/auth"
 )
 
 // changed gives the stored form with one byte of its digest changed.

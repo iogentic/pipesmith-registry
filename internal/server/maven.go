@@ -9,8 +9,8 @@ import (
 	"hash"
 	"strings"
 
-	"github.com/mirosso25/pipesmith-registry/internal/maven"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 )
 
 // The Maven parts of the read path: helpers of package maven, the asset

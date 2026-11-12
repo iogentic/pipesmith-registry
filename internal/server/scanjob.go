@@ -7,10 +7,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/scan"
-	"github.com/mirosso25/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/scan"
+	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
 
 // scanStopTimeout is SCAN_STOP_SECONDS: how long Close waits for a scan

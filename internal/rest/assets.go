@@ -7,8 +7,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/index"
-	"github.com/mirosso25/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/maven"
 )
 
 // AssetID is the id of the file path of a repository: base64url without

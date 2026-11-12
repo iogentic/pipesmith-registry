@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/config"
 )
 
 // The data directory that Save creates gives no access to other users and

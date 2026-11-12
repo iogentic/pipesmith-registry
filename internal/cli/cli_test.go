@@ -19,11 +19,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mirosso25/pipesmith-registry/internal/config"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
-	"github.com/mirosso25/pipesmith-registry/internal/server"
-	"github.com/mirosso25/pipesmith-registry/internal/testkit"
-	"github.com/mirosso25/pipesmith-registry/internal/version"
+	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/server"
+	"github.com/iogentic/pipesmith-registry/internal/testkit"
+	"github.com/iogentic/pipesmith-registry/internal/version"
 )
 
 // The vectors come from tools/vectors/cli.py, which runs the argument

@@ -11,8 +11,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/mirosso25/pipesmith-registry/internal/pyjson"
-	"github.com/mirosso25/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/pystr"
 )
 
 // size is _size: B below 1000, else one decimal of kB, MB, GB or TB.
