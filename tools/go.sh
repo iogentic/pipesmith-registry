@@ -50,6 +50,7 @@ in_go() {
     -v "$CACHE/go-mod:/go/pkg/mod" \
     -v "$CACHE/go-build:/root/.cache/go-build" \
     -e PSR_VERSION="$VERSION" \
+    -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/src \
     -w /src \
     "$IMAGE" sh -euc "$*"
 }
