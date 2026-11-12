@@ -1,0 +1,41 @@
+# Copies a released image from ghcr.io to Docker Hub, for a release made
+# before Docker Hub was set up. Started by hand with the version.
+# Needs the secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN; the namespace is
+# the variable DOCKERHUB_NAMESPACE, else the user name.
+name: dockerhub
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Released version, for example 0.1.0"
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  copy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Copy the image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          test -n "$DOCKERHUB_TOKEN" || { echo "the secret DOCKERHUB_TOKEN is not set" >&2; exit 1; }
+          case "$VERSION" in "" | *[!0-9A-Za-z.+-]*) echo "not a version: $VERSION" >&2; exit 1 ;; esac
+          source="ghcr.io/${GITHUB_REPOSITORY}:$VERSION"
+          target="docker.io/${DOCKERHUB_NAMESPACE:-$DOCKERHUB_USERNAME}/pipesmith-registry"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          docker pull "$source"
+          docker tag "$source" "$target:$VERSION"
+          docker tag "$source" "$target:latest"
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io --username "$DOCKERHUB_USERNAME" --password-stdin
+          docker push "$target:$VERSION"
+          docker push "$target:latest"

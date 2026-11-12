@@ -1,7 +1,9 @@
 # Release of Pipesmith Registry. A tag v<VERSION> builds the release files
 # with tools/release.sh (binaries, bills of materials, image, SHA256SUMS and
 # a cosign bundle over it), publishes them as a GitHub release and pushes the
-# container image to ghcr.io/<owner>/pipesmith-registry.
+# container image to ghcr.io/<owner>/pipesmith-registry, and to Docker Hub when
+# the secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN are set (namespace: the
+# variable DOCKERHUB_NAMESPACE, else the user name).
 #
 # With the secrets COSIGN_PRIVATE_KEY and COSIGN_PASSWORD and the matching
 # public key committed as release/cosign.pub, SHA256SUMS is signed with cosign.
@@ -60,6 +62,23 @@ jobs:
           docker tag "$loaded" "$image:$version"
           docker tag "$loaded" "$image:latest"
           printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          docker push "$image:$version"
+          docker push "$image:latest"
+      - name: Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
+        run: |
+          if [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "no secret DOCKERHUB_TOKEN: Docker Hub left out"
+            exit 0
+          fi
+          version="$(cat VERSION)"
+          image="docker.io/${DOCKERHUB_NAMESPACE:-$DOCKERHUB_USERNAME}/pipesmith-registry"
+          docker tag "ghcr.io/${GITHUB_REPOSITORY}:$version" "$image:$version"
+          docker tag "ghcr.io/${GITHUB_REPOSITORY}:$version" "$image:latest"
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io --username "$DOCKERHUB_USERNAME" --password-stdin
           docker push "$image:$version"
           docker push "$image:latest"
       - name: Publish
