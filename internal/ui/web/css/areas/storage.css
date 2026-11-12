@@ -1,0 +1,70 @@
+/* Styles of the storage screens (S12 to S18) and of the metrics (S43). Each of their pages puts the
+   class area-storage on its content, so nothing here reaches another screen. Shared parts live in
+   ../components.css; every colour here is a token of ../tokens.css. */
+
+.area-storage .store-messages, .area-storage .store-summary, .area-storage .page-messages:not(:empty) { margin-bottom: var(--s4); }
+.area-storage .stack-tight > * + * { margin-top: var(--s1); }
+
+.area-storage .split + .panel, .area-storage .panel + .split, .area-storage .split + .split { margin-top: var(--s4); }
+.area-storage .split > .panel + .panel { margin-top: 0; }
+.area-storage .panel > h2 { margin-bottom: var(--s3); }
+.area-storage .panel > .help { margin-bottom: var(--s3); }
+
+.area-storage .name-list { list-style: none; margin: 0; padding: 0; }
+.area-storage .name-list li + li { margin-top: var(--s1); }
+
+.area-storage .storage-form input[type="number"] { max-width: 16em; }
+
+/* A field with its button beside it, the button under it below 600 pixels. The field stops at 32em,
+   so the button stays clear of the toasts at the right edge. */
+.area-storage .inline-fields { display: grid; grid-template-columns: minmax(0, 32em) auto; justify-content: start; gap: var(--s3); align-items: start; }
+.area-storage .inline-fields .actions { padding-top: calc(var(--font-size) * var(--line) + var(--s1)); }
+@media (max-width: 600px) {
+  .area-storage .inline-fields { grid-template-columns: minmax(0, 1fr); }
+  .area-storage .inline-fields .actions { padding-top: 0; }
+}
+
+.area-storage .preview-summary { margin: var(--s2) 0 var(--s3); font-weight: 560; }
+.area-storage #preview-result > .table-wrap, .area-storage #preview-result > .data-table { margin-top: var(--s3); }
+.area-storage #preview-form + #preview-result:not(:empty) { margin-top: var(--s4); }
+.area-storage #preview-result:not(:empty), .area-storage #rule-test-result:not(:empty), .area-storage #preview-form > p:not([hidden]) { margin-top: var(--s4); }
+
+/* Tables: on a wide screen names and versions stay on one line; the path or the notes wrap. */
+@media (min-width: 701px) {
+  .area-storage table.data td:first-child .row-link, .area-storage table.data td.keep { white-space: nowrap; }
+}
+
+/* Routing rules: matchers as code tags that wrap inside a narrow cell. */
+.area-storage .matcher-tags { margin-top: var(--s1); }
+.area-storage .matcher-tags .tag { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+
+/* Metrics */
+.area-storage .range { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-bottom: var(--s3); }
+.area-storage .range .btn[aria-pressed="true"] { background: var(--selected); border-color: var(--aurora); }
+.area-storage .metrics-summary { max-width: 52em; margin-bottom: var(--s4); }
+.area-storage .metric-cards { margin-bottom: var(--s2); }
+
+.area-storage .metric-cell { display: grid; grid-template-columns: 4.6em minmax(40px, 1fr); gap: var(--s3); align-items: center; min-width: 0; }
+.area-storage .metric-cell .num { text-align: right; font-variant-numeric: tabular-nums; }
+.area-storage .metric-cell .bar { min-width: 40px; }
+
+.area-storage table.day-table { width: 100%; border-collapse: collapse; }
+.area-storage table.day-table th, .area-storage table.day-table td { text-align: left; vertical-align: middle; padding: 6px var(--s4); border-bottom: 1px solid var(--border); }
+.area-storage table.day-table tbody tr:last-child th, .area-storage table.day-table tbody tr:last-child td { border-bottom: 0; }
+.area-storage table.day-table thead th {
+  font-size: var(--size-label); font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted); background: var(--surface-2); white-space: nowrap;
+}
+.area-storage table.day-table th.day { font-weight: 450; white-space: nowrap; }
+.area-storage table.day-table .weekday { display: inline-block; width: 2.6em; }
+.area-storage table.day-table .num, .area-storage table.day-table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.area-storage table.day-table td:nth-child(2) { width: 55%; }
+@media (max-width: 600px) {
+  .area-storage table.day-table th, .area-storage table.day-table td { padding: 6px var(--s2); }
+  .area-storage table.day-table .weekday { display: none; }
+  .area-storage .metric-cell { grid-template-columns: 4.2em minmax(32px, 1fr); gap: var(--s2); }
+}
+@media (max-width: 700px) {
+  .area-storage table.data td .metric-cell { justify-self: stretch; width: 100%; }
+  .area-storage table.data td .metric-cell .num { text-align: left; }
+}

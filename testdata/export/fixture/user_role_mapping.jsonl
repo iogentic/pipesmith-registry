@@ -1,0 +1,5 @@
+{"user_id":"admin","source":"default","roles":["nx-admin"],"_removed":[]}
+{"user_id":"ldap.person","source":"LDAP","roles":["demo-ops","developers"],"_removed":[]}
+{"user_id":"locked.user","source":"default","roles":["demo-viewer"],"_removed":[]}
+{"user_id":"maven-lead","source":"default","roles":["demo-maven-lead"],"_removed":[]}
+{"user_id":"viewer","source":"default","roles":["demo-viewer"],"_removed":[]}

@@ -1,0 +1,56 @@
+# Release of Pipesmith Registry. A tag v<VERSION> builds the release files
+# with tools/release.sh (binaries, bills of materials, image, SHA256SUMS and
+# a cosign bundle over it) and publishes them as a GitHub release.
+#
+# With the secrets COSIGN_PRIVATE_KEY and COSIGN_PASSWORD and the matching
+# public key committed as release/cosign.pub, SHA256SUMS is signed with cosign.
+# Without the secret the release carries SHA256SUMS without a signature.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Tag and VERSION agree
+        run: test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
+      - name: Signing key
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+        run: |
+          if [ -z "$COSIGN_PRIVATE_KEY" ]; then
+            echo "no secret COSIGN_PRIVATE_KEY: SHA256SUMS without a signature"
+            echo "RELEASE_SIGN=--no-sign" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          test -f release/cosign.pub || { echo "release/cosign.pub is missing" >&2; exit 1; }
+          mkdir -p work/release-key
+          chmod 0700 work/release-key
+          printf '%s\n' "$COSIGN_PRIVATE_KEY" > work/release-key/cosign.key
+          chmod 0600 work/release-key/cosign.key
+          cp release/cosign.pub work/release-key/cosign.pub
+      - name: Release files
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          export DOCKER_CONFIG="$RUNNER_TEMP/docker"
+          mkdir -p "$DOCKER_CONFIG"
+          tools/release.sh ${RELEASE_SIGN:-}
+      - name: Remove the key
+        if: always()
+        run: rm -rf work/release-key
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(cat VERSION)"
+          gh release create "$GITHUB_REF_NAME" --title "Pipesmith Registry $version" \
+            --notes-file "docs/release-notes/$version.md" dist/"$version"/*

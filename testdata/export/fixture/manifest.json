@@ -1,0 +1,65 @@
+{
+  "format": "pipesmith-registry-h2-export",
+  "version": 1,
+  "set": "identity",
+  "driver": "2.2.224 (2023-09-17)",
+  "passwordHashes": true,
+  "files": [
+    {
+      "table": "SECURITY_USER",
+      "file": "security_user.jsonl",
+      "columns": ["id","first_name","last_name","email","status","password"],
+      "rows": 4,
+      "removed": 0,
+      "sha256": "4d2b717ce9a24114300d2740b875eebd8adf90d2582709cdea2572995598036c"
+    },
+    {
+      "table": "ROLE",
+      "file": "role.jsonl",
+      "columns": ["id","name","description","privileges","roles","read_only"],
+      "rows": 5,
+      "removed": 0,
+      "sha256": "2eba11ab5a13c7ef03ebbba9d6d87cca12e8b20810fabecc0fba04cbe38dd12b"
+    },
+    {
+      "table": "USER_ROLE_MAPPING",
+      "file": "user_role_mapping.jsonl",
+      "columns": ["user_id","source","roles"],
+      "rows": 5,
+      "removed": 0,
+      "sha256": "583320b65bda198cc4f205ee524b1e28ed5d47f9067164ef28a5330096f362ad"
+    },
+    {
+      "table": "PRIVILEGE",
+      "file": "privilege.jsonl",
+      "columns": ["id","name","description","type","properties","read_only"],
+      "rows": 6,
+      "removed": 0,
+      "sha256": "dbe81735dc8a30156d99cdc15b7cb890716e34b202a337c32dac929c0833394d"
+    },
+    {
+      "table": "REALM_CONFIGURATION",
+      "file": "realm_configuration.jsonl",
+      "columns": ["id","realm_names"],
+      "rows": 1,
+      "removed": 0,
+      "sha256": "d719394d8667a0c6cab98cc5de2f884c0202139fddf2ca7f930acbb454bba8c0"
+    },
+    {
+      "table": "ANONYMOUS_CONFIGURATION",
+      "file": "anonymous_configuration.jsonl",
+      "columns": ["id","enabled","user_id","realm_name"],
+      "rows": 1,
+      "removed": 0,
+      "sha256": "7256243a94de3533c1394c151ac1e02a46ad4fddd26ca30c0d58f41365c91ab1"
+    },
+    {
+      "table": "LDAP_CONFIGURATION",
+      "file": "ldap_configuration.jsonl",
+      "columns": ["id","name","order","connection","mapping"],
+      "rows": 1,
+      "removed": 2,
+      "sha256": "1a78122f2c0d271b5ed1a7582f96daf5d9657f2f4446292262ad85202f669604"
+    }
+  ]
+}

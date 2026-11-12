@@ -1,0 +1,25 @@
+{
+  "format": "pipesmith-registry-h2-export",
+  "version": 1,
+  "set": "content",
+  "driver": "2.2.224 (2023-09-17)",
+  "passwordHashes": false,
+  "files": [
+    {
+      "table": "BLOB_STORE_CONFIGURATION",
+      "file": "blob_store_configuration.jsonl",
+      "columns": ["id","name","type","attributes"],
+      "rows": 4,
+      "removed": 3,
+      "sha256": "03ac00b7201cfc8c2661b8092861618402bea676f0c3891cb7fd64f2f27c81e0"
+    },
+    {
+      "table": "REPOSITORY",
+      "file": "repository.jsonl",
+      "columns": ["id","name","recipe_name","online","routing_rule_id","attributes"],
+      "rows": 6,
+      "removed": 2,
+      "sha256": "02366c9dd345d2e27b5bbfb4f4aab3659be31c20efc0b53f1c0787d14d943a57"
+    }
+  ]
+}

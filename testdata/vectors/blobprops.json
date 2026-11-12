@@ -1,0 +1,2678 @@
+{
+ "generator": "tools/vectors/blobprops.py",
+ "python": "3.12.13",
+ "int_max_str_digits": 4300,
+ "python_whitespace": [
+  9,
+  10,
+  11,
+  12,
+  13,
+  28,
+  29,
+  30,
+  31,
+  32,
+  133,
+  160,
+  5760,
+  8192,
+  8193,
+  8194,
+  8195,
+  8196,
+  8197,
+  8198,
+  8199,
+  8200,
+  8201,
+  8202,
+  8232,
+  8233,
+  8239,
+  8287,
+  12288
+ ],
+ "tests": [
+  {
+   "test": "test_parse_minimal",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2EvMS4wL2EtMS4wLnBvbQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi94bWwKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOWUKc2l6ZT0xMjMK",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "com/example/a/1.0/a-1.0.pom",
+      "sha1": "48d654e40570cd4b5bd21c06e77d45274d568e9e",
+      "content_type": "application/xml",
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 123,
+      "created_ms": 1700000000000
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_leading_slash_is_optional",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EvYi50eHQKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT0xMWY2YWQ4ZWM1MmEyOTg0YWJhYWZkN2MzYjUxNjUwMzc4NWMyMDcyCnNpemU9MQo=",
+     "expect": {
+      "repo": "demo-raw",
+      "path": "a/b.txt",
+      "sha1": "11f6ad8ec52a2984abaafd7c3b516503785c2072",
+      "content_type": "application/octet-stream",
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1700000000000
+     }
+    },
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9YS9iLnR4dApAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTExZjZhZDhlYzUyYTI5ODRhYmFhZmQ3YzNiNTE2NTAzNzg1YzIwNzIKc2l6ZT0xCg==",
+     "expect": {
+      "repo": "demo-raw",
+      "path": "a/b.txt",
+      "sha1": "11f6ad8ec52a2984abaafd7c3b516503785c2072",
+      "content_type": "application/octet-stream",
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1700000000000
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_fixture_spec_round_trip",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2IvMi4wLVNOQVBTSE9UL2ItMi4wLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9qYXZhLWFyY2hpdmUKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXNuYXBzaG90cwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTAxYzU2ZTNhZTQ2Yzk2MmRlYmU0OTc2MDM4ZDViYTM4ZDFlNjFlZjcKc2l6ZT05Cg==",
+     "expect": {
+      "repo": "demo-snapshots",
+      "path": "com/example/b/2.0-SNAPSHOT/b-2.0.jar",
+      "sha1": "01c56e3ae46c962debe4976038d5ba38d1e61ef7",
+      "content_type": "application/java-archive",
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 9,
+      "created_ms": 1700000000000
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_escapes",
+   "cases": [
+    {
+     "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2Rpclw6eC9hXD1iL2NcIGQvZVxcZi/kLnR4dApzaXplPTEKY3JlYXRpb25UaW1lPTEK",
+     "expect": {
+      "repo": "demo-raw",
+      "path": "dir:x/a=b/c d/e\\f/\u00e4.txt",
+      "sha1": null,
+      "content_type": null,
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_unicode_escapes_and_surrogate_pairs",
+   "cases": [
+    {
+     "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L3UvXHUwMEU0L1x1RDgzRFx1REUwMC50eHQKc2l6ZT0xCmNyZWF0aW9uVGltZT0xCg==",
+     "expect": {
+      "repo": "demo-raw",
+      "path": "u/\u00e4/\ud83d\ude00.txt",
+      "sha1": null,
+      "content_type": null,
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_fixture_escapes_round_trip",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9ZGlyXDp4L2FcPWIvYyBkL2VcXGYvXHUwMEU0IFwjXCEudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9MTFmNmFkOGVjNTJhMjk4NGFiYWFmZDdjM2I1MTY1MDM3ODVjMjA3MgpzaXplPTEK",
+     "expect": {
+      "repo": "demo-raw",
+      "path": "dir:x/a=b/c d/e\\f/\u00e4 #!.txt",
+      "sha1": "11f6ad8ec52a2984abaafd7c3b516503785c2072",
+      "content_type": "application/octet-stream",
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1700000000000
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_separator_and_comments",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKISBhbm90aGVyIGNvbW1lbnQgc3R5bGUKCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKQEJsb2JTdG9yZS5ibG9iLW5hbWU6IC9hL2IudHh0CnNpemUgPSA1CmNyZWF0aW9uVGltZToxNzAwMDAwMDAwMDAwCkBCbG9iU3RvcmUuY29udGVudC10eXBlIHRleHQvcGxhaW4Kc2hhMT00OGQ2NTRlNDA1NzBjZDRiNWJkMjFjMDZlNzdkNDUyNzRkNTY4ZTllCg==",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "a/b.txt",
+      "sha1": "48d654e40570cd4b5bd21c06e77d45274d568e9e",
+      "content_type": "text/plain",
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 5,
+      "created_ms": 1700000000000
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_crlf_line_endings",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDANCiNUdWUgTm92IDE0IDIyOjEzOjIwIFVUQyAyMDIzDQpAQmxvYlN0b3JlLmJsb2ItbmFtZT0vY29tL2V4YW1wbGUvYS8xLjAvYS0xLjAucG9tDQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi94bWwNCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMNCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwDQpzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOWUNCnNpemU9MTIzDQo=",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "com/example/a/1.0/a-1.0.pom",
+      "sha1": "48d654e40570cd4b5bd21c06e77d45274d568e9e",
+      "content_type": "application/xml",
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 123,
+      "created_ms": 1700000000000
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_deleted_and_copy",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTEKZGVsZXRlZD10cnVlCnNpemU9MQo=",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "a.txt",
+      "sha1": null,
+      "content_type": null,
+      "deleted": true,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    },
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTEKb3JpZ2luYWxMb2NhdGlvbj0Kc2l6ZT0xCg==",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "a.txt",
+      "sha1": null,
+      "content_type": null,
+      "deleted": false,
+      "is_copy": true,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_copy_with_date_location",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTEKb3JpZ2luYWxMb2NhdGlvbj0yMDIzLTExLTE0VDIyXDoxMwpzaXplPTEK",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "a.txt",
+      "sha1": null,
+      "content_type": null,
+      "deleted": false,
+      "is_copy": true,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_plain_blob_is_neither_deleted_nor_copy",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2EvMS4wL2EtMS4wLnBvbQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi94bWwKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOWUKc2l6ZT0xMjMK",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "com/example/a/1.0/a-1.0.pom",
+      "sha1": "48d654e40570cd4b5bd21c06e77d45274d568e9e",
+      "content_type": "application/xml",
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 123,
+      "created_ms": 1700000000000
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_deleted_false_is_not_deleted",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTEKZGVsZXRlZD1mYWxzZQpzaXplPTEK",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "a.txt",
+      "sha1": null,
+      "content_type": null,
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_missing_keys",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2EvMS4wL2EtMS4wLnBvbQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi94bWwKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT00OGQ2NTRlNDA1NzBjZDRiNWJkMjFjMDZlNzdkNDUyNzRkNTY4ZTllCnNpemU9MTIzCg==",
+     "expect": null
+    },
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24veG1sCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT00OGQ2NTRlNDA1NzBjZDRiNWJkMjFjMDZlNzdkNDUyNzRkNTY4ZTllCnNpemU9MTIzCg==",
+     "expect": null
+    },
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2EvMS4wL2EtMS4wLnBvbQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi94bWwKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOWUK",
+     "expect": null
+    }
+   ]
+  },
+  {
+   "test": "test_parse_optional_keys",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2EvMS4wL2EtMS4wLnBvbQpAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNpemU9MTIzCg==",
+     "expect": {
+      "repo": "demo-releases",
+      "path": "com/example/a/1.0/a-1.0.pom",
+      "sha1": null,
+      "content_type": null,
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 123,
+      "created_ms": 1700000000000
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_garbage",
+   "cases": [
+    {
+     "input_b64": "//4A",
+     "expect": null
+    },
+    {
+     "input_b64": "",
+     "expect": null
+    },
+    {
+     "input_b64": "bm8gc2VwYXJhdG9yIGhlcmUgYXQgYWxs",
+     "expect": null
+    }
+   ]
+  },
+  {
+   "test": "test_parse_missing_or_bad_numbers",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2EvMS4wL2EtMS4wLnBvbQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi94bWwKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOWUKc2l6ZT0xMjMK",
+     "expect": null
+    },
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTEKc2l6ZT0xMngK",
+     "expect": null
+    },
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTEKc2l6ZT0tMQo=",
+     "expect": null
+    }
+   ]
+  },
+  {
+   "test": "test_parse_empty_blob_name",
+   "cases": [
+    {
+     "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9CnNpemU9MQpjcmVhdGlvblRpbWU9MQo=",
+     "expect": null
+    },
+    {
+     "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9LwpzaXplPTEKY3JlYXRpb25UaW1lPTEK",
+     "expect": null
+    },
+    {
+     "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9Ly8Kc2l6ZT0xCmNyZWF0aW9uVGltZT0xCg==",
+     "expect": null
+    }
+   ]
+  },
+  {
+   "test": "test_parse_malformed_unicode_escape",
+   "cases": [
+    {
+     "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2FcdTAwenoudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQo=",
+     "expect": null
+    }
+   ]
+  },
+  {
+   "test": "test_parse_lone_surrogate_in_name",
+   "cases": [
+    {
+     "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2FcdUQ4M0QudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQo=",
+     "expect": null
+    }
+   ]
+  },
+  {
+   "test": "test_parse_line_continuation",
+   "cases": [
+    {
+     "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2xvbmcvbmFcCiAgICBtZS50eHQKc2l6ZT0xCmNyZWF0aW9uVGltZT0xCg==",
+     "expect": {
+      "repo": "demo-raw",
+      "path": "long/name.txt",
+      "sha1": null,
+      "content_type": null,
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    }
+   ]
+  },
+  {
+   "test": "test_parse_sha1_is_normalized",
+   "cases": [
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xCnNoYTE9NDhENjU0RTQwNTcwQ0Q0QjVCRDIxQzA2RTc3RDQ1Mjc0RDU2OEU5RQpzaXplPTEK",
+     "expect": {
+      "repo": "demo-raw",
+      "path": "a.txt",
+      "sha1": "48d654e40570cd4b5bd21c06e77d45274d568e9e",
+      "content_type": null,
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    },
+    {
+     "input_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xCnNoYTE9bm90LWEtc2hhMQpzaXplPTEK",
+     "expect": {
+      "repo": "demo-raw",
+      "path": "a.txt",
+      "sha1": null,
+      "content_type": null,
+      "deleted": false,
+      "is_copy": false,
+      "overflow": false,
+      "size": 1,
+      "created_ms": 1
+     }
+    }
+   ]
+  }
+ ],
+ "extra": [
+  {
+   "name": "continuation at end of text",
+   "input_b64": "YT1iXA==",
+   "load": [
+    [
+     "YQ==",
+     "Yg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "continuation at end with newline",
+   "input_b64": "YT1iXAo=",
+   "load": [
+    [
+     "YQ==",
+     "Yg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "even backslashes end the line",
+   "input_b64": "YT1iXFwKYz1kCg==",
+   "load": [
+    [
+     "YQ==",
+     "Ylw="
+    ],
+    [
+     "Yw==",
+     "ZA=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "odd backslashes continue",
+   "input_b64": "YT1iXFxcCiAgYwo=",
+   "load": [
+    [
+     "YQ==",
+     "Ylxj"
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "continuation inside a key",
+   "input_b64": "YVwKICBiPWMK",
+   "load": [
+    [
+     "YWI=",
+     "Yw=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "continuation into a comment line",
+   "input_b64": "az12XAojbm90IGEgY29tbWVudAo=",
+   "load": [
+    [
+     "aw==",
+     "diNub3QgYSBjb21tZW50"
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "continuation into an empty line",
+   "input_b64": "az12XAoKeD15Cg==",
+   "load": [
+    [
+     "aw==",
+     "dg=="
+    ],
+    [
+     "eA==",
+     "eQ=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "continuation strips tab and form feed",
+   "input_b64": "az12XAoJDCB3Cg==",
+   "load": [
+    [
+     "aw==",
+     "dnc="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "lone backslash line",
+   "input_b64": "XA==",
+   "load": [
+    [
+     "",
+     ""
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "lone backslash line with newline",
+   "input_b64": "XAprPXYK",
+   "load": [
+    [
+     "aw==",
+     "dg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "whitespace before a comment",
+   "input_b64": "ICAgCQwgIyBjb21tZW50CiFhbHNvCms9dgo=",
+   "load": [
+    [
+     "aw==",
+     "dg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "comment marks only at line start",
+   "input_b64": "az0jdiEK",
+   "load": [
+    [
+     "aw==",
+     "I3Yh"
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "escaped separator in key",
+   "input_b64": "a2V5XD14PTEKa2V5XDp5OjIK",
+   "load": [
+    [
+     "a2V5PXg=",
+     "MQ=="
+    ],
+    [
+     "a2V5Onk=",
+     "Mg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "escaped space in key",
+   "input_b64": "YVwgYj1jCg==",
+   "load": [
+    [
+     "YSBi",
+     "Yw=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "trailing spaces stay in value",
+   "input_b64": "a2V5ICA9ICB2YWx1ZSAgCg==",
+   "load": [
+    [
+     "a2V5",
+     "dmFsdWUgIA=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "second separator stays in value",
+   "input_b64": "ayA9ID0gdgpqOjp3Cg==",
+   "load": [
+    [
+     "aw==",
+     "PSB2"
+    ],
+    [
+     "ag==",
+     "Onc="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "whitespace separator",
+   "input_b64": "ayB2CmoJDHcKbCAgOiAgeAo=",
+   "load": [
+    [
+     "aw==",
+     "dg=="
+    ],
+    [
+     "ag==",
+     "dw=="
+    ],
+    [
+     "bA==",
+     "eA=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "key alone",
+   "input_b64": "awpqIAo=",
+   "load": [
+    [
+     "aw==",
+     ""
+    ],
+    [
+     "ag==",
+     ""
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "empty key",
+   "input_b64": "PXgKOnkK",
+   "load": [
+    [
+     "",
+     "eQ=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "trailing lone backslash in value",
+   "input_b64": "az12YWx1ZVw=",
+   "load": [
+    [
+     "aw==",
+     "dmFsdWU="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "short unicode escape",
+   "input_b64": "az1cdTEy",
+   "load_error": {
+    "class": "ValueError",
+    "message": "malformed \\uxxxx escape"
+   },
+   "expect": null
+  },
+  {
+   "name": "short unicode escape at end of key",
+   "input_b64": "XHUxMj12",
+   "load_error": {
+    "class": "ValueError",
+    "message": "malformed \\uxxxx escape"
+   },
+   "expect": null
+  },
+  {
+   "name": "unicode escape with bad digit",
+   "input_b64": "az1cdTAwZzE=",
+   "load_error": {
+    "class": "ValueError",
+    "message": "malformed \\uxxxx escape"
+   },
+   "expect": null
+  },
+  {
+   "name": "unicode escape upper and lower hex",
+   "input_b64": "az1cdTAwZTRcdTAwQzRcdTIwYWM=",
+   "load": [
+    [
+     "aw==",
+     "w6TDhOKCrA=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "unicode escape followed by digits",
+   "input_b64": "az1cdTAwNDEx",
+   "load": [
+    [
+     "aw==",
+     "QTE="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "surrogate pair",
+   "input_b64": "az1cdUQ4M0RcdURFMDA=",
+   "load": [
+    [
+     "aw==",
+     "8J+YgA=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "pair then lone high",
+   "input_b64": "az1cdUQ4M0RcdURFMDBcdUQ4M0Q=",
+   "load": [
+    [
+     "aw==",
+     "8J+YgO2gvQ=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "low before high",
+   "input_b64": "az1cdURFMDBcdUQ4M0Q=",
+   "load": [
+    [
+     "aw==",
+     "7biA7aC9"
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "high high low",
+   "input_b64": "az1cdUQ4M0RcdUQ4M0RcdURFMDA=",
+   "load": [
+    [
+     "aw==",
+     "7aC98J+YgA=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "lone low",
+   "input_b64": "az1cdURDODB4",
+   "load": [
+    [
+     "aw==",
+     "7bKAeA=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "surrogate in key",
+   "input_b64": "XHVEODAwPXYK",
+   "load": [
+    [
+     "7aCA",
+     "dg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "escape in key",
+   "input_b64": "XHUwMDQxPWIK",
+   "load": [
+    [
+     "QQ==",
+     "Yg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "plain escapes",
+   "input_b64": "az1cdFxuXHJcZlx4XGJcXFw9XDpcIFwjXCEK",
+   "load": [
+    [
+     "aw==",
+     "CQoNDHhiXD06ICMh"
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "cr line ends",
+   "input_b64": "YT0xDWI9Mg0KYz0zCg1kPTQ=",
+   "load": [
+    [
+     "YQ==",
+     "MQ=="
+    ],
+    [
+     "Yg==",
+     "Mg=="
+    ],
+    [
+     "Yw==",
+     "Mw=="
+    ],
+    [
+     "ZA==",
+     "NA=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "next line is not a line end",
+   "input_b64": "YT0xhWI9Mgo=",
+   "load": [
+    [
+     "YQ==",
+     "McKFYj0y"
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "latin-1 bytes",
+   "input_b64": "//495N8K",
+   "load": [
+    [
+     "w7/Dvg==",
+     "w6TDnw=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "nul and control bytes",
+   "input_b64": "az0AAX8K",
+   "load": [
+    [
+     "aw==",
+     "AAF/"
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "duplicate keys keep the last value",
+   "input_b64": "c2l6ZT0xCnNpemU9Mgo=",
+   "load": [
+    [
+     "c2l6ZQ==",
+     "Mg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "size with plus",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9KzUK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "KzU="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 5,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size with spaces",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9IDUgCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "NSA="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 5,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size with python whitespace",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9HDUfCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "HDUf"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 5,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size with nbsp escape",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9XHUwMEEwNVx1MDBhMAo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "wqA1wqA="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 5,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size with en quad escape",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9XHUyMDAwNVx1MzAwMAo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "4oCANeOAgA=="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 5,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size with mongolian vowel separator",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9XHUxODBFNQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "4aCONQ=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "size with nel byte",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9NYUK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "NcKF"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 5,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size with zero width space",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9NVx1MjAwQgo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "NeKAiw=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "size with leading zeros",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9MDA3Cg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "MDA3"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 7,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size empty",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9Cg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     ""
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "size minus zero",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9LTAK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "LTA="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "size with underscore",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9MV8wMDAK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "MV8wMDA="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "size with arabic digit",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9XHUwNjYzCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "2aM="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "size with fullwidth digit",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9XHVGRjE1Cg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "77yV"
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "size max int64",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9OTIyMzM3MjAzNjg1NDc3NTgwNwo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "OTIyMzM3MjAzNjg1NDc3NTgwNw=="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 9223372036854775807,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size beyond int64",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9OTIyMzM3MjAzNjg1NDc3NTgwOAo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "OTIyMzM3MjAzNjg1NDc3NTgwOA=="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": true,
+    "size_text": "9223372036854775808",
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "created min int64",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9LTkyMjMzNzIwMzY4NTQ3NzU4MDgK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "LTkyMjMzNzIwMzY4NTQ3NzU4MDg="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": -9223372036854775808
+   }
+  },
+  {
+   "name": "created below int64",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9LTkyMjMzNzIwMzY4NTQ3NzU4MDkK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "LTkyMjMzNzIwMzY4NTQ3NzU4MDk="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": true,
+    "size": 1,
+    "created_ms_text": "-9223372036854775809"
+   }
+  },
+  {
+   "name": "created with plus",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9KzAK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "KzA="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 0
+   }
+  },
+  {
+   "name": "created negative",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9LTUK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "LTU="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": -5
+   }
+  },
+  {
+   "name": "size with 4300 digits",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nwo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nw=="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": true,
+    "size_text": "7777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777",
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "size with 4301 digits",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3NzcK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc="
+    ]
+   ],
+   "error": {
+    "class": "ValueError",
+    "message": "Exceeds the limit (4300 digits) for integer string conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit"
+   }
+  },
+  {
+   "name": "size with 4301 zeros and sign",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CmNyZWF0aW9uVGltZT0xCnNpemU9KzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2l6ZQ==",
+     "KzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw"
+    ]
+   ],
+   "error": {
+    "class": "ValueError",
+    "message": "Exceeds the limit (4300 digits) for integer string conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit"
+   }
+  },
+  {
+   "name": "created with 4301 digits",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9LTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "LTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEx"
+    ]
+   ],
+   "error": {
+    "class": "ValueError",
+    "message": "Exceeds the limit (4300 digits) for integer string conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit"
+   }
+  },
+  {
+   "name": "digit limit before missing repo",
+   "input_b64": "c2l6ZT0xMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMQo=",
+   "load": [
+    [
+     "c2l6ZQ==",
+     "MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE="
+    ]
+   ],
+   "error": {
+    "class": "ValueError",
+    "message": "Exceeds the limit (4300 digits) for integer string conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit"
+   }
+  },
+  {
+   "name": "bad escape wins over digit limit",
+   "input_b64": "c2l6ZT0xMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMQprPVx1enp6ego=",
+   "load_error": {
+    "class": "ValueError",
+    "message": "malformed \\uxxxx escape"
+   },
+   "expect": null
+  },
+  {
+   "name": "sha1 upper with whitespace",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpzaGExPSA0OEQ2NTRFNDA1NzBDRDRCNUJEMjFDMDZFNzdENDUyNzRENTY4RTlFCQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2hhMQ==",
+     "NDhENjU0RTQwNTcwQ0Q0QjVCRDIxQzA2RTc3RDQ1Mjc0RDU2OEU5RQk="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": "48d654e40570cd4b5bd21c06e77d45274d568e9e",
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "sha1 with 41 chars",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOWUwCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2hhMQ==",
+     "NDhkNjU0ZTQwNTcwY2Q0YjViZDIxYzA2ZTc3ZDQ1Mjc0ZDU2OGU5ZTA="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "sha1 with 39 chars",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2hhMQ==",
+     "NDhkNjU0ZTQwNTcwY2Q0YjViZDIxYzA2ZTc3ZDQ1Mjc0ZDU2OGU5"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "sha1 with kelvin sign",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOVx1MjEyQQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2hhMQ==",
+     "NDhkNjU0ZTQwNTcwY2Q0YjViZDIxYzA2ZTc3ZDQ1Mjc0ZDU2OGU54oSq"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "sha1 with nbsp",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpzaGExPVx1MDBBMDQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOWUK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2hhMQ==",
+     "wqA0OGQ2NTRlNDA1NzBjZDRiNWJkMjFjMDZlNzdkNDUyNzRkNTY4ZTll"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": "48d654e40570cd4b5bd21c06e77d45274d568e9e",
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "sha1 empty",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpzaGExPQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2hhMQ==",
+     ""
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "deleted upper",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpkZWxldGVkPVRSVUUK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "ZGVsZXRlZA==",
+     "VFJVRQ=="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": true,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "deleted with spaces",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpkZWxldGVkPSBUcnVlIAo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "ZGVsZXRlZA==",
+     "VHJ1ZSA="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": true,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "deleted with nbsp",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpkZWxldGVkPXRydWVcdTAwQTAK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "ZGVsZXRlZA==",
+     "dHJ1ZcKg"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": true,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "deleted yes",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpkZWxldGVkPXllcwo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "ZGVsZXRlZA==",
+     "eWVz"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "deleted dotted capital i",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpkZWxldGVkPXRyXHUwMTMwZQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "ZGVsZXRlZA==",
+     "dHLEsGU="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "deleted empty",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpkZWxldGVkPQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "ZGVsZXRlZA==",
+     ""
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "deleted and copy",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpkZWxldGVkPXRydWUKb3JpZ2luYWxMb2NhdGlvbj14Cg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "ZGVsZXRlZA==",
+     "dHJ1ZQ=="
+    ],
+    [
+     "b3JpZ2luYWxMb2NhdGlvbg==",
+     "eA=="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": true,
+    "is_copy": true,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "copy key through escape",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpvcmlnaW5hbFxMb2NhdGlvbj0K",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "b3JpZ2luYWxMb2NhdGlvbg==",
+     ""
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": true,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "copy key alone",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpvcmlnaW5hbExvY2F0aW9uCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "b3JpZ2luYWxMb2NhdGlvbg==",
+     ""
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": true,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "content type empty",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT0K",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJsb2JTdG9yZS5jb250ZW50LXR5cGU=",
+     ""
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "content type spaces",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1cIHRleHQvcGxhaW4gCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJsb2JTdG9yZS5jb250ZW50LXR5cGU=",
+     "IHRleHQvcGxhaW4g"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": " text/plain ",
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "content type lone surrogate",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT10ZXh0L1x1RDgwMAo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJsb2JTdG9yZS5jb250ZW50LXR5cGU=",
+     "dGV4dC/toIA="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "repo lone surrogate",
+   "input_b64": "QEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpAQnVja2V0LnJlcG8tbmFtZT1kZW1vXHVERkZGCg==",
+   "load": [
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtb+2/vw=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "path lone surrogate",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKc2l6ZT0xCmNyZWF0aW9uVGltZT0xCkBCbG9iU3RvcmUuYmxvYi1uYW1lPS9hXHVEQkZGCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2Htr78="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "path pair",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKc2l6ZT0xCmNyZWF0aW9uVGltZT0xCkBCbG9iU3RvcmUuYmxvYi1uYW1lPS9hXHVEQkZGXHVERkZGCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2H0j7+/"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a\udbff\udfff",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "path many slashes",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKc2l6ZT0xCmNyZWF0aW9uVGltZT0xCkBCbG9iU3RvcmUuYmxvYi1uYW1lPS8vL2EvL2IvCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "Ly8vYS8vYi8="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a//b/",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "path escaped leading space",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKc2l6ZT0xCmNyZWF0aW9uVGltZT0xCkBCbG9iU3RvcmUuYmxvYi1uYW1lPVwgL2EK",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "IC9h"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": " /a",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "path unescaped leading space",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKc2l6ZT0xCmNyZWF0aW9uVGltZT0xCkBCbG9iU3RvcmUuYmxvYi1uYW1lPSAvYQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2E="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "repo empty",
+   "input_b64": "QEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpAQnVja2V0LnJlcG8tbmFtZT0K",
+   "load": [
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     ""
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "repo with spaces",
+   "input_b64": "QEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpAQnVja2V0LnJlcG8tbmFtZT1kZW1vIHJhdwo=",
+   "load": [
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtbyByYXc="
+    ]
+   ],
+   "expect": {
+    "repo": "demo raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "unknown keys only",
+   "input_b64": "eD0xCnk9Mgo=",
+   "load": [
+    [
+     "eA==",
+     "MQ=="
+    ],
+    [
+     "eQ==",
+     "Mg=="
+    ]
+   ],
+   "expect": null
+  },
+  {
+   "name": "key with leading whitespace",
+   "input_b64": "ICBAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwoJQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EKDHNpemU9MQpjcmVhdGlvblRpbWU9MQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2E="
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "crlf and continuation",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1cDQogIHJhdw0KQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2ENCnNpemU9MQ0KY3JlYXRpb25UaW1lPTENCg==",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2E="
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "sha1 with U+212A",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpzaGExPTQ4ZDY1NGU0MDU3MGNkNGI1YmQyMWMwNmU3N2Q0NTI3NGQ1NjhlOVx1MjEyQQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "c2hhMQ==",
+     "NDhkNjU0ZTQwNTcwY2Q0YjViZDIxYzA2ZTc3ZDQ1Mjc0ZDU2OGU54oSq"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  },
+  {
+   "name": "deleted with U+212A",
+   "input_b64": "QEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EudHh0CnNpemU9MQpjcmVhdGlvblRpbWU9MQpkZWxldGVkPVx1MjEyQQo=",
+   "load": [
+    [
+     "QEJ1Y2tldC5yZXBvLW5hbWU=",
+     "ZGVtby1yYXc="
+    ],
+    [
+     "QEJsb2JTdG9yZS5ibG9iLW5hbWU=",
+     "L2EudHh0"
+    ],
+    [
+     "c2l6ZQ==",
+     "MQ=="
+    ],
+    [
+     "Y3JlYXRpb25UaW1l",
+     "MQ=="
+    ],
+    [
+     "ZGVsZXRlZA==",
+     "4oSq"
+    ]
+   ],
+   "expect": {
+    "repo": "demo-raw",
+    "path": "a.txt",
+    "sha1": null,
+    "content_type": null,
+    "deleted": false,
+    "is_copy": false,
+    "overflow": false,
+    "size": 1,
+    "created_ms": 1
+   }
+  }
+ ]
+}

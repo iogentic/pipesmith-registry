@@ -1,0 +1,3405 @@
+{
+ "generator": "tools/vectors/config.py",
+ "python": "3.12.13",
+ "env_data": "ARTIFACT_REPOSITORY_DATA",
+ "env_port": "ARTIFACT_REPOSITORY_PORT",
+ "local_binds": [
+  "127.0.0.1",
+  "localhost",
+  "::1"
+ ],
+ "defaults": {
+  "bind": "127.0.0.1",
+  "port": 8793
+ },
+ "manifests_dir": "manifests",
+ "load": [
+  {
+   "name": "defaults",
+   "files": {},
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_overrides",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "<root>/from-env",
+    "ARTIFACT_REPOSITORY_PORT": "9123"
+   },
+   "data_dir": null,
+   "home": null,
+   "result": {
+    "data_dir": "<root>/from-env",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/from-env/config.json",
+    "index_path": "<root>/from-env/index.sqlite",
+    "repositories_path": "<root>/from-env/repositories.json",
+    "manifests_path": "<root>/from-env/manifests"
+   }
+  },
+  {
+   "name": "argument_beats_env",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "<root>/env"
+   },
+   "data_dir": "<root>/arg",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/arg",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/arg/config.json",
+    "index_path": "<root>/arg/index.sqlite",
+    "repositories_path": "<root>/arg/repositories.json",
+    "manifests_path": "<root>/arg/manifests"
+   }
+  },
+  {
+   "name": "env_port_overrides_file",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjEyNy4wLjAuMSIsICJwb3J0IjogOTAwMSwgInN0b3JlcyI6IFtdLCAiZG9ja2VyX3BvcnRzIjoge319"
+   },
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "9002"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9002,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "file_port_without_env",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjEyNy4wLjAuMSIsICJwb3J0IjogOTAwMSwgInN0b3JlcyI6IFtdLCAiZG9ja2VyX3BvcnRzIjoge319"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9001,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "rejects_public_bind",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjAuMC4wLjAiLCAicG9ydCI6IDg3OTMsICJzdG9yZXMiOiBbXX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1",
+    "oserror": false
+   }
+  },
+  {
+   "name": "load_creates_nothing",
+   "files": {},
+   "env": {},
+   "data_dir": "<root>/not-yet",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/not-yet",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/not-yet/config.json",
+    "index_path": "<root>/not-yet/index.sqlite",
+    "repositories_path": "<root>/not-yet/repositories.json",
+    "manifests_path": "<root>/not-yet/manifests"
+   }
+  },
+  {
+   "name": "bad_port_env_abc",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "abc"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "ARTIFACT_REPOSITORY_PORT is not a port number: 'abc'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "bad_port_env_0",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "0"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "ARTIFACT_REPOSITORY_PORT is outside 1 to 65535: 0",
+    "oserror": false
+   }
+  },
+  {
+   "name": "bad_port_env_70000",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "70000"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "ARTIFACT_REPOSITORY_PORT is outside 1 to 65535: 70000",
+    "oserror": false
+   }
+  },
+  {
+   "name": "broken_config_file",
+   "files": {
+    "config.json": "e25vdCBqc29u"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json is not valid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+    "oserror": false
+   }
+  },
+  {
+   "name": "local_bind_127",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjEyNy4wLjAuMSJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "local_bind_localhost",
+   "files": {
+    "config.json": "eyJiaW5kIjogImxvY2FsaG9zdCJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "localhost",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "local_bind_ipv6",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjo6MSJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "::1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_port_empty_is_unset",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": ""
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_data_empty_is_unset_arg",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": ""
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_port_spaces",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": " 9123\n"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_port_underscore",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "9_123"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_port_arabic_digits",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "\u0669\u0661\u0662\u0663"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_port_plus",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "+9123"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_port_float",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "9123.0"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "ARTIFACT_REPOSITORY_PORT is not a port number: '9123.0'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "env_port_negative",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "-1"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "ARTIFACT_REPOSITORY_PORT is outside 1 to 65535: -1",
+    "oserror": false
+   }
+  },
+  {
+   "name": "env_port_huge",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "99999999999999999999999"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "ARTIFACT_REPOSITORY_PORT is outside 1 to 65535: 99999999999999999999999",
+    "oserror": false
+   }
+  },
+  {
+   "name": "env_port_edge_low",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "1"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 1,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_port_edge_high",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "65535"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 65535,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "env_port_beats_bad_file_port_order",
+   "files": {
+    "config.json": "eyJwb3J0IjogIngifQ=="
+   },
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "9123"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: 'x'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "env_port_bad_with_public_bind",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjAuMC4wLjAifQ=="
+   },
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "abc"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "ARTIFACT_REPOSITORY_PORT is not a port number: 'abc'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "env_data_normalized",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "<root>/a/./b//c/"
+   },
+   "data_dir": null,
+   "home": null,
+   "result": {
+    "data_dir": "<root>/a/b/c",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/a/b/c/config.json",
+    "index_path": "<root>/a/b/c/index.sqlite",
+    "repositories_path": "<root>/a/b/c/repositories.json",
+    "manifests_path": "<root>/a/b/c/manifests"
+   }
+  },
+  {
+   "name": "env_data_relative",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "relative/data"
+   },
+   "data_dir": null,
+   "home": null,
+   "result": {
+    "data_dir": "relative/data",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "relative/data/config.json",
+    "index_path": "relative/data/index.sqlite",
+    "repositories_path": "relative/data/repositories.json",
+    "manifests_path": "relative/data/manifests"
+   }
+  },
+  {
+   "name": "env_data_home",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "~/demo-data"
+   },
+   "data_dir": null,
+   "home": "<root>/home",
+   "result": {
+    "data_dir": "<root>/home/demo-data",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/home/demo-data/config.json",
+    "index_path": "<root>/home/demo-data/index.sqlite",
+    "repositories_path": "<root>/home/demo-data/repositories.json",
+    "manifests_path": "<root>/home/demo-data/manifests"
+   }
+  },
+  {
+   "name": "env_data_home_alone",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "~"
+   },
+   "data_dir": null,
+   "home": "<root>/home/",
+   "result": {
+    "data_dir": "<root>/home",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/home/config.json",
+    "index_path": "<root>/home/index.sqlite",
+    "repositories_path": "<root>/home/repositories.json",
+    "manifests_path": "<root>/home/manifests"
+   }
+  },
+  {
+   "name": "env_data_home_dot",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "./~/x"
+   },
+   "data_dir": null,
+   "home": "<root>/home",
+   "result": {
+    "data_dir": "<root>/home/x",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/home/x/config.json",
+    "index_path": "<root>/home/x/index.sqlite",
+    "repositories_path": "<root>/home/x/repositories.json",
+    "manifests_path": "<root>/home/x/manifests"
+   }
+  },
+  {
+   "name": "env_data_unknown_user",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "~no-such-user-demo/x"
+   },
+   "data_dir": null,
+   "home": "<root>/home",
+   "error": {
+    "class": "RuntimeError",
+    "message": "Could not determine home directory.",
+    "oserror": false
+   }
+  },
+  {
+   "name": "env_data_tilde_inside",
+   "files": {},
+   "env": {
+    "ARTIFACT_REPOSITORY_DATA": "<root>/~x"
+   },
+   "data_dir": null,
+   "home": "<root>/home",
+   "result": {
+    "data_dir": "<root>/~x",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/~x/config.json",
+    "index_path": "<root>/~x/index.sqlite",
+    "repositories_path": "<root>/~x/repositories.json",
+    "manifests_path": "<root>/~x/manifests"
+   }
+  },
+  {
+   "name": "argument_not_expanded",
+   "files": {},
+   "env": {},
+   "data_dir": "~/x",
+   "home": "<root>/home",
+   "result": {
+    "data_dir": "~/x",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "~/x/config.json",
+    "index_path": "~/x/index.sqlite",
+    "repositories_path": "~/x/repositories.json",
+    "manifests_path": "~/x/manifests"
+   }
+  },
+  {
+   "name": "argument_normalized",
+   "files": {},
+   "env": {},
+   "data_dir": "<root>/arg//./sub/",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/arg/sub",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/arg/sub/config.json",
+    "index_path": "<root>/arg/sub/index.sqlite",
+    "repositories_path": "<root>/arg/sub/repositories.json",
+    "manifests_path": "<root>/arg/sub/manifests"
+   }
+  },
+  {
+   "name": "empty_file",
+   "files": {
+    "config.json": ""
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json is not valid JSON: Expecting value: line 1 column 1 (char 0)",
+    "oserror": false
+   }
+  },
+  {
+   "name": "not_an_object",
+   "files": {
+    "config.json": "W10="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json does not hold an object",
+    "oserror": false
+   }
+  },
+  {
+   "name": "string_document",
+   "files": {
+    "config.json": "ImRlbW8i"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json does not hold an object",
+    "oserror": false
+   }
+  },
+  {
+   "name": "utf8_bom",
+   "files": {
+    "config.json": "77u/e30="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json is not valid JSON: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)",
+    "oserror": false
+   }
+  },
+  {
+   "name": "invalid_utf8",
+   "files": {
+    "config.json": "eyJiaW5kIjogIv8ifQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "UnicodeDecodeError",
+    "message": "'utf-8' codec can't decode byte 0xff in position 10: invalid start byte",
+    "oserror": false
+   }
+  },
+  {
+   "name": "crlf",
+   "files": {
+    "config.json": "ew0KInBvcnQiOiA5MTIzDQp9DQo="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "extra_data",
+   "files": {
+    "config.json": "e30ge30="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json is not valid JSON: Extra data: line 1 column 4 (char 3)",
+    "oserror": false
+   }
+  },
+  {
+   "name": "unknown_keys",
+   "files": {
+    "config.json": "eyJiaW5kIjogImxvY2FsaG9zdCIsICJjb2xvdXIiOiAiYmx1ZSIsICJwb3J0IjogOTEyM30="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "localhost",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "bind_not_string",
+   "files": {
+    "config.json": "eyJiaW5kIjogMX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: bind is not a string",
+    "oserror": false
+   }
+  },
+  {
+   "name": "bind_null",
+   "files": {
+    "config.json": "eyJiaW5kIjogbnVsbH0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: bind is not a string",
+    "oserror": false
+   }
+  },
+  {
+   "name": "bind_upper",
+   "files": {
+    "config.json": "eyJiaW5kIjogIkxPQ0FMSE9TVCJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "bind address 'LOCALHOST' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1",
+    "oserror": false
+   }
+  },
+  {
+   "name": "bind_spaced",
+   "files": {
+    "config.json": "eyJiaW5kIjogIiAxMjcuMC4wLjEifQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "bind address ' 127.0.0.1' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1",
+    "oserror": false
+   }
+  },
+  {
+   "name": "bind_quote",
+   "files": {
+    "config.json": "eyJiaW5kIjogIml0J3MifQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "bind address \"it's\" is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1",
+    "oserror": false
+   }
+  },
+  {
+   "name": "bind_unicode",
+   "files": {
+    "config.json": "eyJiaW5kIjogImNhZlx1MDBlOSJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "bind address 'caf\u00e9' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1",
+    "oserror": false
+   }
+  },
+  {
+   "name": "full",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjo6MSIsICJwb3J0IjogMTQxMDAsICJzdG9yZXMiOiBbeyJuYW1lIjogImRlbW8tYmxvYnMiLCAia2luZCI6ICJuZXh1cy1maWxlIiwgInJvb3QiOiAiL3Nydi9kZW1vLWJsb2JzIn0sIHsibmFtZSI6ICJkZW1vLXRyZWUiLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8tdHJlZSIsICJyZXBvcyI6IFsiZGVtby1yYXciLCAiZGVtby1yZWxlYXNlcyJdLCAibWFuaWZlc3QiOiAiL3Nydi9kZW1vLW1hbmlmZXN0In0sIHsibmFtZSI6ICJkZW1vLWVtcHR5LXJlcG9zIiwgImtpbmQiOiAiZGlyZWN0b3J5IiwgInJvb3QiOiAiL3Nydi9kZW1vLW90aGVyIiwgInJlcG9zIjogW10sICJtYW5pZmVzdCI6IG51bGx9XSwgImRvY2tlcl9wb3J0cyI6IHsiZGVtby1kb2NrZXItYiI6IDE0MjAyLCAiZGVtby1kb2NrZXItYSI6ICIxNDIwMSJ9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "::1",
+    "port": 14100,
+    "stores": [
+     {
+      "name": "demo-blobs",
+      "kind": "nexus-file",
+      "root": "/srv/demo-blobs",
+      "repos": null,
+      "manifest": null
+     },
+     {
+      "name": "demo-tree",
+      "kind": "directory",
+      "root": "/srv/demo-tree",
+      "repos": [
+       "demo-raw",
+       "demo-releases"
+      ],
+      "manifest": "/srv/demo-manifest"
+     },
+     {
+      "name": "demo-empty-repos",
+      "kind": "directory",
+      "root": "/srv/demo-other",
+      "repos": [],
+      "manifest": null
+     }
+    ],
+    "docker_ports": [
+     [
+      "demo-docker-b",
+      14202
+     ],
+     [
+      "demo-docker-a",
+      14201
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_int",
+   "files": {
+    "config.json": "eyJwb3J0IjogOTEyM30="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_int",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogOTEyM319"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      9123
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_string",
+   "files": {
+    "config.json": "eyJwb3J0IjogIjkxMjMifQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_string",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogIjkxMjMifX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      9123
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_string_spaces",
+   "files": {
+    "config.json": "eyJwb3J0IjogIiA5MTIzICJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_string_spaces",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogIiA5MTIzICJ9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      9123
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_string_underscore",
+   "files": {
+    "config.json": "eyJwb3J0IjogIjlfMTIzIn0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_string_underscore",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogIjlfMTIzIn19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      9123
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_float",
+   "files": {
+    "config.json": "eyJwb3J0IjogOTEyMy45fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_float",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogOTEyMy45fX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      9123
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_float_whole",
+   "files": {
+    "config.json": "eyJwb3J0IjogOTEyMy4wfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_float_whole",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogOTEyMy4wfX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      9123
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_float_negative_half",
+   "files": {
+    "config.json": "eyJwb3J0IjogLTAuNX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is outside 1 to 65535: 0",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_float_negative_half",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogLTAuNX19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is outside 1 to 65535: 0",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_float_big",
+   "files": {
+    "config.json": "eyJwb3J0IjogMTAwMDAwLjB9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is outside 1 to 65535: 100000",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_float_big",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogMTAwMDAwLjB9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is outside 1 to 65535: 100000",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_float_huge",
+   "files": {
+    "config.json": "eyJwb3J0IjogMWUrMzAwfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is outside 1 to 65535: 1000000000000000052504760255204420248704468581108159154915854115511802457988908195786371375080447864043704443832883878176942523235360430575644792184786706982848387200926575803737830233794788090059368953234970799945081119038967640880074652742780142494579258788820056842838115669472196386865459400540160",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_float_huge",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogMWUrMzAwfX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is outside 1 to 65535: 1000000000000000052504760255204420248704468581108159154915854115511802457988908195786371375080447864043704443832883878176942523235360430575644792184786706982848387200926575803737830233794788090059368953234970799945081119038967640880074652742780142494579258788820056842838115669472196386865459400540160",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_true",
+   "files": {
+    "config.json": "eyJwb3J0IjogdHJ1ZX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: True",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_true",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogdHJ1ZX19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: True",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_false",
+   "files": {
+    "config.json": "eyJwb3J0IjogZmFsc2V9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: False",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_false",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogZmFsc2V9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: False",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_null",
+   "files": {
+    "config.json": "eyJwb3J0IjogbnVsbH0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: None",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_null",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogbnVsbH19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: None",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_list",
+   "files": {
+    "config.json": "eyJwb3J0IjogWzkxMjNdfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: [9123]",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_list",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogWzkxMjNdfX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: [9123]",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_empty_list",
+   "files": {
+    "config.json": "eyJwb3J0IjogW119"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: []",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_empty_list",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogW119fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: []",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_object",
+   "files": {
+    "config.json": "eyJwb3J0IjogeyJwb3J0IjogOTEyM319"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: {'port': 9123}",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_object",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogeyJwb3J0IjogOTEyM319fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: {'port': 9123}",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_text",
+   "files": {
+    "config.json": "eyJwb3J0IjogImFiYyJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: 'abc'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_text",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogImFiYyJ9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: 'abc'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_zero",
+   "files": {
+    "config.json": "eyJwb3J0IjogMH0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is outside 1 to 65535: 0",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_zero",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogMH19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is outside 1 to 65535: 0",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_negative",
+   "files": {
+    "config.json": "eyJwb3J0IjogLTF9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is outside 1 to 65535: -1",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_negative",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogLTF9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is outside 1 to 65535: -1",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_high",
+   "files": {
+    "config.json": "eyJwb3J0IjogNjU1MzZ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is outside 1 to 65535: 65536",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_high",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogNjU1MzZ9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is outside 1 to 65535: 65536",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_edge_low",
+   "files": {
+    "config.json": "eyJwb3J0IjogMX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 1,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_edge_low",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogMX19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      1
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_edge_high",
+   "files": {
+    "config.json": "eyJwb3J0IjogNjU1MzV9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 65535,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_edge_high",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogNjU1MzV9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      65535
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_big_int",
+   "files": {
+    "config.json": "eyJwb3J0IjogMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMH0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is outside 1 to 65535: 1000000000000000000000000000000",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_big_int",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMH19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is outside 1 to 65535: 1000000000000000000000000000000",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_string_float",
+   "files": {
+    "config.json": "eyJwb3J0IjogIjkxMjMuMCJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: '9123.0'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_string_float",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogIjkxMjMuMCJ9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: '9123.0'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_string_empty",
+   "files": {
+    "config.json": "eyJwb3J0IjogIiJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: ''",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_string_empty",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogIiJ9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: ''",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_string_arabic",
+   "files": {
+    "config.json": "eyJwb3J0IjogIlx1MDY2OVx1MDY2MVx1MDY2Mlx1MDY2MyJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9123,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_port_string_arabic",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogIlx1MDY2OVx1MDY2MVx1MDY2Mlx1MDY2MyJ9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "demo-docker",
+      9123
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "port_string_huge",
+   "files": {
+    "config.json": "eyJwb3J0IjogIjExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEifQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is outside 1 to 65535: 1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_string_huge",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogIjExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEifX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is outside 1 to 65535: 1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_string_too_long",
+   "files": {
+    "config.json": "eyJwb3J0IjogIjExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIn0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: '11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_string_too_long",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogIjExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIn19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: '11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_nan",
+   "files": {
+    "config.json": "eyJwb3J0IjogTmFOfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: nan",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_infinity",
+   "files": {
+    "config.json": "eyJwb3J0IjogSW5maW5pdHl9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "OverflowError",
+    "message": "cannot convert float infinity to integer",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_minus_infinity",
+   "files": {
+    "config.json": "eyJwb3J0IjogLUluZmluaXR5fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "OverflowError",
+    "message": "cannot convert float infinity to integer",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_overflow_literal",
+   "files": {
+    "config.json": "eyJwb3J0IjogMWU0MDB9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "OverflowError",
+    "message": "cannot convert float infinity to integer",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_nan",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogTmFOfX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of demo-docker is not a port number: nan",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_port_infinity",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImRlbW8tZG9ja2VyIjogSW5maW5pdHl9fQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "OverflowError",
+    "message": "cannot convert float infinity to integer",
+    "oserror": false
+   }
+  },
+  {
+   "name": "port_int_too_long",
+   "files": {
+    "config.json": "eyJwb3J0IjogMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTF9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "Exceeds the limit (4300 digits) for integer string conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit",
+    "oserror": false
+   }
+  },
+  {
+   "name": "duplicate_port_key",
+   "files": {
+    "config.json": "eyJwb3J0IjogOTAwMSwgInBvcnQiOiA5MDAyfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 9002,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_null",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBudWxsfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_null",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiBudWxsfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_empty_list",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbXX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_empty_list",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiBbXX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_empty_object",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiB7fX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_empty_object",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7fX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_zero",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiAwfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_zero",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiAwfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_empty_string",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiAiIn0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_empty_string",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiAiIn0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_false",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBmYWxzZX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_false",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiBmYWxzZX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_object",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiB7ImEiOiAxfX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: stores is not a list",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_ports_object",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImEiOiAxfX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "a",
+      1
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_string",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiAiZGVtbyJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: stores is not a list",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_ports_string",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiAiZGVtbyJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: docker_ports is not an object",
+    "oserror": false
+   }
+  },
+  {
+   "name": "stores_true",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiB0cnVlfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: stores is not a list",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_ports_true",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB0cnVlfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: docker_ports is not an object",
+    "oserror": false
+   }
+  },
+  {
+   "name": "stores_one",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiAxfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: stores is not a list",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_ports_one",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiAxfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: docker_ports is not an object",
+    "oserror": false
+   }
+  },
+  {
+   "name": "stores_float",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiAwLjB9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_float",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiAwLjB9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "stores_float_one",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiAxLjV9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: stores is not a list",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_ports_float_one",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiAxLjV9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: docker_ports is not an object",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_not_object",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgImRlbW8iXX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: store 1 needs name, kind and root",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_no_name",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJraW5kIjogIm5leHVzLWZpbGUiLCAicm9vdCI6ICIvc3J2L2RlbW8ifV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: store 1 needs name, kind and root",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_empty_name",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogIiIsICJraW5kIjogIm5leHVzLWZpbGUiLCAicm9vdCI6ICIvc3J2L2RlbW8ifV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: store 1 needs name, kind and root",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_name_number",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogMSwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZGVtbyJ9XX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: store 1 needs name, kind and root",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_no_kind",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAicm9vdCI6ICIvc3J2L2RlbW8ifV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: store 1 needs name, kind and root",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_empty_root",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIifV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: store 1 needs name, kind and root",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_root_null",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6IG51bGx9XX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: store 1 needs name, kind and root",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_any_kind",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJ1bmtub3duLWtpbmQiLCAicm9vdCI6ICJyZWxhdGl2ZS9yb290In1dfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [
+     {
+      "name": "first",
+      "kind": "nexus-file",
+      "root": "/srv/first",
+      "repos": null,
+      "manifest": null
+     },
+     {
+      "name": "demo",
+      "kind": "unknown-kind",
+      "root": "relative/root",
+      "repos": null,
+      "manifest": null
+     }
+    ],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "store_repos_null",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAicmVwb3MiOiBudWxsfV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [
+     {
+      "name": "first",
+      "kind": "nexus-file",
+      "root": "/srv/first",
+      "repos": null,
+      "manifest": null
+     },
+     {
+      "name": "demo",
+      "kind": "directory",
+      "root": "/srv/demo",
+      "repos": null,
+      "manifest": null
+     }
+    ],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "store_repos_empty",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAicmVwb3MiOiBbXX1dfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [
+     {
+      "name": "first",
+      "kind": "nexus-file",
+      "root": "/srv/first",
+      "repos": null,
+      "manifest": null
+     },
+     {
+      "name": "demo",
+      "kind": "directory",
+      "root": "/srv/demo",
+      "repos": [],
+      "manifest": null
+     }
+    ],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "store_repos_string",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAicmVwb3MiOiAiZGVtby1yYXcifV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: repos of store 'demo' is not a list of names",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_repos_numbers",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAicmVwb3MiOiBbMV19XX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: repos of store 'demo' is not a list of names",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_repos_object",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAicmVwb3MiOiB7fX1dfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: repos of store 'demo' is not a list of names",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_repos_empty_names",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAicmVwb3MiOiBbIiIsICJhIl19XX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [
+     {
+      "name": "first",
+      "kind": "nexus-file",
+      "root": "/srv/first",
+      "repos": null,
+      "manifest": null
+     },
+     {
+      "name": "demo",
+      "kind": "directory",
+      "root": "/srv/demo",
+      "repos": [
+       "",
+       "a"
+      ],
+      "manifest": null
+     }
+    ],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "store_repos_quote_name",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogIml0J3MiLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAicmVwb3MiOiAxfV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: repos of store \"it's\" is not a list of names",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_manifest_empty",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAibWFuaWZlc3QiOiAiIn1dfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: manifest of store 'demo' is not a path",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_manifest_number",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAibWFuaWZlc3QiOiAxfV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: manifest of store 'demo' is not a path",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_manifest_false",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJkaXJlY3RvcnkiLCAicm9vdCI6ICIvc3J2L2RlbW8iLCAibWFuaWZlc3QiOiBmYWxzZX1dfQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: manifest of store 'demo' is not a path",
+    "oserror": false
+   }
+  },
+  {
+   "name": "store_manifest_path",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiBbeyJuYW1lIjogImZpcnN0IiwgImtpbmQiOiAibmV4dXMtZmlsZSIsICJyb290IjogIi9zcnYvZmlyc3QifSwgeyJuYW1lIjogImRlbW8iLCAia2luZCI6ICJuZXh1cy1maWxlIiwgInJvb3QiOiAiL3Nydi9kZW1vIiwgIm1hbmlmZXN0IjogIi9zcnYvbWFuaWZlc3QifV19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [
+     {
+      "name": "first",
+      "kind": "nexus-file",
+      "root": "/srv/first",
+      "repos": null,
+      "manifest": null
+     },
+     {
+      "name": "demo",
+      "kind": "nexus-file",
+      "root": "/srv/demo",
+      "repos": null,
+      "manifest": "/srv/manifest"
+     }
+    ],
+    "docker_ports": [],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_empty_name",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7IiI6IDE0MTAwfX0="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: docker_ports has an empty repository name",
+    "oserror": false
+   }
+  },
+  {
+   "name": "docker_ports_order",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7InoiOiAxNDEwMywgImEiOiAxNDEwMSwgIm0iOiAxNDEwMn19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "z",
+      14103
+     ],
+     [
+      "a",
+      14101
+     ],
+     [
+      "m",
+      14102
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_duplicate_key",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImEiOiAxNDEwMSwgImIiOiAxNDEwMiwgImEiOiAxNDEwM319"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "result": {
+    "data_dir": "<root>/d",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "a",
+      14103
+     ],
+     [
+      "b",
+      14102
+     ]
+    ],
+    "config_path": "<root>/d/config.json",
+    "index_path": "<root>/d/index.sqlite",
+    "repositories_path": "<root>/d/repositories.json",
+    "manifests_path": "<root>/d/manifests"
+   }
+  },
+  {
+   "name": "docker_ports_first_error_wins",
+   "files": {
+    "config.json": "eyJkb2NrZXJfcG9ydHMiOiB7ImEiOiAieCIsICJiIjogMH19"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: Docker port of a is not a port number: 'x'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "errors_in_order_bind_first",
+   "files": {
+    "config.json": "eyJiaW5kIjogMSwgInBvcnQiOiAieCIsICJzdG9yZXMiOiAieCJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: bind is not a string",
+    "oserror": false
+   }
+  },
+  {
+   "name": "errors_in_order_port_before_stores",
+   "files": {
+    "config.json": "eyJwb3J0IjogIngiLCAic3RvcmVzIjogIngifQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: port is not a port number: 'x'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "errors_in_order_stores_before_ports",
+   "files": {
+    "config.json": "eyJzdG9yZXMiOiAieCIsICJkb2NrZXJfcG9ydHMiOiAieCJ9"
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: stores is not a list",
+    "oserror": false
+   }
+  },
+  {
+   "name": "public_bind_after_file_errors",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjAuMC4wLjAiLCAiZG9ja2VyX3BvcnRzIjogIngifQ=="
+   },
+   "env": {},
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/d/config.json: docker_ports is not an object",
+    "oserror": false
+   }
+  },
+  {
+   "name": "public_bind_with_env_port",
+   "files": {
+    "config.json": "eyJiaW5kIjogIjAuMC4wLjAifQ=="
+   },
+   "env": {
+    "ARTIFACT_REPOSITORY_PORT": "9123"
+   },
+   "data_dir": "<root>/d",
+   "home": null,
+   "error": {
+    "class": "ValueError",
+    "message": "bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1",
+    "oserror": false
+   }
+  }
+ ],
+ "save": [
+  {
+   "name": "env_port_overrides_file",
+   "spec": {
+    "port": 9001
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiA5MDAxLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "127.0.0.1",
+    "port": 9001,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "round_trip",
+   "spec": {
+    "port": 9100,
+    "stores": [
+     {
+      "name": "blobs",
+      "kind": "nexus-file",
+      "root": "/srv/demo/blobs"
+     },
+     {
+      "name": "tree",
+      "kind": "directory",
+      "root": "/srv/demo/tree",
+      "repos": [
+       "demo-raw",
+       "demo-releases"
+      ]
+     }
+    ]
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiA5MTAwLAogICJzdG9yZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImJsb2JzIiwKICAgICAgImtpbmQiOiAibmV4dXMtZmlsZSIsCiAgICAgICJyb290IjogIi9zcnYvZGVtby9ibG9icyIsCiAgICAgICJyZXBvcyI6IG51bGwsCiAgICAgICJtYW5pZmVzdCI6IG51bGwKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogInRyZWUiLAogICAgICAia2luZCI6ICJkaXJlY3RvcnkiLAogICAgICAicm9vdCI6ICIvc3J2L2RlbW8vdHJlZSIsCiAgICAgICJyZXBvcyI6IFsKICAgICAgICAiZGVtby1yYXciLAogICAgICAgICJkZW1vLXJlbGVhc2VzIgogICAgICBdLAogICAgICAibWFuaWZlc3QiOiBudWxsCiAgICB9CiAgXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "127.0.0.1",
+    "port": 9100,
+    "stores": [
+     {
+      "name": "blobs",
+      "kind": "nexus-file",
+      "root": "/srv/demo/blobs",
+      "repos": null,
+      "manifest": null
+     },
+     {
+      "name": "tree",
+      "kind": "directory",
+      "root": "/srv/demo/tree",
+      "repos": [
+       "demo-raw",
+       "demo-releases"
+      ],
+      "manifest": null
+     }
+    ],
+    "docker_ports": [],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "rejects_public_bind",
+   "spec": {
+    "bind": "0.0.0.0"
+   },
+   "error": {
+    "class": "ValueError",
+    "message": "bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1",
+    "oserror": false
+   },
+   "data_dir_exists": false,
+   "files": []
+  },
+  {
+   "name": "local_bind_127",
+   "spec": {
+    "bind": "127.0.0.1"
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiA4NzkzLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "local_bind_localhost",
+   "spec": {
+    "bind": "localhost"
+   },
+   "bytes_b64": "ewogICJiaW5kIjogImxvY2FsaG9zdCIsCiAgInBvcnQiOiA4NzkzLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "localhost",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "local_bind_ipv6",
+   "spec": {
+    "bind": "::1"
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjo6MSIsCiAgInBvcnQiOiA4NzkzLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "::1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "defaults",
+   "spec": {},
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiA4NzkzLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "nested_data_dir",
+   "spec": {
+    "sub": "deep/er/data"
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiA4NzkzLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/deep/er/data",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/deep/er/data/config.json",
+    "index_path": "<root>/deep/er/data/index.sqlite",
+    "repositories_path": "<root>/deep/er/data/repositories.json",
+    "manifests_path": "<root>/deep/er/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "docker_ports_sorted",
+   "spec": {
+    "docker_ports": {
+     "z-docker": 14103,
+     "a-docker": 14101,
+     "M-docker": 14102,
+     "\u00e9-docker": 14104,
+     "\u4e2d": 14105
+    }
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiA4NzkzLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjogewogICAgIk0tZG9ja2VyIjogMTQxMDIsCiAgICAiYS1kb2NrZXIiOiAxNDEwMSwKICAgICJ6LWRvY2tlciI6IDE0MTAzLAogICAgIlx1MDBlOS1kb2NrZXIiOiAxNDEwNCwKICAgICJcdTRlMmQiOiAxNDEwNQogIH0KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [],
+    "docker_ports": [
+     [
+      "M-docker",
+      14102
+     ],
+     [
+      "a-docker",
+      14101
+     ],
+     [
+      "z-docker",
+      14103
+     ],
+     [
+      "\u00e9-docker",
+      14104
+     ],
+     [
+      "\u4e2d",
+      14105
+     ]
+    ],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "store_fields",
+   "spec": {
+    "stores": [
+     {
+      "name": "demo-tree",
+      "kind": "directory",
+      "root": "/srv/demo tree",
+      "repos": [],
+      "manifest": "/srv/m"
+     },
+     {
+      "name": "caf\u00e9",
+      "kind": "nexus-file",
+      "root": "/srv/caf\u00e9 \"q\" \\",
+      "repos": null
+     }
+    ]
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiA4NzkzLAogICJzdG9yZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImRlbW8tdHJlZSIsCiAgICAgICJraW5kIjogImRpcmVjdG9yeSIsCiAgICAgICJyb290IjogIi9zcnYvZGVtbyB0cmVlIiwKICAgICAgInJlcG9zIjogW10sCiAgICAgICJtYW5pZmVzdCI6ICIvc3J2L20iCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJjYWZcdTAwZTkiLAogICAgICAia2luZCI6ICJuZXh1cy1maWxlIiwKICAgICAgInJvb3QiOiAiL3Nydi9jYWZcdTAwZTkgXCJxXCIgXFwiLAogICAgICAicmVwb3MiOiBudWxsLAogICAgICAibWFuaWZlc3QiOiBudWxsCiAgICB9CiAgXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "127.0.0.1",
+    "port": 8793,
+    "stores": [
+     {
+      "name": "demo-tree",
+      "kind": "directory",
+      "root": "/srv/demo tree",
+      "repos": [],
+      "manifest": "/srv/m"
+     },
+     {
+      "name": "caf\u00e9",
+      "kind": "nexus-file",
+      "root": "/srv/caf\u00e9 \"q\" \\",
+      "repos": null,
+      "manifest": null
+     }
+    ],
+    "docker_ports": [],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "port_zero",
+   "spec": {
+    "port": 0
+   },
+   "error": {
+    "class": "ValueError",
+    "message": "port is outside 1 to 65535: 0",
+    "oserror": false
+   },
+   "data_dir_exists": false,
+   "files": []
+  },
+  {
+   "name": "port_high",
+   "spec": {
+    "port": 65536
+   },
+   "error": {
+    "class": "ValueError",
+    "message": "port is outside 1 to 65535: 65536",
+    "oserror": false
+   },
+   "data_dir_exists": false,
+   "files": []
+  },
+  {
+   "name": "port_edges",
+   "spec": {
+    "port": 1,
+    "docker_ports": {
+     "a": 65535,
+     "b": 1
+    }
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiAxLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjogewogICAgImEiOiA2NTUzNSwKICAgICJiIjogMQogIH0KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "127.0.0.1",
+    "port": 1,
+    "stores": [],
+    "docker_ports": [
+     [
+      "a",
+      65535
+     ],
+     [
+      "b",
+      1
+     ]
+    ],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  },
+  {
+   "name": "docker_port_zero",
+   "spec": {
+    "docker_ports": {
+     "b": 0,
+     "a": 14101
+    }
+   },
+   "error": {
+    "class": "ValueError",
+    "message": "Docker port of b is outside 1 to 65535: 0",
+    "oserror": false
+   },
+   "data_dir_exists": true,
+   "files": []
+  },
+  {
+   "name": "docker_port_high",
+   "spec": {
+    "docker_ports": {
+     "a": 70000,
+     "b": 0
+    }
+   },
+   "error": {
+    "class": "ValueError",
+    "message": "Docker port of a is outside 1 to 65535: 70000",
+    "oserror": false
+   },
+   "data_dir_exists": true,
+   "files": []
+  },
+  {
+   "name": "public_bind_with_bad_port",
+   "spec": {
+    "bind": "0.0.0.0",
+    "port": 0
+   },
+   "error": {
+    "class": "ValueError",
+    "message": "bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1",
+    "oserror": false
+   },
+   "data_dir_exists": false,
+   "files": []
+  },
+  {
+   "name": "bad_port_with_bad_docker_port",
+   "spec": {
+    "port": 0,
+    "docker_ports": {
+     "a": 0
+    }
+   },
+   "error": {
+    "class": "ValueError",
+    "message": "port is outside 1 to 65535: 0",
+    "oserror": false
+   },
+   "data_dir_exists": false,
+   "files": []
+  },
+  {
+   "name": "replaces_existing",
+   "spec": {
+    "port": 9200,
+    "existing": "{\"port\": 9100}"
+   },
+   "bytes_b64": "ewogICJiaW5kIjogIjEyNy4wLjAuMSIsCiAgInBvcnQiOiA5MjAwLAogICJzdG9yZXMiOiBbXSwKICAiZG9ja2VyX3BvcnRzIjoge30KfQo=",
+   "mode": "0o600",
+   "loaded": {
+    "data_dir": "<root>/data",
+    "bind": "127.0.0.1",
+    "port": 9200,
+    "stores": [],
+    "docker_ports": [],
+    "config_path": "<root>/data/config.json",
+    "index_path": "<root>/data/index.sqlite",
+    "repositories_path": "<root>/data/repositories.json",
+    "manifests_path": "<root>/data/manifests"
+   },
+   "data_dir_exists": true,
+   "files": [
+    "config.json"
+   ]
+  }
+ ],
+ "os_errors": [
+  {
+   "name": "data_dir_is_file",
+   "layout": "file",
+   "error": {
+    "class": "NotADirectoryError",
+    "message": "[Errno 20] Not a directory: '<root>/data/config.json'",
+    "oserror": true
+   }
+  },
+  {
+   "name": "config_is_directory",
+   "layout": "dir",
+   "error": {
+    "class": "IsADirectoryError",
+    "message": "[Errno 21] Is a directory: '<root>/data/config.json'",
+    "oserror": true
+   }
+  }
+ ]
+}

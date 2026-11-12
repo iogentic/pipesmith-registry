@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="psr-architecture" viewBox="0 0 1360 740" width="1360" height="740" role="img" aria-label="Architecture of Pipesmith Registry 0.1.0. Maven, npm and Docker clients and a browser send requests to one static binary. Inside it a request passes the listeners, one main port plus one port per Docker repository, then a Host gate that answers 403 unless the Host header names the server, then sign in and permissions. It then reaches the embedded interface, the read only REST API or the read path for Maven, npm, Docker and plain files. The read path and the REST API look files up in an SQLite index. The listeners take their ports from config.json, sign in reads users, roles and privileges from state.sqlite. On disk the binary reads the file blob stores of an existing install in place and never writes them. Its own data directory holds config.json, repositories.json, state.sqlite with users, roles, privileges and LDAP connections, and index.sqlite, which scan fills from the blob stores."><title>Pipesmith Registry architecture</title><style>#psr-architecture{--psr-bg:#F5F7FC; --psr-panel:#FFFFFF; --psr-dim:#EEF2FA; --psr-ink:#0A1020; --psr-muted:#46526E; --psr-line:#D8DEEA; --psr-edge:#7A859C; --psr-req:#2B62F0; --psr-read:#12B5D6; --psr-write:#7A52F0;}@media (prefers-color-scheme: dark){#psr-architecture{--psr-bg:#05070D; --psr-panel:#0D1322; --psr-dim:#151D31; --psr-ink:#F2F6FF; --psr-muted:#A6B3CF; --psr-line:#1F2A42; --psr-edge:#5B6A8C; --psr-req:#3D7BFF; --psr-read:#22E6FF; --psr-write:#8A5CFF;}}[data-theme="light"] #psr-architecture{--psr-bg:#F5F7FC; --psr-panel:#FFFFFF; --psr-dim:#EEF2FA; --psr-ink:#0A1020; --psr-muted:#46526E; --psr-line:#D8DEEA; --psr-edge:#7A859C; --psr-req:#2B62F0; --psr-read:#12B5D6; --psr-write:#7A52F0;}[data-theme="dark"] #psr-architecture{--psr-bg:#05070D; --psr-panel:#0D1322; --psr-dim:#151D31; --psr-ink:#F2F6FF; --psr-muted:#A6B3CF; --psr-line:#1F2A42; --psr-edge:#5B6A8C; --psr-req:#3D7BFF; --psr-read:#22E6FF; --psr-write:#8A5CFF;}#psr-architecture text{font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}#psr-architecture .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}</style><defs><marker id="psr-architecture-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-req, #3D7BFF)" stroke="none"/></marker><marker id="psr-architecture-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-read, #22E6FF)" stroke="none"/></marker><marker id="psr-architecture-write" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-write, #8A5CFF)" stroke="none"/></marker></defs>
+<rect x="0" y="0" width="1360" height="740" rx="18" fill="var(--psr-bg, #05070D)" stroke="var(--psr-line, #1F2A42)" stroke-width="1"/>
+<text x="34" y="46" font-size="12" font-weight="600" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" letter-spacing="1.6">PIPESMITH REGISTRY 0.1.0</text>
+<text x="34" y="86" font-size="30" font-weight="700" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Architecture</text>
+<text x="34" y="116" font-size="15" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">One static binary serves the file blob stores of an existing install in place. It writes only to its own data directory.</text>
+<text x="34" y="156" font-size="11" font-weight="600" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" letter-spacing="1.6">CLIENTS</text>
+<text x="330" y="156" font-size="11" font-weight="600" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" letter-spacing="1.6">ONE BINARY</text>
+<text x="986" y="156" font-size="11" font-weight="600" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" letter-spacing="1.6">ON DISK</text>
+<rect x="34" y="176" width="240" height="92" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="50" y="202" font-size="16" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Maven</text>
+<text x="50" y="222" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">Maven and Gradle builds</text>
+<text x="50" y="240" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" class="mono">/repository/&lt;name&gt;/...</text>
+<text x="50" y="257" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">Basic credentials</text>
+<rect x="34" y="282" width="240" height="92" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="50" y="308" font-size="16" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">npm</text>
+<text x="50" y="328" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">package documents, tarballs</text>
+<text x="50" y="346" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" class="mono">/repository/&lt;name&gt;/...</text>
+<text x="50" y="363" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">Basic credentials</text>
+<rect x="34" y="388" width="240" height="92" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="50" y="414" font-size="16" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Docker</text>
+<text x="50" y="434" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">one port per repository</text>
+<text x="50" y="452" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" class="mono">/v2/... on that port</text>
+<text x="50" y="469" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">Basic credentials</text>
+<rect x="34" y="494" width="240" height="92" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="50" y="520" font-size="16" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Browser</text>
+<text x="50" y="540" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">administration interface</text>
+<text x="50" y="558" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" class="mono">/ and /service/rest/v1</text>
+<text x="50" y="575" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">session cookie</text>
+<rect x="330" y="176" width="600" height="456" rx="14" fill="var(--psr-dim, #151D31)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.4"/>
+<text x="350" y="204" font-size="14" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start" class="mono">pipesmith-registry serve</text>
+<text x="910" y="204" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="end">static, no runtime dependencies</text>
+<rect x="350" y="220" width="560" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="366" y="245" font-size="15" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Listeners</text>
+<text x="366" y="265" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">the main port and one port per Docker repository, from config.json</text>
+<rect x="350" y="294" width="560" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="366" y="319" font-size="15" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Host gate</text>
+<text x="366" y="339" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">403 unless the Host header names this server</text>
+<path d="M630,278 V292" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="350" y="368" width="560" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="366" y="393" font-size="15" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Sign in and permissions</text>
+<text x="366" y="413" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">local users and LDAP; roles and privileges from state.sqlite</text>
+<path d="M630,352 V366" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M274,222 C312,222 312,234 348,234" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M274,328 C312,328 312,244 348,244" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M274,434 C312,434 312,254 348,254" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M274,540 C312,540 312,264 348,264" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="350" y="442" width="176" height="86" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="364" y="467" font-size="15" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Interface</text>
+<text x="364" y="489" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">embedded, at /</text>
+<text x="364" y="508" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">all screens read only</text>
+<path d="M438,426 V440" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="542" y="442" width="176" height="86" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="556" y="467" font-size="15" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">REST API</text>
+<text x="556" y="489" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" class="mono">/service/rest/v1</text>
+<text x="556" y="508" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">reads; changes get 501</text>
+<path d="M630,426 V440" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="734" y="442" width="176" height="86" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="748" y="467" font-size="15" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Read path</text>
+<text x="748" y="489" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">Maven, npm, Docker,</text>
+<text x="748" y="508" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">other formats as files</text>
+<path d="M822,426 V440" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="350" y="554" width="560" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="366" y="579" font-size="15" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Index</text>
+<text x="366" y="599" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">SQLite: one row per file of the last scan</text>
+<path d="M630,528 V552" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M822,528 V552" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="986" y="176" width="340" height="200" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.6"/>
+<path d="M1005,202 v16 a27,7 0 0 0 54,0 v-16" fill="var(--psr-dim, #151D31)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<ellipse cx="1032" cy="202" rx="27" ry="7" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<path d="M1005,222 v16 a27,7 0 0 0 54,0 v-16" fill="var(--psr-dim, #151D31)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<ellipse cx="1032" cy="222" rx="27" ry="7" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<path d="M1005,242 v16 a27,7 0 0 0 54,0 v-16" fill="var(--psr-dim, #151D31)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<ellipse cx="1032" cy="242" rx="27" ry="7" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<path d="M1071,202 v16 a27,7 0 0 0 54,0 v-16" fill="var(--psr-dim, #151D31)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<ellipse cx="1098" cy="202" rx="27" ry="7" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<path d="M1071,222 v16 a27,7 0 0 0 54,0 v-16" fill="var(--psr-dim, #151D31)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<ellipse cx="1098" cy="222" rx="27" ry="7" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<path d="M1071,242 v16 a27,7 0 0 0 54,0 v-16" fill="var(--psr-dim, #151D31)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<ellipse cx="1098" cy="242" rx="27" ry="7" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.5"/>
+<text x="1142" y="212" font-size="16" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">File blob stores</text>
+<text x="1142" y="232" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">the layout the existing</text>
+<text x="1142" y="250" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">install already uses</text>
+<text x="1004" y="300" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" class="mono">content/&lt;volume or date&gt;/&lt;id&gt;.bytes</text>
+<text x="1004" y="320" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" class="mono">content/&lt;volume or date&gt;/&lt;id&gt;.properties</text>
+<text x="1004" y="352" font-size="13" font-weight="600" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Read in place, never written.</text>
+<rect x="986" y="428" width="340" height="226" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.6"/>
+<text x="1004" y="458" font-size="16" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Data directory</text>
+<text x="1308" y="458" font-size="11" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="end" class="mono">PIPESMITH_REGISTRY_DATA</text>
+<path d="M1004,478 h12 l6,6 v16 h-18 z" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.2"/>
+<path d="M1016,478 v6 h6" fill="none" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.2"/>
+<text x="1034" y="489" font-size="13" font-weight="600" fill="var(--psr-ink, #F2F6FF)" text-anchor="start" class="mono">config.json</text>
+<text x="1034" y="506" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">stores, port, Docker ports</text>
+<path d="M1004,522 h12 l6,6 v16 h-18 z" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.2"/>
+<path d="M1016,522 v6 h6" fill="none" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.2"/>
+<text x="1034" y="533" font-size="13" font-weight="600" fill="var(--psr-ink, #F2F6FF)" text-anchor="start" class="mono">repositories.json</text>
+<text x="1034" y="550" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">repository list</text>
+<path d="M1004,566 h12 l6,6 v16 h-18 z" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.2"/>
+<path d="M1016,566 v6 h6" fill="none" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.2"/>
+<text x="1034" y="577" font-size="13" font-weight="600" fill="var(--psr-ink, #F2F6FF)" text-anchor="start" class="mono">state.sqlite</text>
+<text x="1034" y="594" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">users, roles, privileges, LDAP</text>
+<path d="M1004,610 h12 l6,6 v16 h-18 z" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.2"/>
+<path d="M1016,610 v6 h6" fill="none" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.2"/>
+<text x="1034" y="621" font-size="13" font-weight="600" fill="var(--psr-ink, #F2F6FF)" text-anchor="start" class="mono">index.sqlite</text>
+<text x="1034" y="638" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">files of the last scan</text>
+<path d="M910,472 C950,472 946,346 984,346" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="2" marker-end="url(#psr-architecture-read)"/>
+<text x="974" y="336" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="end">reads</text>
+<path d="M910,583 C970,583 926,627 998,627" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="2" marker-end="url(#psr-architecture-read)"/>
+<path d="M1296,376 V426" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="2" marker-end="url(#psr-architecture-write)" stroke-dasharray="5 4"/>
+<text x="1286" y="407" font-size="12" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="end">scan</text>
+<path d="M34,676 H68" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="2" marker-end="url(#psr-architecture-req)"/>
+<text x="78" y="680" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">request</text>
+<path d="M149.8,676 H183.8" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="2" marker-end="url(#psr-architecture-read)"/>
+<text x="193.8" y="680" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">read from disk</text>
+<path d="M317.4,676 H351.4" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="2" marker-end="url(#psr-architecture-write)" stroke-dasharray="5 4"/>
+<text x="361.4" y="680" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">written by scan</text>
+<text x="34" y="718" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">Read from internal/cli, internal/server, internal/auth and internal/config of Pipesmith Registry 0.1.0, 2026-11-12.</text>
+</svg>

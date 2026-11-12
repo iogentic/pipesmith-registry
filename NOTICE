@@ -1,0 +1,8 @@
+Pipesmith Registry
+Copyright 2026 The Pipesmith Registry authors
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full text.
+
+The binary includes third party Go modules. Each keeps its own licence;
+go.mod lists them with their versions.

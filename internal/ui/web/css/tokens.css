@@ -1,0 +1,141 @@
+/* Tokens of the administration interface. The colours are those of the Aurora design of the
+   product sites, light and dark, with one change: the dark --primary is #4D8DFF instead of #3D7BFF,
+   because #3D7BFF reaches only 4.37 on --surface-2. ui/checks/check_contrast.py measures every text
+   pair below in both themes and fails under 4.5. The aurora tokens are decoration only: lines,
+   markers and bars, never text. */
+
+:root {
+  --bg: #F5F7FC;
+  --bg-alt: #EBEFF8;
+  --surface: #FFFFFF;
+  --surface-2: #EEF2FA;
+  --text: #0A1020;
+  --text-muted: #46526E;
+  --border: #D8DEEA;
+  --primary: #1D4FE0;
+  --accent: #086F87;
+  --link: #1D4FE0;
+  --on-primary: #FFFFFF;
+  --aurora: #2B62F0;
+  --aurora-2: #12B5D6;
+  --aurora-3: #7A52F0;
+  --glow: 9%;
+  --lift: 0 1px 2px rgba(10, 16, 32, 0.05), 0 14px 34px rgba(10, 16, 32, 0.06);
+
+  /* Added for the interface. */
+  --control-border: #7A859C;
+  --danger: #B42318;
+  --on-danger: #FFFFFF;
+  --warning: #8A5200;
+  --success: #0B6E52;
+  --focus: #086F87;
+  --selected: color-mix(in srgb, var(--aurora) 10%, var(--surface));
+  --scrim: rgba(10, 16, 32, 0.5);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #05070D;
+  --bg-alt: #080C16;
+  --surface: #0D1322;
+  --surface-2: #151D31;
+  --text: #F2F6FF;
+  --text-muted: #A6B3CF;
+  --border: #1F2A42;
+  --primary: #4D8DFF;
+  --accent: #22E6FF;
+  --link: #8DB8FF;
+  --on-primary: #03060C;
+  --aurora: #3D7BFF;
+  --aurora-2: #22E6FF;
+  --aurora-3: #8A5CFF;
+  --glow: 16%;
+  --lift: none;
+
+  --control-border: #5B6A8C;
+  --danger: #FF8B7E;
+  --on-danger: #03060C;
+  --warning: #FFC857;
+  --success: #3DF5B5;
+  --focus: #22E6FF;
+  --selected: color-mix(in srgb, var(--aurora) 18%, var(--surface));
+  --scrim: rgba(2, 4, 10, 0.65);
+  color-scheme: dark;
+}
+
+/* Without JavaScript the system setting decides. The values repeat the dark block above;
+   ui/checks/check_contrast.py fails when the two differ. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #05070D;
+    --bg-alt: #080C16;
+    --surface: #0D1322;
+    --surface-2: #151D31;
+    --text: #F2F6FF;
+    --text-muted: #A6B3CF;
+    --border: #1F2A42;
+    --primary: #4D8DFF;
+    --accent: #22E6FF;
+    --link: #8DB8FF;
+    --on-primary: #03060C;
+    --aurora: #3D7BFF;
+    --aurora-2: #22E6FF;
+    --aurora-3: #8A5CFF;
+    --glow: 16%;
+    --lift: none;
+
+    --control-border: #5B6A8C;
+    --danger: #FF8B7E;
+    --on-danger: #03060C;
+    --warning: #FFC857;
+    --success: #3DF5B5;
+    --focus: #22E6FF;
+    --selected: color-mix(in srgb, var(--aurora) 18%, var(--surface));
+    --scrim: rgba(2, 4, 10, 0.65);
+    color-scheme: dark;
+  }
+}
+
+:root {
+  /* Type: the system stack of the site, denser sizes for tables and forms. */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --font-size: 15px;
+  --line: 1.5;
+  --size-small: 0.84rem;
+  --size-label: 0.72rem;
+  --size-h1: 1.55rem;
+  --size-h2: 1.12rem;
+  --size-h3: 0.98rem;
+
+  /* Space on a 4 pixel grid. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  --radius: 10px;
+  --radius-small: 6px;
+  --radius-pill: 999px;
+  --control-height: 36px;
+  --nav-width: 236px;
+  --top-height: 56px;
+  --content-max: 1180px;
+
+  --z-top: 20;
+  --z-drawer: 40;
+  --z-toast: 60;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --fast: 150ms;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --font-size: 16px;
+    --control-height: 44px;
+  }
+}

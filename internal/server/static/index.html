@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipesmith Registry</title>
+<link rel="icon" href="data:,">
+<script>
+(function () {
+  try {
+    var theme = window.localStorage.getItem("pipesmith-registry.theme");
+    if (theme === "light" || theme === "dark") {
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+  } catch (error) {
+    /* no storage: the system theme applies */
+  }
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #eef0f3;
+  --fg: #17191e;
+  --muted: #545c69;
+  --line: #d6dae0;
+  --accent: #1f57c3;
+  --accent-hover: #17469f;
+  --accent-fg: #ffffff;
+  --accent-soft: #e4ecfb;
+  --focus: #1f57c3;
+  --warn-bg: #fcefd6;
+  --warn-fg: #6f3f00;
+  --bad-bg: #fbe4e4;
+  --bad-fg: #9b1c25;
+  --ok-bg: #e0f2e5;
+  --ok-fg: #185c30;
+  --code-bg: #f1f3f6;
+  --shadow: rgba(20, 28, 45, 0.08);
+  --bar: #1f57c3;
+  --bar-track: #dfe4ec;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1014;
+  --surface: #161920;
+  --surface-2: #1d2129;
+  --fg: #e6e8ec;
+  --muted: #a0a8b6;
+  --line: #2c313b;
+  --accent: #82adff;
+  --accent-hover: #a5c3ff;
+  --accent-fg: #0e1014;
+  --accent-soft: #1c2741;
+  --focus: #82adff;
+  --warn-bg: #3a2b10;
+  --warn-fg: #f3c46f;
+  --bad-bg: #3d1b1e;
+  --bad-fg: #ffa3a8;
+  --ok-bg: #15301e;
+  --ok-fg: #86d8a1;
+  --code-bg: #101319;
+  --shadow: rgba(0, 0, 0, 0.35);
+  --bar: #82adff;
+  --bar-track: #262b35;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e1014;
+    --surface: #161920;
+    --surface-2: #1d2129;
+    --fg: #e6e8ec;
+    --muted: #a0a8b6;
+    --line: #2c313b;
+    --accent: #82adff;
+    --accent-hover: #a5c3ff;
+    --accent-fg: #0e1014;
+    --accent-soft: #1c2741;
+    --focus: #82adff;
+    --warn-bg: #3a2b10;
+    --warn-fg: #f3c46f;
+    --bad-bg: #3d1b1e;
+    --bad-fg: #ffa3a8;
+    --ok-bg: #15301e;
+    --ok-fg: #86d8a1;
+    --code-bg: #101319;
+    --shadow: rgba(0, 0, 0, 0.35);
+    --bar: #82adff;
+    --bar-track: #262b35;
+  }
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+.mono, code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+[hidden] { display: none !important; }
+h1, h2, h3 { margin: 0; line-height: 1.25; }
+h1 { font-size: 18px; font-weight: 650; }
+h2 { font-size: 15px; font-weight: 650; }
+h3 { font-size: 13px; font-weight: 650; color: var(--muted); margin: 14px 0 6px; }
+.muted { color: var(--muted); }
+
+button, .button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 32px; padding: 5px 12px; border-radius: 6px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg);
+  font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none;
+}
+button:hover:not(:disabled), .button:hover { background: var(--accent-hover); border-color: var(--accent-hover); text-decoration: none; }
+button:disabled { cursor: not-allowed; background: var(--surface-2); border-color: var(--line); color: var(--muted); }
+button.ghost { background: var(--surface); color: var(--fg); border-color: var(--line); font-weight: 500; }
+button.ghost:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line); }
+
+input, select {
+  font: inherit; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; min-height: 32px; padding: 4px 8px; width: 100%;
+}
+input::placeholder { color: var(--muted); }
+
+.theme-choice {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 10px 16px; background: var(--accent-soft); color: var(--fg);
+  border-bottom: 1px solid var(--line);
+}
+.theme-choice span { margin-right: auto; }
+
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 24px; background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+
+main { max-width: 1360px; margin: 0 auto; padding: 20px 24px 8px; display: grid; gap: 20px; }
+.notice { padding: 10px 14px; border-radius: 8px; background: var(--bad-bg); color: var(--bad-fg); overflow-wrap: anywhere; }
+
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ports { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: -8px; }
+.ports .ports-label { color: var(--muted); font-size: 12.5px; }
+.tile {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px 16px; box-shadow: 0 1px 2px var(--shadow); min-width: 0;
+}
+.tile .label { display: block; color: var(--muted); font-size: 12.5px; }
+.tile .value { display: block; font-size: 22px; font-weight: 650; margin-top: 2px; overflow-wrap: anywhere; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px; box-shadow: 0 1px 2px var(--shadow); min-width: 0;
+}
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.empty { color: var(--muted); margin: 8px 0 0; }
+
+.stores { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.store {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center;
+  padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+}
+.store-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+.store-root { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; margin-top: 2px; }
+.store-side { display: flex; align-items: center; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+.store-stats { color: var(--muted); white-space: nowrap; }
+.scan-state { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.scan-state.bad { color: var(--bad-fg); }
+.progress { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--bar-track); overflow: hidden; }
+.progress div { height: 100%; width: 30%; background: var(--bar); border-radius: 2px; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+@media (prefers-reduced-motion: reduce) { .progress div { animation: none; width: 100%; } }
+
+.badge {
+  display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap;
+}
+.badge.warn { background: var(--warn-bg); color: var(--warn-fg); border-color: transparent; }
+.badge.bad { background: var(--bad-bg); color: var(--bad-fg); border-color: transparent; }
+.badge.ok { background: var(--ok-bg); color: var(--ok-fg); border-color: transparent; }
+
+.columns { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 10fr); gap: 20px; align-items: start; }
+.stack { display: grid; gap: 20px; min-width: 0; }
+
+.filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 12px; }
+.field span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface); position: sticky; top: 0; }
+td { overflow-wrap: anywhere; }
+td.plain { overflow-wrap: normal; word-break: normal; }  /* a format or type never breaks inside a word */
+th.num, td.num { text-align: right; white-space: nowrap; }
+td.when { white-space: nowrap; color: var(--muted); }
+table.repos tbody tr { cursor: pointer; }
+table.repos tbody tr:hover { background: var(--surface-2); }
+table.repos tbody tr[aria-current="true"] { background: var(--accent-soft); }
+.repo-name { font-weight: 600; margin-right: 6px; }
+.marks { display: inline-flex; gap: 4px; flex-wrap: wrap; vertical-align: middle; }
+.repo-wrap, .entries-wrap { overflow-x: hidden; }
+table.entries a { overflow-wrap: anywhere; }
+table.entries tr[aria-current="true"] { background: var(--accent-soft); }
+
+.crumbs { display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: center; margin: 8px 0 10px; font-size: 13.5px; }
+.crumbs .sep { color: var(--muted); }
+.crumbs .here { font-weight: 600; overflow-wrap: anywhere; }
+.crumbs a { overflow-wrap: anywhere; }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.pager span { color: var(--muted); }
+
+.file-name { margin: 8px 0 12px; font-weight: 600; overflow-wrap: anywhere; }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; margin: 0 0 14px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.file-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.snippet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.snippet-head h3 { margin: 14px 0 6px; }
+pre {
+  margin: 0; padding: 10px 12px; background: var(--code-bg); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 6px; font-size: 12.5px;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.copy { min-height: 26px; padding: 2px 10px; font-size: 12.5px; margin-top: 8px; }
+
+footer { max-width: 1360px; margin: 0 auto; padding: 12px 24px 20px; display: flex; justify-content: flex-end; }
+footer span { color: var(--muted); font-size: 12px; }
+
+@media (min-width: 1100px) {
+  .repo-wrap, .entries-wrap { max-height: max(360px, 62vh); overflow: auto; }
+}
+@media (max-width: 1099px) {
+  .columns { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .top { padding: 12px 16px; }
+  main { padding: 16px 16px 8px; gap: 16px; }
+  footer { padding: 12px 16px 18px; }
+  .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tile { padding: 10px 12px; }
+  .tile .value { font-size: 19px; }
+  .card { padding: 14px; }
+  .store { grid-template-columns: minmax(0, 1fr); }
+  .store-side { justify-content: space-between; }
+  .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .filters .grow { grid-column: 1 / -1; }
+  table.stacked thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  table.stacked, table.stacked tbody, table.stacked tr, table.stacked td { display: block; }
+  table.stacked tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; padding: 9px 4px; border-bottom: 1px solid var(--line); }
+  table.stacked td { border: 0; padding: 0; text-align: left; }
+  table.stacked td.lead { grid-column: 1 / -1; padding-bottom: 2px; }
+  table.stacked td.num { text-align: left; }
+  table.stacked td.when { white-space: normal; }
+  table.repos.stacked td.when { grid-column: 1 / -1; }
+  table.stacked td[data-label]::before { content: attr(data-label) " "; color: var(--muted); font-size: 12px; }
+  table.entries.stacked tr { grid-template-columns: max-content minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="theme-choice" id="theme-choice" hidden>
+  <span>Choose a theme for this page. You can switch it later at the top right.</span>
+  <button type="button" class="ghost" data-theme-choice="light">Light</button>
+  <button type="button" class="ghost" data-theme-choice="dark">Dark</button>
+</div>
+<header class="top">
+  <div class="brand">
+    <h1>Pipesmith Registry</h1>
+    <span class="muted" id="version"></span>
+  </div>
+  <button type="button" class="ghost" id="theme-toggle">Switch to dark</button>
+</header>
+<main>
+  <div class="notice" id="notice" role="alert" hidden></div>
+
+  <section class="summary" aria-label="Summary">
+    <div class="tile"><span class="label">Stores</span><span class="value" id="sum-stores">-</span></div>
+    <div class="tile"><span class="label">Repositories</span><span class="value" id="sum-repos">-</span></div>
+    <div class="tile"><span class="label">Files</span><span class="value" id="sum-files">-</span></div>
+    <div class="tile"><span class="label">Total size</span><span class="value" id="sum-size">-</span></div>
+  </section>
+
+  <section class="ports" id="ports" aria-label="Docker ports" hidden>
+    <span class="ports-label" id="ports-label">Docker ports</span>
+    <span class="marks" id="port-list"></span>
+  </section>
+
+  <section class="card" aria-labelledby="stores-title">
+    <div class="card-head"><h2 id="stores-title">Stores</h2><span class="muted" id="store-note">Attached read only</span></div>
+    <ul class="stores" id="stores"></ul>
+    <p class="empty" id="stores-empty" hidden>No stores attached. Attach one with <code>./pipesmith-registry store add &lt;name&gt; --kind &lt;kind&gt; --root &lt;path&gt;</code> and scan it.</p>
+  </section>
+
+  <div class="columns">
+    <section class="card" aria-labelledby="repos-title">
+      <div class="card-head"><h2 id="repos-title">Repositories</h2><span class="muted" id="repo-count"></span></div>
+      <div class="filters">
+        <label class="field grow"><span>Name</span><input type="search" id="filter-text" placeholder="Filter by name" autocomplete="off" spellcheck="false"></label>
+        <label class="field"><span>Format</span><select id="filter-format"><option value="">All formats</option></select></label>
+        <label class="field"><span>Type</span><select id="filter-type"><option value="">All types</option></select></label>
+      </div>
+      <div class="repo-wrap">
+        <table class="repos stacked">
+          <thead><tr><th>Name</th><th>Format</th><th>Type</th><th class="num">Files</th><th class="num">Size</th><th>Newest file</th></tr></thead>
+          <tbody id="repo-rows"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="repo-empty" hidden></p>
+    </section>
+
+    <div class="stack">
+      <section class="card" aria-labelledby="browser-title" id="browser">
+        <div class="card-head"><h2 id="browser-title">Browser</h2><span class="muted" id="browser-note"></span></div>
+        <nav class="crumbs" id="crumbs" aria-label="Path" hidden></nav>
+        <p class="empty" id="browser-empty">Select a repository to browse its files.</p>
+        <div class="entries-wrap" id="entries-wrap" hidden>
+          <table class="entries stacked">
+            <thead><tr><th>Name</th><th class="num">Size</th><th>Modified</th></tr></thead>
+            <tbody id="entry-rows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="pager" hidden>
+          <button type="button" class="ghost" id="page-prev">Previous</button>
+          <span id="page-info"></span>
+          <button type="button" class="ghost" id="page-next">Next</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="file-title" id="file-panel" hidden>
+        <h2 id="file-title">File</h2>
+        <p class="file-name mono" id="file-name"></p>
+        <dl class="facts" id="file-facts"></dl>
+        <div class="file-actions">
+          <a class="button" id="file-download" href="#" download>Download</a>
+          <span class="muted" id="file-unserved" hidden></span>
+        </div>
+        <div id="snippets" hidden>
+          <div id="snippet-maven-group" hidden>
+            <div class="snippet-head"><h3>Maven</h3><button type="button" class="ghost copy" data-copy="snippet-maven">Copy</button></div>
+            <pre><code id="snippet-maven"></code></pre>
+            <div class="snippet-head"><h3>Gradle</h3><button type="button" class="ghost copy" data-copy="snippet-gradle">Copy</button></div>
+            <pre><code id="snippet-gradle"></code></pre>
+          </div>
+          <div id="snippet-docker-group" hidden>
+            <div class="snippet-head"><h3>Docker</h3><button type="button" class="ghost copy" data-copy="snippet-docker">Copy</button></div>
+            <pre><code id="snippet-docker"></code></pre>
+          </div>
+          <div id="snippet-npm-group" hidden>
+            <div class="snippet-head"><h3>npm</h3><button type="button" class="ghost copy" data-copy="snippet-npm">Copy</button></div>
+            <pre><code id="snippet-npm"></code></pre>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+<footer><span>build by mirosso25</span></footer>
+<script>
+(function () {
+  "use strict";
+
+  var THEME_KEY = "pipesmith-registry.theme";
+  var PAGE_SIZE = 500;
+  var POLL_MS = 1000;
+  var root = document.documentElement;
+
+  var ACCESS_TITLE = {
+    maven: "Maven and Gradle resolve from this repository",
+    docker: "Docker clients pull from the port of this repository",
+    npm: "npm installs from this repository",
+    files: "Files are served at their path, without a client protocol"
+  };
+
+  var state = {
+    status: null,
+    repos: [],
+    repo: null,
+    dir: null,
+    file: null,
+    offset: 0,
+    more: false,
+    count: 0,
+    poll: null,
+    wasRunning: false,
+    dirToken: 0,
+    fileToken: 0
+  };
+
+  function $(id) { return document.getElementById(id); }
+
+  function el(tag, attrs) {
+    var node = document.createElement(tag);
+    var key;
+    if (attrs) {
+      for (key in attrs) {
+        if (!Object.prototype.hasOwnProperty.call(attrs, key)) { continue; }
+        var value = attrs[key];
+        if (value === null || value === undefined || value === false) { continue; }
+        if (key === "class") { node.className = value; }
+        else if (key === "text") { node.textContent = value; }
+        else { node.setAttribute(key, value === true ? "" : String(value)); }
+      }
+    }
+    for (var i = 2; i < arguments.length; i++) {
+      var child = arguments[i];
+      if (child === null || child === undefined || child === false) { continue; }
+      node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+    }
+    return node;
+  }
+
+  function clear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }
+
+  function count(value) { return Number(value || 0).toLocaleString("en-US"); }
+
+  function size(bytes) {
+    if (bytes === null || bytes === undefined) { return "-"; }
+    var units = ["B", "kB", "MB", "GB", "TB", "PB"];
+    var value = Number(bytes);
+    var unit = 0;
+    while (value >= 1000 && unit < units.length - 1) { value /= 1000; unit++; }
+    return unit === 0 ? value + " B" : value.toFixed(value < 10 ? 2 : 1) + " " + units[unit];
+  }
+
+  function when(ms) {
+    if (!ms) { return "-"; }
+    var date = new Date(ms);
+    if (isNaN(date.getTime())) { return "-"; }
+    return date.toISOString().slice(0, 16).replace("T", " ") + " UTC";
+  }
+
+  function showNotice(message) {
+    var notice = $("notice");
+    notice.textContent = message;
+    notice.hidden = !message;
+  }
+
+  function getJSON(url) {
+    return fetch(url, { headers: { "Accept": "application/json" } }).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (body) {
+        if (!response.ok) {
+          var error = new Error(body.error || ("HTTP " + response.status));
+          error.status = response.status;
+          throw error;
+        }
+        return body;
+      });
+    });
+  }
+
+  /* Theme */
+
+  function storedTheme() {
+    try {
+      var theme = window.localStorage.getItem(THEME_KEY);
+      return theme === "light" || theme === "dark" ? theme : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function systemTheme() {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  function currentTheme() { return root.getAttribute("data-theme") || systemTheme(); }
+
+  function showThemeButton() {
+    $("theme-toggle").textContent = currentTheme() === "dark" ? "Switch to light" : "Switch to dark";
+  }
+
+  function setTheme(theme) {
+    root.setAttribute("data-theme", theme);
+    try { window.localStorage.setItem(THEME_KEY, theme); } catch (error) { /* kept for this visit only */ }
+    $("theme-choice").hidden = true;
+    showThemeButton();
+  }
+
+  /* Status and stores */
+
+  function loadStatus() {
+    return getJSON("/api/status").then(function (status) {
+      state.status = status;
+      renderStatus();
+      watchScan(status.scan);
+    }).catch(function (error) {
+      showNotice("The status could not be loaded: " + error.message);
+    });
+  }
+
+  function renderStatus() {
+    var status = state.status;
+    $("version").textContent = "version " + status.version;
+    $("sum-stores").textContent = count(status.totals.stores);
+    $("sum-repos").textContent = count(status.totals.repositories);
+    $("sum-files").textContent = count(status.totals.files);
+    $("sum-size").textContent = size(status.totals.bytes);
+    renderPorts(status);
+    var list = $("stores");
+    clear(list);
+    $("stores-empty").hidden = status.stores.length > 0;
+    var scan = status.scan;
+    status.stores.forEach(function (store) {
+      var running = scan.running && scan.store === store.name;
+      var title = el("div", { "class": "store-title" },
+        el("span", { text: store.name }),
+        el("span", { "class": "badge", text: store.kind }),
+        store.available ? null : el("span", { "class": "badge bad", text: "root missing" }),
+        store.repos ? el("span", { "class": "badge", text: "repos: " + store.repos.join(", ") }) : null);
+      var button = el("button", { type: "button", "data-store": store.name, text: running ? "Scanning" : "Scan" });
+      button.disabled = scan.running;
+      button.addEventListener("click", function () { startScan(store.name); });
+      var item = el("li", { "class": "store", "data-store": store.name },
+        el("div", null, title, el("div", { "class": "store-root mono", text: store.root })),
+        el("div", { "class": "store-side" },
+          el("span", { "class": "store-stats", text: count(store.files) + " files, " + size(store.bytes) }),
+          button),
+        scanLine(store, scan, running));
+      if (running) {
+        item.appendChild(el("div", { "class": "progress", role: "presentation" }, el("div")));
+      }
+      list.appendChild(item);
+    });
+  }
+
+  function renderPorts(status) {
+    var ports = status.docker_ports || [];
+    var list = $("port-list");
+    clear(list);
+    $("ports").hidden = ports.length === 0;
+    $("ports-label").textContent = "Docker ports on " + status.bind;
+    ports.forEach(function (entry) {
+      list.appendChild(el("span", { "class": "badge", title: "Pull from " + status.bind + ":" + entry.port,
+        text: entry.repo + " " + entry.port }));
+    });
+  }
+
+  function scanLine(store, scan, running) {
+    var line = el("div", { "class": "scan-state", "aria-live": "polite" });
+    var last = scan.last ? scan.last[store.name] : null;
+    if (running) {
+      line.textContent = "Scanning: " + count(scan.progress) + " live blobs so far";
+    } else if (last && last.error) {
+      line.className = "scan-state bad";
+      line.textContent = "Last scan failed at " + when(last.finished_ms) + ": " + last.error + ". The index keeps the rows of the scan before.";
+    } else if (last) {
+      line.textContent = "Last scan at " + when(last.finished_ms) + ": " + count(last.live) + " live, " +
+        count(last.deleted) + " deleted, " + count(last.copies) + " copies, " + count(last.no_bytes) +
+        " without bytes, " + count(last.unparsable) + " unparsable, " + Number(last.seconds).toFixed(2) + " s";
+    } else {
+      line.textContent = "Not scanned since the server started.";
+    }
+    return line;
+  }
+
+  function startScan(name) {
+    showNotice("");
+    fetch("/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Artifact-Repository": "1" },
+      body: JSON.stringify({ store: name })
+    }).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (body) {
+        if (response.status !== 202 && response.status !== 409) {
+          throw new Error(body.error || ("HTTP " + response.status));
+        }
+        if (response.status === 409) { showNotice("A scan is running already. It is shown below."); }
+        state.wasRunning = true;
+        return loadStatus();
+      });
+    }).catch(function (error) {
+      showNotice("The scan could not be started: " + error.message);
+    });
+  }
+
+  function watchScan(scan) {
+    if (scan.running) {
+      state.wasRunning = true;
+      if (state.poll === null) { state.poll = window.setInterval(loadStatus, POLL_MS); }
+      return;
+    }
+    if (state.poll !== null) { window.clearInterval(state.poll); state.poll = null; }
+    if (state.wasRunning) {
+      state.wasRunning = false;
+      loadRepos();
+      if (state.repo !== null) { loadDir(); }
+    }
+  }
+
+  /* Repositories */
+
+  function loadRepos() {
+    return getJSON("/api/repositories").then(function (body) {
+      state.repos = body.repositories;
+      fillFilter($("filter-format"), "All formats", body.repositories.map(function (r) { return r.format; }));
+      fillFilter($("filter-type"), "All types", body.repositories.map(function (r) { return r.type; }));
+      renderRepos();
+    }).catch(function (error) {
+      showNotice("The repositories could not be loaded: " + error.message);
+    });
+  }
+
+  function fillFilter(select, label, values) {
+    var chosen = select.value;
+    var unique = values.filter(function (value, index) { return values.indexOf(value) === index; }).sort();
+    clear(select);
+    select.appendChild(el("option", { value: "", text: label }));
+    unique.forEach(function (value) { select.appendChild(el("option", { value: value, text: value })); });
+    select.value = unique.indexOf(chosen) >= 0 ? chosen : "";
+  }
+
+  function repoByName(name) {
+    for (var i = 0; i < state.repos.length; i++) {
+      if (state.repos[i].name === name) { return state.repos[i]; }
+    }
+    return null;
+  }
+
+  function renderRepos() {
+    var text = $("filter-text").value.trim().toLowerCase();
+    var format = $("filter-format").value;
+    var type = $("filter-type").value;
+    var rows = $("repo-rows");
+    clear(rows);
+    var shown = state.repos.filter(function (repo) {
+      return (!text || repo.name.toLowerCase().indexOf(text) >= 0) &&
+        (!format || repo.format === format) && (!type || repo.type === type);
+    });
+    shown.forEach(function (repo) {
+      var marks = el("span", { "class": "marks" },
+        el("span", { "class": "badge", title: ACCESS_TITLE[repo.access] || "Access kind", text: repo.access }),
+        repo.access !== "docker" ? null : repo.docker_port
+          ? el("span", { "class": "badge", title: "Docker port of this repository", text: "port " + repo.docker_port })
+          : el("span", { "class": "badge warn", title: "No Docker port; set one with: ./pipesmith-registry repos port <name> <port>", text: "no port" }),
+        repo.defined ? null : el("span", { "class": "badge warn", title: "Found in a store; repositories.json has no definition", text: "no definition" }));
+      var typeText = repo.type === "group" ? "group, " + repo.members.length + (repo.members.length === 1 ? " member" : " members") : repo.type;
+      var row = el("tr", { "data-repo": repo.name, "aria-current": repo.name === state.repo ? "true" : null },
+        el("td", { "class": "lead" }, el("a", { "class": "repo-name", href: hashFor(repo.name, "", true), text: repo.name }), " ", marks),
+        el("td", { "class": "plain", "data-label": "Format" }, repo.format),
+        el("td", { "class": "plain", "data-label": "Type" }, typeText),
+        el("td", { "class": "num", "data-label": "Files" }, count(repo.files)),
+        el("td", { "class": "num", "data-label": "Size" }, size(repo.bytes)),
+        el("td", { "class": "when", "data-label": "Newest" }, when(repo.newest_ms)));
+      rows.appendChild(row);
+    });
+    $("repo-count").textContent = shown.length === state.repos.length ? count(state.repos.length) + " in total" :
+      count(shown.length) + " of " + count(state.repos.length);
+    var empty = $("repo-empty");
+    empty.hidden = shown.length > 0;
+    empty.textContent = state.repos.length ? "No repository matches the filter." : "No repositories yet. Scan a store to find them.";
+  }
+
+  /* Browser */
+
+  function hashFor(repo, path, isDir) {
+    var parts = path ? path.split("/") : [];
+    var hash = "#/" + encodeURIComponent(repo) + "/" + parts.map(encodeURIComponent).join("/");
+    return isDir && parts.length ? hash + "/" : hash;
+  }
+
+  function decode(part) {
+    try { return decodeURIComponent(part); } catch (error) { return part; }
+  }
+
+  function parseHash() {
+    var hash = window.location.hash;
+    if (hash.indexOf("#/") !== 0) { return null; }
+    var raw = hash.slice(2);
+    var parts = raw.split("/");
+    if (parts.length && parts[parts.length - 1] === "") { parts.pop(); }
+    parts = parts.map(decode);
+    if (!parts.length || !parts[0]) { return null; }
+    var rest = parts.slice(1);
+    if (raw.charAt(raw.length - 1) === "/" || !rest.length) {
+      return { repo: parts[0], dir: rest.join("/"), file: null };
+    }
+    return { repo: parts[0], dir: rest.slice(0, -1).join("/"), file: rest.join("/") };
+  }
+
+  function route(scroll) {
+    var target = parseHash();
+    if (target === null) {
+      state.repo = null;
+      state.dir = null;
+      state.file = null;
+      renderBrowserEmpty();
+      hideFile();
+      markRepo();
+      return;
+    }
+    var changed = target.repo !== state.repo || target.dir !== state.dir;
+    state.repo = target.repo;
+    state.dir = target.dir;
+    state.file = target.file;
+    markRepo();
+    if (changed) {
+      state.offset = 0;
+      loadDir().then(function () { if (scroll && !target.file) { reveal($("browser")); } });
+    } else {
+      markEntry();
+    }
+    if (target.file) {
+      loadAsset(target.repo, target.file).then(function () { if (scroll) { reveal($("file-panel")); } });
+    } else {
+      hideFile();
+    }
+  }
+
+  function reveal(node) {
+    var box = node.getBoundingClientRect();
+    if (box.top < 0 || box.top > window.innerHeight - 80) {
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      node.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    }
+  }
+
+  function markRepo() {
+    var rows = $("repo-rows").children;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute("data-repo") === state.repo) { rows[i].setAttribute("aria-current", "true"); }
+      else { rows[i].removeAttribute("aria-current"); }
+    }
+  }
+
+  function markEntry() {
+    var rows = $("entry-rows").children;
+    for (var i = 0; i < rows.length; i++) {
+      var isFile = rows[i].getAttribute("data-path") === state.file && !rows[i].hasAttribute("data-dir");
+      if (state.file !== null && isFile) { rows[i].setAttribute("aria-current", "true"); }
+      else { rows[i].removeAttribute("aria-current"); }
+    }
+  }
+
+  function renderBrowserEmpty() {
+    $("crumbs").hidden = true;
+    $("entries-wrap").hidden = true;
+    $("pager").hidden = true;
+    $("browser-note").textContent = "";
+    var empty = $("browser-empty");
+    empty.textContent = "Select a repository to browse its files.";
+    empty.hidden = false;
+  }
+
+  function renderCrumbs() {
+    var crumbs = $("crumbs");
+    clear(crumbs);
+    var parts = state.dir ? state.dir.split("/") : [];
+    var nodes = [state.repo].concat(parts);
+    nodes.forEach(function (name, index) {
+      if (index > 0) { crumbs.appendChild(el("span", { "class": "sep", "aria-hidden": "true", text: "/" })); }
+      if (index === nodes.length - 1) {
+        crumbs.appendChild(el("span", { "class": "here", "aria-current": "page", text: name }));
+      } else {
+        crumbs.appendChild(el("a", { href: hashFor(state.repo, parts.slice(0, index).join("/"), true), text: name }));
+      }
+    });
+    crumbs.hidden = false;
+  }
+
+  function loadDir() {
+    var token = ++state.dirToken;
+    var repo = state.repo;
+    var dir = state.dir;
+    var url = "/api/browse/" + encodeURIComponent(repo) + "?path=" + encodeURIComponent(dir) +
+      "&limit=" + PAGE_SIZE + "&offset=" + state.offset;
+    renderCrumbs();
+    return getJSON(url).then(function (body) {
+      if (token !== state.dirToken) { return; }
+      state.more = body.more;
+      state.count = body.children.length;
+      renderEntries(body.children);
+    }).catch(function (error) {
+      if (token !== state.dirToken) { return; }
+      $("entries-wrap").hidden = true;
+      $("pager").hidden = true;
+      var empty = $("browser-empty");
+      empty.textContent = error.status === 404 ? "This directory does not exist in " + repo + "." : "The directory could not be loaded: " + error.message;
+      empty.hidden = false;
+    });
+  }
+
+  function renderEntries(children) {
+    var rows = $("entry-rows");
+    clear(rows);
+    var repo = repoByName(state.repo);
+    if (!repo) { $("browser-note").textContent = ""; }
+    else if (repo.type === "group") { $("browser-note").textContent = "Union of " + repo.members.join(", "); }
+    else { $("browser-note").textContent = count(repo.files) + " files in " + state.repo; }
+    if (state.dir) {
+      var up = state.dir.split("/").slice(0, -1).join("/");
+      rows.appendChild(el("tr", null,
+        el("td", { "class": "lead" }, el("a", { href: hashFor(state.repo, up, true), text: "../" })),
+        el("td", { "class": "num" }), el("td")));
+    }
+    children.forEach(function (child) {
+      var link = el("a", { href: hashFor(state.repo, child.path, child.is_dir), text: child.is_dir ? child.name + "/" : child.name });
+      rows.appendChild(el("tr", { "data-path": child.path, "data-dir": child.is_dir ? true : null },
+        el("td", { "class": "lead" }, link),
+        el("td", { "class": "num", "data-label": child.is_dir ? null : "Size" }, child.is_dir ? "" : size(child.size)),
+        el("td", { "class": "when", "data-label": child.is_dir ? null : "Modified" }, child.is_dir ? "" : when(child.created_ms))));
+    });
+    markEntry();
+    var empty = $("browser-empty");
+    empty.hidden = children.length > 0 || state.offset > 0;
+    empty.textContent = "This directory is empty.";
+    $("entries-wrap").hidden = false;
+    $("entries-wrap").scrollTop = 0;
+    var paged = state.offset > 0 || state.more;
+    $("pager").hidden = !paged;
+    if (paged) {
+      var first = children.length ? state.offset + 1 : state.offset;
+      $("page-info").textContent = "Entries " + count(first) + " to " + count(state.offset + children.length);
+      $("page-prev").disabled = state.offset === 0;
+      $("page-next").disabled = !state.more;
+    }
+  }
+
+  function turnPage(step) {
+    state.offset = Math.max(0, state.offset + step * PAGE_SIZE);
+    loadDir().then(function () { reveal($("browser")); });
+  }
+
+  /* File panel */
+
+  function hideFile() {
+    $("file-panel").hidden = true;
+    state.fileToken++;
+  }
+
+  function loadAsset(repo, path) {
+    var token = ++state.fileToken;
+    var url = "/api/asset/" + encodeURIComponent(repo) + "?path=" + encodeURIComponent(path);
+    return getJSON(url).then(function (asset) {
+      if (token !== state.fileToken) { return; }
+      renderAsset(asset);
+    }).catch(function (error) {
+      if (token !== state.fileToken) { return; }
+      $("file-name").textContent = path;
+      clear($("file-facts"));
+      $("file-facts").appendChild(el("dt", { text: "Error" }));
+      $("file-facts").appendChild(el("dd", { text: error.status === 404 ? "The file is not in the index." : error.message }));
+      $("file-download").hidden = true;
+      $("file-unserved").hidden = true;
+      $("snippets").hidden = true;
+      $("file-panel").hidden = false;
+    });
+  }
+
+  function fact(list, label, value, mono) {
+    list.appendChild(el("dt", { text: label }));
+    list.appendChild(el("dd", { "class": mono ? "mono" : null, text: value }));
+  }
+
+  function renderAsset(asset) {
+    $("file-name").textContent = asset.name;
+    var facts = $("file-facts");
+    clear(facts);
+    fact(facts, "Path", asset.path, true);
+    var docker = asset.docker;
+    var npm = asset.npm;
+    if (docker) {
+      if (docker.image) { fact(facts, "Image", docker.image, true); }
+      if (docker.tag) { fact(facts, "Tag", docker.tag, true); }
+      if (docker.digest) { fact(facts, docker.kind === "blob" ? "Blob digest" : "Digest", docker.digest, true); }
+    }
+    if (npm) {
+      fact(facts, "Package", npm.name, true);
+      if (npm.version) { fact(facts, "Version", npm.version, true); }
+    }
+    fact(facts, "Size", size(asset.size) + " (" + count(asset.size) + " bytes)");
+    fact(facts, "SHA1", asset.sha1 || "not recorded", true);
+    fact(facts, "Content type", asset.content_type);
+    fact(facts, "Created", when(asset.created_ms));
+    fact(facts, "Store", asset.store);
+    if (asset.member !== asset.repo) { fact(facts, "From member", asset.member); }
+    var download = $("file-download");
+    var unserved = $("file-unserved");
+    if (asset.download_url) {
+      download.setAttribute("href", asset.download_url);
+      download.setAttribute("download", asset.name);
+      download.hidden = false;
+      unserved.hidden = true;
+    } else {
+      download.hidden = true;
+      unserved.textContent = docker && docker.kind === "blob"
+        ? "A blob is served under an image name, at /v2/<name>/blobs/<digest>."
+        : "This file is not served at its own path.";
+      unserved.hidden = false;
+    }
+    var maven = asset.maven;
+    if (maven) {
+      $("snippet-maven").textContent = mavenSnippet(maven);
+      $("snippet-gradle").textContent = gradleSnippet(maven);
+    }
+    if (docker && docker.pull) { $("snippet-docker").textContent = docker.pull; }
+    if (npm && npm.install) { $("snippet-npm").textContent = npm.install; }
+    $("snippet-maven-group").hidden = !maven;
+    $("snippet-docker-group").hidden = !(docker && docker.pull);
+    $("snippet-npm-group").hidden = !(npm && npm.install);
+    $("snippets").hidden = !(maven || (docker && docker.pull) || (npm && npm.install));
+    $("file-panel").hidden = false;
+  }
+
+  function mavenSnippet(m) {
+    var lines = ["<dependency>",
+      "  <groupId>" + m.group_id + "</groupId>",
+      "  <artifactId>" + m.artifact_id + "</artifactId>",
+      "  <version>" + m.version + "</version>"];
+    if (m.classifier) { lines.push("  <classifier>" + m.classifier + "</classifier>"); }
+    if (m.extension !== "jar") { lines.push("  <type>" + m.extension + "</type>"); }
+    lines.push("</dependency>");
+    return lines.join("\n");
+  }
+
+  function gradleSnippet(m) {
+    var notation = m.group_id + ":" + m.artifact_id + ":" + m.version;
+    if (m.classifier) { notation += ":" + m.classifier; }
+    if (m.extension !== "jar") { notation += "@" + m.extension; }
+    return "implementation(\"" + notation + "\")";
+  }
+
+  function copy(button) {
+    var text = $(button.getAttribute("data-copy")).textContent;
+    var done = function (label) {
+      button.textContent = label;
+      window.setTimeout(function () { button.textContent = "Copy"; }, 1500);
+    };
+    try {
+      navigator.clipboard.writeText(text).then(function () { done("Copied"); }, function () { done("Copy failed"); });
+    } catch (error) {
+      done("Copy failed");
+    }
+  }
+
+  /* Wiring */
+
+  function init() {
+    if (storedTheme() === null) { $("theme-choice").hidden = false; }
+    showThemeButton();
+    var choices = document.querySelectorAll("[data-theme-choice]");
+    for (var i = 0; i < choices.length; i++) {
+      choices[i].addEventListener("click", function (event) { setTheme(event.currentTarget.getAttribute("data-theme-choice")); });
+    }
+    $("theme-toggle").addEventListener("click", function () { setTheme(currentTheme() === "dark" ? "light" : "dark"); });
+    if (window.matchMedia) {
+      var query = window.matchMedia("(prefers-color-scheme: dark)");
+      if (query.addEventListener) { query.addEventListener("change", showThemeButton); }
+    }
+    $("filter-text").addEventListener("input", renderRepos);
+    $("filter-format").addEventListener("change", renderRepos);
+    $("filter-type").addEventListener("change", renderRepos);
+    $("repo-rows").addEventListener("click", function (event) {
+      if (event.target.closest("a")) { return; }
+      var row = event.target.closest("tr[data-repo]");
+      if (row) { window.location.hash = hashFor(row.getAttribute("data-repo"), "", true); }
+    });
+    $("page-prev").addEventListener("click", function () { turnPage(-1); });
+    $("page-next").addEventListener("click", function () { turnPage(1); });
+    var copies = document.querySelectorAll("[data-copy]");
+    for (var j = 0; j < copies.length; j++) {
+      copies[j].addEventListener("click", function (event) { copy(event.currentTarget); });
+    }
+    window.addEventListener("hashchange", function () { route(true); });
+    loadStatus();
+    loadRepos().then(function () { route(false); });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

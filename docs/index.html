@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipesmith Registry Manual</title>
+<meta name="description" content="Manual of Pipesmith Registry 0.1.0, a read only server for the file blob stores of an existing artifact repository install.">
+<link rel="icon" type="image/png" href="assets/favicon-32.png">
+<script>
+(function () {
+  var theme = "dark";
+  try {
+    var stored = localStorage.getItem("pipesmith-registry-docs-theme");
+    if (stored === "light" || stored === "dark") theme = stored;
+  } catch (e) { /* storage refused: dark */ }
+  document.documentElement.setAttribute("data-theme", theme);
+})();
+</script>
+<style>
+/* Colours of internal/ui/web/css/tokens.css, the tokens of the product interface. */
+:root, :root[data-theme="dark"] {
+  --bg: #05070D; --surface: #0D1322; --surface-2: #151D31;
+  --text: #F2F6FF; --text-muted: #A6B3CF; --border: #1F2A42;
+  --primary: #4D8DFF; --accent: #22E6FF; --link: #8DB8FF;
+  --aurora: #3D7BFF; --aurora-2: #22E6FF; --aurora-3: #8A5CFF;
+  --code-bg: #0A0F1C; --warning: #FFC857;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F5F7FC; --surface: #FFFFFF; --surface-2: #EEF2FA;
+  --text: #0A1020; --text-muted: #46526E; --border: #D8DEEA;
+  --primary: #1D4FE0; --accent: #086F87; --link: #1D4FE0;
+  --aurora: #2B62F0; --aurora-2: #12B5D6; --aurora-3: #7A52F0;
+  --code-bg: #EEF2FA; --warning: #8A5200;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 76px; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+a { color: var(--link); }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; }
+code { background: var(--surface-2); border-radius: 4px; padding: 0.1em 0.35em; overflow-wrap: anywhere; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; overflow-wrap: normal; }
+header.top {
+  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px;
+  padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+header.top::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, var(--aurora-2), var(--aurora), var(--aurora-3));
+}
+header.top img { width: 36px; height: 36px; }
+header.top .name { font-weight: 700; font-size: 18px; }
+header.top .version { color: var(--text-muted); font-size: 14px; }
+header.top .spacer { flex: 1; }
+button.theme {
+  font: inherit; font-size: 14px; color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+}
+button.theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; max-width: 1180px; margin: 0 auto; padding: 32px 24px 64px; }
+nav.toc { position: sticky; top: 84px; align-self: start; font-size: 15px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a { display: block; padding: 4px 10px; border-radius: 6px; color: var(--text-muted); text-decoration: none; border-left: 2px solid transparent; }
+nav.toc a:hover { color: var(--text); background: var(--surface-2); border-left-color: var(--aurora); }
+main { min-width: 0; }
+h1 { font-size: 34px; line-height: 1.2; margin: 0 0 8px; }
+.lead { color: var(--text-muted); font-size: 18px; margin: 0 0 24px; }
+h2 { font-size: 26px; margin: 56px 0 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+h3 { font-size: 19px; margin: 28px 0 8px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 15px; display: block; overflow-x: auto; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+th { color: var(--text-muted); font-weight: 600; background: var(--surface-2); }
+.note { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--warning); border-radius: 8px; padding: 10px 16px; margin: 16px 0; }
+.note p { margin: 6px 0; }
+figure { margin: 20px 0; }
+figure img, figure svg { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); }
+figcaption { color: var(--text-muted); font-size: 14px; margin-top: 8px; }
+.shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.shots figure { margin: 0; }
+:root[data-theme="dark"] .light-only, :root[data-theme="light"] .dark-only { display: none; }
+footer { max-width: 1180px; margin: 0 auto; padding: 24px; color: var(--text-muted); font-size: 14px; border-top: 1px solid var(--border); }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 20px 16px 48px; }
+  nav.toc { position: static; }
+  nav.toc ol { display: flex; flex-wrap: wrap; gap: 4px; }
+  nav.toc a { border-left: 0; background: var(--surface-2); }
+  .shots { grid-template-columns: minmax(0, 1fr); }
+  header.top { padding: 10px 16px; }
+  header.top .version { display: none; }
+  h1 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <img src="assets/logo.png" alt="Pipesmith Registry logo">
+  <span class="name">Pipesmith Registry</span>
+  <span class="version">Manual for 0.1.0</span>
+  <span class="spacer"></span>
+  <button class="theme" type="button" id="theme-toggle" aria-label="Switch between light and dark theme">Light theme</button>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Chapters">
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#install">Install</a></li>
+    <li><a href="#configure">Configure</a></li>
+    <li><a href="#stores">Stores</a></li>
+    <li><a href="#users">Users</a></li>
+    <li><a href="#service">Service</a></li>
+    <li><a href="#network">Network</a></li>
+    <li><a href="#interface">Interface</a></li>
+    <li><a href="#api">API</a></li>
+    <li><a href="#clients">Clients</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#limits">Limits</a></li>
+    <li><a href="#upgrade">Upgrade</a></li>
+  </ol>
+</nav>
+
+<main>
+<h1>Pipesmith Registry Manual</h1>
+<p class="lead">Version 0.1.0. Pipesmith Registry serves the file blob stores of an existing artifact repository install, read only, from one static binary.</p>
+
+<section id="overview">
+<h2>Overview</h2>
+<p>An existing artifact repository install keeps its files in file blob stores on disk. Pipesmith Registry reads those stores in place, in the layout the install already uses, and never writes to them. It keeps its own state in a separate data directory.</p>
+<p><code>scan</code> walks a store and writes one row per live file into an SQLite index. <code>serve</code> answers requests from that index and reads the bytes from the store. Files added to a store after the last scan appear after the next one.</p>
+<figure>
+  <img id="architecture" src="assets/architecture.svg" alt="Architecture of Pipesmith Registry 0.1.0: Maven, npm and Docker clients and a browser send requests through the listeners, the Host gate and sign in of one binary to the interface, the REST API and the read path, which read the file blob stores in place and use an SQLite index in the data directory.">
+  <figcaption>Requests pass the listeners, the Host gate and sign in. The read path reads the blob stores; the data directory holds the configuration, the imported state and the index.</figcaption>
+</figure>
+<h3>Formats</h3>
+<table>
+  <thead><tr><th>Format</th><th>What 0.1.0 serves</th></tr></thead>
+  <tbody>
+    <tr><td>Maven</td><td>Files under <code>/repository/&lt;name&gt;/</code>. A group repository answers from its members in their order and merges <code>maven-metadata.xml</code> across them.</td></tr>
+    <tr><td>npm</td><td>Package documents and tarballs. Tarball URLs in a document point at this server. Group repositories merge the documents of their members.</td></tr>
+    <tr><td>Docker</td><td>The registry API for pulls (manifests, blobs, tags) under <code>/v2/</code> on one port per Docker repository, and under <code>/repository/&lt;name&gt;/v2/</code>.</td></tr>
+    <tr><td>Other formats</td><td>PyPI, raw and every other format: the stored files by their path. There is no format logic for them in 0.1.0.</td></tr>
+  </tbody>
+</table>
+<p>A directory URL answers with an HTML listing of at most 10,000 entries; <code>?offset=</code> selects the next page.</p>
+<h3>Read Only</h3>
+<p>Every upload and deploy to <code>/repository/</code> answers <code>405</code>. Every change through the REST API answers <code>501</code> with the area it belongs to. The interface marks the areas this release does not serve with "Not in preview".</p>
+</section>
+
+<section id="install">
+<h2>Install</h2>
+<p>Each release on <a href="https://github.com/mirosso25/pipesmith-registry/releases">GitHub</a> holds these files:</p>
+<table>
+  <thead><tr><th>File</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td><code>pipesmith-registry-linux-amd64</code>, <code>-linux-arm64</code>, <code>-darwin-arm64</code></td><td>The binary for each platform, built with <code>CGO_ENABLED=0</code>. It needs no shared library and no runtime.</td></tr>
+    <tr><td><code>SHA256SUMS</code></td><td>The SHA-256 of every other file.</td></tr>
+    <tr><td><code>sbom.spdx.json</code>, <code>sbom.cdx.json</code></td><td>The software bill of materials of the source tree, in SPDX and CycloneDX.</td></tr>
+    <tr><td><code>image.tar</code></td><td>The container image, as <code>docker save</code> writes it.</td></tr>
+  </tbody>
+</table>
+<h3>Verify</h3>
+<pre><code>VERSION=0.1.0
+BASE=https://github.com/mirosso25/pipesmith-registry/releases/download/v$VERSION
+curl -fLO "$BASE/pipesmith-registry-linux-amd64"
+curl -fLO "$BASE/SHA256SUMS"
+sha256sum --check --ignore-missing SHA256SUMS</code></pre>
+<p>On macOS the checksum command is <code>shasum -a 256 --check --ignore-missing SHA256SUMS</code>. Release 0.1.0 is not signed. Signed releases come with the self update in a later version; the checksum only shows that the download is complete.</p>
+<h3>Place</h3>
+<div class="note"><p>The commands of this section, of Service and of Network have not run on a Linux host yet.</p></div>
+<pre><code>sudo install -d -m 0755 /opt/pipesmith-registry
+sudo install -m 0755 pipesmith-registry-linux-amd64 /opt/pipesmith-registry/pipesmith-registry
+sudo useradd --system --home-dir /var/lib/pipesmith-registry --shell /usr/sbin/nologin pipesmith-registry
+sudo install -d -m 0700 -o pipesmith-registry /var/lib/pipesmith-registry</code></pre>
+<p>The service user needs read access to the blob store directories, usually through a group, and write access to its data directory only. Check the read access as that user before the first scan:</p>
+<pre><code>sudo -u pipesmith-registry ls /srv/blobs/default/content</code></pre>
+<h3>Container</h3>
+<p><code>docker load -i image.tar</code> loads the image. It holds the binary at <code>/usr/local/bin/pipesmith-registry</code> on a distroless static base, runs as user <code>65532</code> and starts <code>serve</code>. The image has not been run against a blob store yet. A container needs <code>PIPESMITH_REGISTRY_DATA</code> on a writable mount and the stores mounted read only. It also needs the settings of the Network chapter, because <code>127.0.0.1</code> inside a container cannot be reached from outside.</p>
+<h3>Source</h3>
+<p>The build runs in the Go container that <code>tools/go.sh</code> pins by digest. Docker must run, and <code>DOCKER_CONFIG</code> must name a configuration that asks for no credentials.</p>
+<pre><code>mkdir -p work/docker-quiet &amp;&amp; printf '{}\n' &gt; work/docker-quiet/config.json
+export DOCKER_CONFIG="$PWD/work/docker-quiet"
+tools/go.sh check
+tools/go.sh build</code></pre>
+<p><code>check</code> runs gofmt, <code>go vet</code> and the tests with the race detector. <code>build</code> writes the three binaries to <code>bin/</code>.</p>
+</section>
+
+<section id="configure">
+<h2>Configure</h2>
+<h3>Data Directory</h3>
+<p>Every command reads the data directory from <code>PIPESMITH_REGISTRY_DATA</code>. Without it the binary uses <code>data</code> in the parent of the folder that holds the binary: for <code>/opt/pipesmith-registry/bin/pipesmith-registry</code> that is <code>/opt/pipesmith-registry/data</code>. Set the variable wherever the binary runs.</p>
+<table>
+  <thead><tr><th>File</th><th>Holds</th><th>Written by</th></tr></thead>
+  <tbody>
+    <tr><td><code>config.json</code></td><td>Bind address, port, attached stores, Docker port overrides</td><td><code>store add</code>, <code>store remove</code>, <code>repos port</code></td></tr>
+    <tr><td><code>repositories.json</code></td><td>Repository list with format, type, group members and Docker ports</td><td><code>import-settings</code>, <code>import-state</code>, <code>import</code></td></tr>
+    <tr><td><code>state.sqlite</code></td><td>Users with password hashes, roles, privileges, LDAP connections, realms, anonymous setting</td><td><code>import</code>, <code>import-state</code></td></tr>
+    <tr><td><code>index.sqlite</code></td><td>One row per live file of each store</td><td><code>scan</code></td></tr>
+  </tbody>
+</table>
+<p>The commands create these files with mode <code>0600</code>, except the index. The command <code>pipesmith-registry config</code> prints the resolved paths and settings; <code>config --check</code> lists problems; <code>config --json</code> prints the same as JSON.</p>
+<h3>Commands</h3>
+<table>
+  <thead><tr><th>Command</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>serve [--port N] [--bind ADDR] [--server-names NAMES] [--ask-ldap-password]</code></td><td>Runs the server in the foreground.</td></tr>
+    <tr><td><code>store add &lt;name&gt; --kind &lt;kind&gt; --root &lt;path&gt;</code></td><td>Attaches a store. See Stores.</td></tr>
+    <tr><td><code>store list</code>, <code>store remove &lt;name&gt;</code></td><td>Lists the stores with their indexed files; detaches one and drops its rows from the index.</td></tr>
+    <tr><td><code>scan [&lt;name&gt;]</code></td><td>Scans one store, or all of them, into the index.</td></tr>
+    <tr><td><code>repos [--json]</code></td><td>Lists the repositories with format, type, Docker port, files and size.</td></tr>
+    <tr><td><code>repos port &lt;name&gt; &lt;port|none&gt;</code></td><td>Sets or clears the Docker port of a repository. It takes effect at the next start.</td></tr>
+    <tr><td><code>import-settings &lt;file&gt;</code></td><td>Writes <code>repositories.json</code> from a repository settings export. Credentials are not taken over.</td></tr>
+    <tr><td><code>import-state --settings &lt;file&gt;</code></td><td>Writes the repositories of a settings export into <code>state.sqlite</code> and <code>repositories.json</code>.</td></tr>
+    <tr><td><code>import &lt;directory&gt;</code></td><td>Checks an export of the old database and writes its records. See Users.</td></tr>
+    <tr><td><code>state show</code></td><td>Prints the counts and records of <code>state.sqlite</code> as JSON, without password hashes.</td></tr>
+    <tr><td><code>docker-check &lt;name&gt;</code></td><td>Reads every stored manifest of a Docker repository and lists the blobs and manifests it names that are not in the index. Exit code 1 when one is missing.</td></tr>
+    <tr><td><code>config [--get KEY | --check | --json | --docker-ports]</code></td><td>Shows the configuration. <code>--docker-ports</code> prints one line per Docker listener of the next start.</td></tr>
+    <tr><td><code>version</code>, <code>help</code></td><td>Prints the version or the help.</td></tr>
+  </tbody>
+</table>
+<h3>Ports</h3>
+<p>The main port is 8793 unless <code>config.json</code>, <code>PIPESMITH_REGISTRY_PORT</code> or <code>serve --port</code> says otherwise; the flag wins. Each Docker repository with a port gets a listener of its own. The port comes from <code>repos port</code> first, else from the repository definition. All listeners open before the server answers anything, and if one port is taken, none of them opens and <code>serve</code> stops with "Address already in use". Port 8791 is refused in this release.</p>
+<p>Next to a running old service, its Docker ports are usually taken. Move each one before the first start:</p>
+<pre><code>pipesmith-registry config --docker-ports
+pipesmith-registry repos port demo-docker 15001</code></pre>
+</section>
+
+<section id="stores">
+<h2>Stores</h2>
+<p><code>store add</code> knows two kinds. One reads a file blob store in the layout of the existing install. Its <code>content/</code> folder holds a <code>.properties</code> file and a <code>.bytes</code> file per blob. The blobs sit in volume and chapter folders or in date folders. <code>pipesmith-registry store add --help</code> prints the name of that kind. The other kind, <code>directory</code>, serves a plain tree with one folder per repository.</p>
+<pre><code>pipesmith-registry store add default --kind &lt;blob store kind&gt; --root /srv/blobs/default
+pipesmith-registry store add exports --kind directory --root /srv/exports --repos demo-maven-hosted,demo-raw</code></pre>
+<p>Give a blob store the name the existing install uses for it. The blob store screen then shows one entry per store. The option <code>--repos</code> limits a directory store to the named folders. The option <code>--manifest &lt;path&gt;</code> gives a directory store the SHA-1, content type and creation time of its files. It reads a file or a directory of <code>part-*.tsv</code> files, plain or compressed as <code>.gz</code> or <code>.zst</code>.</p>
+<h3>Scan</h3>
+<p>A scan reads every <code>.properties</code> file below the store, so its time grows with the number of files. Run it at low priority when the old service serves from the same disk:</p>
+<pre><code>nice -n 19 ionice -c3 pipesmith-registry scan default</code></pre>
+<p>The last line reports the counts, for example <code>scan default: live=17 deleted=0 copies=0 no_bytes=0 unparsable=0</code>. An administrator can also start a scan with <code>POST /api/scan</code>.</p>
+<h3>Repositories</h3>
+<p>Formats, types and group members come from the repository definitions, imported with <code>import</code>, <code>import-state</code> or <code>import-settings</code>. The last two read a settings file: the JSON list that <code>GET /service/rest/v1/repositorySettings</code> of the existing install returns. <code>pipesmith-registry repos</code> shows the result:</p>
+<pre><code>NAME               FORMAT  TYPE    ACCESS   PORT  FILES    SIZE  NEWEST            NOTE
+demo-docker        docker  hosted  docker  14381      5  2.3 kB  2023-11-14 22:13
+demo-maven-group   maven2  group   maven       -      0     0 B  -                 members: demo-maven-proxy, demo-maven-hosted
+demo-maven-hosted  maven2  hosted  maven       -     12  2.1 kB  2026-10-05 14:13</code></pre>
+</section>
+
+<section id="users">
+<h2>Users</h2>
+<p>Without <code>state.sqlite</code> the server has no sign in: everybody who reaches it reads everything, and <code>serve</code> binds only to <code>127.0.0.1</code>, <code>localhost</code> or <code>::1</code>. With <code>state.sqlite</code> every route checks the caller.</p>
+<h3>Import</h3>
+<p>Users, roles, privileges, LDAP connections, realms and the anonymous setting come from an export of the database of the existing install. The script <code>tools/h2export.sh</code> in a checkout of this repository makes that export from a copy of the database file. It runs in a Java container, and the image it names must already be on the machine. Run it on a copy, never on the database the old service has open:</p>
+<pre><code>tools/h2export.sh export --database-copy /backup/db-copy.mv.db \
+  --out work/export --set all --with-password-hashes
+pipesmith-registry import work/export</code></pre>
+<p>The output folder must lie below <code>work/</code> or <code>.tmp/</code> of the checkout. The script gives it mode <code>0700</code> and its files <code>0600</code>. The <code>import</code> command checks the export against its manifest and replaces only the kinds of records the export holds. An export with <code>--set identity</code> leaves the repositories alone.</p>
+<p>Local users sign in with their old passwords. This release reads three stored forms: Shiro 1 hashes, PBKDF2, and unsalted hex SHA-1 or MD5.</p>
+<h3>LDAP</h3>
+<p>An LDAP connection signs users in once it has its bind password. Give it in <code>PIPESMITH_REGISTRY_LDAP_PASSWORD_&lt;ID&gt;</code>, with the connection id in upper case and every other character as <code>_</code>, or at the terminal with <code>serve --ask-ldap-password</code>. A connection without its password is left out with a warning that names the variable, and the local users still sign in. A connection with protocol <code>ldap</code> and the simple scheme gets a warning at start, because it sends the bind password in clear.</p>
+<h3>Start Log</h3>
+<p>The first lines of <code>serve</code> say how security started:</p>
+<pre><code>WARNING pipesmith_registry.security: LDAP connection demo-directory left out: ... set PIPESMITH_REGISTRY_LDAP_PASSWORD_... or enter it at start
+INFO pipesmith_registry.security: security on: 4 local users, 0 of 1 LDAP connections, anonymous access off
+INFO pipesmith_registry.listeners: listening on 127.0.0.1 port 8793</code></pre>
+<p><code>pipesmith-registry state show</code> prints the imported records without password hashes.</p>
+</section>
+
+<section id="service">
+<h2>Service</h2>
+<p><code>serve</code> speaks the notify protocol of systemd. It sends <code>READY=1</code> once every listener is open, <code>WATCHDOG=1</code> at half of <code>WatchdogSec</code>, and <code>STOPPING=1</code> when it stops. SIGTERM and SIGINT stop it; open requests get 5 seconds. The log goes to standard error, so the journal keeps it.</p>
+<div class="note"><p>This unit has not run on a Linux host yet. The notify protocol is covered by tests on a Unix socket.</p></div>
+<pre><code>[Unit]
+Description=Pipesmith Registry
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+WatchdogSec=30
+User=pipesmith-registry
+Environment=PIPESMITH_REGISTRY_DATA=/var/lib/pipesmith-registry
+EnvironmentFile=-/etc/pipesmith-registry/ldap.env
+ExecStart=/opt/pipesmith-registry/pipesmith-registry serve --port 8793
+ReadOnlyPaths=/srv/blobs
+ReadWritePaths=/var/lib/pipesmith-registry
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+<p><code>/etc/pipesmith-registry/ldap.env</code> holds one line per LDAP connection, <code>PIPESMITH_REGISTRY_LDAP_PASSWORD_&lt;ID&gt;=...</code>, owned by root with mode <code>0600</code>. Check the service with:</p>
+<pre><code>systemctl status pipesmith-registry
+curl -s http://localhost:8793/api/health</code></pre>
+<p><code>/api/health</code> answers <code>{"status":"ok"}</code>.</p>
+<h3>Fresh Content</h3>
+<p>While the old service keeps writing to its stores, the index shows the state of the last scan. Run <code>scan &lt;name&gt;</code> again, from a timer or by hand, or send <code>POST /api/scan</code> as an administrator.</p>
+</section>
+
+<section id="network">
+<h2>Network</h2>
+<p>By default <code>serve</code> binds to <code>127.0.0.1</code>. Any other address needs two things: imported users in <code>state.sqlite</code>, and the names under which clients reach the server.</p>
+<pre><code>pipesmith-registry serve --bind 0.0.0.0 --port 8793 \
+  --server-names registry.example.com,10.0.0.12</code></pre>
+<div class="note"><p>The network bind has not run on a Linux host yet. Its refusals and the Host gate are covered by tests.</p></div>
+<p>Without users <code>serve</code> stops with "no authentication in phase 1"; without names it stops with "name this server with --server-names NAME[,NAME]". Names are DNS names or IP addresses, separated by commas, an IPv6 address in brackets.</p>
+<h3>Host Gate</h3>
+<p>Every request whose <code>Host</code> header does not name <code>localhost</code>, <code>127.0.0.1</code>, <code>[::1]</code> or one of the server names gets <code>403</code>.</p>
+<h3>Plain HTTP</h3>
+<p>0.1.0 has no TLS listener. Passwords travel in clear between client and server. An SSH tunnel or a TLS proxy keeps them off the network:</p>
+<ul>
+  <li>An SSH tunnel from each workstation: <code>ssh -N -L 8793:localhost:8793 user@registry.example.com</code>, plus one more <code>-L</code> per Docker port. Then the server is <code>localhost</code> for browser and clients.</li>
+  <li>A reverse proxy on the same host that ends TLS and forwards to <code>127.0.0.1</code>. Add the public name to <code>--server-names</code>, because the proxy passes the <code>Host</code> header on.</li>
+</ul>
+<p>From the addresses in <code>FORWARDED_ALLOW_IPS</code> (default <code>127.0.0.1,::1</code>) the server takes <code>X-Forwarded-Proto</code> for the scheme of the URLs it writes and <code>X-Forwarded-For</code> for the client in the access log. The sign in throttle ignores forwarded headers and counts the address of the connection, so behind a proxy all clients share one count per user name.</p>
+</section>
+
+<section id="interface">
+<h2>Interface</h2>
+<p>The administration interface is embedded in the binary and served at <code>/</code>. It reads the REST API and changes nothing. It follows the system theme until the user picks light or dark.</p>
+<table>
+  <thead><tr><th>Section</th><th>Screens</th></tr></thead>
+  <tbody>
+    <tr><td>Browse</td><td>Overview, Search, Browse with the tree of a repository and the detail of a file</td></tr>
+    <tr><td>Repository</td><td>Repositories with groups and their members, Blob stores</td></tr>
+    <tr><td>Security</td><td>Users, Roles, Privileges, LDAP, Realms, Anonymous access</td></tr>
+  </tbody>
+</table>
+<p>The file detail shows size, content type, creation time, SHA-1, the blob store, and the coordinates of Maven, npm and Docker files. For a Docker manifest it shows a pull command. Screens and actions this release does not serve carry the mark "Not in preview". Users without the security permissions do not see the Security section.</p>
+<div class="shots">
+  <figure><img class="dark-only" src="assets/screens/sign-in-dark.png" alt="Sign in screen, dark theme"><img class="light-only" src="assets/screens/sign-in-light.png" alt="Sign in screen, light theme"><figcaption>Sign in</figcaption></figure>
+  <figure><img class="dark-only" src="assets/screens/overview-dark.png" alt="Overview with repositories, formats, files and blob stores, dark theme"><img class="light-only" src="assets/screens/overview-light.png" alt="Overview with repositories, formats, files and blob stores, light theme"><figcaption>Overview</figcaption></figure>
+  <figure><img class="dark-only" src="assets/screens/browse-dark.png" alt="Tree of a Maven repository with the detail of a jar file, dark theme"><img class="light-only" src="assets/screens/browse-light.png" alt="Tree of a Maven repository with the detail of a jar file, light theme"><figcaption>Browse with a file detail</figcaption></figure>
+  <figure><img class="dark-only" src="assets/screens/users-dark.png" alt="Users with state and roles, dark theme"><img class="light-only" src="assets/screens/users-light.png" alt="Users with state and roles, light theme"><figcaption>Users</figcaption></figure>
+</div>
+<p>The screenshots show invented data.</p>
+</section>
+
+<section id="api">
+<h2>API</h2>
+<p>Clients authenticate with Basic credentials. The interface signs in through <code>POST /api/session</code> and then sends a session cookie. A request without credentials to a protected route gets <code>401</code>, a signed in user without the permission gets <code>403</code>.</p>
+<table>
+  <thead><tr><th>Route</th><th>Answer</th><th>Who</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /api/health</code></td><td><code>{"status":"ok"}</code></td><td>anyone</td></tr>
+    <tr><td><code>GET /api/status</code></td><td>Name and version</td><td>anyone</td></tr>
+    <tr><td><code>GET /service/rest/v1/status</code></td><td><code>200</code></td><td>anyone</td></tr>
+    <tr><td><code>GET /service/rest/v1/status/writable</code></td><td><code>503</code>, the server is read only</td><td>anyone</td></tr>
+    <tr><td><code>GET, HEAD /repository/&lt;name&gt;/&lt;path&gt;</code></td><td>The file, or a listing for a directory</td><td>view permission of the repository</td></tr>
+    <tr><td><code>GET /service/rest/repository/browse/&lt;name&gt;/</code></td><td>HTML listing of a repository</td><td>view permission of the repository</td></tr>
+    <tr><td><code>GET /service/rest/v1/repositories</code></td><td>Repositories the caller may see</td><td>signed in</td></tr>
+    <tr><td><code>GET /service/rest/v1/search</code></td><td>Components with their assets</td><td>search permission</td></tr>
+    <tr><td><code>GET /service/rest/v1/assets/&lt;id&gt;</code></td><td>One asset</td><td>view permission of its repository</td></tr>
+    <tr><td><code>GET /service/rest/v1/blobstores</code></td><td>Blob stores</td><td>blob store read permission</td></tr>
+    <tr><td><code>GET /service/rest/v1/security/users</code>, <code>roles</code>, <code>privileges</code>, <code>ldap</code></td><td>The imported records</td><td>the read permission of each</td></tr>
+    <tr><td><code>GET /api/areas</code></td><td>The read only state and every refused method and path</td><td>signed in</td></tr>
+    <tr><td><code>POST /api/scan</code></td><td>Starts a scan</td><td>administrator</td></tr>
+  </tbody>
+</table>
+<p>A refused change answers <code>501</code> with a JSON body:</p>
+<pre><code>{"message":"POST /service/rest/v1/security/users is not available in this server yet","area":"security"}</code></pre>
+<p>Examples with the invented host of this manual:</p>
+<pre><code>curl -u reader -O http://localhost:8793/repository/demo-maven-hosted/com/example/billing/invoice-core/1.2.0/invoice-core-1.2.0.jar
+curl -u reader "http://localhost:8793/service/rest/v1/search?q=invoice-core"</code></pre>
+</section>
+
+<section id="clients">
+<h2>Clients</h2>
+<p>Clients send Basic credentials of an imported user. The examples use an SSH tunnel, so the server is <code>localhost:8793</code>.</p>
+<div class="note"><p>0.1.0 was checked with HTTP requests against the routes these clients use. The settings below follow the documentation of each tool and have not been run with each client yet.</p></div>
+<h3>Maven</h3>
+<p>In <code>~/.m2/settings.xml</code>, a mirror on a Maven group and a server entry with the same id:</p>
+<pre><code>&lt;settings&gt;
+  &lt;mirrors&gt;
+    &lt;mirror&gt;
+      &lt;id&gt;pipesmith&lt;/id&gt;
+      &lt;mirrorOf&gt;*&lt;/mirrorOf&gt;
+      &lt;url&gt;http://localhost:8793/repository/demo-maven-group/&lt;/url&gt;
+    &lt;/mirror&gt;
+  &lt;/mirrors&gt;
+  &lt;servers&gt;
+    &lt;server&gt;
+      &lt;id&gt;pipesmith&lt;/id&gt;
+      &lt;username&gt;reader&lt;/username&gt;
+      &lt;password&gt;${env.REGISTRY_PASSWORD}&lt;/password&gt;
+    &lt;/server&gt;
+  &lt;/servers&gt;
+&lt;/settings&gt;</code></pre>
+<p>A deploy answers <code>405</code>.</p>
+<h3>npm</h3>
+<p>In <code>.npmrc</code>, the registry and the Basic credentials as base64 of <code>user:password</code>:</p>
+<pre><code>registry=http://localhost:8793/repository/demo-npm-group/
+//localhost:8793/repository/demo-npm-group/:_auth=${REGISTRY_AUTH}</code></pre>
+<p>The tarball URLs in the package documents point at this server. <code>npm publish</code> answers <code>405</code>.</p>
+<h3>Docker</h3>
+<p>Each Docker repository answers on its own port under <code>/v2/</code>. Through the tunnel, forward that port too:</p>
+<pre><code>ssh -N -L 8793:localhost:8793 -L 15001:localhost:15001 user@registry.example.com
+docker login localhost:15001
+docker pull localhost:15001/team/web:1.4.2</code></pre>
+<p>Docker treats registries on <code>127.0.0.0/8</code> as insecure and so accepts plain HTTP there. Any other name needs an entry in <code>insecure-registries</code> of the Docker daemon. A push answers <code>405</code>.</p>
+<h3>Other Formats</h3>
+<p>Files of PyPI, raw and other repositories are plain downloads:</p>
+<pre><code>curl -u reader -O http://localhost:8793/repository/demo-raw/manuals/setup-2.4.pdf</code></pre>
+</section>
+
+<section id="security">
+<h2>Security</h2>
+<table>
+  <thead><tr><th>Topic</th><th>0.1.0</th></tr></thead>
+  <tbody>
+    <tr><td>Blob stores</td><td>Opened for reading only. A systemd unit can mount them with <code>ReadOnlyPaths=</code>.</td></tr>
+    <tr><td>Network</td><td>Local addresses only, until users exist and <code>--server-names</code> names the server. Every request passes the Host gate.</td></tr>
+    <tr><td>Transport</td><td>Plain HTTP. Use an SSH tunnel or a TLS proxy.</td></tr>
+    <tr><td>Sign in throttle</td><td>Counted per pair of lower case user name and client address. After 5 failures within 15 minutes the pair waits 2 seconds, and each further failure doubles the wait, up to 15 minutes. There is no limit per address alone, because behind a tunnel every user comes from <code>127.0.0.1</code>.</td></tr>
+    <tr><td>Sessions</td><td>Kept in memory: 30 minutes idle, 12 hours at most, 20 per user. A restart signs everybody out. The cookie <code>pipesmith_session</code> is <code>HttpOnly</code> and <code>SameSite=Strict</code>; it gets <code>Secure</code> only on a TLS connection, which this release does not have.</td></tr>
+    <tr><td>Passwords</td><td>Each Basic request computes the stored password hash, because there is no credential cache yet. LDAP bind passwords come from the environment or the terminal and are never written to a file or the log.</td></tr>
+    <tr><td>Data directory</td><td><code>state.sqlite</code> holds password hashes and has mode <code>0600</code>. Keep the directory at <code>0700</code>.</td></tr>
+    <tr><td>Release</td><td>Static binaries, a signed <code>SHA256SUMS</code> and SBOMs in SPDX and CycloneDX.</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="limits">
+<h2>Limits</h2>
+<ul>
+  <li>Read only. Uploads and deploys answer <code>405</code>, changes through the REST API <code>501</code>, and the administration interface changes nothing.</li>
+  <li>No proxy or group caching. A proxy repository serves what its store held at the last scan, and nothing is fetched from upstream.</li>
+  <li>No tokens for Docker and npm clients. They sign in with Basic credentials.</li>
+  <li>No TLS listener.</li>
+  <li>No format logic for PyPI and the other formats besides Maven, npm and Docker: their files are served by path.</li>
+  <li>Sessions live in memory.</li>
+  <li>No log rotation and no self update. The log goes to standard error.</li>
+  <li>New files appear after the next scan.</li>
+  <li>The systemd unit, the network bind and the container image have not run on a Linux host yet. Memory and CPU on a host are not measured.</li>
+</ul>
+</section>
+
+<section id="upgrade">
+<h2>Upgrade</h2>
+<p>0.1.0 is the first release, so there is no upgrade path to describe yet. A later release is installed the same way: verify the download, stop the service, replace the binary, start it again. Read the release notes of that release first.</p>
+<h3>Back Out</h3>
+<p>The blob stores are only read, so removing Pipesmith Registry leaves the existing install as it was:</p>
+<pre><code>sudo systemctl disable --now pipesmith-registry
+sudo rm -rf /opt/pipesmith-registry /var/lib/pipesmith-registry /etc/pipesmith-registry</code></pre>
+</section>
+</main>
+</div>
+
+<footer>Pipesmith Registry 0.1.0. Licensed under the Apache License 2.0. Source and releases on <a href="https://github.com/mirosso25/pipesmith-registry">GitHub</a>.</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var button = document.getElementById("theme-toggle");
+  function label() {
+    button.textContent = root.getAttribute("data-theme") === "dark" ? "Light theme" : "Dark theme";
+  }
+  button.addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("pipesmith-registry-docs-theme", next); } catch (e) { /* storage refused */ }
+    label();
+  });
+  label();
+  // Inline the architecture figure over http, so it follows the theme of this page.
+  var figure = document.getElementById("architecture");
+  if (figure && location.protocol.indexOf("http") === 0 && window.fetch) {
+    fetch(figure.getAttribute("src")).then(function (answer) {
+      return answer.ok ? answer.text() : null;
+    }).then(function (text) {
+      if (text && text.indexOf("<svg") !== -1) figure.outerHTML = text.slice(text.indexOf("<svg"));
+    }).catch(function () { /* keep the image */ });
+  }
+})();
+</script>
+</body>
+</html>

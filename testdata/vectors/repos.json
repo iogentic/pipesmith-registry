@@ -1,0 +1,4553 @@
+{
+ "generator": "tools/vectors/repos.py",
+ "python": "3.12.13",
+ "fields": [
+  "name",
+  "format",
+  "type",
+  "members",
+  "version_policy",
+  "layout_policy",
+  "write_policy",
+  "remote_url",
+  "http_port"
+ ],
+ "access": {
+  "maven2": "maven",
+  "docker": "docker",
+  "npm": "npm"
+ },
+ "access_of": {
+  "maven2": "maven",
+  "docker": "docker",
+  "npm": "npm",
+  "raw": "files",
+  "unknown": "files",
+  "Docker": "files",
+  "MAVEN2": "files",
+  "pypi": "files",
+  "": "files",
+  "nuget": "files"
+ },
+ "secrets": [
+  "demo-secret-password-123",
+  "demo-remote-user",
+  "authentication"
+ ],
+ "import": [
+  {
+   "name": "test_settings",
+   "source_b64": "WwogIHsKICAgICJmb3JtYXQiOiAibWF2ZW4yIiwKICAgICJtYXZlbiI6IHsKICAgICAgImNvbnRlbnREaXNwb3NpdGlvbiI6ICJJTkxJTkUiLAogICAgICAibGF5b3V0UG9saWN5IjogIlNUUklDVCIsCiAgICAgICJ2ZXJzaW9uUG9saWN5IjogIlJFTEVBU0UiCiAgICB9LAogICAgIm5hbWUiOiAiZGVtby1yZWxlYXNlcyIsCiAgICAib25saW5lIjogdHJ1ZSwKICAgICJzdG9yYWdlIjogewogICAgICAiYmxvYlN0b3JlTmFtZSI6ICJkZWZhdWx0IiwKICAgICAgInN0cmljdENvbnRlbnRUeXBlVmFsaWRhdGlvbiI6IHRydWUsCiAgICAgICJ3cml0ZVBvbGljeSI6ICJBTExPV19PTkNFIgogICAgfSwKICAgICJ0eXBlIjogImhvc3RlZCIsCiAgICAidXJsIjogImh0dHA6Ly9uZXh1cy5leGFtcGxlLmNvbTo4MDgxL3JlcG9zaXRvcnkvZGVtby1yZWxlYXNlcyIKICB9LAogIHsKICAgICJmb3JtYXQiOiAibWF2ZW4yIiwKICAgICJodHRwQ2xpZW50IjogewogICAgICAiYXV0aGVudGljYXRpb24iOiB7CiAgICAgICAgInR5cGUiOiAidXNlcm5hbWUiLAogICAgICAgICJ1c2VybmFtZSI6ICJkZW1vLXJlbW90ZS11c2VyIiwKICAgICAgICAicGFzc3dvcmQiOiAiZGVtby1zZWNyZXQtcGFzc3dvcmQtMTIzIgogICAgICB9LAogICAgICAiYXV0b0Jsb2NrIjogdHJ1ZSwKICAgICAgImJsb2NrZWQiOiBmYWxzZSwKICAgICAgImNvbm5lY3Rpb24iOiBudWxsCiAgICB9LAogICAgIm1hdmVuIjogewogICAgICAiY29udGVudERpc3Bvc2l0aW9uIjogIklOTElORSIsCiAgICAgICJsYXlvdXRQb2xpY3kiOiAiUEVSTUlTU0lWRSIsCiAgICAgICJ2ZXJzaW9uUG9saWN5IjogIk1JWEVEIgogICAgfSwKICAgICJuYW1lIjogImNlbnRyYWwtcHJveHkiLAogICAgIm5lZ2F0aXZlQ2FjaGUiOiB7CiAgICAgICJlbmFibGVkIjogdHJ1ZSwKICAgICAgInRpbWVUb0xpdmUiOiAxNDQwCiAgICB9LAogICAgIm9ubGluZSI6IHRydWUsCiAgICAicHJveHkiOiB7CiAgICAgICJjb250ZW50TWF4QWdlIjogLTEsCiAgICAgICJtZXRhZGF0YU1heEFnZSI6IDE0NDAsCiAgICAgICJyZW1vdGVVcmwiOiAiaHR0cHM6Ly9yZXBvLmV4YW1wbGUuY29tL21hdmVuMi8iCiAgICB9LAogICAgInN0b3JhZ2UiOiB7CiAgICAgICJibG9iU3RvcmVOYW1lIjogImRlZmF1bHQiLAogICAgICAic3RyaWN0Q29udGVudFR5cGVWYWxpZGF0aW9uIjogdHJ1ZSwKICAgICAgIndyaXRlUG9saWN5IjogIkFMTE9XIgogICAgfSwKICAgICJ0eXBlIjogInByb3h5IiwKICAgICJ1cmwiOiAiaHR0cDovL25leHVzLmV4YW1wbGUuY29tOjgwODEvcmVwb3NpdG9yeS9jZW50cmFsLXByb3h5IgogIH0sCiAgewogICAgImZvcm1hdCI6ICJtYXZlbjIiLAogICAgImdyb3VwIjogewogICAgICAibWVtYmVyTmFtZXMiOiBbCiAgICAgICAgImRlbW8tcmVsZWFzZXMiLAogICAgICAgICJjZW50cmFsLXByb3h5IgogICAgICBdCiAgICB9LAogICAgIm5hbWUiOiAiZGVtby1ncm91cCIsCiAgICAib25saW5lIjogdHJ1ZSwKICAgICJzdG9yYWdlIjogewogICAgICAiYmxvYlN0b3JlTmFtZSI6ICJkZWZhdWx0IiwKICAgICAgInN0cmljdENvbnRlbnRUeXBlVmFsaWRhdGlvbiI6IHRydWUKICAgIH0sCiAgICAidHlwZSI6ICJncm91cCIsCiAgICAidXJsIjogImh0dHA6Ly9uZXh1cy5leGFtcGxlLmNvbTo4MDgxL3JlcG9zaXRvcnkvZGVtby1ncm91cCIKICB9Cl0=",
+   "count": 3,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImRlbW8tcmVsZWFzZXMiLAogICAgICAiZm9ybWF0IjogIm1hdmVuMiIsCiAgICAgICJ0eXBlIjogImhvc3RlZCIsCiAgICAgICJtZW1iZXJzIjogW10sCiAgICAgICJ2ZXJzaW9uX3BvbGljeSI6ICJSRUxFQVNFIiwKICAgICAgImxheW91dF9wb2xpY3kiOiAiU1RSSUNUIiwKICAgICAgIndyaXRlX3BvbGljeSI6ICJBTExPV19PTkNFIiwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiY2VudHJhbC1wcm94eSIsCiAgICAgICJmb3JtYXQiOiAibWF2ZW4yIiwKICAgICAgInR5cGUiOiAicHJveHkiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiAiTUlYRUQiLAogICAgICAibGF5b3V0X3BvbGljeSI6ICJQRVJNSVNTSVZFIiwKICAgICAgIndyaXRlX3BvbGljeSI6ICJBTExPVyIsCiAgICAgICJyZW1vdGVfdXJsIjogImh0dHBzOi8vcmVwby5leGFtcGxlLmNvbS9tYXZlbjIvIiwKICAgICAgImh0dHBfcG9ydCI6IG51bGwKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImRlbW8tZ3JvdXAiLAogICAgICAiZm9ybWF0IjogIm1hdmVuMiIsCiAgICAgICJ0eXBlIjogImdyb3VwIiwKICAgICAgIm1lbWJlcnMiOiBbCiAgICAgICAgImRlbW8tcmVsZWFzZXMiLAogICAgICAgICJjZW50cmFsLXByb3h5IgogICAgICBdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9CiAgXQp9Cg==",
+   "mode": "0o600",
+   "loaded": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": "RELEASE",
+     "layout_policy": "STRICT",
+     "write_policy": "ALLOW_ONCE",
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "central-proxy",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": "MIXED",
+     "layout_policy": "PERMISSIVE",
+     "write_policy": "ALLOW",
+     "remote_url": "https://repo.example.com/maven2/",
+     "http_port": null
+    },
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "central-proxy"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "items_wrapper",
+   "source_b64": "ewogICJpdGVtcyI6IFsKICAgIHsKICAgICAgImZvcm1hdCI6ICJtYXZlbjIiLAogICAgICAibWF2ZW4iOiB7CiAgICAgICAgImNvbnRlbnREaXNwb3NpdGlvbiI6ICJJTkxJTkUiLAogICAgICAgICJsYXlvdXRQb2xpY3kiOiAiU1RSSUNUIiwKICAgICAgICAidmVyc2lvblBvbGljeSI6ICJSRUxFQVNFIgogICAgICB9LAogICAgICAibmFtZSI6ICJkZW1vLXJlbGVhc2VzIiwKICAgICAgIm9ubGluZSI6IHRydWUsCiAgICAgICJzdG9yYWdlIjogewogICAgICAgICJibG9iU3RvcmVOYW1lIjogImRlZmF1bHQiLAogICAgICAgICJzdHJpY3RDb250ZW50VHlwZVZhbGlkYXRpb24iOiB0cnVlLAogICAgICAgICJ3cml0ZVBvbGljeSI6ICJBTExPV19PTkNFIgogICAgICB9LAogICAgICAidHlwZSI6ICJob3N0ZWQiLAogICAgICAidXJsIjogImh0dHA6Ly9uZXh1cy5leGFtcGxlLmNvbTo4MDgxL3JlcG9zaXRvcnkvZGVtby1yZWxlYXNlcyIKICAgIH0sCiAgICB7CiAgICAgICJmb3JtYXQiOiAibWF2ZW4yIiwKICAgICAgImh0dHBDbGllbnQiOiB7CiAgICAgICAgImF1dGhlbnRpY2F0aW9uIjogewogICAgICAgICAgInR5cGUiOiAidXNlcm5hbWUiLAogICAgICAgICAgInVzZXJuYW1lIjogImRlbW8tcmVtb3RlLXVzZXIiLAogICAgICAgICAgInBhc3N3b3JkIjogImRlbW8tc2VjcmV0LXBhc3N3b3JkLTEyMyIKICAgICAgICB9LAogICAgICAgICJhdXRvQmxvY2siOiB0cnVlLAogICAgICAgICJibG9ja2VkIjogZmFsc2UsCiAgICAgICAgImNvbm5lY3Rpb24iOiBudWxsCiAgICAgIH0sCiAgICAgICJtYXZlbiI6IHsKICAgICAgICAiY29udGVudERpc3Bvc2l0aW9uIjogIklOTElORSIsCiAgICAgICAgImxheW91dFBvbGljeSI6ICJQRVJNSVNTSVZFIiwKICAgICAgICAidmVyc2lvblBvbGljeSI6ICJNSVhFRCIKICAgICAgfSwKICAgICAgIm5hbWUiOiAiY2VudHJhbC1wcm94eSIsCiAgICAgICJuZWdhdGl2ZUNhY2hlIjogewogICAgICAgICJlbmFibGVkIjogdHJ1ZSwKICAgICAgICAidGltZVRvTGl2ZSI6IDE0NDAKICAgICAgfSwKICAgICAgIm9ubGluZSI6IHRydWUsCiAgICAgICJwcm94eSI6IHsKICAgICAgICAiY29udGVudE1heEFnZSI6IC0xLAogICAgICAgICJtZXRhZGF0YU1heEFnZSI6IDE0NDAsCiAgICAgICAgInJlbW90ZVVybCI6ICJodHRwczovL3JlcG8uZXhhbXBsZS5jb20vbWF2ZW4yLyIKICAgICAgfSwKICAgICAgInN0b3JhZ2UiOiB7CiAgICAgICAgImJsb2JTdG9yZU5hbWUiOiAiZGVmYXVsdCIsCiAgICAgICAgInN0cmljdENvbnRlbnRUeXBlVmFsaWRhdGlvbiI6IHRydWUsCiAgICAgICAgIndyaXRlUG9saWN5IjogIkFMTE9XIgogICAgICB9LAogICAgICAidHlwZSI6ICJwcm94eSIsCiAgICAgICJ1cmwiOiAiaHR0cDovL25leHVzLmV4YW1wbGUuY29tOjgwODEvcmVwb3NpdG9yeS9jZW50cmFsLXByb3h5IgogICAgfSwKICAgIHsKICAgICAgImZvcm1hdCI6ICJtYXZlbjIiLAogICAgICAiZ3JvdXAiOiB7CiAgICAgICAgIm1lbWJlck5hbWVzIjogWwogICAgICAgICAgImRlbW8tcmVsZWFzZXMiLAogICAgICAgICAgImNlbnRyYWwtcHJveHkiCiAgICAgICAgXQogICAgICB9LAogICAgICAibmFtZSI6ICJkZW1vLWdyb3VwIiwKICAgICAgIm9ubGluZSI6IHRydWUsCiAgICAgICJzdG9yYWdlIjogewogICAgICAgICJibG9iU3RvcmVOYW1lIjogImRlZmF1bHQiLAogICAgICAgICJzdHJpY3RDb250ZW50VHlwZVZhbGlkYXRpb24iOiB0cnVlCiAgICAgIH0sCiAgICAgICJ0eXBlIjogImdyb3VwIiwKICAgICAgInVybCI6ICJodHRwOi8vbmV4dXMuZXhhbXBsZS5jb206ODA4MS9yZXBvc2l0b3J5L2RlbW8tZ3JvdXAiCiAgICB9CiAgXSwKICAiY29udGludWF0aW9uVG9rZW4iOiBudWxsCn0=",
+   "count": 3,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImRlbW8tcmVsZWFzZXMiLAogICAgICAiZm9ybWF0IjogIm1hdmVuMiIsCiAgICAgICJ0eXBlIjogImhvc3RlZCIsCiAgICAgICJtZW1iZXJzIjogW10sCiAgICAgICJ2ZXJzaW9uX3BvbGljeSI6ICJSRUxFQVNFIiwKICAgICAgImxheW91dF9wb2xpY3kiOiAiU1RSSUNUIiwKICAgICAgIndyaXRlX3BvbGljeSI6ICJBTExPV19PTkNFIiwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiY2VudHJhbC1wcm94eSIsCiAgICAgICJmb3JtYXQiOiAibWF2ZW4yIiwKICAgICAgInR5cGUiOiAicHJveHkiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiAiTUlYRUQiLAogICAgICAibGF5b3V0X3BvbGljeSI6ICJQRVJNSVNTSVZFIiwKICAgICAgIndyaXRlX3BvbGljeSI6ICJBTExPVyIsCiAgICAgICJyZW1vdGVfdXJsIjogImh0dHBzOi8vcmVwby5leGFtcGxlLmNvbS9tYXZlbjIvIiwKICAgICAgImh0dHBfcG9ydCI6IG51bGwKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImRlbW8tZ3JvdXAiLAogICAgICAiZm9ybWF0IjogIm1hdmVuMiIsCiAgICAgICJ0eXBlIjogImdyb3VwIiwKICAgICAgIm1lbWJlcnMiOiBbCiAgICAgICAgImRlbW8tcmVsZWFzZXMiLAogICAgICAgICJjZW50cmFsLXByb3h5IgogICAgICBdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9CiAgXQp9Cg==",
+   "mode": "0o600",
+   "loaded": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": "RELEASE",
+     "layout_policy": "STRICT",
+     "write_policy": "ALLOW_ONCE",
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "central-proxy",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": "MIXED",
+     "layout_policy": "PERMISSIVE",
+     "write_policy": "ALLOW",
+     "remote_url": "https://repo.example.com/maven2/",
+     "http_port": null
+    },
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "central-proxy"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "empty_list",
+   "source_b64": "W10=",
+   "count": 0,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbXQp9Cg==",
+   "mode": "0o600",
+   "loaded": [],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "empty_items",
+   "source_b64": "ewogICJpdGVtcyI6IFtdCn0=",
+   "count": 0,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbXQp9Cg==",
+   "mode": "0o600",
+   "loaded": [],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "object_without_items",
+   "source_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbXQp9",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositorySettings.json does not hold a list of repositories",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "items_not_list",
+   "source_b64": "ewogICJpdGVtcyI6IHsKICAgICJuYW1lIjogImRlbW8iCiAgfQp9",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositorySettings.json does not hold a list of repositories",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "string",
+   "source_b64": "ImRlbW8i",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositorySettings.json does not hold a list of repositories",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "number",
+   "source_b64": "MQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositorySettings.json does not hold a list of repositories",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "null",
+   "source_b64": "bnVsbA==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositorySettings.json does not hold a list of repositories",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "broken_json",
+   "source_b64": "e25vdCBqc29u",
+   "error": {
+    "class": "JSONDecodeError",
+    "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "empty_file",
+   "source_b64": "",
+   "error": {
+    "class": "JSONDecodeError",
+    "message": "Expecting value: line 1 column 1 (char 0)",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "invalid_utf8",
+   "source_b64": "W3sibmFtZSI6ICL/In1d",
+   "error": {
+    "class": "UnicodeDecodeError",
+    "message": "'utf-8' codec can't decode byte 0xff in position 11: invalid start byte",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "utf8_bom",
+   "source_b64": "77u/W10=",
+   "error": {
+    "class": "JSONDecodeError",
+    "message": "Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)",
+    "oserror": false
+   },
+   "data_files": null
+  },
+  {
+   "name": "missing_source",
+   "source_b64": null,
+   "error": {
+    "class": "FileNotFoundError",
+    "message": "[Errno 2] No such file or directory: '<root>/repositorySettings.json'",
+    "oserror": true
+   },
+   "data_files": null
+  },
+  {
+   "name": "skips",
+   "source_b64": "WwogICJub3QgYW4gb2JqZWN0IiwKICAxLAogIG51bGwsCiAgW10sCiAgewogICAgImZvcm1hdCI6ICJyYXciCiAgfSwKICB7CiAgICAibmFtZSI6ICIiCiAgfSwKICB7CiAgICAibmFtZSI6IDEKICB9LAogIHsKICAgICJuYW1lIjogImRlbW8tcmF3IiwKICAgICJmb3JtYXQiOiAicmF3IgogIH0sCiAgewogICAgIm5hbWUiOiAiZGVtby1yYXciLAogICAgImZvcm1hdCI6ICJtYXZlbjIiCiAgfSwKICB7CiAgICAibmFtZSI6ICJkZW1vLW90aGVyIiwKICAgICJmb3JtYXQiOiAiIiwKICAgICJ0eXBlIjogIiIKICB9Cl0=",
+   "count": 2,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImRlbW8tcmF3IiwKICAgICAgImZvcm1hdCI6ICJyYXciLAogICAgICAidHlwZSI6ICJob3N0ZWQiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJkZW1vLW90aGVyIiwKICAgICAgImZvcm1hdCI6ICJ1bmtub3duIiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfQogIF0KfQo=",
+   "mode": "0o600",
+   "loaded": [
+    {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-other",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "members",
+   "source_b64": "WwogIHsKICAgICJuYW1lIjogImctbGlzdCIsCiAgICAidHlwZSI6ICJncm91cCIsCiAgICAiZ3JvdXAiOiB7CiAgICAgICJtZW1iZXJOYW1lcyI6IFsKICAgICAgICAiYSIsCiAgICAgICAgMSwKICAgICAgICBudWxsLAogICAgICAgICJiIiwKICAgICAgICAiIiwKICAgICAgICAiYSIKICAgICAgXQogICAgfQogIH0sCiAgewogICAgIm5hbWUiOiAiZy1udWxsIiwKICAgICJ0eXBlIjogImdyb3VwIiwKICAgICJncm91cCI6IHsKICAgICAgIm1lbWJlck5hbWVzIjogbnVsbAogICAgfQogIH0sCiAgewogICAgIm5hbWUiOiAiZy1zdHJpbmciLAogICAgInR5cGUiOiAiZ3JvdXAiLAogICAgImdyb3VwIjogewogICAgICAibWVtYmVyTmFtZXMiOiAiYSIKICAgIH0KICB9LAogIHsKICAgICJuYW1lIjogImctb2JqZWN0IiwKICAgICJ0eXBlIjogImdyb3VwIiwKICAgICJncm91cCI6IHsKICAgICAgIm1lbWJlck5hbWVzIjogewogICAgICAgICJhIjogMQogICAgICB9CiAgICB9CiAgfSwKICB7CiAgICAibmFtZSI6ICJnLWVtcHR5LW9iamVjdCIsCiAgICAidHlwZSI6ICJncm91cCIsCiAgICAiZ3JvdXAiOiB7CiAgICAgICJtZW1iZXJOYW1lcyI6IHt9CiAgICB9CiAgfSwKICB7CiAgICAibmFtZSI6ICJnLXNlY3Rpb24tbGlzdCIsCiAgICAidHlwZSI6ICJncm91cCIsCiAgICAiZ3JvdXAiOiBbCiAgICAgICJhIgogICAgXQogIH0sCiAgewogICAgIm5hbWUiOiAiZy1zZWN0aW9uLW51bGwiLAogICAgInR5cGUiOiAiZ3JvdXAiLAogICAgImdyb3VwIjogbnVsbAogIH0sCiAgewogICAgIm5hbWUiOiAiZy16ZXJvIiwKICAgICJ0eXBlIjogImdyb3VwIiwKICAgICJncm91cCI6IHsKICAgICAgIm1lbWJlck5hbWVzIjogMAogICAgfQogIH0KXQ==",
+   "count": 8,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImctbGlzdCIsCiAgICAgICJmb3JtYXQiOiAidW5rbm93biIsCiAgICAgICJ0eXBlIjogImdyb3VwIiwKICAgICAgIm1lbWJlcnMiOiBbCiAgICAgICAgImEiLAogICAgICAgICJiIiwKICAgICAgICAiIiwKICAgICAgICAiYSIKICAgICAgXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZy1udWxsIiwKICAgICAgImZvcm1hdCI6ICJ1bmtub3duIiwKICAgICAgInR5cGUiOiAiZ3JvdXAiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJnLXN0cmluZyIsCiAgICAgICJmb3JtYXQiOiAidW5rbm93biIsCiAgICAgICJ0eXBlIjogImdyb3VwIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZy1vYmplY3QiLAogICAgICAiZm9ybWF0IjogInVua25vd24iLAogICAgICAidHlwZSI6ICJncm91cCIsCiAgICAgICJtZW1iZXJzIjogW10sCiAgICAgICJ2ZXJzaW9uX3BvbGljeSI6IG51bGwsCiAgICAgICJsYXlvdXRfcG9saWN5IjogbnVsbCwKICAgICAgIndyaXRlX3BvbGljeSI6IG51bGwsCiAgICAgICJyZW1vdGVfdXJsIjogbnVsbCwKICAgICAgImh0dHBfcG9ydCI6IG51bGwKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImctZW1wdHktb2JqZWN0IiwKICAgICAgImZvcm1hdCI6ICJ1bmtub3duIiwKICAgICAgInR5cGUiOiAiZ3JvdXAiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJnLXNlY3Rpb24tbGlzdCIsCiAgICAgICJmb3JtYXQiOiAidW5rbm93biIsCiAgICAgICJ0eXBlIjogImdyb3VwIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZy1zZWN0aW9uLW51bGwiLAogICAgICAiZm9ybWF0IjogInVua25vd24iLAogICAgICAidHlwZSI6ICJncm91cCIsCiAgICAgICJtZW1iZXJzIjogW10sCiAgICAgICJ2ZXJzaW9uX3BvbGljeSI6IG51bGwsCiAgICAgICJsYXlvdXRfcG9saWN5IjogbnVsbCwKICAgICAgIndyaXRlX3BvbGljeSI6IG51bGwsCiAgICAgICJyZW1vdGVfdXJsIjogbnVsbCwKICAgICAgImh0dHBfcG9ydCI6IG51bGwKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImctemVybyIsCiAgICAgICJmb3JtYXQiOiAidW5rbm93biIsCiAgICAgICJ0eXBlIjogImdyb3VwIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfQogIF0KfQo=",
+   "mode": "0o600",
+   "loaded": [
+    {
+     "name": "g-list",
+     "format": "unknown",
+     "type": "group",
+     "members": [
+      "a",
+      "b",
+      "",
+      "a"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g-null",
+     "format": "unknown",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g-string",
+     "format": "unknown",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g-object",
+     "format": "unknown",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g-empty-object",
+     "format": "unknown",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g-section-list",
+     "format": "unknown",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g-section-null",
+     "format": "unknown",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g-zero",
+     "format": "unknown",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "http_ports",
+   "source_b64": "WwogIHsKICAgICJuYW1lIjogImQtcG9ydCIsCiAgICAiZm9ybWF0IjogImRvY2tlciIsCiAgICAiZG9ja2VyIjogewogICAgICAiaHR0cFBvcnQiOiAxODA4MAogICAgfQogIH0sCiAgewogICAgIm5hbWUiOiAiZC1zdHJpbmciLAogICAgImZvcm1hdCI6ICJkb2NrZXIiLAogICAgImRvY2tlciI6IHsKICAgICAgImh0dHBQb3J0IjogIjE4MDgwIgogICAgfQogIH0sCiAgewogICAgIm5hbWUiOiAiZC16ZXJvIiwKICAgICJmb3JtYXQiOiAiZG9ja2VyIiwKICAgICJkb2NrZXIiOiB7CiAgICAgICJodHRwUG9ydCI6IDAKICAgIH0KICB9LAogIHsKICAgICJuYW1lIjogImQtaGlnaCIsCiAgICAiZm9ybWF0IjogImRvY2tlciIsCiAgICAiZG9ja2VyIjogewogICAgICAiaHR0cFBvcnQiOiA3MDAwMAogICAgfQogIH0sCiAgewogICAgIm5hbWUiOiAiZC1lZGdlcy1sb3ciLAogICAgImZvcm1hdCI6ICJkb2NrZXIiLAogICAgImRvY2tlciI6IHsKICAgICAgImh0dHBQb3J0IjogMQogICAgfQogIH0sCiAgewogICAgIm5hbWUiOiAiZC1lZGdlcy1oaWdoIiwKICAgICJmb3JtYXQiOiAiZG9ja2VyIiwKICAgICJkb2NrZXIiOiB7CiAgICAgICJodHRwUG9ydCI6IDY1NTM1CiAgICB9CiAgfSwKICB7CiAgICAibmFtZSI6ICJkLXRydWUiLAogICAgImZvcm1hdCI6ICJkb2NrZXIiLAogICAgImRvY2tlciI6IHsKICAgICAgImh0dHBQb3J0IjogdHJ1ZQogICAgfQogIH0sCiAgewogICAgIm5hbWUiOiAiZC1mbG9hdCIsCiAgICAiZm9ybWF0IjogImRvY2tlciIsCiAgICAiZG9ja2VyIjogewogICAgICAiaHR0cFBvcnQiOiAxODA4MC4wCiAgICB9CiAgfSwKICB7CiAgICAibmFtZSI6ICJkLW51bGwiLAogICAgImZvcm1hdCI6ICJkb2NrZXIiLAogICAgImRvY2tlciI6IHsKICAgICAgImh0dHBQb3J0IjogbnVsbCwKICAgICAgImh0dHBzUG9ydCI6IDE4NDQzCiAgICB9CiAgfSwKICB7CiAgICAibmFtZSI6ICJkLXNlY3Rpb24tc3RyaW5nIiwKICAgICJmb3JtYXQiOiAiZG9ja2VyIiwKICAgICJkb2NrZXIiOiAiMTgwODAiCiAgfSwKICB7CiAgICAibmFtZSI6ICJkLW90aGVyLWZvcm1hdCIsCiAgICAiZm9ybWF0IjogIm1hdmVuMiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaHR0cFBvcnQiOiAxODA4MQogICAgfQogIH0KXQ==",
+   "count": 11,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQtcG9ydCIsCiAgICAgICJmb3JtYXQiOiAiZG9ja2VyIiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogMTgwODAKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImQtc3RyaW5nIiwKICAgICAgImZvcm1hdCI6ICJkb2NrZXIiLAogICAgICAidHlwZSI6ICJob3N0ZWQiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJkLXplcm8iLAogICAgICAiZm9ybWF0IjogImRvY2tlciIsCiAgICAgICJ0eXBlIjogImhvc3RlZCIsCiAgICAgICJtZW1iZXJzIjogW10sCiAgICAgICJ2ZXJzaW9uX3BvbGljeSI6IG51bGwsCiAgICAgICJsYXlvdXRfcG9saWN5IjogbnVsbCwKICAgICAgIndyaXRlX3BvbGljeSI6IG51bGwsCiAgICAgICJyZW1vdGVfdXJsIjogbnVsbCwKICAgICAgImh0dHBfcG9ydCI6IG51bGwKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImQtaGlnaCIsCiAgICAgICJmb3JtYXQiOiAiZG9ja2VyIiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZC1lZGdlcy1sb3ciLAogICAgICAiZm9ybWF0IjogImRvY2tlciIsCiAgICAgICJ0eXBlIjogImhvc3RlZCIsCiAgICAgICJtZW1iZXJzIjogW10sCiAgICAgICJ2ZXJzaW9uX3BvbGljeSI6IG51bGwsCiAgICAgICJsYXlvdXRfcG9saWN5IjogbnVsbCwKICAgICAgIndyaXRlX3BvbGljeSI6IG51bGwsCiAgICAgICJyZW1vdGVfdXJsIjogbnVsbCwKICAgICAgImh0dHBfcG9ydCI6IDEKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImQtZWRnZXMtaGlnaCIsCiAgICAgICJmb3JtYXQiOiAiZG9ja2VyIiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogNjU1MzUKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImQtdHJ1ZSIsCiAgICAgICJmb3JtYXQiOiAiZG9ja2VyIiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZC1mbG9hdCIsCiAgICAgICJmb3JtYXQiOiAiZG9ja2VyIiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZC1udWxsIiwKICAgICAgImZvcm1hdCI6ICJkb2NrZXIiLAogICAgICAidHlwZSI6ICJob3N0ZWQiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJkLXNlY3Rpb24tc3RyaW5nIiwKICAgICAgImZvcm1hdCI6ICJkb2NrZXIiLAogICAgICAidHlwZSI6ICJob3N0ZWQiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJkLW90aGVyLWZvcm1hdCIsCiAgICAgICJmb3JtYXQiOiAibWF2ZW4yIiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogMTgwODEKICAgIH0KICBdCn0K",
+   "mode": "0o600",
+   "loaded": [
+    {
+     "name": "d-port",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 18080
+    },
+    {
+     "name": "d-string",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "d-zero",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "d-high",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "d-edges-low",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 1
+    },
+    {
+     "name": "d-edges-high",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 65535
+    },
+    {
+     "name": "d-true",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "d-float",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "d-null",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "d-section-string",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "d-other-format",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 18081
+    }
+   ],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "policies",
+   "source_b64": "WwogIHsKICAgICJuYW1lIjogInAtdHlwZXMiLAogICAgIm1hdmVuIjogewogICAgICAidmVyc2lvblBvbGljeSI6IDEsCiAgICAgICJsYXlvdXRQb2xpY3kiOiBudWxsCiAgICB9LAogICAgInN0b3JhZ2UiOiB7CiAgICAgICJ3cml0ZVBvbGljeSI6ICIiCiAgICB9LAogICAgInByb3h5IjogewogICAgICAicmVtb3RlVXJsIjogWwogICAgICAgICJ4IgogICAgICBdCiAgICB9CiAgfSwKICB7CiAgICAibmFtZSI6ICJwLXNlY3Rpb25zIiwKICAgICJtYXZlbiI6ICJ4IiwKICAgICJzdG9yYWdlIjogbnVsbCwKICAgICJwcm94eSI6IDEKICB9LAogIHsKICAgICJuYW1lIjogInAtdW5pY29kZSIsCiAgICAiZm9ybWF0IjogImNhZlx1MDBlOSIsCiAgICAidHlwZSI6ICJcdTRlMmQiLAogICAgInByb3h5IjogewogICAgICAicmVtb3RlVXJsIjogImh0dHBzOi8vcmVwby5leGFtcGxlLmNvbS9cdTAwZTkvIgogICAgfSwKICAgICJtYXZlbiI6IHsKICAgICAgInZlcnNpb25Qb2xpY3kiOiAiUkVMRUFTRSIsCiAgICAgICJsYXlvdXRQb2xpY3kiOiAiU1RSSUNUIgogICAgfSwKICAgICJzdG9yYWdlIjogewogICAgICAid3JpdGVQb2xpY3kiOiAiREVOWSIKICAgIH0KICB9Cl0=",
+   "count": 3,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogInAtdHlwZXMiLAogICAgICAiZm9ybWF0IjogInVua25vd24iLAogICAgICAidHlwZSI6ICJob3N0ZWQiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJwLXNlY3Rpb25zIiwKICAgICAgImZvcm1hdCI6ICJ1bmtub3duIiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAicC11bmljb2RlIiwKICAgICAgImZvcm1hdCI6ICJjYWZcdTAwZTkiLAogICAgICAidHlwZSI6ICJcdTRlMmQiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiAiUkVMRUFTRSIsCiAgICAgICJsYXlvdXRfcG9saWN5IjogIlNUUklDVCIsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiAiREVOWSIsCiAgICAgICJyZW1vdGVfdXJsIjogImh0dHBzOi8vcmVwby5leGFtcGxlLmNvbS9cdTAwZTkvIiwKICAgICAgImh0dHBfcG9ydCI6IG51bGwKICAgIH0KICBdCn0K",
+   "mode": "0o600",
+   "loaded": [
+    {
+     "name": "p-types",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "p-sections",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "p-unicode",
+     "format": "caf\u00e9",
+     "type": "\u4e2d",
+     "members": [],
+     "defined": true,
+     "version_policy": "RELEASE",
+     "layout_policy": "STRICT",
+     "write_policy": "DENY",
+     "remote_url": "https://repo.example.com/\u00e9/",
+     "http_port": null
+    }
+   ],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "big_int_port",
+   "source_b64": "W3sibmFtZSI6ICJkLWJpZyIsICJmb3JtYXQiOiAiZG9ja2VyIiwgImRvY2tlciI6IHsiaHR0cFBvcnQiOiAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDB9fV0=",
+   "count": 1,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQtYmlnIiwKICAgICAgImZvcm1hdCI6ICJkb2NrZXIiLAogICAgICAidHlwZSI6ICJob3N0ZWQiLAogICAgICAibWVtYmVycyI6IFtdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9CiAgXQp9Cg==",
+   "mode": "0o600",
+   "loaded": [
+    {
+     "name": "d-big",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "data_files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "duplicate_keys",
+   "source_b64": "W3sibmFtZSI6ICJmaXJzdCIsICJuYW1lIjogInNlY29uZCIsICJmb3JtYXQiOiAicmF3In1d",
+   "count": 1,
+   "target_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogInNlY29uZCIsCiAgICAgICJmb3JtYXQiOiAicmF3IiwKICAgICAgInR5cGUiOiAiaG9zdGVkIiwKICAgICAgIm1lbWJlcnMiOiBbXSwKICAgICAgInZlcnNpb25fcG9saWN5IjogbnVsbCwKICAgICAgImxheW91dF9wb2xpY3kiOiBudWxsLAogICAgICAid3JpdGVfcG9saWN5IjogbnVsbCwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfQogIF0KfQo=",
+   "mode": "0o600",
+   "loaded": [
+    {
+     "name": "second",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "data_files": [
+    "repositories.json"
+   ]
+  }
+ ],
+ "load": [
+  {
+   "name": "missing",
+   "file_b64": null,
+   "repos": []
+  },
+  {
+   "name": "broken",
+   "file_b64": "e25vdCBqc29u",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json is not valid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+    "oserror": false
+   }
+  },
+  {
+   "name": "empty",
+   "file_b64": "",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json is not valid JSON: Expecting value: line 1 column 1 (char 0)",
+    "oserror": false
+   }
+  },
+  {
+   "name": "invalid_utf8",
+   "file_b64": "eyJyZXBvc2l0b3JpZXMiOiBbIv8iXX0=",
+   "error": {
+    "class": "UnicodeDecodeError",
+    "message": "'utf-8' codec can't decode byte 0xff in position 19: invalid start byte",
+    "oserror": false
+   }
+  },
+  {
+   "name": "bom",
+   "file_b64": "77u/e30=",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json is not valid JSON: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)",
+    "oserror": false
+   }
+  },
+  {
+   "name": "not_object",
+   "file_b64": "W10=",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json has no list 'repositories'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "no_list",
+   "file_b64": "e30=",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json has no list 'repositories'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "list_null",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBudWxsCn0=",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json has no list 'repositories'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "list_object",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiB7fQp9",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json has no list 'repositories'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "empty_list",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbXQp9",
+   "repos": []
+  },
+  {
+   "name": "entry_not_object",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImEiCiAgICB9LAogICAgImIiCiAgXQp9",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: entry 1 has no name",
+    "oserror": false
+   }
+  },
+  {
+   "name": "entry_no_name",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJmb3JtYXQiOiAicmF3IgogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: entry 0 has no name",
+    "oserror": false
+   }
+  },
+  {
+   "name": "entry_empty_name",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogIiIKICAgIH0KICBdCn0=",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: entry 0 has no name",
+    "oserror": false
+   }
+  },
+  {
+   "name": "entry_name_number",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogNwogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: entry 0 has no name",
+    "oserror": false
+   }
+  },
+  {
+   "name": "members_string",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImciLAogICAgICAibWVtYmVycyI6ICJhIgogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: members of 'g' are not a list of names",
+    "oserror": false
+   }
+  },
+  {
+   "name": "members_numbers",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImciLAogICAgICAibWVtYmVycyI6IFsKICAgICAgICAiYSIsCiAgICAgICAgMQogICAgICBdCiAgICB9CiAgXQp9",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: members of 'g' are not a list of names",
+    "oserror": false
+   }
+  },
+  {
+   "name": "members_object",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImciLAogICAgICAibWVtYmVycyI6IHsKICAgICAgICAiYSI6IDEKICAgICAgfQogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: members of 'g' are not a list of names",
+    "oserror": false
+   }
+  },
+  {
+   "name": "members_quote_name",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogIml0J3MiLAogICAgICAibWVtYmVycyI6ICJhIgogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: members of \"it's\" are not a list of names",
+    "oserror": false
+   }
+  },
+  {
+   "name": "members_falsy",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImcxIiwKICAgICAgIm1lbWJlcnMiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJnMiIsCiAgICAgICJtZW1iZXJzIjoge30KICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImczIiwKICAgICAgIm1lbWJlcnMiOiAwCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJnNCIsCiAgICAgICJtZW1iZXJzIjogIiIKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImc1IiwKICAgICAgIm1lbWJlcnMiOiBbXQogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZzYiCiAgICB9CiAgXQp9",
+   "repos": [
+    {
+     "name": "g1",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g2",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g3",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g4",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g5",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g6",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ]
+  },
+  {
+   "name": "defaults",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogInBsYWluIgogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiYmxhbmsiLAogICAgICAiZm9ybWF0IjogIiIsCiAgICAgICJ0eXBlIjogIiIsCiAgICAgICJ2ZXJzaW9uX3BvbGljeSI6ICIiLAogICAgICAicmVtb3RlX3VybCI6IDEKICAgIH0KICBdCn0=",
+   "repos": [
+    {
+     "name": "plain",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "blank",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ]
+  },
+  {
+   "name": "full",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImRlbW8tcmVsZWFzZXMiLAogICAgICAiZm9ybWF0IjogIm1hdmVuMiIsCiAgICAgICJ0eXBlIjogImhvc3RlZCIsCiAgICAgICJtZW1iZXJzIjogW10sCiAgICAgICJ2ZXJzaW9uX3BvbGljeSI6ICJSRUxFQVNFIiwKICAgICAgImxheW91dF9wb2xpY3kiOiAiU1RSSUNUIiwKICAgICAgIndyaXRlX3BvbGljeSI6ICJBTExPV19PTkNFIiwKICAgICAgInJlbW90ZV91cmwiOiBudWxsLAogICAgICAiaHR0cF9wb3J0IjogbnVsbAogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZGVtby1kb2NrZXIiLAogICAgICAiZm9ybWF0IjogImRvY2tlciIsCiAgICAgICJ0eXBlIjogImhvc3RlZCIsCiAgICAgICJodHRwX3BvcnQiOiAxODA4MCwKICAgICAgImV4dHJhIjogImlnbm9yZWQiCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJkZW1vLWdyb3VwIiwKICAgICAgImZvcm1hdCI6ICJtYXZlbjIiLAogICAgICAidHlwZSI6ICJncm91cCIsCiAgICAgICJtZW1iZXJzIjogWwogICAgICAgICJkZW1vLXJlbGVhc2VzIiwKICAgICAgICAiZGVtby1yZWxlYXNlcyIKICAgICAgXQogICAgfSwKICAgIHsKICAgICAgIm5hbWUiOiAiZGVtby1yZWxlYXNlcyIsCiAgICAgICJmb3JtYXQiOiAicmF3IgogICAgfQogIF0KfQ==",
+   "repos": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": "RELEASE",
+     "layout_policy": "STRICT",
+     "write_policy": "ALLOW_ONCE",
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 18080
+    },
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-releases",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ]
+  },
+  {
+   "name": "http_port_string",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQiLAogICAgICAiaHR0cF9wb3J0IjogIjE4MDgwIgogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: '18080'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_true",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQiLAogICAgICAiaHR0cF9wb3J0IjogdHJ1ZQogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: True",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_zero",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQiLAogICAgICAiaHR0cF9wb3J0IjogMAogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: 0",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_high",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQiLAogICAgICAiaHR0cF9wb3J0IjogNjU1MzYKICAgIH0KICBdCn0=",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: 65536",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_edges",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQxIiwKICAgICAgImh0dHBfcG9ydCI6IDEKICAgIH0sCiAgICB7CiAgICAgICJuYW1lIjogImQyIiwKICAgICAgImh0dHBfcG9ydCI6IDY1NTM1CiAgICB9CiAgXQp9",
+   "repos": [
+    {
+     "name": "d1",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 1
+    },
+    {
+     "name": "d2",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 65535
+    }
+   ]
+  },
+  {
+   "name": "http_port_float",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQiLAogICAgICAiaHR0cF9wb3J0IjogMTgwODAuMAogICAgfQogIF0KfQ==",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: 18080.0",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_list",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQiLAogICAgICAiaHR0cF9wb3J0IjogWwogICAgICAgIDE4MDgwCiAgICAgIF0KICAgIH0KICBdCn0=",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: [18080]",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_object",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImQiLAogICAgICAiaHR0cF9wb3J0IjogewogICAgICAgICJwIjogMQogICAgICB9CiAgICB9CiAgXQp9",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: {'p': 1}",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_big",
+   "file_b64": "eyJyZXBvc2l0b3JpZXMiOiBbeyJuYW1lIjogImQiLCAiaHR0cF9wb3J0IjogMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwfV19",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: 100000000000000000000000",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_nan",
+   "file_b64": "eyJyZXBvc2l0b3JpZXMiOiBbeyJuYW1lIjogImQiLCAiaHR0cF9wb3J0IjogTmFOfV19",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of 'd' is not a port number: nan",
+    "oserror": false
+   }
+  },
+  {
+   "name": "http_port_quote_name",
+   "file_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogIml0J3MiLAogICAgICAiaHR0cF9wb3J0IjogIngiCiAgICB9CiAgXQp9",
+   "error": {
+    "class": "ValueError",
+    "message": "<root>/repositories.json: http_port of \"it's\" is not a port number: 'x'",
+    "oserror": false
+   }
+  },
+  {
+   "name": "crlf",
+   "file_b64": "eyJyZXBvc2l0b3JpZXMiOiBbDQp7Im5hbWUiOiAiZGVtby1yYXcifQ0KXX0=",
+   "repos": [
+    {
+     "name": "demo-raw",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ]
+  }
+ ],
+ "write": [
+  {
+   "name": "partial",
+   "entries": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "version_policy": "RELEASE"
+    },
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "\u4e2d"
+     ],
+     "http_port": 14203,
+     "password": "dropped"
+    }
+   ],
+   "bytes_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogImRlbW8tcmVsZWFzZXMiLAogICAgICAiZm9ybWF0IjogIm1hdmVuMiIsCiAgICAgICJ0eXBlIjogImhvc3RlZCIsCiAgICAgICJtZW1iZXJzIjogbnVsbCwKICAgICAgInZlcnNpb25fcG9saWN5IjogIlJFTEVBU0UiLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9LAogICAgewogICAgICAibmFtZSI6ICJkZW1vLWdyb3VwIiwKICAgICAgImZvcm1hdCI6ICJtYXZlbjIiLAogICAgICAidHlwZSI6ICJncm91cCIsCiAgICAgICJtZW1iZXJzIjogWwogICAgICAgICJkZW1vLXJlbGVhc2VzIiwKICAgICAgICAiXHU0ZTJkIgogICAgICBdLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiAxNDIwMwogICAgfQogIF0KfQo=",
+   "files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "empty",
+   "entries": [],
+   "bytes_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbXQp9Cg==",
+   "files": [
+    "repositories.json"
+   ]
+  },
+  {
+   "name": "empty_entry",
+   "entries": [
+    {}
+   ],
+   "bytes_b64": "ewogICJyZXBvc2l0b3JpZXMiOiBbCiAgICB7CiAgICAgICJuYW1lIjogbnVsbCwKICAgICAgImZvcm1hdCI6IG51bGwsCiAgICAgICJ0eXBlIjogbnVsbCwKICAgICAgIm1lbWJlcnMiOiBudWxsLAogICAgICAidmVyc2lvbl9wb2xpY3kiOiBudWxsLAogICAgICAibGF5b3V0X3BvbGljeSI6IG51bGwsCiAgICAgICJ3cml0ZV9wb2xpY3kiOiBudWxsLAogICAgICAicmVtb3RlX3VybCI6IG51bGwsCiAgICAgICJodHRwX3BvcnQiOiBudWxsCiAgICB9CiAgXQp9Cg==",
+   "files": [
+    "repositories.json"
+   ]
+  }
+ ],
+ "repositories": [
+  {
+   "name": "discovered_names",
+   "defined": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [
+    "demo-releases",
+    "old-repo"
+   ],
+   "hints": {},
+   "all": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "old-repo",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "demo-releases": {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null,
+    "old-repo": {
+     "name": "old-repo",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   },
+   "resolve": {
+    "": [],
+    "demo-releases": [
+     "demo-releases"
+    ],
+    "nope": [],
+    "old-repo": [
+     "old-repo"
+    ]
+   }
+  },
+  {
+   "name": "defined_without_stored_files",
+   "defined": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "demo-raw": {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-releases": {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "demo-raw": [
+     "demo-raw"
+    ],
+    "demo-releases": [
+     "demo-releases"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "all_sorted_without_case",
+   "defined": [
+    {
+     "name": "beta",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "Alpha",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [
+    "charlie",
+    "Delta"
+   ],
+   "hints": {},
+   "all": [
+    {
+     "name": "Alpha",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "beta",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "charlie",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "Delta",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "Alpha": {
+     "name": "Alpha",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "Delta": {
+     "name": "Delta",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "beta": {
+     "name": "beta",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "charlie": {
+     "name": "charlie",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "Alpha": [
+     "Alpha"
+    ],
+    "Delta": [
+     "Delta"
+    ],
+    "beta": [
+     "beta"
+    ],
+    "charlie": [
+     "charlie"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "resolve_group",
+   "defined": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-snapshots",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "inner-group",
+      "missing"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "inner-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-snapshots",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "inner-group",
+      "missing"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-snapshots",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "inner-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-snapshots",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "demo-group": {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "inner-group",
+      "missing"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-releases": {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-snapshots": {
+     "name": "demo-snapshots",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "inner-group": {
+     "name": "inner-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-snapshots",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "missing": null,
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "demo-group": [
+     "demo-releases",
+     "demo-snapshots"
+    ],
+    "demo-releases": [
+     "demo-releases"
+    ],
+    "demo-snapshots": [
+     "demo-snapshots"
+    ],
+    "inner-group": [
+     "demo-snapshots",
+     "demo-releases"
+    ],
+    "missing": [],
+    "nope": []
+   }
+  },
+  {
+   "name": "resolve_hosted",
+   "defined": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "demo-releases": {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "demo-releases": [
+     "demo-releases"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "resolve_discovered",
+   "defined": [],
+   "discovered": [
+    "old-repo"
+   ],
+   "hints": {},
+   "all": [
+    {
+     "name": "old-repo",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "nope": null,
+    "old-repo": {
+     "name": "old-repo",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   },
+   "resolve": {
+    "": [],
+    "nope": [],
+    "old-repo": [
+     "old-repo"
+    ]
+   }
+  },
+  {
+   "name": "resolve_cycle",
+   "defined": [
+    {
+     "name": "a",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "b"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "b",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "a",
+      "demo-raw"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "a",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "b"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "b",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "a",
+      "demo-raw"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "a": {
+     "name": "a",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "b"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "b": {
+     "name": "b",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "a",
+      "demo-raw"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-raw": {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "a": [
+     "demo-raw"
+    ],
+    "b": [
+     "demo-raw"
+    ],
+    "demo-raw": [
+     "demo-raw"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "resolve_self_member",
+   "defined": [
+    {
+     "name": "a",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "a",
+      "demo-raw"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "a",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "a",
+      "demo-raw"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "a": {
+     "name": "a",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "a",
+      "demo-raw"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-raw": {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "a": [
+     "demo-raw"
+    ],
+    "demo-raw": [
+     "demo-raw"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "resolve_each_leaf_once",
+   "defined": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-snapshots",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "one",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "demo-snapshots"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "two",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-snapshots",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "top",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "one",
+      "two",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-snapshots",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "one",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "demo-snapshots"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "top",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "one",
+      "two",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "two",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-snapshots",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "demo-releases": {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-snapshots": {
+     "name": "demo-snapshots",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null,
+    "one": {
+     "name": "one",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "demo-snapshots"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "top": {
+     "name": "top",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "one",
+      "two",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "two": {
+     "name": "two",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-snapshots",
+      "demo-releases"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   },
+   "resolve": {
+    "": [],
+    "demo-releases": [
+     "demo-releases"
+    ],
+    "demo-snapshots": [
+     "demo-snapshots"
+    ],
+    "nope": [],
+    "one": [
+     "demo-releases",
+     "demo-snapshots"
+    ],
+    "top": [
+     "demo-releases",
+     "demo-snapshots"
+    ],
+    "two": [
+     "demo-snapshots",
+     "demo-releases"
+    ]
+   }
+  },
+  {
+   "name": "resolve_proxy_member",
+   "defined": [
+    {
+     "name": "central-proxy",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": "https://repo.example.com/maven2/",
+     "http_port": null
+    },
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "central-proxy"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "central-proxy",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": "https://repo.example.com/maven2/",
+     "http_port": null
+    },
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "central-proxy"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "central-proxy": {
+     "name": "central-proxy",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": "https://repo.example.com/maven2/",
+     "http_port": null
+    },
+    "demo-group": {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "central-proxy"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "central-proxy": [
+     "central-proxy"
+    ],
+    "demo-group": [
+     "central-proxy"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "empty",
+   "defined": [],
+   "discovered": [],
+   "hints": {},
+   "all": [],
+   "get": {
+    "": null,
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "nope": []
+   }
+  },
+  {
+   "name": "hints",
+   "defined": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [
+    "demo-releases",
+    "demo-docker-old",
+    "demo-npm-old",
+    "demo-x",
+    ""
+   ],
+   "hints": {
+    "demo-docker-old": "docker",
+    "demo-npm-old": "npm",
+    "demo-x": "",
+    "demo-releases": "raw",
+    "absent": "maven2"
+   },
+   "all": [
+    {
+     "name": "demo-docker-old",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-npm-old",
+     "format": "npm",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-x",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "demo-docker-old": {
+     "name": "demo-docker-old",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-npm-old": {
+     "name": "demo-npm-old",
+     "format": "npm",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-releases": {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "demo-x": {
+     "name": "demo-x",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "demo-docker-old": [
+     "demo-docker-old"
+    ],
+    "demo-npm-old": [
+     "demo-npm-old"
+    ],
+    "demo-releases": [
+     "demo-releases"
+    ],
+    "demo-x": [
+     "demo-x"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "duplicate_definitions",
+   "defined": [
+    {
+     "name": "demo",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [
+    "demo"
+   ],
+   "hints": {},
+   "all": [
+    {
+     "name": "demo",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "demo": {
+     "name": "demo",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "demo": [
+     "demo"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "discovered_twice",
+   "defined": [],
+   "discovered": [
+    "b",
+    "a",
+    "b"
+   ],
+   "hints": {},
+   "all": [
+    {
+     "name": "a",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "b",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "a": {
+     "name": "a",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "b": {
+     "name": "b",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "a": [
+     "a"
+    ],
+    "b": [
+     "b"
+    ],
+    "nope": []
+   }
+  },
+  {
+   "name": "casefold_order",
+   "defined": [],
+   "discovered": [
+    "Stra\u00dfe",
+    "strasse",
+    "STRASSE",
+    "\u00df",
+    "ss",
+    "\u1e9e",
+    "\u0130",
+    "i\u0307",
+    "\u01c4",
+    "\u01c5",
+    "\u01c6",
+    "\uab70",
+    "\u13a0",
+    "\ufb00",
+    "ff",
+    "Zeta",
+    "alpha",
+    "_under",
+    "-dash",
+    "10",
+    "9",
+    "\u00e9",
+    "E",
+    "e",
+    "\u00c9",
+    "\u0131",
+    "I",
+    "i",
+    "\u03c2",
+    "\u03c3",
+    "\u03a3",
+    "\ud83d\ude00",
+    "\u4e2d",
+    "a-b",
+    "a_b",
+    "a.b",
+    "A",
+    "a"
+   ],
+   "hints": {},
+   "all": [
+    {
+     "name": "-dash",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "10",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "9",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "_under",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "A",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "a",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "a-b",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "a.b",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "a_b",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "alpha",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "E",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "e",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "ff",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\ufb00",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "I",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "i",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "i\u0307",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u0130",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "ss",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u00df",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u1e9e",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "STRASSE",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "Stra\u00dfe",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "strasse",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "Zeta",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u00c9",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u00e9",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u0131",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u01c4",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u01c5",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u01c6",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u03a3",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u03c2",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u03c3",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u13a0",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\uab70",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\u4e2d",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "\ud83d\ude00",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "-dash": {
+     "name": "-dash",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "10": {
+     "name": "10",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "9": {
+     "name": "9",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "A": {
+     "name": "A",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "E": {
+     "name": "E",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "I": {
+     "name": "I",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "STRASSE": {
+     "name": "STRASSE",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "Stra\u00dfe": {
+     "name": "Stra\u00dfe",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "Zeta": {
+     "name": "Zeta",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "_under": {
+     "name": "_under",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "a": {
+     "name": "a",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "a-b": {
+     "name": "a-b",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "a.b": {
+     "name": "a.b",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "a_b": {
+     "name": "a_b",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "alpha": {
+     "name": "alpha",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "e": {
+     "name": "e",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "ff": {
+     "name": "ff",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "i": {
+     "name": "i",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "i\u0307": {
+     "name": "i\u0307",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null,
+    "ss": {
+     "name": "ss",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "strasse": {
+     "name": "strasse",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u00c9": {
+     "name": "\u00c9",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u00df": {
+     "name": "\u00df",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u00e9": {
+     "name": "\u00e9",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u0130": {
+     "name": "\u0130",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u0131": {
+     "name": "\u0131",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u01c4": {
+     "name": "\u01c4",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u01c5": {
+     "name": "\u01c5",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u01c6": {
+     "name": "\u01c6",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u03a3": {
+     "name": "\u03a3",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u03c2": {
+     "name": "\u03c2",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u03c3": {
+     "name": "\u03c3",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u13a0": {
+     "name": "\u13a0",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u1e9e": {
+     "name": "\u1e9e",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\u4e2d": {
+     "name": "\u4e2d",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\uab70": {
+     "name": "\uab70",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\ufb00": {
+     "name": "\ufb00",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "\ud83d\ude00": {
+     "name": "\ud83d\ude00",
+     "format": "unknown",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   },
+   "resolve": {
+    "": [],
+    "-dash": [
+     "-dash"
+    ],
+    "10": [
+     "10"
+    ],
+    "9": [
+     "9"
+    ],
+    "A": [
+     "A"
+    ],
+    "E": [
+     "E"
+    ],
+    "I": [
+     "I"
+    ],
+    "STRASSE": [
+     "STRASSE"
+    ],
+    "Stra\u00dfe": [
+     "Stra\u00dfe"
+    ],
+    "Zeta": [
+     "Zeta"
+    ],
+    "_under": [
+     "_under"
+    ],
+    "a": [
+     "a"
+    ],
+    "a-b": [
+     "a-b"
+    ],
+    "a.b": [
+     "a.b"
+    ],
+    "a_b": [
+     "a_b"
+    ],
+    "alpha": [
+     "alpha"
+    ],
+    "e": [
+     "e"
+    ],
+    "ff": [
+     "ff"
+    ],
+    "i": [
+     "i"
+    ],
+    "i\u0307": [
+     "i\u0307"
+    ],
+    "nope": [],
+    "ss": [
+     "ss"
+    ],
+    "strasse": [
+     "strasse"
+    ],
+    "\u00c9": [
+     "\u00c9"
+    ],
+    "\u00df": [
+     "\u00df"
+    ],
+    "\u00e9": [
+     "\u00e9"
+    ],
+    "\u0130": [
+     "\u0130"
+    ],
+    "\u0131": [
+     "\u0131"
+    ],
+    "\u01c4": [
+     "\u01c4"
+    ],
+    "\u01c5": [
+     "\u01c5"
+    ],
+    "\u01c6": [
+     "\u01c6"
+    ],
+    "\u03a3": [
+     "\u03a3"
+    ],
+    "\u03c2": [
+     "\u03c2"
+    ],
+    "\u03c3": [
+     "\u03c3"
+    ],
+    "\u13a0": [
+     "\u13a0"
+    ],
+    "\u1e9e": [
+     "\u1e9e"
+    ],
+    "\u4e2d": [
+     "\u4e2d"
+    ],
+    "\uab70": [
+     "\uab70"
+    ],
+    "\ufb00": [
+     "\ufb00"
+    ],
+    "\ud83d\ude00": [
+     "\ud83d\ude00"
+    ]
+   }
+  },
+  {
+   "name": "deep_groups",
+   "defined": [
+    {
+     "name": "g1",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "g2",
+      "h1",
+      "g3"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g2",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "g3",
+      "h2"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g3",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "h3",
+      "g1",
+      "h1",
+      "undefined-disc"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "h1",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "h2",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "h3",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [
+    "undefined-disc",
+    "h1"
+   ],
+   "hints": {
+    "undefined-disc": "raw"
+   },
+   "all": [
+    {
+     "name": "g1",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "g2",
+      "h1",
+      "g3"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g2",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "g3",
+      "h2"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "g3",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "h3",
+      "g1",
+      "h1",
+      "undefined-disc"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "h1",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "h2",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "h3",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "undefined-disc",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "g1": {
+     "name": "g1",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "g2",
+      "h1",
+      "g3"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "g2": {
+     "name": "g2",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "g3",
+      "h2"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "g3": {
+     "name": "g3",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "h3",
+      "g1",
+      "h1",
+      "undefined-disc"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "h1": {
+     "name": "h1",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "h2": {
+     "name": "h2",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "h3": {
+     "name": "h3",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null,
+    "undefined-disc": {
+     "name": "undefined-disc",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": false,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   },
+   "resolve": {
+    "": [],
+    "g1": [
+     "h3",
+     "h1",
+     "undefined-disc",
+     "h2"
+    ],
+    "g2": [
+     "h3",
+     "h1",
+     "undefined-disc",
+     "h2"
+    ],
+    "g3": [
+     "h3",
+     "h2",
+     "h1",
+     "undefined-disc"
+    ],
+    "h1": [
+     "h1"
+    ],
+    "h2": [
+     "h2"
+    ],
+    "h3": [
+     "h3"
+    ],
+    "nope": [],
+    "undefined-disc": [
+     "undefined-disc"
+    ]
+   }
+  },
+  {
+   "name": "group_of_missing",
+   "defined": [
+    {
+     "name": "g",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "x",
+      "y"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "g",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "x",
+      "y"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "g": {
+     "name": "g",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "x",
+      "y"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null,
+    "x": null,
+    "y": null
+   },
+   "resolve": {
+    "": [],
+    "g": [],
+    "nope": [],
+    "x": [],
+    "y": []
+   }
+  },
+  {
+   "name": "empty_group",
+   "defined": [
+    {
+     "name": "g",
+     "format": "maven2",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "g",
+     "format": "maven2",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "g": {
+     "name": "g",
+     "format": "maven2",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "g": [],
+    "nope": []
+   }
+  },
+  {
+   "name": "type_case",
+   "defined": [
+    {
+     "name": "G",
+     "format": "maven2",
+     "type": "Group",
+     "members": [
+      "h"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "h",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "all": [
+    {
+     "name": "G",
+     "format": "maven2",
+     "type": "Group",
+     "members": [
+      "h"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "h",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "get": {
+    "": null,
+    "G": {
+     "name": "G",
+     "format": "maven2",
+     "type": "Group",
+     "members": [
+      "h"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "h": {
+     "name": "h",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    "nope": null
+   },
+   "resolve": {
+    "": [],
+    "G": [
+     "G"
+    ],
+    "h": [
+     "h"
+    ],
+    "nope": []
+   }
+  }
+ ],
+ "rows": [
+  {
+   "name": "plain",
+   "defined": [
+    {
+     "name": "demo-releases",
+     "format": "maven2",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": "RELEASE",
+     "layout_policy": "STRICT",
+     "write_policy": "ALLOW_ONCE",
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-group",
+     "format": "maven2",
+     "type": "group",
+     "members": [
+      "demo-releases",
+      "old-repo"
+     ],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "central-proxy",
+     "format": "maven2",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": "https://repo.example.com/maven2/",
+     "http_port": null
+    }
+   ],
+   "discovered": [
+    "demo-releases",
+    "old-repo",
+    "demo-group"
+   ],
+   "hints": {
+    "old-repo": "raw"
+   },
+   "stats": [
+    {
+     "repo": "demo-releases",
+     "files": 3,
+     "bytes": 3000,
+     "newest_ms": 1700000000123
+    },
+    {
+     "repo": "old-repo",
+     "files": 1,
+     "bytes": 7,
+     "newest_ms": 1600000000000
+    },
+    {
+     "repo": "demo-group",
+     "files": 2,
+     "bytes": 20,
+     "newest_ms": 1650000000000
+    },
+    {
+     "repo": "not-listed",
+     "files": 9,
+     "bytes": 9,
+     "newest_ms": 9
+    }
+   ],
+   "docker_ports": null,
+   "json": "{\n  \"repositories\": [\n    {\n      \"name\": \"central-proxy\",\n      \"format\": \"maven2\",\n      \"type\": \"proxy\",\n      \"defined\": true,\n      \"access\": \"maven\",\n      \"docker_port\": null,\n      \"members\": [],\n      \"files\": 0,\n      \"bytes\": 0,\n      \"newest_ms\": null,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": \"https://repo.example.com/maven2/\"\n    },\n    {\n      \"name\": \"demo-group\",\n      \"format\": \"maven2\",\n      \"type\": \"group\",\n      \"defined\": true,\n      \"access\": \"maven\",\n      \"docker_port\": null,\n      \"members\": [\n        \"demo-releases\",\n        \"old-repo\"\n      ],\n      \"files\": 2,\n      \"bytes\": 20,\n      \"newest_ms\": 1650000000000,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    },\n    {\n      \"name\": \"demo-releases\",\n      \"format\": \"maven2\",\n      \"type\": \"hosted\",\n      \"defined\": true,\n      \"access\": \"maven\",\n      \"docker_port\": null,\n      \"members\": [],\n      \"files\": 3,\n      \"bytes\": 3000,\n      \"newest_ms\": 1700000000123,\n      \"version_policy\": \"RELEASE\",\n      \"layout_policy\": \"STRICT\",\n      \"write_policy\": \"ALLOW_ONCE\",\n      \"remote_url\": null\n    },\n    {\n      \"name\": \"old-repo\",\n      \"format\": \"raw\",\n      \"type\": \"hosted\",\n      \"defined\": false,\n      \"access\": \"files\",\n      \"docker_port\": null,\n      \"members\": [],\n      \"files\": 1,\n      \"bytes\": 7,\n      \"newest_ms\": 1600000000000,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    }\n  ]\n}"
+  },
+  {
+   "name": "docker_ports",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 18080
+    },
+    {
+     "name": "demo-docker-moved",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 18081
+    },
+    {
+     "name": "demo-docker-plain",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-npm",
+     "format": "npm",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 18082
+    }
+   ],
+   "discovered": [
+    "demo-docker-old"
+   ],
+   "hints": {
+    "demo-docker-old": "docker"
+   },
+   "stats": [
+    {
+     "repo": "demo-docker",
+     "files": 5,
+     "bytes": 500,
+     "newest_ms": 1700000000000
+    },
+    {
+     "repo": "demo-docker",
+     "files": 6,
+     "bytes": 600,
+     "newest_ms": 1700000000001
+    }
+   ],
+   "docker_ports": {
+    "demo-docker-moved": 18091,
+    "demo-docker-old": 18090,
+    "demo-npm": 18092,
+    "absent": 18093
+   },
+   "json": "{\n  \"repositories\": [\n    {\n      \"name\": \"demo-docker\",\n      \"format\": \"docker\",\n      \"type\": \"hosted\",\n      \"defined\": true,\n      \"access\": \"docker\",\n      \"docker_port\": 18080,\n      \"members\": [],\n      \"files\": 6,\n      \"bytes\": 600,\n      \"newest_ms\": 1700000000001,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    },\n    {\n      \"name\": \"demo-docker-moved\",\n      \"format\": \"docker\",\n      \"type\": \"hosted\",\n      \"defined\": true,\n      \"access\": \"docker\",\n      \"docker_port\": 18091,\n      \"members\": [],\n      \"files\": 0,\n      \"bytes\": 0,\n      \"newest_ms\": null,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    },\n    {\n      \"name\": \"demo-docker-old\",\n      \"format\": \"docker\",\n      \"type\": \"hosted\",\n      \"defined\": false,\n      \"access\": \"docker\",\n      \"docker_port\": 18090,\n      \"members\": [],\n      \"files\": 0,\n      \"bytes\": 0,\n      \"newest_ms\": null,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    },\n    {\n      \"name\": \"demo-docker-plain\",\n      \"format\": \"docker\",\n      \"type\": \"hosted\",\n      \"defined\": true,\n      \"access\": \"docker\",\n      \"docker_port\": null,\n      \"members\": [],\n      \"files\": 0,\n      \"bytes\": 0,\n      \"newest_ms\": null,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    },\n    {\n      \"name\": \"demo-npm\",\n      \"format\": \"npm\",\n      \"type\": \"hosted\",\n      \"defined\": true,\n      \"access\": \"npm\",\n      \"docker_port\": null,\n      \"members\": [],\n      \"files\": 0,\n      \"bytes\": 0,\n      \"newest_ms\": null,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    }\n  ]\n}"
+  },
+  {
+   "name": "empty",
+   "defined": [],
+   "discovered": [],
+   "hints": {},
+   "stats": [],
+   "docker_ports": null,
+   "json": "{\n  \"repositories\": []\n}"
+  },
+  {
+   "name": "unicode",
+   "defined": [
+    {
+     "name": "caf\u00e9",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": "https://repo.example.com/\u4e2d",
+     "http_port": null
+    }
+   ],
+   "discovered": [
+    "\ud83d\ude00"
+   ],
+   "hints": {},
+   "stats": [],
+   "docker_ports": {},
+   "json": "{\n  \"repositories\": [\n    {\n      \"name\": \"caf\\u00e9\",\n      \"format\": \"raw\",\n      \"type\": \"hosted\",\n      \"defined\": true,\n      \"access\": \"files\",\n      \"docker_port\": null,\n      \"members\": [],\n      \"files\": 0,\n      \"bytes\": 0,\n      \"newest_ms\": null,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": \"https://repo.example.com/\\u4e2d\"\n    },\n    {\n      \"name\": \"\\ud83d\\ude00\",\n      \"format\": \"unknown\",\n      \"type\": \"hosted\",\n      \"defined\": false,\n      \"access\": \"files\",\n      \"docker_port\": null,\n      \"members\": [],\n      \"files\": 0,\n      \"bytes\": 0,\n      \"newest_ms\": null,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    }\n  ]\n}"
+  },
+  {
+   "name": "zero_stat",
+   "defined": [
+    {
+     "name": "demo-raw",
+     "format": "raw",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "stats": [
+    {
+     "repo": "demo-raw",
+     "files": 0,
+     "bytes": 0,
+     "newest_ms": 0
+    }
+   ],
+   "docker_ports": null,
+   "json": "{\n  \"repositories\": [\n    {\n      \"name\": \"demo-raw\",\n      \"format\": \"raw\",\n      \"type\": \"hosted\",\n      \"defined\": true,\n      \"access\": \"files\",\n      \"docker_port\": null,\n      \"members\": [],\n      \"files\": 0,\n      \"bytes\": 0,\n      \"newest_ms\": 0,\n      \"version_policy\": null,\n      \"layout_policy\": null,\n      \"write_policy\": null,\n      \"remote_url\": null\n    }\n  ]\n}"
+  }
+ ]
+}

@@ -1,0 +1,4 @@
+{"id":"0b1e0000-0000-4000-8000-000000000002","name":"demo-cache","type":"File","attributes":{"file":{"path":"/srv/blobs/demo-cache"},"blobStoreQuotaConfig":{"quotaType":"spaceRemainingQuota","quotaLimitBytes":5368709120}},"_removed":[]}
+{"id":"0b1e0000-0000-4000-8000-000000000001","name":"demo-files","type":"File","attributes":{"file":{"path":"/srv/blobs/demo-files"}},"_removed":[]}
+{"id":"0b1e0000-0000-4000-8000-000000000004","name":"demo-group","type":"Group","attributes":{"group":{"members":["demo-files","demo-cache"],"fillPolicy":"roundRobinFillPolicy"}},"_removed":[]}
+{"id":"0b1e0000-0000-4000-8000-000000000003","name":"demo-s3","type":"S3","attributes":{"s3":{"bucket":"demo-bucket","region":"eu-central-1","expiration":"3"}},"_removed":["attributes.s3.accessKeyId","attributes.s3.secretAccessKey","attributes.s3.sessionToken"]}

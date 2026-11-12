@@ -1,0 +1,7 @@
+# build output and caches of tools/go.sh and tools/release.sh
+/bin/
+/dist/
+/.cache/
+/.tmp/
+/work/
+.DS_Store

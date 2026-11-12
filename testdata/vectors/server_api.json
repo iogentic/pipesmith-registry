@@ -1,0 +1,802 @@
+{
+ "python": "3.12.13",
+ "constants": {
+  "post_header": "X-Artifact-Repository",
+  "browse_limit": 500,
+  "max_browse_limit": 10000,
+  "scan_stop_seconds": 10.0,
+  "html": "text/html; charset=utf-8"
+ },
+ "page": {
+  "sha256": "90b3061357c8b820d252cffa681b602cb076da68f1cb0e96a646816e6a5b35b3",
+  "bytes": 41455,
+  "headers": {
+   "Content-Security-Policy": "default-src 'none'; script-src 'sha256-mraZtCp7V31r3fbxc4xe/l+6/dp1Q7j6BQklRTOPqMM=' 'sha256-8QQPv8u6QpS1R8cQ92e6fsR9RZtOaJ2Yc926tzHWLhM='; style-src 'sha256-K2mrBypFQERfj+pA60PXjRmd6Y0kKEtbdtF+YqC8tnw='; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+   "X-Content-Type-Options": "nosniff",
+   "Referrer-Policy": "no-referrer",
+   "Cache-Control": "no-cache"
+  }
+ },
+ "post_refusal": [
+  {
+   "port": 14193,
+   "headers": [],
+   "refusal": "the header X-Artifact-Repository: 1 is missing"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "host",
+     "localhost:14193"
+    ]
+   ],
+   "refusal": "the header X-Artifact-Repository: 1 is missing"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ]
+   ],
+   "refusal": "the Host '' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "2"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ]
+   ],
+   "refusal": "the header X-Artifact-Repository: 1 is missing"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     ""
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ]
+   ],
+   "refusal": "the header X-Artifact-Repository: 1 is missing"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1 "
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ]
+   ],
+   "refusal": "the header X-Artifact-Repository: 1 is missing"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "01"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ]
+   ],
+   "refusal": "the header X-Artifact-Repository: 1 is missing"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "2"
+    ],
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ]
+   ],
+   "refusal": "the header X-Artifact-Repository: 1 is missing"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "x-artifact-repository",
+     "2"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "127.0.0.1:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "[::1]:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "LOCALHOST:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "[::1]:14194"
+    ]
+   ],
+   "refusal": "the Host '[::1]:14194' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost"
+    ]
+   ],
+   "refusal": "the Host 'localhost' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:014193"
+    ]
+   ],
+   "refusal": "the Host 'localhost:014193' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "evil.example:14193"
+    ]
+   ],
+   "refusal": "the Host 'evil.example:14193' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "LOCALHOST\u00c0:14193"
+    ]
+   ],
+   "refusal": "the Host 'localhost\u00e0:14193' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "l\u00d7\u00de\u00df\u00ff\u0085'\"\\"
+    ]
+   ],
+   "refusal": "the Host 'l\u00d7\u00fe\u00df\u00ff\\x85\\'\"\\\\' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     ""
+    ]
+   ],
+   "refusal": "the Host '' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "http://localhost:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "HTTP://LocalHost:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "http://127.0.0.1:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "http://[::1]:14193"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "https://localhost:14193"
+    ]
+   ],
+   "refusal": "the Origin 'https://localhost:14193' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "http://localhost:14193/"
+    ]
+   ],
+   "refusal": "the Origin 'http://localhost:14193/' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "http://localhost"
+    ]
+   ],
+   "refusal": "the Origin 'http://localhost' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "null"
+    ]
+   ],
+   "refusal": "the Origin 'null' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     ""
+    ]
+   ],
+   "refusal": "the Origin '' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "http://\u00c0\u00e9\u0085\u00a0'"
+    ]
+   ],
+   "refusal": "the Origin \"http://\u00c0\u00e9\\x85\\xa0'\" is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "it's \"quoted\""
+    ]
+   ],
+   "refusal": "the Origin 'it\\'s \"quoted\"' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "evil"
+    ],
+    [
+     "origin",
+     "http://localhost:14193"
+    ]
+   ],
+   "refusal": "the Origin 'evil' is not this server"
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "x-artifact-repository",
+     "1"
+    ],
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "http://localhost:14193"
+    ],
+    [
+     "origin",
+     "evil"
+    ]
+   ],
+   "refusal": null
+  },
+  {
+   "port": 14193,
+   "headers": [
+    [
+     "host",
+     "localhost:14193"
+    ],
+    [
+     "origin",
+     "evil"
+    ]
+   ],
+   "refusal": "the header X-Artifact-Repository: 1 is missing"
+  }
+ ],
+ "scan": [
+  {
+   "name": "directory",
+   "kind": "directory",
+   "snapshot_keys": [
+    "running",
+    "store",
+    "progress",
+    "started_ms",
+    "last"
+   ],
+   "idle": {
+    "running": false,
+    "store": null,
+    "progress": null,
+    "started_ms": null
+   },
+   "keys": [
+    "live",
+    "deleted",
+    "copies",
+    "no_bytes",
+    "unparsable",
+    "seconds",
+    "store",
+    "hints",
+    "error",
+    "finished_ms"
+   ],
+   "types": {
+    "live": "int",
+    "deleted": "int",
+    "copies": "int",
+    "no_bytes": "int",
+    "unparsable": "int",
+    "seconds": "float",
+    "store": "str",
+    "hints": "dict",
+    "error": "NoneType",
+    "finished_ms": "int"
+   },
+   "values": {
+    "live": 3,
+    "deleted": 0,
+    "copies": 0,
+    "no_bytes": 0,
+    "unparsable": 0,
+    "store": "tree",
+    "hints": {
+     "demo-npm": "npm",
+     "demo-releases": "maven2"
+    },
+    "error": null
+   }
+  },
+  {
+   "name": "directory without root",
+   "kind": "directory",
+   "snapshot_keys": [
+    "running",
+    "store",
+    "progress",
+    "started_ms",
+    "last"
+   ],
+   "idle": {
+    "running": false,
+    "store": null,
+    "progress": null,
+    "started_ms": null
+   },
+   "keys": [
+    "live",
+    "deleted",
+    "copies",
+    "no_bytes",
+    "unparsable",
+    "seconds",
+    "store",
+    "error",
+    "finished_ms"
+   ],
+   "types": {
+    "live": "NoneType",
+    "deleted": "NoneType",
+    "copies": "NoneType",
+    "no_bytes": "NoneType",
+    "unparsable": "NoneType",
+    "seconds": "NoneType",
+    "store": "str",
+    "error": "str",
+    "finished_ms": "int"
+   },
+   "values": {
+    "live": null,
+    "deleted": null,
+    "copies": null,
+    "no_bytes": null,
+    "unparsable": null,
+    "store": "tree",
+    "error": "store root <root> is not a directory"
+   }
+  },
+  {
+   "name": "blob store",
+   "kind": "nexus-file",
+   "snapshot_keys": [
+    "running",
+    "store",
+    "progress",
+    "started_ms",
+    "last"
+   ],
+   "idle": {
+    "running": false,
+    "store": null,
+    "progress": null,
+    "started_ms": null
+   },
+   "keys": [
+    "live",
+    "deleted",
+    "copies",
+    "no_bytes",
+    "unparsable",
+    "seconds",
+    "store",
+    "hints",
+    "error",
+    "finished_ms"
+   ],
+   "types": {
+    "live": "int",
+    "deleted": "int",
+    "copies": "int",
+    "no_bytes": "int",
+    "unparsable": "int",
+    "seconds": "float",
+    "store": "str",
+    "hints": "dict",
+    "error": "NoneType",
+    "finished_ms": "int"
+   },
+   "values": {
+    "live": 2,
+    "deleted": 1,
+    "copies": 0,
+    "no_bytes": 0,
+    "unparsable": 0,
+    "store": "s1",
+    "hints": {
+     "demo-docker": "docker"
+    },
+    "error": null
+   }
+  },
+  {
+   "name": "blob store emptied",
+   "kind": "nexus-file",
+   "snapshot_keys": [
+    "running",
+    "store",
+    "progress",
+    "started_ms",
+    "last"
+   ],
+   "idle": {
+    "running": false,
+    "store": null,
+    "progress": null,
+    "started_ms": null
+   },
+   "keys": [
+    "live",
+    "deleted",
+    "copies",
+    "no_bytes",
+    "unparsable",
+    "seconds",
+    "store",
+    "error",
+    "finished_ms"
+   ],
+   "types": {
+    "live": "NoneType",
+    "deleted": "NoneType",
+    "copies": "NoneType",
+    "no_bytes": "NoneType",
+    "unparsable": "NoneType",
+    "seconds": "NoneType",
+    "store": "str",
+    "error": "str",
+    "finished_ms": "int"
+   },
+   "values": {
+    "live": null,
+    "deleted": null,
+    "copies": null,
+    "no_bytes": null,
+    "unparsable": null,
+    "store": "s1",
+    "error": "store s1 at <root> holds no files, but the index has 2 rows of it; the rows are kept. Check that the disk is mounted, or detach the store with: store remove s1"
+   }
+  },
+  {
+   "name": "blob store without root",
+   "kind": "nexus-file",
+   "snapshot_keys": [
+    "running",
+    "store",
+    "progress",
+    "started_ms",
+    "last"
+   ],
+   "idle": {
+    "running": false,
+    "store": null,
+    "progress": null,
+    "started_ms": null
+   },
+   "keys": [
+    "live",
+    "deleted",
+    "copies",
+    "no_bytes",
+    "unparsable",
+    "seconds",
+    "store",
+    "error",
+    "finished_ms"
+   ],
+   "types": {
+    "live": "NoneType",
+    "deleted": "NoneType",
+    "copies": "NoneType",
+    "no_bytes": "NoneType",
+    "unparsable": "NoneType",
+    "seconds": "NoneType",
+    "store": "str",
+    "error": "str",
+    "finished_ms": "int"
+   },
+   "values": {
+    "live": null,
+    "deleted": null,
+    "copies": null,
+    "no_bytes": null,
+    "unparsable": null,
+    "store": "s1",
+    "error": "store root <root> is not a directory"
+   }
+  }
+ ]
+}

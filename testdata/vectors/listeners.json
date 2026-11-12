@@ -1,0 +1,1015 @@
+{
+ "generator": "tools/vectors/listeners.py",
+ "python": "3.12.13",
+ "reserved_ports": [
+  8791
+ ],
+ "lowest_port": 1024,
+ "highest_port": 65535,
+ "port_map": [
+  {
+   "name": "port_map",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    },
+    {
+     "name": "demo-docker-new",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50103
+    },
+    {
+     "name": "demo-docker-plain",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-npm",
+     "format": "npm",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50102
+    },
+    {
+     "name": "demo-pypi",
+     "format": "pypi",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    },
+    {
+     "name": "demo-docker-moved",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50101
+    }
+   ],
+   "discovered": [
+    "demo-docker",
+    "demo-docker-old"
+   ],
+   "hints": {
+    "demo-docker-old": "docker"
+   },
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker-moved": 50111,
+    "demo-docker-old": 50110,
+    "demo-npm": 50112,
+    "demo-pypi": 50113,
+    "no-such-repo": 50114
+   },
+   "port_of": {
+    "demo-docker": 50100,
+    "demo-docker-moved": 50111,
+    "demo-docker-new": 50103,
+    "demo-docker-old": 50110,
+    "demo-docker-plain": null,
+    "demo-npm": null,
+    "demo-pypi": null
+   },
+   "map": [
+    [
+     50100,
+     "demo-docker"
+    ],
+    [
+     50103,
+     "demo-docker-new"
+    ],
+    [
+     50110,
+     "demo-docker-old"
+    ],
+    [
+     50111,
+     "demo-docker-moved"
+    ]
+   ]
+  },
+  {
+   "name": "without_ports",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [
+    "demo-docker"
+   ],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": null
+   },
+   "map": []
+  },
+  {
+   "name": "accepts_the_edges",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 1024
+    },
+    {
+     "name": "demo-docker-old",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 65535
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 1024,
+    "demo-docker-old": 65535
+   },
+   "map": [
+    [
+     1024,
+     "demo-docker"
+    ],
+    [
+     65535,
+     "demo-docker-old"
+    ]
+   ]
+  },
+  {
+   "name": "refuses_8793",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 8793
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 8793
+   },
+   "error": "Docker port 8793 of demo-docker is the main port of the server"
+  },
+  {
+   "name": "refuses_8791",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 8791
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 8791
+   },
+   "error": "Docker port 8791 of demo-docker is reserved on this machine"
+  },
+  {
+   "name": "refuses_80",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 80
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 80
+   },
+   "error": "Docker port 80 of demo-docker is outside 1024 to 65535"
+  },
+  {
+   "name": "refuses_70000",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 70000
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 70000
+   },
+   "error": "Docker port 70000 of demo-docker is outside 1024 to 65535"
+  },
+  {
+   "name": "refuses_1023",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 1023
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 1023
+   },
+   "error": "Docker port 1023 of demo-docker is outside 1024 to 65535"
+  },
+  {
+   "name": "refuses_configured_8793",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker": 8793
+   },
+   "port_of": {
+    "demo-docker": 8793
+   },
+   "error": "Docker port 8793 of demo-docker is the main port of the server"
+  },
+  {
+   "name": "refuses_configured_8791",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker": 8791
+   },
+   "port_of": {
+    "demo-docker": 8791
+   },
+   "error": "Docker port 8791 of demo-docker is reserved on this machine"
+  },
+  {
+   "name": "refuses_configured_80",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker": 80
+   },
+   "port_of": {
+    "demo-docker": 80
+   },
+   "error": "Docker port 80 of demo-docker is outside 1024 to 65535"
+  },
+  {
+   "name": "refuses_configured_70000",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker": 70000
+   },
+   "port_of": {
+    "demo-docker": 70000
+   },
+   "error": "Docker port 70000 of demo-docker is outside 1024 to 65535"
+  },
+  {
+   "name": "used_twice",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    },
+    {
+     "name": "demo-docker-old",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 50100,
+    "demo-docker-old": 50100
+   },
+   "error": "Docker port 50100 is set for both demo-docker and demo-docker-old"
+  },
+  {
+   "name": "used_twice_by_configuration",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    },
+    {
+     "name": "demo-docker-old",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50101
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker-old": 50100
+   },
+   "port_of": {
+    "demo-docker": 50100,
+    "demo-docker-old": 50100
+   },
+   "error": "Docker port 50100 is set for both demo-docker and demo-docker-old"
+  },
+  {
+   "name": "main_port_of_the_configuration",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50150
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 50150,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 50150
+   },
+   "error": "Docker port 50150 of demo-docker is the main port of the server"
+  },
+  {
+   "name": "sorted_by_port",
+   "defined": [
+    {
+     "name": "z",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50300
+    },
+    {
+     "name": "a",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50302
+    },
+    {
+     "name": "m",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50301
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "a": 50302,
+    "m": 50301,
+    "z": 50300
+   },
+   "map": [
+    [
+     50300,
+     "z"
+    ],
+    [
+     50301,
+     "m"
+    ],
+    [
+     50302,
+     "a"
+    ]
+   ]
+  },
+  {
+   "name": "first_error_in_name_order",
+   "defined": [
+    {
+     "name": "b-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 80
+    },
+    {
+     "name": "a-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 8791
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "a-docker": 8791,
+    "b-docker": 80
+   },
+   "error": "Docker port 8791 of a-docker is reserved on this machine"
+  },
+  {
+   "name": "twice_names_in_order",
+   "defined": [
+    {
+     "name": "Zeta",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50400
+    },
+    {
+     "name": "alpha",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50400
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "alpha": 50400,
+    "Zeta": 50400
+   },
+   "error": "Docker port 50400 is set for both alpha and Zeta"
+  },
+  {
+   "name": "three_on_one_port",
+   "defined": [
+    {
+     "name": "c",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50500
+    },
+    {
+     "name": "a",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50500
+    },
+    {
+     "name": "b",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50500
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "a": 50500,
+    "b": 50500,
+    "c": 50500
+   },
+   "error": "Docker port 50500 is set for both a and b"
+  },
+  {
+   "name": "configured_port_zero",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50100
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker": 0
+   },
+   "port_of": {
+    "demo-docker": 0
+   },
+   "error": "Docker port 0 of demo-docker is outside 1024 to 65535"
+  },
+  {
+   "name": "configured_without_definition_port",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": null
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker": 50600
+   },
+   "port_of": {
+    "demo-docker": 50600
+   },
+   "map": [
+    [
+     50600,
+     "demo-docker"
+    ]
+   ]
+  },
+  {
+   "name": "hint_only_docker",
+   "defined": [],
+   "discovered": [
+    "demo-docker-old",
+    "demo-raw"
+   ],
+   "hints": {
+    "demo-docker-old": "docker",
+    "demo-raw": "raw"
+   },
+   "port": 8793,
+   "docker_ports": {
+    "demo-docker-old": 50700,
+    "demo-raw": 50701
+   },
+   "port_of": {
+    "demo-docker-old": 50700,
+    "demo-raw": null
+   },
+   "map": [
+    [
+     50700,
+     "demo-docker-old"
+    ]
+   ]
+  },
+  {
+   "name": "hint_docker_no_port",
+   "defined": [],
+   "discovered": [
+    "demo-docker-old"
+   ],
+   "hints": {
+    "demo-docker-old": "docker"
+   },
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker-old": null
+   },
+   "map": []
+  },
+  {
+   "name": "group_docker",
+   "defined": [
+    {
+     "name": "demo-docker-group",
+     "format": "docker",
+     "type": "group",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50800
+    },
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50801
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 50801,
+    "demo-docker-group": 50800
+   },
+   "map": [
+    [
+     50800,
+     "demo-docker-group"
+    ],
+    [
+     50801,
+     "demo-docker"
+    ]
+   ]
+  },
+  {
+   "name": "proxy_docker",
+   "defined": [
+    {
+     "name": "demo-docker-proxy",
+     "format": "docker",
+     "type": "proxy",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50900
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker-proxy": 50900
+   },
+   "map": [
+    [
+     50900,
+     "demo-docker-proxy"
+    ]
+   ]
+  },
+  {
+   "name": "main_port_reserved_not_checked_here",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 50950
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8791,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 50950
+   },
+   "map": [
+    [
+     50950,
+     "demo-docker"
+    ]
+   ]
+  },
+  {
+   "name": "docker_on_reserved_main",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 8791
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8791,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 8791
+   },
+   "error": "Docker port 8791 of demo-docker is the main port of the server"
+  },
+  {
+   "name": "main_port_equals_low_edge",
+   "defined": [
+    {
+     "name": "demo-docker",
+     "format": "docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 1024
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 1024,
+   "docker_ports": {},
+   "port_of": {
+    "demo-docker": 1024
+   },
+   "error": "Docker port 1024 of demo-docker is the main port of the server"
+  },
+  {
+   "name": "format_case",
+   "defined": [
+    {
+     "name": "demo-Docker",
+     "format": "Docker",
+     "type": "hosted",
+     "members": [],
+     "defined": true,
+     "version_policy": null,
+     "layout_policy": null,
+     "write_policy": null,
+     "remote_url": null,
+     "http_port": 51000
+    }
+   ],
+   "discovered": [],
+   "hints": {},
+   "port": 8793,
+   "docker_ports": {},
+   "port_of": {
+    "demo-Docker": null
+   },
+   "map": []
+  }
+ ]
+}

@@ -1,0 +1,2321 @@
+{
+ "generator": "tools/vectors/cli.py",
+ "python": "3.12.13",
+ "version": "0.1.0",
+ "program": "pipesmith-registry",
+ "help": "Artifact Repository 0.1.0\nServes file blob stores and directory trees read only under /repository/<name>/<path>.\n\nusage: python -m artifact_repository <command> [options]\n\nServer\n  serve [--port N] [--bind ADDR]       run the server in the foreground, with one more\n                                       listener per Docker repository that has a port\n\nStores\n  store add <name> --kind <kind> --root <path> [--repos a,b] [--manifest <path>]\n                                       attach a store; kind is nexus-file or directory,\n                                       --repos limits a directory store to these names,\n                                       --manifest gives a directory store the blob manifest\n                                       (a file or a directory of part-*.tsv[.gz|.zst])\n                                       for SHA1, content type and creation time\n  store list                           list the stores with their indexed files\n  store remove <name>                  detach a store and drop its rows from the index\n  scan [<name>]                        scan one store or all of them into the index\n\nRepositories\n  repos [--json]                       repositories with format, type, access, Docker port,\n                                       files and size\n  repos port <name> <port|none>        set or clear the Docker port of a repository in\n                                       config.json; it wins over the port of the settings\n                                       import and takes effect at the next start\n  import-settings <file>               write repositories.json from a repository\n                                       settings export; credentials are not taken over\n  docker-check <name>                  read every stored manifest of a Docker repository and\n                                       list the blobs and manifests they name that are not\n                                       in the index; exit code 1 when one is missing\n\nSettings\n  config [--get KEY | --check | --json | --docker-ports]\n                                       show the configuration, one value, or its problems;\n                                       --docker-ports prints \"<port> <repository>\" for each\n                                       Docker listener of the next start\n  version                              print the version\n  help                                 print this help\n\nThe data directory is ARTIFACT_REPOSITORY_DATA, else <project root>/data.\nARTIFACT_REPOSITORY_PORT overrides the port of the configuration.\n",
+ "config_keys": [
+  "data_dir",
+  "bind",
+  "port",
+  "config_path",
+  "index_path",
+  "repositories_path"
+ ],
+ "kinds": [
+  "nexus-file",
+  "directory"
+ ],
+ "parse": [
+  {
+   "argv": [
+    "frobnicate"
+   ],
+   "usage": "pipesmith-registry: argument command: invalid choice: 'frobnicate' (choose from serve, store, scan, repos, docker-check, import-settings, config, version)"
+  },
+  {
+   "argv": [
+    "--foo"
+   ],
+   "usage": "pipesmith-registry: the following arguments are required: command"
+  },
+  {
+   "argv": [
+    "-x"
+   ],
+   "usage": "pipesmith-registry: the following arguments are required: command"
+  },
+  {
+   "argv": [
+    "-"
+   ],
+   "usage": "pipesmith-registry: argument command: invalid choice: '-' (choose from serve, store, scan, repos, docker-check, import-settings, config, version)"
+  },
+  {
+   "argv": [
+    "--"
+   ],
+   "usage": "pipesmith-registry: the following arguments are required: command"
+  },
+  {
+   "argv": [
+    "serve"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": null,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "x"
+   ],
+   "usage": "pipesmith-registry serve: argument --port: invalid int value: 'x'"
+  },
+  {
+   "argv": [
+    "serve",
+    "--port"
+   ],
+   "usage": "pipesmith-registry serve: argument --port: expected one argument"
+  },
+  {
+   "argv": [
+    "serve",
+    "extra"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: extra"
+  },
+  {
+   "argv": [
+    "serve",
+    "--po",
+    "5"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": 5,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--p",
+    "5"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": 5,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port=7",
+    "--bind=::1"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": 7,
+    "bind": "::1"
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "7",
+    "--port",
+    "8"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": 8,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--bind",
+    "0.0.0.0"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": null,
+    "bind": "0.0.0.0"
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    " 1_0 "
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": 10,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "\u0663"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": 3,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "-5"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": -5,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "+5"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": 5,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "1e3"
+   ],
+   "usage": "pipesmith-registry serve: argument --port: invalid int value: '1e3'"
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "99999999999999999999"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": 99999999999999999999,
+    "bind": null
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "--port="
+   ],
+   "usage": "pipesmith-registry serve: argument --port: invalid int value: ''"
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    ""
+   ],
+   "usage": "pipesmith-registry serve: argument --port: invalid int value: ''"
+  },
+  {
+   "argv": [
+    "serve",
+    "-p",
+    "5"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: -p 5"
+  },
+  {
+   "argv": [
+    "serve",
+    "--",
+    "--port"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: -- --port"
+  },
+  {
+   "argv": [
+    "serve",
+    "--bind"
+   ],
+   "usage": "pipesmith-registry serve: argument --bind: expected one argument"
+  },
+  {
+   "argv": [
+    "serve",
+    "--bind",
+    "-x"
+   ],
+   "usage": "pipesmith-registry serve: argument --bind: expected one argument"
+  },
+  {
+   "argv": [
+    "serve",
+    "--bind=-x"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": null,
+    "bind": "-x"
+   }
+  },
+  {
+   "argv": [
+    "serve",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n\noptions:\n  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "serve",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n\noptions:\n  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "serve",
+    "--he"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n\noptions:\n  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "serve",
+    "--h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n\noptions:\n  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "serve",
+    "-hx"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n\noptions:\n  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "serve",
+    "--help=x"
+   ],
+   "usage": "pipesmith-registry serve: argument -h/--help: ignored explicit argument 'x'"
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "x",
+    "--help"
+   ],
+   "usage": "pipesmith-registry serve: argument --port: invalid int value: 'x'"
+  },
+  {
+   "argv": [
+    "serve",
+    "--help",
+    "--port",
+    "x"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n\noptions:\n  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "5",
+    "x",
+    "y"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: x y"
+  },
+  {
+   "argv": [
+    "store"
+   ],
+   "usage": "pipesmith-registry store: the following arguments are required: store_command"
+  },
+  {
+   "argv": [
+    "store",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry store [-h] {add,list,remove} ...\n\npositional arguments:\n  {add,list,remove}\n\noptions:\n  -h, --help         show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "store",
+    "add"
+   ],
+   "usage": "pipesmith-registry store add: the following arguments are required: name, --kind, --root"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry store add [-h] --kind {nexus-file,directory} --root\n                                    ROOT [--repos REPOS] [--manifest MANIFEST]\n                                    name\n\npositional arguments:\n  name\n\noptions:\n  -h, --help            show this help message and exit\n  --kind {nexus-file,directory}\n  --root ROOT\n  --repos REPOS\n  --manifest MANIFEST\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "store",
+    "list",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry store list [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "store",
+    "remove",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry store remove [-h] name\n\npositional arguments:\n  name\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "store",
+    "nope"
+   ],
+   "usage": "pipesmith-registry store: argument store_command: invalid choice: 'nope' (choose from add, list, remove)"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n"
+   ],
+   "usage": "pipesmith-registry store add: the following arguments are required: --kind, --root"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--kind",
+    "directory"
+   ],
+   "usage": "pipesmith-registry store add: the following arguments are required: --root"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--kind",
+    "s3",
+    "--root",
+    "r"
+   ],
+   "usage": "pipesmith-registry store add: argument --kind: invalid choice: 's3' (choose from nexus-file, directory)"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--kind",
+    "directory",
+    "--root",
+    "r"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "directory",
+    "root": "r",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--kind",
+    "nexus-file",
+    "--root",
+    "r",
+    "--repos",
+    "a,b"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "nexus-file",
+    "root": "r",
+    "repos": "a,b",
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "--kind",
+    "directory",
+    "--root",
+    "r",
+    "n"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "directory",
+    "root": "r",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "--kind",
+    "directory",
+    "n",
+    "--root",
+    "r"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "directory",
+    "root": "r",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--root",
+    "-x",
+    "--kind",
+    "directory"
+   ],
+   "usage": "pipesmith-registry store add: argument --root: expected one argument"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--root",
+    "-5",
+    "--kind",
+    "directory"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "directory",
+    "root": "-5",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--root=-x",
+    "--kind=directory"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "directory",
+    "root": "-x",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--kind",
+    "directory",
+    "--root",
+    "r",
+    "--repos"
+   ],
+   "usage": "pipesmith-registry store add: argument --repos: expected one argument"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--kind",
+    "directory",
+    "--root",
+    "r",
+    "--manifest",
+    "m",
+    "--repos",
+    " a , b "
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "directory",
+    "root": "r",
+    "repos": " a , b ",
+    "manifest": "m"
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--k",
+    "directory",
+    "--r",
+    "r"
+   ],
+   "usage": "pipesmith-registry store add: ambiguous option: --r could match --root, --repos"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--re",
+    "x",
+    "--kind",
+    "directory",
+    "--root",
+    "r"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "directory",
+    "root": "r",
+    "repos": "x",
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--m",
+    "x",
+    "--kind",
+    "directory",
+    "--root",
+    "r"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "directory",
+    "root": "r",
+    "repos": null,
+    "manifest": "x"
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "m",
+    "--kind",
+    "directory",
+    "--root",
+    "r"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: m"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "-n",
+    "--kind",
+    "directory",
+    "--root",
+    "r"
+   ],
+   "usage": "pipesmith-registry store add: the following arguments are required: name"
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "-5",
+    "--kind",
+    "directory",
+    "--root",
+    "r"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "-5",
+    "kind": "directory",
+    "root": "r",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "a b",
+    "--kind",
+    "directory",
+    "--root",
+    "r"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "a b",
+    "kind": "directory",
+    "root": "r",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "-a b",
+    "--kind",
+    "directory",
+    "--root",
+    "r"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "-a b",
+    "kind": "directory",
+    "root": "r",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "list"
+   ],
+   "run": "cmd_store_list",
+   "values": {
+    "command": "store",
+    "store_command": "list"
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "list",
+    "x"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: x"
+  },
+  {
+   "argv": [
+    "store",
+    "remove"
+   ],
+   "usage": "pipesmith-registry store remove: the following arguments are required: name"
+  },
+  {
+   "argv": [
+    "store",
+    "remove",
+    "x"
+   ],
+   "run": "cmd_store_remove",
+   "values": {
+    "command": "store",
+    "store_command": "remove",
+    "name": "x"
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "remove",
+    "x",
+    "y"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: y"
+  },
+  {
+   "argv": [
+    "scan"
+   ],
+   "run": "cmd_scan",
+   "values": {
+    "command": "scan",
+    "name": null
+   }
+  },
+  {
+   "argv": [
+    "scan",
+    "a"
+   ],
+   "run": "cmd_scan",
+   "values": {
+    "command": "scan",
+    "name": "a"
+   }
+  },
+  {
+   "argv": [
+    "scan",
+    "a",
+    "b"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: b"
+  },
+  {
+   "argv": [
+    "scan",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry scan [-h] [name]\n\npositional arguments:\n  name\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "scan",
+    "--",
+    "a"
+   ],
+   "run": "cmd_scan",
+   "values": {
+    "command": "scan",
+    "name": "a"
+   }
+  },
+  {
+   "argv": [
+    "scan",
+    "-5"
+   ],
+   "run": "cmd_scan",
+   "values": {
+    "command": "scan",
+    "name": "-5"
+   }
+  },
+  {
+   "argv": [
+    "repos"
+   ],
+   "run": "cmd_repos",
+   "values": {
+    "command": "repos",
+    "json": false,
+    "repos_command": null
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "--json"
+   ],
+   "run": "cmd_repos",
+   "values": {
+    "command": "repos",
+    "json": true,
+    "repos_command": null
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "--js"
+   ],
+   "run": "cmd_repos",
+   "values": {
+    "command": "repos",
+    "json": true,
+    "repos_command": null
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "--json",
+    "--json"
+   ],
+   "run": "cmd_repos",
+   "values": {
+    "command": "repos",
+    "json": true,
+    "repos_command": null
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry repos [-h] [--json] {port} ...\n\npositional arguments:\n  {port}\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "repos",
+    "port"
+   ],
+   "usage": "pipesmith-registry repos port: the following arguments are required: name, <port|none>"
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry repos port [-h] name <port|none>\n\npositional arguments:\n  name\n  <port|none>\n\noptions:\n  -h, --help   show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x"
+   ],
+   "usage": "pipesmith-registry repos port: the following arguments are required: <port|none>"
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    "abc"
+   ],
+   "usage": "pipesmith-registry repos port: argument <port|none>: 'abc' is neither a port number nor none"
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    "1"
+   ],
+   "run": "cmd_repos_port",
+   "values": {
+    "command": "repos",
+    "json": false,
+    "repos_command": "port",
+    "name": "x",
+    "port": 1
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    "none"
+   ],
+   "run": "cmd_repos_port",
+   "values": {
+    "command": "repos",
+    "json": false,
+    "repos_command": "port",
+    "name": "x",
+    "port": null
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    "NONE"
+   ],
+   "run": "cmd_repos_port",
+   "values": {
+    "command": "repos",
+    "json": false,
+    "repos_command": "port",
+    "name": "x",
+    "port": null
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    "-1"
+   ],
+   "usage": "pipesmith-registry repos port: argument <port|none>: '-1' is neither a port number nor none"
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    "+1"
+   ],
+   "usage": "pipesmith-registry repos port: argument <port|none>: '+1' is neither a port number nor none"
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    " 1"
+   ],
+   "usage": "pipesmith-registry repos port: argument <port|none>: ' 1' is neither a port number nor none"
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    "\u0663"
+   ],
+   "usage": "pipesmith-registry repos port: argument <port|none>: '\u0663' is neither a port number nor none"
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    "070000"
+   ],
+   "run": "cmd_repos_port",
+   "values": {
+    "command": "repos",
+    "json": false,
+    "repos_command": "port",
+    "name": "x",
+    "port": 70000
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "x",
+    ""
+   ],
+   "usage": "pipesmith-registry repos port: argument <port|none>: '' is neither a port number nor none"
+  },
+  {
+   "argv": [
+    "repos",
+    "--json",
+    "port",
+    "a",
+    "1"
+   ],
+   "run": "cmd_repos_port",
+   "values": {
+    "command": "repos",
+    "json": true,
+    "repos_command": "port",
+    "name": "a",
+    "port": 1
+   }
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "a",
+    "1",
+    "--json"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: --json"
+  },
+  {
+   "argv": [
+    "repos",
+    "nope"
+   ],
+   "usage": "pipesmith-registry repos: argument repos_command: invalid choice: 'nope' (choose from port)"
+  },
+  {
+   "argv": [
+    "repos",
+    "x",
+    "y"
+   ],
+   "usage": "pipesmith-registry repos: argument repos_command: invalid choice: 'x' (choose from port)"
+  },
+  {
+   "argv": [
+    "docker-check"
+   ],
+   "usage": "pipesmith-registry docker-check: the following arguments are required: name"
+  },
+  {
+   "argv": [
+    "docker-check",
+    "x"
+   ],
+   "run": "cmd_docker_check",
+   "values": {
+    "command": "docker-check",
+    "name": "x"
+   }
+  },
+  {
+   "argv": [
+    "docker-check",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry docker-check [-h] name\n\npositional arguments:\n  name\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "import-settings"
+   ],
+   "usage": "pipesmith-registry import-settings: the following arguments are required: file"
+  },
+  {
+   "argv": [
+    "import-settings",
+    "f"
+   ],
+   "run": "cmd_import_settings",
+   "values": {
+    "command": "import-settings",
+    "file": "f"
+   }
+  },
+  {
+   "argv": [
+    "import-settings",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry import-settings [-h] file\n\npositional arguments:\n  file\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "config"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": null,
+    "check": false,
+    "json": false,
+    "docker_ports": false
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--get",
+    "port"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": "port",
+    "check": false,
+    "json": false,
+    "docker_ports": false
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--get"
+   ],
+   "usage": "pipesmith-registry config: argument --get: expected one argument"
+  },
+  {
+   "argv": [
+    "config",
+    "--check"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": null,
+    "check": true,
+    "json": false,
+    "docker_ports": false
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--json"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": null,
+    "check": false,
+    "json": true,
+    "docker_ports": false
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--docker-ports"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": null,
+    "check": false,
+    "json": false,
+    "docker_ports": true
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--d"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": null,
+    "check": false,
+    "json": false,
+    "docker_ports": true
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--c"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": null,
+    "check": true,
+    "json": false,
+    "docker_ports": false
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--g",
+    "x"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": "x",
+    "check": false,
+    "json": false,
+    "docker_ports": false
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--get",
+    "port",
+    "--check"
+   ],
+   "usage": "pipesmith-registry config: argument --check: not allowed with argument --get"
+  },
+  {
+   "argv": [
+    "config",
+    "--check",
+    "--get",
+    "port"
+   ],
+   "usage": "pipesmith-registry config: argument --get: not allowed with argument --check"
+  },
+  {
+   "argv": [
+    "config",
+    "--json",
+    "--docker-ports"
+   ],
+   "usage": "pipesmith-registry config: argument --docker-ports: not allowed with argument --json"
+  },
+  {
+   "argv": [
+    "config",
+    "--check",
+    "--check"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": null,
+    "check": true,
+    "json": false,
+    "docker_ports": false
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "--get=port",
+    "--get",
+    "bind"
+   ],
+   "run": "cmd_config",
+   "values": {
+    "command": "config",
+    "get": "bind",
+    "check": false,
+    "json": false,
+    "docker_ports": false
+   }
+  },
+  {
+   "argv": [
+    "config",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry config [-h]\n                                 [--get KEY | --check | --json | --docker-ports]\n\noptions:\n  -h, --help      show this help message and exit\n  --get KEY\n  --check\n  --json\n  --docker-ports\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "config",
+    "x"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: x"
+  },
+  {
+   "argv": [
+    "version"
+   ],
+   "run": "cmd_version",
+   "values": {
+    "command": "version"
+   }
+  },
+  {
+   "argv": [
+    "version",
+    "x"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: x"
+  },
+  {
+   "argv": [
+    "version",
+    "-h"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry version [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "version",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry version [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "help"
+   ],
+   "usage": "pipesmith-registry: argument command: invalid choice: 'help' (choose from serve, store, scan, repos, docker-check, import-settings, config, version)"
+  },
+  {
+   "argv": [
+    "serve",
+    "--bind",
+    "a",
+    "--bind",
+    "b"
+   ],
+   "run": "cmd_serve",
+   "values": {
+    "command": "serve",
+    "port": null,
+    "bind": "b"
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "n",
+    "--kind",
+    "directory",
+    "--root",
+    "r",
+    "--kind",
+    "nexus-file"
+   ],
+   "run": "cmd_store_add",
+   "values": {
+    "command": "store",
+    "store_command": "add",
+    "name": "n",
+    "kind": "nexus-file",
+    "root": "r",
+    "repos": null,
+    "manifest": null
+   }
+  },
+  {
+   "argv": [
+    "store",
+    "-x"
+   ],
+   "usage": "pipesmith-registry store: the following arguments are required: store_command"
+  },
+  {
+   "argv": [
+    "store",
+    "list",
+    "--x"
+   ],
+   "usage": "pipesmith-registry: unrecognized arguments: --x"
+  },
+  {
+   "argv": [
+    "serve",
+    "--port",
+    "--bind"
+   ],
+   "usage": "pipesmith-registry serve: argument --port: expected one argument"
+  },
+  {
+   "argv": [
+    "serve",
+    "--bind",
+    "--port"
+   ],
+   "usage": "pipesmith-registry serve: argument --bind: expected one argument"
+  },
+  {
+   "argv": [
+    "config",
+    "--get",
+    "--check"
+   ],
+   "usage": "pipesmith-registry config: argument --get: expected one argument"
+  }
+ ],
+ "command_help": [
+  {
+   "argv": [
+    "serve",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n\noptions:\n  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "store",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry store [-h] {add,list,remove} ...\n\npositional arguments:\n  {add,list,remove}\n\noptions:\n  -h, --help         show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "store",
+    "add",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry store add [-h] --kind {nexus-file,directory} --root\n                                    ROOT [--repos REPOS] [--manifest MANIFEST]\n                                    name\n\npositional arguments:\n  name\n\noptions:\n  -h, --help            show this help message and exit\n  --kind {nexus-file,directory}\n  --root ROOT\n  --repos REPOS\n  --manifest MANIFEST\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "store",
+    "list",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry store list [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "store",
+    "remove",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry store remove [-h] name\n\npositional arguments:\n  name\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "scan",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry scan [-h] [name]\n\npositional arguments:\n  name\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "repos",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry repos [-h] [--json] {port} ...\n\npositional arguments:\n  {port}\n\noptions:\n  -h, --help  show this help message and exit\n  --json\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "repos",
+    "port",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry repos port [-h] name <port|none>\n\npositional arguments:\n  name\n  <port|none>\n\noptions:\n  -h, --help   show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "docker-check",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry docker-check [-h] name\n\npositional arguments:\n  name\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "import-settings",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry import-settings [-h] file\n\npositional arguments:\n  file\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "config",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry config [-h]\n                                 [--get KEY | --check | --json | --docker-ports]\n\noptions:\n  -h, --help      show this help message and exit\n  --get KEY\n  --check\n  --json\n  --docker-ports\n",
+   "stderr": ""
+  },
+  {
+   "argv": [
+    "version",
+    "--help"
+   ],
+   "exit": 0,
+   "stdout": "usage: pipesmith-registry version [-h]\n\noptions:\n  -h, --help  show this help message and exit\n",
+   "stderr": ""
+  }
+ ],
+ "size": [
+  {
+   "count": null,
+   "text": "-"
+  },
+  {
+   "count": 0,
+   "text": "0 B"
+  },
+  {
+   "count": 1,
+   "text": "1 B"
+  },
+  {
+   "count": 999,
+   "text": "999 B"
+  },
+  {
+   "count": 1000,
+   "text": "1.0 kB"
+  },
+  {
+   "count": 1001,
+   "text": "1.0 kB"
+  },
+  {
+   "count": 1049,
+   "text": "1.0 kB"
+  },
+  {
+   "count": 1050,
+   "text": "1.1 kB"
+  },
+  {
+   "count": 1051,
+   "text": "1.1 kB"
+  },
+  {
+   "count": 1949,
+   "text": "1.9 kB"
+  },
+  {
+   "count": 1950,
+   "text": "1.9 kB"
+  },
+  {
+   "count": 999949,
+   "text": "999.9 kB"
+  },
+  {
+   "count": 999950,
+   "text": "1000.0 kB"
+  },
+  {
+   "count": 999999,
+   "text": "1000.0 kB"
+  },
+  {
+   "count": 1000000,
+   "text": "1.0 MB"
+  },
+  {
+   "count": 1234567,
+   "text": "1.2 MB"
+  },
+  {
+   "count": 999949999,
+   "text": "999.9 MB"
+  },
+  {
+   "count": 999950000,
+   "text": "1000.0 MB"
+  },
+  {
+   "count": 12345678901,
+   "text": "12.3 GB"
+  },
+  {
+   "count": 999950000000000,
+   "text": "1000.0 TB"
+  },
+  {
+   "count": 1000000000000,
+   "text": "1.0 TB"
+  },
+  {
+   "count": 123456789012345678,
+   "text": "123456.8 TB"
+  },
+  {
+   "count": 1000000000000000000000,
+   "text": "1000000000.0 TB"
+  },
+  {
+   "count": -5,
+   "text": "-5 B"
+  },
+  {
+   "count": -1000,
+   "text": "-1000 B"
+  },
+  {
+   "count": -1000000,
+   "text": "-1000000 B"
+  }
+ ],
+ "time": [
+  {
+   "ms": null,
+   "text": "-"
+  },
+  {
+   "ms": 0,
+   "text": "-"
+  },
+  {
+   "ms": 1,
+   "text": "1970-01-01 00:00"
+  },
+  {
+   "ms": 1700000000000,
+   "text": "2023-11-14 22:13"
+  },
+  {
+   "ms": 1700000100000,
+   "text": "2023-11-14 22:15"
+  },
+  {
+   "ms": -1,
+   "text": "1969-12-31 23:59"
+  },
+  {
+   "ms": -60000,
+   "text": "1969-12-31 23:59"
+  },
+  {
+   "ms": 253402300799999,
+   "text": "9999-12-31 23:59"
+  },
+  {
+   "ms": 253402300800000,
+   "text": "-"
+  },
+  {
+   "ms": -62135596800000,
+   "text": "0001-01-01 00:00"
+  },
+  {
+   "ms": -62135596800001,
+   "text": "-"
+  },
+  {
+   "ms": -30610224000001,
+   "text": "0999-12-31 23:59"
+  },
+  {
+   "ms": -59011459200000,
+   "text": "0100-01-01 00:00"
+  },
+  {
+   "ms": 9223372036854775807,
+   "text": "-"
+  },
+  {
+   "ms": 59999,
+   "text": "1970-01-01 00:00"
+  }
+ ],
+ "table": [
+  {
+   "rows": [
+    [
+     "NAME",
+     "KIND",
+     "FILES",
+     "SIZE",
+     "ROOT"
+    ],
+    [
+     "tree",
+     "directory",
+     "3",
+     "21 B",
+     "/x/tree"
+    ],
+    [
+     "s1",
+     "nexus-file",
+     "-",
+     "-",
+     "/y  (missing)"
+    ]
+   ],
+   "right": [
+    2,
+    3
+   ],
+   "out": "NAME  KIND        FILES  SIZE  ROOT\ntree  directory       3  21 B  /x/tree\ns1    nexus-file      -     -  /y  (missing)\n"
+  },
+  {
+   "rows": [
+    [
+     "data_dir",
+     "/d"
+    ],
+    [
+     "bind",
+     "127.0.0.1"
+    ],
+    [
+     "port",
+     "8793"
+    ]
+   ],
+   "right": [],
+   "out": "data_dir  /d\nbind      127.0.0.1\nport      8793\n"
+  },
+  {
+   "rows": [
+    [
+     "A",
+     "B",
+     "C"
+    ],
+    [
+     "long value",
+     "",
+     ""
+    ],
+    [
+     "",
+     "x",
+     ""
+    ]
+   ],
+   "right": [
+    1
+   ],
+   "out": "A           B  C\nlong value\n            x\n"
+  },
+  {
+   "rows": [
+    [
+     "\u00e4\u00e4",
+     "b "
+    ],
+    [
+     "a",
+     "bb"
+    ]
+   ],
+   "right": [
+    0
+   ],
+   "out": "\u00e4\u00e4  b\n a  bb\n"
+  },
+  {
+   "rows": [
+    [
+     "x",
+     "  "
+    ],
+    [
+     "yy",
+     " z "
+    ]
+   ],
+   "right": [],
+   "out": "x\nyy   z\n"
+  }
+ ],
+ "table_encoded": [
+  {
+   "rows": [
+    [
+     [
+      78,
+      65,
+      77,
+      69
+     ],
+     [
+      70,
+      79,
+      82,
+      77,
+      65,
+      84
+     ]
+    ],
+    [
+     [
+      55296
+     ],
+     [
+      114,
+      97,
+      119
+     ]
+    ]
+   ],
+   "right": [],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+   "out": "NAME  FORMAT\n"
+  },
+  {
+   "rows": [
+    [
+     [
+      78,
+      65,
+      77,
+      69
+     ],
+     [
+      70,
+      79,
+      82,
+      77,
+      65,
+      84
+     ]
+    ],
+    [
+     [
+      100,
+      101,
+      109,
+      111
+     ],
+     [
+      114,
+      97,
+      119
+     ]
+    ],
+    [
+     [
+      97
+     ],
+     [
+      98,
+      56575
+     ]
+    ],
+    [
+     [
+      110,
+      101,
+      118,
+      101,
+      114
+     ],
+     [
+      112,
+      114,
+      105,
+      110,
+      116,
+      101,
+      100
+     ]
+    ]
+   ],
+   "right": [],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode character '\\udcff' in position 8: surrogates not allowed",
+   "out": "NAME   FORMAT\ndemo   raw\n"
+  },
+  {
+   "rows": [
+    [
+     [
+      78,
+      65,
+      77,
+      69
+     ],
+     [
+      70,
+      73,
+      76,
+      69,
+      83
+     ]
+    ],
+    [
+     [
+      55296,
+      56320,
+      120
+     ],
+     [
+      51
+     ]
+    ]
+   ],
+   "right": [
+    1
+   ],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode characters in position 0-1: surrogates not allowed",
+   "out": "NAME  FILES\n"
+  },
+  {
+   "rows": [
+    [
+     [
+      65
+     ],
+     [
+      66
+     ]
+    ],
+    [
+     [
+      120
+     ],
+     [
+      56448
+     ]
+    ]
+   ],
+   "right": [
+    1
+   ],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode character '\\udc80' in position 3: surrogates not allowed",
+   "out": "A  B\n"
+  },
+  {
+   "rows": [
+    [
+     [
+      128512,
+      55296
+     ],
+     [
+      122
+     ]
+    ],
+    [
+     [
+      97
+     ],
+     [
+      98
+     ]
+    ]
+   ],
+   "right": [],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode character '\\ud800' in position 1: surrogates not allowed",
+   "out": ""
+  },
+  {
+   "rows": [
+    [
+     [
+      65
+     ]
+    ],
+    [
+     [
+      55296,
+      97,
+      55297
+     ]
+    ]
+   ],
+   "right": [],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode character '\\ud800' in position 0: surrogates not allowed",
+   "out": "A\n"
+  },
+  {
+   "rows": [
+    [
+     [
+      78,
+      65,
+      77,
+      69
+     ],
+     [
+      78,
+      79,
+      84,
+      69
+     ]
+    ],
+    [
+     [
+      228,
+      57343,
+      57343,
+      57343
+     ],
+     []
+    ]
+   ],
+   "right": [],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode characters in position 1-3: surrogates not allowed",
+   "out": "NAME  NOTE\n"
+  },
+  {
+   "rows": [
+    [
+     [
+      78,
+      65,
+      77,
+      69
+     ],
+     [
+      78,
+      79,
+      84,
+      69
+     ]
+    ],
+    [
+     [
+      112,
+      108,
+      97,
+      105,
+      110
+     ],
+     [
+      109,
+      101,
+      109,
+      98,
+      101,
+      114,
+      115,
+      58,
+      32,
+      97,
+      44,
+      32,
+      55357
+     ]
+    ]
+   ],
+   "right": [],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode character '\\ud83d' in position 19: surrogates not allowed",
+   "out": "NAME   NOTE\n"
+  },
+  {
+   "rows": [
+    [
+     [
+      78,
+      65,
+      77,
+      69
+     ]
+    ],
+    [
+     [
+      56575
+     ]
+    ]
+   ],
+   "right": [],
+   "error": "UnicodeEncodeError",
+   "message": "'utf-8' codec can't encode character '\\udcff' in position 0: surrogates not allowed",
+   "out": "NAME\n"
+  },
+  {
+   "rows": [
+    [
+     [
+      78,
+      65,
+      77,
+      69
+     ],
+     [
+      88
+     ]
+    ],
+    [
+     [
+      111,
+      107
+     ],
+     [
+      102,
+      105,
+      110,
+      101
+     ]
+    ]
+   ],
+   "right": [],
+   "out": "NAME  X\nok    fine\n"
+  }
+ ],
+ "port_or_none": [
+  {
+   "value": "1",
+   "port": 1
+  },
+  {
+   "value": "none",
+   "port": null
+  },
+  {
+   "value": "NONE",
+   "port": null
+  },
+  {
+   "value": "None",
+   "port": null
+  },
+  {
+   "value": "abc",
+   "error": "ArgumentTypeError",
+   "message": "'abc' is neither a port number nor none"
+  },
+  {
+   "value": "-1",
+   "error": "ArgumentTypeError",
+   "message": "'-1' is neither a port number nor none"
+  },
+  {
+   "value": "+1",
+   "error": "ArgumentTypeError",
+   "message": "'+1' is neither a port number nor none"
+  },
+  {
+   "value": " 1",
+   "error": "ArgumentTypeError",
+   "message": "' 1' is neither a port number nor none"
+  },
+  {
+   "value": "\u0663",
+   "error": "ArgumentTypeError",
+   "message": "'\u0663' is neither a port number nor none"
+  },
+  {
+   "value": "070000",
+   "port": 70000
+  },
+  {
+   "value": "",
+   "error": "ArgumentTypeError",
+   "message": "'' is neither a port number nor none"
+  },
+  {
+   "value": "99999999999999999999",
+   "port": 99999999999999999999
+  },
+  {
+   "value": "1.0",
+   "error": "ArgumentTypeError",
+   "message": "'1.0' is neither a port number nor none"
+  }
+ ],
+ "store_name": [
+  {
+   "name": "tree",
+   "ok": true
+  },
+  {
+   "name": "s1",
+   "ok": true
+  },
+  {
+   "name": "a.b_c-d",
+   "ok": true
+  },
+  {
+   "name": "../tree",
+   "ok": false
+  },
+  {
+   "name": ".x",
+   "ok": false
+  },
+  {
+   "name": "_x",
+   "ok": false
+  },
+  {
+   "name": "-x",
+   "ok": false
+  },
+  {
+   "name": "x y",
+   "ok": false
+  },
+  {
+   "name": "\u00e4",
+   "ok": false
+  },
+  {
+   "name": "x/y",
+   "ok": false
+  },
+  {
+   "name": "A9",
+   "ok": true
+  },
+  {
+   "name": "x\n",
+   "ok": false
+  },
+  {
+   "name": "",
+   "ok": false
+  }
+ ]
+}

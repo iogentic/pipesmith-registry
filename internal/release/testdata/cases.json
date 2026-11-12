@@ -1,0 +1,82 @@
+{
+  "comment": "Written by tests/release/release_proof.py fixtures. Paths are relative to this folder. cosign is the verdict of cosign verify-blob with key (null: not a cosign case); check is the error of release.Check for linux/amd64 (empty: accepted).",
+  "cases": [
+    {
+      "name": "good",
+      "dir": "cases/good",
+      "key": "keys/trusted.pub",
+      "cosign": true,
+      "check": ""
+    },
+    {
+      "name": "changed sums",
+      "dir": "cases/changed-sums",
+      "key": "keys/trusted.pub",
+      "cosign": false,
+      "check": "ErrSignature"
+    },
+    {
+      "name": "changed sums for a swapped binary",
+      "dir": "cases/swapped-binary",
+      "key": "keys/trusted.pub",
+      "cosign": false,
+      "check": "ErrSignature"
+    },
+    {
+      "name": "bundle of another key",
+      "dir": "cases/other-key",
+      "key": "keys/trusted.pub",
+      "cosign": false,
+      "check": "ErrSignature"
+    },
+    {
+      "name": "other trusted key",
+      "dir": "cases/good",
+      "key": "keys/other.pub",
+      "cosign": false,
+      "check": "ErrSignature"
+    },
+    {
+      "name": "changed signature",
+      "dir": "cases/changed-signature",
+      "key": "keys/trusted.pub",
+      "cosign": false,
+      "check": "ErrSignature"
+    },
+    {
+      "name": "changed digest in the bundle",
+      "dir": "cases/changed-digest",
+      "key": "keys/trusted.pub",
+      "cosign": false,
+      "check": "ErrSignature"
+    },
+    {
+      "name": "missing bundle",
+      "dir": "cases/missing-bundle",
+      "key": "keys/trusted.pub",
+      "cosign": false,
+      "check": "ErrNoBundle"
+    },
+    {
+      "name": "missing key configuration",
+      "dir": "cases/good",
+      "key": "",
+      "cosign": null,
+      "check": "ErrNoTrustedKey"
+    },
+    {
+      "name": "trusted key from the release itself",
+      "dir": "cases/other-key",
+      "key": "cases/other-key/cosign.pub",
+      "cosign": true,
+      "check": "ErrKeyInRelease"
+    },
+    {
+      "name": "wrong binary digest",
+      "dir": "cases/wrong-digest",
+      "key": "keys/trusted.pub",
+      "cosign": true,
+      "check": "ErrDigest"
+    }
+  ]
+}

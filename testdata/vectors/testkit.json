@@ -1,0 +1,2765 @@
+{
+ "generator": "tools/vectors/testkit.py",
+ "python": "3.12.13",
+ "default_created_ms": 1700000000000,
+ "skip_case_blobs": [
+  {
+   "repo": "demo-releases",
+   "path": "com/example/live/1.0/live-1.0.jar",
+   "content_b64": "bGl2ZSBieXRlcw==",
+   "scheme": "date",
+   "created_ms": 1700000000000,
+   "deleted": false,
+   "copy_only": false,
+   "no_bytes": false,
+   "content_type": "application/java-archive",
+   "leading_slash": true
+  },
+  {
+   "repo": "demo-releases",
+   "path": "com/example/gone/1.0/gone-1.0.jar",
+   "content_b64": "ZGVsZXRlZCBieXRlcw==",
+   "scheme": "vol",
+   "created_ms": 1700000000000,
+   "deleted": true,
+   "copy_only": false,
+   "no_bytes": false,
+   "content_type": "application/octet-stream",
+   "leading_slash": true
+  },
+  {
+   "repo": "demo-releases",
+   "path": "com/example/copy/1.0/copy-1.0.jar",
+   "content_b64": "Y29weQ==",
+   "scheme": "date",
+   "created_ms": 1700000000000,
+   "deleted": false,
+   "copy_only": true,
+   "no_bytes": false,
+   "content_type": "application/octet-stream",
+   "leading_slash": true
+  },
+  {
+   "repo": "demo-releases",
+   "path": "com/example/nobytes/1.0/nobytes-1.0.jar",
+   "content_b64": "bWlzc2luZw==",
+   "scheme": "vol",
+   "created_ms": 1700000000000,
+   "deleted": false,
+   "copy_only": false,
+   "no_bytes": true,
+   "content_type": "application/octet-stream",
+   "leading_slash": true
+  }
+ ],
+ "stores": [
+  {
+   "name": "defaults",
+   "specs": [
+    {
+     "repo": "demo-releases",
+     "path": "com/example/a/1.0/a-1.0.jar"
+    }
+   ],
+   "unparsable_locations": [],
+   "digest": "36a66c58dffdb1d5b8777636ba45a6cf3219bb79d82e33f5c1e6096aaa8b3ab1",
+   "per_spec": [
+    {
+     "blob_uuid": "84fd5261-630b-5bcf-82e4-a16ac2d687fb",
+     "sha1": "11f6ad8ec52a2984abaafd7c3b516503785c2072",
+     "bytes_location": "content/2023/11/14/22/13/84fd5261-630b-5bcf-82e4-a16ac2d687fb.bytes",
+     "properties_location": "content/2023/11/14/22/13/84fd5261-630b-5bcf-82e4-a16ac2d687fb.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/com/example/a/1.0/a-1.0.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "11f6ad8ec52a2984abaafd7c3b516503785c2072"
+      ],
+      [
+       "size",
+       "1"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2EvMS4wL2EtMS4wLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9MTFmNmFkOGVjNTJhMjk4NGFiYWFmZDdjM2I1MTY1MDM3ODVjMjA3MgpzaXplPTEK"
+    }
+   ]
+  },
+  {
+   "name": "empty",
+   "specs": [],
+   "unparsable_locations": [],
+   "digest": "4ad18052ae0449806bec7071bde5f10b1a29605240e2a1428b445f9da08f5110",
+   "per_spec": []
+  },
+  {
+   "name": "skip_cases",
+   "skip_cases": true,
+   "unparsable": [
+    "unparsable"
+   ],
+   "unparsable_locations": [
+    "content/vol-01/chap-01/unparsable.properties"
+   ],
+   "digest": "37d55573ec784405c8d9a6d1c261eaf1393d5a38fbd78724f08ca4e4badb1bbd",
+   "per_spec": [
+    {
+     "blob_uuid": "b0e8a89a-c28a-5641-8ef3-194c11acf177",
+     "sha1": "c382a80272fbbcb1b5f72baac803b4f9a3dd75c6",
+     "bytes_location": "content/2023/11/14/22/13/b0e8a89a-c28a-5641-8ef3-194c11acf177.bytes",
+     "properties_location": "content/2023/11/14/22/13/b0e8a89a-c28a-5641-8ef3-194c11acf177.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/com/example/live/1.0/live-1.0.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/java-archive"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "c382a80272fbbcb1b5f72baac803b4f9a3dd75c6"
+      ],
+      [
+       "size",
+       "10"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2xpdmUvMS4wL2xpdmUtMS4wLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9qYXZhLWFyY2hpdmUKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9YzM4MmE4MDI3MmZiYmNiMWI1ZjcyYmFhYzgwM2I0ZjlhM2RkNzVjNgpzaXplPTEwCg=="
+    },
+    {
+     "blob_uuid": "f3c4b91d-10b1-5a73-868c-9192c28bb305",
+     "sha1": "a9f487267eab3a05d388421336b44db3d43e5a07",
+     "bytes_location": "content/vol-17/chap-38/f3c4b91d-10b1-5a73-868c-9192c28bb305.bytes",
+     "properties_location": "content/vol-17/chap-38/f3c4b91d-10b1-5a73-868c-9192c28bb305.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/com/example/gone/1.0/gone-1.0.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "deleted",
+       "true"
+      ],
+      [
+       "deletedDateTime",
+       "1700086400000"
+      ],
+      [
+       "deletedReason",
+       "Removing unused asset blob"
+      ],
+      [
+       "sha1",
+       "a9f487267eab3a05d388421336b44db3d43e5a07"
+      ],
+      [
+       "size",
+       "13"
+      ],
+      [
+       "softDeletedLocation",
+       "2023-11-15T22:13"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2dvbmUvMS4wL2dvbmUtMS4wLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCmRlbGV0ZWQ9dHJ1ZQpkZWxldGVkRGF0ZVRpbWU9MTcwMDA4NjQwMDAwMApkZWxldGVkUmVhc29uPVJlbW92aW5nIHVudXNlZCBhc3NldCBibG9iCnNoYTE9YTlmNDg3MjY3ZWFiM2EwNWQzODg0MjEzMzZiNDRkYjNkNDNlNWEwNwpzaXplPTEzCnNvZnREZWxldGVkTG9jYXRpb249MjAyMy0xMS0xNVQyMlw6MTMK"
+    },
+    {
+     "blob_uuid": "9775af01-3701-5237-93ba-52bbb13256d8",
+     "sha1": "f84e2e2dadd87384fb55f25886926b777e8378f1",
+     "bytes_location": "content/2023/11/14/22/13/9775af01-3701-5237-93ba-52bbb13256d8.bytes",
+     "properties_location": "content/2023/11/14/22/13/9775af01-3701-5237-93ba-52bbb13256d8.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/com/example/copy/1.0/copy-1.0.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "originalLocation",
+       ""
+      ],
+      [
+       "sha1",
+       "f84e2e2dadd87384fb55f25886926b777e8378f1"
+      ],
+      [
+       "size",
+       "4"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2NvcHkvMS4wL2NvcHktMS4wLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCm9yaWdpbmFsTG9jYXRpb249CnNoYTE9Zjg0ZTJlMmRhZGQ4NzM4NGZiNTVmMjU4ODY5MjZiNzc3ZTgzNzhmMQpzaXplPTQK"
+    },
+    {
+     "blob_uuid": "55380eaf-ace4-5ad3-a758-4c0aeeb1df3f",
+     "sha1": "5a013c49508291c6816ac388f93a2c11973086ed",
+     "bytes_location": "content/vol-40/chap-13/55380eaf-ace4-5ad3-a758-4c0aeeb1df3f.bytes",
+     "properties_location": "content/vol-40/chap-13/55380eaf-ace4-5ad3-a758-4c0aeeb1df3f.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/com/example/nobytes/1.0/nobytes-1.0.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "5a013c49508291c6816ac388f93a2c11973086ed"
+      ],
+      [
+       "size",
+       "7"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL25vYnl0ZXMvMS4wL25vYnl0ZXMtMS4wLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9NWEwMTNjNDk1MDgyOTFjNjgxNmFjMzg4ZjkzYTJjMTE5NzMwODZlZApzaXplPTcK"
+    }
+   ]
+  },
+  {
+   "name": "schemes",
+   "specs": [
+    {
+     "repo": "demo-releases",
+     "path": "com/example/b/1.0/b-1.0.pom",
+     "content_b64": "PHByb2plY3QvPg==",
+     "content_type": "application/xml"
+    },
+    {
+     "repo": "demo-releases",
+     "path": "com/example/b/1.0/b-1.0.jar",
+     "content_b64": "amFyIGJ5dGVz",
+     "scheme": "vol"
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/readme.txt",
+     "content_b64": "c2FtZSBkYXk=",
+     "created_ms": 1700000123456
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/later.txt",
+     "content_b64": "bmV4dCBtaW51dGU=",
+     "created_ms": 1700000060000
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/next-day.txt",
+     "content_b64": "bmV4dCBkYXk=",
+     "created_ms": 1700086400001
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/epoch.txt",
+     "content_b64": "ZXBvY2g=",
+     "created_ms": 0
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/before-epoch.txt",
+     "content_b64": "YmVmb3Jl",
+     "created_ms": -1500
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/far.txt",
+     "content_b64": "ZmFy",
+     "created_ms": 4102444800999
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/no-slash.txt",
+     "content_b64": "bm8gc2xhc2g=",
+     "leading_slash": false
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/no-type.txt",
+     "content_b64": "bm8gdHlwZQ==",
+     "content_type": null
+    },
+    {
+     "repo": "demo-raw",
+     "path": "docs/empty.txt",
+     "content_b64": ""
+    },
+    {
+     "repo": "demo-raw",
+     "path": "vol/one.bin",
+     "content_b64": "AAEC/w==",
+     "scheme": "vol",
+     "created_ms": 1600000000000
+    },
+    {
+     "repo": "demo-raw",
+     "path": "vol/two.bin",
+     "content_b64": "dHdv",
+     "scheme": "vol",
+     "content_type": "text/plain; charset=utf-8"
+    }
+   ],
+   "unparsable_locations": [],
+   "digest": "a8fe930e11a037eb8e3844ec6f68d55fb6f153252e682ecb2c4f1c98bf0d1477",
+   "per_spec": [
+    {
+     "blob_uuid": "2b34e456-912a-5c89-87f0-8f311d14c5d1",
+     "sha1": "31a6e1717665b9fb4646a906d52abae65a7eefbc",
+     "bytes_location": "content/2023/11/14/22/13/2b34e456-912a-5c89-87f0-8f311d14c5d1.bytes",
+     "properties_location": "content/2023/11/14/22/13/2b34e456-912a-5c89-87f0-8f311d14c5d1.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/com/example/b/1.0/b-1.0.pom"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/xml"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "31a6e1717665b9fb4646a906d52abae65a7eefbc"
+      ],
+      [
+       "size",
+       "10"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2IvMS4wL2ItMS4wLnBvbQpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi94bWwKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9MzFhNmUxNzE3NjY1YjlmYjQ2NDZhOTA2ZDUyYWJhZTY1YTdlZWZiYwpzaXplPTEwCg=="
+    },
+    {
+     "blob_uuid": "c4f9fe07-8d34-5f72-8b1e-c4d14fc98f8e",
+     "sha1": "01c56e3ae46c962debe4976038d5ba38d1e61ef7",
+     "bytes_location": "content/vol-39/chap-32/c4f9fe07-8d34-5f72-8b1e-c4d14fc98f8e.bytes",
+     "properties_location": "content/vol-39/chap-32/c4f9fe07-8d34-5f72-8b1e-c4d14fc98f8e.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/com/example/b/1.0/b-1.0.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "01c56e3ae46c962debe4976038d5ba38d1e61ef7"
+      ],
+      [
+       "size",
+       "9"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbS9leGFtcGxlL2IvMS4wL2ItMS4wLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9MDFjNTZlM2FlNDZjOTYyZGViZTQ5NzYwMzhkNWJhMzhkMWU2MWVmNwpzaXplPTkK"
+    },
+    {
+     "blob_uuid": "52da7f04-3454-5030-b2d5-668528d963fb",
+     "sha1": "9632d983b94fc726df8f278af8ab90af067b5bcd",
+     "bytes_location": "content/2023/11/14/22/15/52da7f04-3454-5030-b2d5-668528d963fb.bytes",
+     "properties_location": "content/2023/11/14/22/15/52da7f04-3454-5030-b2d5-668528d963fb.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/docs/readme.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000123456"
+      ],
+      [
+       "sha1",
+       "9632d983b94fc726df8f278af8ab90af067b5bcd"
+      ],
+      [
+       "size",
+       "8"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTU6MjMsNDU2KzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTU6MjMgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RvY3MvcmVhZG1lLnR4dApAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwpjcmVhdGlvblRpbWU9MTcwMDAwMDEyMzQ1NgpzaGExPTk2MzJkOTgzYjk0ZmM3MjZkZjhmMjc4YWY4YWI5MGFmMDY3YjViY2QKc2l6ZT04Cg=="
+    },
+    {
+     "blob_uuid": "5732e5db-bf90-5f66-b870-53e229e7c1b8",
+     "sha1": "0e7bccc1ff1c783208d3e6b12cc81a56d3cf0db5",
+     "bytes_location": "content/2023/11/14/22/14/5732e5db-bf90-5f66-b870-53e229e7c1b8.bytes",
+     "properties_location": "content/2023/11/14/22/14/5732e5db-bf90-5f66-b870-53e229e7c1b8.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/docs/later.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000060000"
+      ],
+      [
+       "sha1",
+       "0e7bccc1ff1c783208d3e6b12cc81a56d3cf0db5"
+      ],
+      [
+       "size",
+       "11"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTQ6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTQ6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RvY3MvbGF0ZXIudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDYwMDAwCnNoYTE9MGU3YmNjYzFmZjFjNzgzMjA4ZDNlNmIxMmNjODFhNTZkM2NmMGRiNQpzaXplPTExCg=="
+    },
+    {
+     "blob_uuid": "3f017831-b6c4-5072-b89a-6c9ebb4bb974",
+     "sha1": "c3c59829ba11c1414d82fb8ea6a8dcad673a3ed5",
+     "bytes_location": "content/2023/11/15/22/13/3f017831-b6c4-5072-b89a-6c9ebb4bb974.bytes",
+     "properties_location": "content/2023/11/15/22/13/3f017831-b6c4-5072-b89a-6c9ebb4bb974.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/docs/next-day.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700086400001"
+      ],
+      [
+       "sha1",
+       "c3c59829ba11c1414d82fb8ea6a8dcad673a3ed5"
+      ],
+      [
+       "size",
+       "8"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTUgMjI6MTM6MjAsMDAxKzAwMDAKI1dlZCBOb3YgMTUgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RvY3MvbmV4dC1kYXkudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDg2NDAwMDAxCnNoYTE9YzNjNTk4MjliYTExYzE0MTRkODJmYjhlYTZhOGRjYWQ2NzNhM2VkNQpzaXplPTgK"
+    },
+    {
+     "blob_uuid": "b3481cab-0692-557a-8fdd-c732581f7100",
+     "sha1": "8ac1f753a4a72dbd2ec50ce35d690db02b5b8a0f",
+     "bytes_location": "content/1970/01/01/00/00/b3481cab-0692-557a-8fdd-c732581f7100.bytes",
+     "properties_location": "content/1970/01/01/00/00/b3481cab-0692-557a-8fdd-c732581f7100.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/docs/epoch.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "0"
+      ],
+      [
+       "sha1",
+       "8ac1f753a4a72dbd2ec50ce35d690db02b5b8a0f"
+      ],
+      [
+       "size",
+       "5"
+      ]
+     ],
+     "properties_b64": "IzE5NzAtMDEtMDEgMDA6MDA6MDAsMDAwKzAwMDAKI1RodSBKYW4gMDEgMDA6MDA6MDAgVVRDIDE5NzAKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RvY3MvZXBvY2gudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0wCnNoYTE9OGFjMWY3NTNhNGE3MmRiZDJlYzUwY2UzNWQ2OTBkYjAyYjViOGEwZgpzaXplPTUK"
+    },
+    {
+     "blob_uuid": "5e5fe325-07c5-5dd2-a1a5-849e31eec3ef",
+     "sha1": "51de2b835bd35a67eb32dbcd3d77d4b96e5aa39d",
+     "bytes_location": "content/1969/12/31/23/59/5e5fe325-07c5-5dd2-a1a5-849e31eec3ef.bytes",
+     "properties_location": "content/1969/12/31/23/59/5e5fe325-07c5-5dd2-a1a5-849e31eec3ef.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/docs/before-epoch.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "-1500"
+      ],
+      [
+       "sha1",
+       "51de2b835bd35a67eb32dbcd3d77d4b96e5aa39d"
+      ],
+      [
+       "size",
+       "6"
+      ]
+     ],
+     "properties_b64": "IzE5NjktMTItMzEgMjM6NTk6NTgsNTAwKzAwMDAKI1dlZCBEZWMgMzEgMjM6NTk6NTggVVRDIDE5NjkKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RvY3MvYmVmb3JlLWVwb2NoLnR4dApAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwpjcmVhdGlvblRpbWU9LTE1MDAKc2hhMT01MWRlMmI4MzViZDM1YTY3ZWIzMmRiY2QzZDc3ZDRiOTZlNWFhMzlkCnNpemU9Ngo="
+    },
+    {
+     "blob_uuid": "cfc90936-6531-5619-8152-6d7ff54cf3fc",
+     "sha1": "70b2db8ae957dc9c4a7f9e9509f8bf0c85b79de7",
+     "bytes_location": "content/2100/01/01/00/00/cfc90936-6531-5619-8152-6d7ff54cf3fc.bytes",
+     "properties_location": "content/2100/01/01/00/00/cfc90936-6531-5619-8152-6d7ff54cf3fc.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/docs/far.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "4102444800999"
+      ],
+      [
+       "sha1",
+       "70b2db8ae957dc9c4a7f9e9509f8bf0c85b79de7"
+      ],
+      [
+       "size",
+       "3"
+      ]
+     ],
+     "properties_b64": "IzIxMDAtMDEtMDEgMDA6MDA6MDAsOTk5KzAwMDAKI0ZyaSBKYW4gMDEgMDA6MDA6MDAgVVRDIDIxMDAKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RvY3MvZmFyLnR4dApAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwpjcmVhdGlvblRpbWU9NDEwMjQ0NDgwMDk5OQpzaGExPTcwYjJkYjhhZTk1N2RjOWM0YTdmOWU5NTA5ZjhiZjBjODViNzlkZTcKc2l6ZT0zCg=="
+    },
+    {
+     "blob_uuid": "1157d011-ef6b-5d59-bb6a-e575866752c9",
+     "sha1": "d7964be719fa3a4c909384b297072563b72e30a9",
+     "bytes_location": "content/2023/11/14/22/13/1157d011-ef6b-5d59-bb6a-e575866752c9.bytes",
+     "properties_location": "content/2023/11/14/22/13/1157d011-ef6b-5d59-bb6a-e575866752c9.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "docs/no-slash.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "d7964be719fa3a4c909384b297072563b72e30a9"
+      ],
+      [
+       "size",
+       "8"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9ZG9jcy9uby1zbGFzaC50eHQKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT1kNzk2NGJlNzE5ZmEzYTRjOTA5Mzg0YjI5NzA3MjU2M2I3MmUzMGE5CnNpemU9OAo="
+    },
+    {
+     "blob_uuid": "3a556309-2ab5-5d2a-b25e-59d3a946d30f",
+     "sha1": "9184c3ef0f76a9d4649d053527ad8c11dbf8f674",
+     "bytes_location": "content/2023/11/14/22/13/3a556309-2ab5-5d2a-b25e-59d3a946d30f.bytes",
+     "properties_location": "content/2023/11/14/22/13/3a556309-2ab5-5d2a-b25e-59d3a946d30f.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/docs/no-type.txt"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "9184c3ef0f76a9d4649d053527ad8c11dbf8f674"
+      ],
+      [
+       "size",
+       "7"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RvY3Mvbm8tdHlwZS50eHQKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTkxODRjM2VmMGY3NmE5ZDQ2NDlkMDUzNTI3YWQ4YzExZGJmOGY2NzQKc2l6ZT03Cg=="
+    },
+    {
+     "blob_uuid": "369e6b21-7155-5060-8ca4-f7561ab0c03e",
+     "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+     "bytes_location": "content/2023/11/14/22/13/369e6b21-7155-5060-8ca4-f7561ab0c03e.bytes",
+     "properties_location": "content/2023/11/14/22/13/369e6b21-7155-5060-8ca4-f7561ab0c03e.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/docs/empty.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+      ],
+      [
+       "size",
+       "0"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RvY3MvZW1wdHkudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9ZGEzOWEzZWU1ZTZiNGIwZDMyNTViZmVmOTU2MDE4OTBhZmQ4MDcwOQpzaXplPTAK"
+    },
+    {
+     "blob_uuid": "ec579251-3d44-5ddf-a13a-0eb52d9158d7",
+     "sha1": "c62c27924f4c967f5eddb1850c091d54c7a2ab58",
+     "bytes_location": "content/vol-21/chap-44/ec579251-3d44-5ddf-a13a-0eb52d9158d7.bytes",
+     "properties_location": "content/vol-21/chap-44/ec579251-3d44-5ddf-a13a-0eb52d9158d7.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/vol/one.bin"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1600000000000"
+      ],
+      [
+       "sha1",
+       "c62c27924f4c967f5eddb1850c091d54c7a2ab58"
+      ],
+      [
+       "size",
+       "4"
+      ]
+     ],
+     "properties_b64": "IzIwMjAtMDktMTMgMTI6MjY6NDAsMDAwKzAwMDAKI1N1biBTZXAgMTMgMTI6MjY6NDAgVVRDIDIwMjAKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L3ZvbC9vbmUuYmluCkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNjAwMDAwMDAwMDAwCnNoYTE9YzYyYzI3OTI0ZjRjOTY3ZjVlZGRiMTg1MGMwOTFkNTRjN2EyYWI1OApzaXplPTQK"
+    },
+    {
+     "blob_uuid": "4c01db80-7a38-5488-bd50-c463db002236",
+     "sha1": "ad782ecdac770fc6eb9a62e44f90873fb97fb26b",
+     "bytes_location": "content/vol-34/chap-23/4c01db80-7a38-5488-bd50-c463db002236.bytes",
+     "properties_location": "content/vol-34/chap-23/4c01db80-7a38-5488-bd50-c463db002236.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/vol/two.bin"
+      ],
+      [
+       "@BlobStore.content-type",
+       "text/plain; charset=utf-8"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "ad782ecdac770fc6eb9a62e44f90873fb97fb26b"
+      ],
+      [
+       "size",
+       "3"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L3ZvbC90d28uYmluCkBCbG9iU3RvcmUuY29udGVudC10eXBlPXRleHQvcGxhaW47IGNoYXJzZXRcPXV0Zi04CkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT1hZDc4MmVjZGFjNzcwZmM2ZWI5YTYyZTQ0ZjkwODczZmI5N2ZiMjZiCnNpemU9Mwo="
+    }
+   ]
+  },
+  {
+   "name": "escapes",
+   "specs": [
+    {
+     "repo": "demo-raw",
+     "path": "dir with space/file name.txt",
+     "content_b64": "c3BhY2Vz"
+    },
+    {
+     "repo": "demo-raw",
+     "path": " leading space.txt",
+     "content_b64": "bGVhZGluZw=="
+    },
+    {
+     "repo": "demo-raw",
+     "path": "keys:=#!/value.txt",
+     "content_b64": "c3BlY2lhbHM="
+    },
+    {
+     "repo": "demo-raw",
+     "path": "back\\slash.txt",
+     "content_b64": "YmFja3NsYXNo"
+    },
+    {
+     "repo": "demo-raw",
+     "path": "tab\there.txt",
+     "content_b64": "dGFi"
+    },
+    {
+     "repo": "demo-raw",
+     "path": "line\nbreak.txt",
+     "content_b64": "bmV3bGluZQ=="
+    },
+    {
+     "repo": "demo-raw",
+     "path": "carriage\rreturn.txt",
+     "content_b64": "Y3I="
+    },
+    {
+     "repo": "demo-raw",
+     "path": "form\ffeed.txt",
+     "content_b64": "ZmY="
+    },
+    {
+     "repo": "demo-raw",
+     "path": "control\u0001\u001f\u007f.txt",
+     "content_b64": "Y29udHJvbHM="
+    },
+    {
+     "repo": "demo-raw",
+     "path": "caf\u00e9/\u00fc\u00df.txt",
+     "content_b64": "bGF0aW4="
+    },
+    {
+     "repo": "demo-raw",
+     "path": "\u4e2d\u6587/\u0444\u0430\u0439\u043b.txt",
+     "content_b64": "d2lkZQ=="
+    },
+    {
+     "repo": "demo-raw",
+     "path": "astral/\ud83d\ude00\udbff\udfff.txt",
+     "content_b64": "YXN0cmFs"
+    },
+    {
+     "repo": "demo raw repo",
+     "path": "x.txt",
+     "content_b64": "cmVwbyB3aXRoIHNwYWNl"
+    },
+    {
+     "repo": "demo-raw",
+     "path": "type.txt",
+     "content_b64": "dHlwZQ==",
+     "content_type": " text/plain=x:y#z!"
+    },
+    {
+     "repo": "demo-raw",
+     "path": "trailing space .txt",
+     "content_b64": "dHJhaWxpbmc="
+    }
+   ],
+   "unparsable_locations": [],
+   "digest": "0606e10cc43a7a446df92fcbc5e8c3f864bb97075b5b9ab382faa31242019752",
+   "per_spec": [
+    {
+     "blob_uuid": "8706867d-b26b-5483-bfbd-a6b929c3acbc",
+     "sha1": "cd0d2b9c9becc4645d3204b3b5762ffd35cb6059",
+     "bytes_location": "content/2023/11/14/22/13/8706867d-b26b-5483-bfbd-a6b929c3acbc.bytes",
+     "properties_location": "content/2023/11/14/22/13/8706867d-b26b-5483-bfbd-a6b929c3acbc.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/dir with space/file name.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "cd0d2b9c9becc4645d3204b3b5762ffd35cb6059"
+      ],
+      [
+       "size",
+       "6"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2RpciB3aXRoIHNwYWNlL2ZpbGUgbmFtZS50eHQKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT1jZDBkMmI5YzliZWNjNDY0NWQzMjA0YjNiNTc2MmZmZDM1Y2I2MDU5CnNpemU9Ngo="
+    },
+    {
+     "blob_uuid": "9f7cdf7e-cd39-50e6-924f-86187c28f335",
+     "sha1": "b462c7de40aa075db368ccdf3eb7172679f73a40",
+     "bytes_location": "content/2023/11/14/22/13/9f7cdf7e-cd39-50e6-924f-86187c28f335.bytes",
+     "properties_location": "content/2023/11/14/22/13/9f7cdf7e-cd39-50e6-924f-86187c28f335.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/ leading space.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "b462c7de40aa075db368ccdf3eb7172679f73a40"
+      ],
+      [
+       "size",
+       "7"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9LyBsZWFkaW5nIHNwYWNlLnR4dApAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPWI0NjJjN2RlNDBhYTA3NWRiMzY4Y2NkZjNlYjcxNzI2NzlmNzNhNDAKc2l6ZT03Cg=="
+    },
+    {
+     "blob_uuid": "99ee2574-da88-57de-b2bf-f72eae438470",
+     "sha1": "1534e413a1125714e015ebc5fe02789c30adeebd",
+     "bytes_location": "content/2023/11/14/22/13/99ee2574-da88-57de-b2bf-f72eae438470.bytes",
+     "properties_location": "content/2023/11/14/22/13/99ee2574-da88-57de-b2bf-f72eae438470.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/keys:=#!/value.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "1534e413a1125714e015ebc5fe02789c30adeebd"
+      ],
+      [
+       "size",
+       "8"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2tleXNcOlw9XCNcIS92YWx1ZS50eHQKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT0xNTM0ZTQxM2ExMTI1NzE0ZTAxNWViYzVmZTAyNzg5YzMwYWRlZWJkCnNpemU9OAo="
+    },
+    {
+     "blob_uuid": "d894d831-0c1e-5ba5-9527-0ca2ac820ee6",
+     "sha1": "3853072116a861ff4c871d3e96a9cac7da78b7d2",
+     "bytes_location": "content/2023/11/14/22/13/d894d831-0c1e-5ba5-9527-0ca2ac820ee6.bytes",
+     "properties_location": "content/2023/11/14/22/13/d894d831-0c1e-5ba5-9527-0ca2ac820ee6.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/back\\slash.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "3853072116a861ff4c871d3e96a9cac7da78b7d2"
+      ],
+      [
+       "size",
+       "9"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2JhY2tcXHNsYXNoLnR4dApAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTM4NTMwNzIxMTZhODYxZmY0Yzg3MWQzZTk2YTljYWM3ZGE3OGI3ZDIKc2l6ZT05Cg=="
+    },
+    {
+     "blob_uuid": "21230fcd-2f96-5ef0-b4f0-e7ae0ef6e8fe",
+     "sha1": "e974602114f14fbf55401c109937e173b1b23220",
+     "bytes_location": "content/2023/11/14/22/13/21230fcd-2f96-5ef0-b4f0-e7ae0ef6e8fe.bytes",
+     "properties_location": "content/2023/11/14/22/13/21230fcd-2f96-5ef0-b4f0-e7ae0ef6e8fe.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/tab\there.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "e974602114f14fbf55401c109937e173b1b23220"
+      ],
+      [
+       "size",
+       "3"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L3RhYlx0aGVyZS50eHQKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT1lOTc0NjAyMTE0ZjE0ZmJmNTU0MDFjMTA5OTM3ZTE3M2IxYjIzMjIwCnNpemU9Mwo="
+    },
+    {
+     "blob_uuid": "0292f0df-ecbf-5591-9b18-ea83f0bf7951",
+     "sha1": "f6fd7a4346b3bb0e3124991926d729836808da54",
+     "bytes_location": "content/2023/11/14/22/13/0292f0df-ecbf-5591-9b18-ea83f0bf7951.bytes",
+     "properties_location": "content/2023/11/14/22/13/0292f0df-ecbf-5591-9b18-ea83f0bf7951.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/line\nbreak.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "f6fd7a4346b3bb0e3124991926d729836808da54"
+      ],
+      [
+       "size",
+       "7"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2xpbmVcbmJyZWFrLnR4dApAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJhdwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPWY2ZmQ3YTQzNDZiM2JiMGUzMTI0OTkxOTI2ZDcyOTgzNjgwOGRhNTQKc2l6ZT03Cg=="
+    },
+    {
+     "blob_uuid": "6bdcee73-e9cb-5392-a935-40143793cf6d",
+     "sha1": "ccd8c15938081ca56f8564415122ab003470a833",
+     "bytes_location": "content/2023/11/14/22/13/6bdcee73-e9cb-5392-a935-40143793cf6d.bytes",
+     "properties_location": "content/2023/11/14/22/13/6bdcee73-e9cb-5392-a935-40143793cf6d.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/carriage\rreturn.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "ccd8c15938081ca56f8564415122ab003470a833"
+      ],
+      [
+       "size",
+       "2"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NhcnJpYWdlXHJyZXR1cm4udHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9Y2NkOGMxNTkzODA4MWNhNTZmODU2NDQxNTEyMmFiMDAzNDcwYTgzMwpzaXplPTIK"
+    },
+    {
+     "blob_uuid": "f289d45a-5a8b-509c-aba8-717626545358",
+     "sha1": "ed70c57d7564e994e7d5f6fd6967cea8b347efbc",
+     "bytes_location": "content/2023/11/14/22/13/f289d45a-5a8b-509c-aba8-717626545358.bytes",
+     "properties_location": "content/2023/11/14/22/13/f289d45a-5a8b-509c-aba8-717626545358.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/form\ffeed.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "ed70c57d7564e994e7d5f6fd6967cea8b347efbc"
+      ],
+      [
+       "size",
+       "2"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2Zvcm1cZmZlZWQudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9ZWQ3MGM1N2Q3NTY0ZTk5NGU3ZDVmNmZkNjk2N2NlYThiMzQ3ZWZiYwpzaXplPTIK"
+    },
+    {
+     "blob_uuid": "e74bb5fe-161c-5734-8565-3dc76d3c01d0",
+     "sha1": "7b84b960a0dca8c35300f86af008220838378624",
+     "bytes_location": "content/2023/11/14/22/13/e74bb5fe-161c-5734-8565-3dc76d3c01d0.bytes",
+     "properties_location": "content/2023/11/14/22/13/e74bb5fe-161c-5734-8565-3dc76d3c01d0.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/control\u0001\u001f\u007f.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "7b84b960a0dca8c35300f86af008220838378624"
+      ],
+      [
+       "size",
+       "8"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NvbnRyb2xcdTAwMDFcdTAwMUZcdTAwN0YudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9N2I4NGI5NjBhMGRjYThjMzUzMDBmODZhZjAwODIyMDgzODM3ODYyNApzaXplPTgK"
+    },
+    {
+     "blob_uuid": "bb7e4c7d-2d5f-5eb8-8cc8-d4210c981603",
+     "sha1": "e2d35ad940f107b755c9059b93624c7b3dd3e56d",
+     "bytes_location": "content/2023/11/14/22/13/bb7e4c7d-2d5f-5eb8-8cc8-d4210c981603.bytes",
+     "properties_location": "content/2023/11/14/22/13/bb7e4c7d-2d5f-5eb8-8cc8-d4210c981603.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/caf\u00e9/\u00fc\u00df.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "e2d35ad940f107b755c9059b93624c7b3dd3e56d"
+      ],
+      [
+       "size",
+       "5"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2NhZlx1MDBFOS9cdTAwRkNcdTAwREYudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9ZTJkMzVhZDk0MGYxMDdiNzU1YzkwNTliOTM2MjRjN2IzZGQzZTU2ZApzaXplPTUK"
+    },
+    {
+     "blob_uuid": "82737618-be00-5430-acd9-588be62fca7a",
+     "sha1": "414768af9d215e9c9e57d087f0d15005222eb5b5",
+     "bytes_location": "content/2023/11/14/22/13/82737618-be00-5430-acd9-588be62fca7a.bytes",
+     "properties_location": "content/2023/11/14/22/13/82737618-be00-5430-acd9-588be62fca7a.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/\u4e2d\u6587/\u0444\u0430\u0439\u043b.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "414768af9d215e9c9e57d087f0d15005222eb5b5"
+      ],
+      [
+       "size",
+       "4"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L1x1NEUyRFx1NjU4Ny9cdTA0NDRcdTA0MzBcdTA0MzlcdTA0M0IudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9NDE0NzY4YWY5ZDIxNWU5YzllNTdkMDg3ZjBkMTUwMDUyMjJlYjViNQpzaXplPTQK"
+    },
+    {
+     "blob_uuid": "856392e4-9b32-5faf-97cf-3bba29817452",
+     "sha1": "af449f57c12f3c04fda1628cfa3c2491efa02be9",
+     "bytes_location": "content/2023/11/14/22/13/856392e4-9b32-5faf-97cf-3bba29817452.bytes",
+     "properties_location": "content/2023/11/14/22/13/856392e4-9b32-5faf-97cf-3bba29817452.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/astral/\ud83d\ude00\udbff\udfff.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "af449f57c12f3c04fda1628cfa3c2491efa02be9"
+      ],
+      [
+       "size",
+       "6"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2FzdHJhbC9cdUQ4M0RcdURFMDBcdURCRkZcdURGRkYudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9YWY0NDlmNTdjMTJmM2MwNGZkYTE2MjhjZmEzYzI0OTFlZmEwMmJlOQpzaXplPTYK"
+    },
+    {
+     "blob_uuid": "e0dca125-1ffd-5981-a723-2c2d432e157a",
+     "sha1": "a7329fcc143bbab35d1722422f8693847a1b7c16",
+     "bytes_location": "content/2023/11/14/22/13/e0dca125-1ffd-5981-a723-2c2d432e157a.bytes",
+     "properties_location": "content/2023/11/14/22/13/e0dca125-1ffd-5981-a723-2c2d432e157a.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/x.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo raw repo"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "a7329fcc143bbab35d1722422f8693847a1b7c16"
+      ],
+      [
+       "size",
+       "15"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L3gudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8gcmF3IHJlcG8KY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT1hNzMyOWZjYzE0M2JiYWIzNWQxNzIyNDIyZjg2OTM4NDdhMWI3YzE2CnNpemU9MTUK"
+    },
+    {
+     "blob_uuid": "a9b7bbea-5e69-5605-9e0d-7178c05e12d2",
+     "sha1": "d0a3e7f81a9885e99049d1cae0336d269d5e47a9",
+     "bytes_location": "content/2023/11/14/22/13/a9b7bbea-5e69-5605-9e0d-7178c05e12d2.bytes",
+     "properties_location": "content/2023/11/14/22/13/a9b7bbea-5e69-5605-9e0d-7178c05e12d2.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/type.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       " text/plain=x:y#z!"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "d0a3e7f81a9885e99049d1cae0336d269d5e47a9"
+      ],
+      [
+       "size",
+       "4"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L3R5cGUudHh0CkBCbG9iU3RvcmUuY29udGVudC10eXBlPVwgdGV4dC9wbGFpblw9eFw6eVwjelwhCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT1kMGEzZTdmODFhOTg4NWU5OTA0OWQxY2FlMDMzNmQyNjlkNWU0N2E5CnNpemU9NAo="
+    },
+    {
+     "blob_uuid": "ca9a2517-ea4e-53c0-a9f7-6d2dc3ec84d9",
+     "sha1": "bdba15c4f3888dbc6d3f5c81c76d31f1fe8fe7f0",
+     "bytes_location": "content/2023/11/14/22/13/ca9a2517-ea4e-53c0-a9f7-6d2dc3ec84d9.bytes",
+     "properties_location": "content/2023/11/14/22/13/ca9a2517-ea4e-53c0-a9f7-6d2dc3ec84d9.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/trailing space .txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-raw"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "bdba15c4f3888dbc6d3f5c81c76d31f1fe8fe7f0"
+      ],
+      [
+       "size",
+       "8"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L3RyYWlsaW5nIHNwYWNlIC50eHQKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKc2hhMT1iZGJhMTVjNGYzODg4ZGJjNmQzZjVjODFjNzZkMzFmMWZlOGZlN2YwCnNpemU9OAo="
+    }
+   ]
+  },
+  {
+   "name": "kinds",
+   "specs": [
+    {
+     "repo": "demo-releases",
+     "path": "a/live.jar",
+     "content_b64": "bGl2ZQ=="
+    },
+    {
+     "repo": "demo-releases",
+     "path": "a/deleted-date.jar",
+     "content_b64": "ZGVsZXRlZCBkYXRl",
+     "deleted": true
+    },
+    {
+     "repo": "demo-releases",
+     "path": "a/deleted-vol.jar",
+     "content_b64": "ZGVsZXRlZCB2b2w=",
+     "scheme": "vol",
+     "deleted": true
+    },
+    {
+     "repo": "demo-releases",
+     "path": "a/copy-date.jar",
+     "content_b64": "Y29weSBkYXRl",
+     "copy_only": true
+    },
+    {
+     "repo": "demo-releases",
+     "path": "a/copy-vol.jar",
+     "content_b64": "Y29weSB2b2w=",
+     "scheme": "vol",
+     "copy_only": true
+    },
+    {
+     "repo": "demo-releases",
+     "path": "a/nobytes-date.jar",
+     "content_b64": "bm9ieXRlcyBkYXRl",
+     "no_bytes": true
+    },
+    {
+     "repo": "demo-releases",
+     "path": "a/deleted-copy.jar",
+     "content_b64": "ZGVsZXRlZCBjb3B5",
+     "deleted": true,
+     "copy_only": true
+    },
+    {
+     "repo": "demo-releases",
+     "path": "a/all.jar",
+     "content_b64": "YWxs",
+     "scheme": "vol",
+     "deleted": true,
+     "copy_only": true,
+     "no_bytes": true,
+     "content_type": null,
+     "leading_slash": false
+    }
+   ],
+   "unparsable_locations": [],
+   "digest": "106f0e5de6c102a3cf6eefa48f9b292a0085a786d52be7bd9b3191446e1d8640",
+   "per_spec": [
+    {
+     "blob_uuid": "cf416357-d1d6-5596-be66-875bdfa848b7",
+     "sha1": "98aadb37083eddd855c27feccb15dc8c5b127fd0",
+     "bytes_location": "content/2023/11/14/22/13/cf416357-d1d6-5596-be66-875bdfa848b7.bytes",
+     "properties_location": "content/2023/11/14/22/13/cf416357-d1d6-5596-be66-875bdfa848b7.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/a/live.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "98aadb37083eddd855c27feccb15dc8c5b127fd0"
+      ],
+      [
+       "size",
+       "4"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EvbGl2ZS5qYXIKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTk4YWFkYjM3MDgzZWRkZDg1NWMyN2ZlY2NiMTVkYzhjNWIxMjdmZDAKc2l6ZT00Cg=="
+    },
+    {
+     "blob_uuid": "71812f05-4089-523e-8f28-3b2743ad65dc",
+     "sha1": "7b9c4cc6c8ff640198ab054416dd80fe55cd7bc3",
+     "bytes_location": "content/2023/11/14/22/13/71812f05-4089-523e-8f28-3b2743ad65dc.bytes",
+     "properties_location": "content/2023/11/14/22/13/71812f05-4089-523e-8f28-3b2743ad65dc.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/a/deleted-date.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "deleted",
+       "true"
+      ],
+      [
+       "deletedDateTime",
+       "1700086400000"
+      ],
+      [
+       "deletedReason",
+       "Removing unused asset blob"
+      ],
+      [
+       "sha1",
+       "7b9c4cc6c8ff640198ab054416dd80fe55cd7bc3"
+      ],
+      [
+       "size",
+       "12"
+      ],
+      [
+       "softDeletedLocation",
+       "2023-11-15T22:13"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EvZGVsZXRlZC1kYXRlLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCmRlbGV0ZWQ9dHJ1ZQpkZWxldGVkRGF0ZVRpbWU9MTcwMDA4NjQwMDAwMApkZWxldGVkUmVhc29uPVJlbW92aW5nIHVudXNlZCBhc3NldCBibG9iCnNoYTE9N2I5YzRjYzZjOGZmNjQwMTk4YWIwNTQ0MTZkZDgwZmU1NWNkN2JjMwpzaXplPTEyCnNvZnREZWxldGVkTG9jYXRpb249MjAyMy0xMS0xNVQyMlw6MTMK"
+    },
+    {
+     "blob_uuid": "000e7af0-6fd8-5634-8c04-11bc22b2ffe0",
+     "sha1": "bd02cf7d49fb78b073e49c51de80999a33afca84",
+     "bytes_location": "content/vol-09/chap-38/000e7af0-6fd8-5634-8c04-11bc22b2ffe0.bytes",
+     "properties_location": "content/vol-09/chap-38/000e7af0-6fd8-5634-8c04-11bc22b2ffe0.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/a/deleted-vol.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "deleted",
+       "true"
+      ],
+      [
+       "deletedDateTime",
+       "1700086400000"
+      ],
+      [
+       "deletedReason",
+       "Removing unused asset blob"
+      ],
+      [
+       "sha1",
+       "bd02cf7d49fb78b073e49c51de80999a33afca84"
+      ],
+      [
+       "size",
+       "11"
+      ],
+      [
+       "softDeletedLocation",
+       "2023-11-15T22:13"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EvZGVsZXRlZC12b2wuamFyCkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKZGVsZXRlZD10cnVlCmRlbGV0ZWREYXRlVGltZT0xNzAwMDg2NDAwMDAwCmRlbGV0ZWRSZWFzb249UmVtb3ZpbmcgdW51c2VkIGFzc2V0IGJsb2IKc2hhMT1iZDAyY2Y3ZDQ5ZmI3OGIwNzNlNDljNTFkZTgwOTk5YTMzYWZjYTg0CnNpemU9MTEKc29mdERlbGV0ZWRMb2NhdGlvbj0yMDIzLTExLTE1VDIyXDoxMwo="
+    },
+    {
+     "blob_uuid": "168ec720-d409-5a3c-b946-4a8a56da3ae8",
+     "sha1": "e9ac1f29d6a7b777d748dc4341e922ace5e9328d",
+     "bytes_location": "content/2023/11/14/22/13/168ec720-d409-5a3c-b946-4a8a56da3ae8.bytes",
+     "properties_location": "content/2023/11/14/22/13/168ec720-d409-5a3c-b946-4a8a56da3ae8.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/a/copy-date.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "originalLocation",
+       ""
+      ],
+      [
+       "sha1",
+       "e9ac1f29d6a7b777d748dc4341e922ace5e9328d"
+      ],
+      [
+       "size",
+       "9"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EvY29weS1kYXRlLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCm9yaWdpbmFsTG9jYXRpb249CnNoYTE9ZTlhYzFmMjlkNmE3Yjc3N2Q3NDhkYzQzNDFlOTIyYWNlNWU5MzI4ZApzaXplPTkK"
+    },
+    {
+     "blob_uuid": "975275cb-a764-52d8-8a94-d77f4918a819",
+     "sha1": "e81155072f2516348c7c02e1720dc40a56fcd2ce",
+     "bytes_location": "content/vol-08/chap-09/975275cb-a764-52d8-8a94-d77f4918a819.bytes",
+     "properties_location": "content/vol-08/chap-09/975275cb-a764-52d8-8a94-d77f4918a819.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/a/copy-vol.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "originalLocation",
+       ""
+      ],
+      [
+       "sha1",
+       "e81155072f2516348c7c02e1720dc40a56fcd2ce"
+      ],
+      [
+       "size",
+       "8"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EvY29weS12b2wuamFyCkBCbG9iU3RvcmUuY29udGVudC10eXBlPWFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQpAQmxvYlN0b3JlLmNyZWF0ZWQtYnk9ZGVtby11c2VyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieS1pcD0xOTIuMC4yLjEwCkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmVsZWFzZXMKY3JlYXRpb25UaW1lPTE3MDAwMDAwMDAwMDAKb3JpZ2luYWxMb2NhdGlvbj0Kc2hhMT1lODExNTUwNzJmMjUxNjM0OGM3YzAyZTE3MjBkYzQwYTU2ZmNkMmNlCnNpemU9OAo="
+    },
+    {
+     "blob_uuid": "4a5be24e-07bb-5c09-84f7-21a37bcdf425",
+     "sha1": "20cca003c28d6328bc403eb494a024a25901b761",
+     "bytes_location": "content/2023/11/14/22/13/4a5be24e-07bb-5c09-84f7-21a37bcdf425.bytes",
+     "properties_location": "content/2023/11/14/22/13/4a5be24e-07bb-5c09-84f7-21a37bcdf425.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/a/nobytes-date.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "20cca003c28d6328bc403eb494a024a25901b761"
+      ],
+      [
+       "size",
+       "12"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2Evbm9ieXRlcy1kYXRlLmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9MjBjY2EwMDNjMjhkNjMyOGJjNDAzZWI0OTRhMDI0YTI1OTAxYjc2MQpzaXplPTEyCg=="
+    },
+    {
+     "blob_uuid": "c85cdfdb-67aa-560f-8668-d78bca785d84",
+     "sha1": "3fc89107ab6c65e0567058f5d2c34741e7b1ce24",
+     "bytes_location": "content/2023/11/14/22/13/c85cdfdb-67aa-560f-8668-d78bca785d84.bytes",
+     "properties_location": "content/2023/11/14/22/13/c85cdfdb-67aa-560f-8668-d78bca785d84.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/a/deleted-copy.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "deleted",
+       "true"
+      ],
+      [
+       "deletedDateTime",
+       "1700086400000"
+      ],
+      [
+       "deletedReason",
+       "Removing unused asset blob"
+      ],
+      [
+       "originalLocation",
+       ""
+      ],
+      [
+       "sha1",
+       "3fc89107ab6c65e0567058f5d2c34741e7b1ce24"
+      ],
+      [
+       "size",
+       "12"
+      ],
+      [
+       "softDeletedLocation",
+       "2023-11-15T22:13"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2EvZGVsZXRlZC1jb3B5LmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCmRlbGV0ZWQ9dHJ1ZQpkZWxldGVkRGF0ZVRpbWU9MTcwMDA4NjQwMDAwMApkZWxldGVkUmVhc29uPVJlbW92aW5nIHVudXNlZCBhc3NldCBibG9iCm9yaWdpbmFsTG9jYXRpb249CnNoYTE9M2ZjODkxMDdhYjZjNjVlMDU2NzA1OGY1ZDJjMzQ3NDFlN2IxY2UyNApzaXplPTEyCnNvZnREZWxldGVkTG9jYXRpb249MjAyMy0xMS0xNVQyMlw6MTMK"
+    },
+    {
+     "blob_uuid": "fc9f428b-07a2-503e-8877-925ddcfb8873",
+     "sha1": "d87c448044defb778f33158d8ccf94a20531d600",
+     "bytes_location": "content/vol-35/chap-44/fc9f428b-07a2-503e-8877-925ddcfb8873.bytes",
+     "properties_location": "content/vol-35/chap-44/fc9f428b-07a2-503e-8877-925ddcfb8873.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "a/all.jar"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "deleted",
+       "true"
+      ],
+      [
+       "deletedDateTime",
+       "1700086400000"
+      ],
+      [
+       "deletedReason",
+       "Removing unused asset blob"
+      ],
+      [
+       "originalLocation",
+       ""
+      ],
+      [
+       "sha1",
+       "d87c448044defb778f33158d8ccf94a20531d600"
+      ],
+      [
+       "size",
+       "3"
+      ],
+      [
+       "softDeletedLocation",
+       "2023-11-15T22:13"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9YS9hbGwuamFyCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApkZWxldGVkPXRydWUKZGVsZXRlZERhdGVUaW1lPTE3MDAwODY0MDAwMDAKZGVsZXRlZFJlYXNvbj1SZW1vdmluZyB1bnVzZWQgYXNzZXQgYmxvYgpvcmlnaW5hbExvY2F0aW9uPQpzaGExPWQ4N2M0NDgwNDRkZWZiNzc4ZjMzMTU4ZDhjY2Y5NGEyMDUzMWQ2MDAKc2l6ZT0zCnNvZnREZWxldGVkTG9jYXRpb249MjAyMy0xMS0xNVQyMlw6MTMK"
+    }
+   ]
+  },
+  {
+   "name": "same_location",
+   "specs": [
+    {
+     "repo": "demo-releases",
+     "path": "dup/x.jar",
+     "content_b64": "c2FtZQ=="
+    },
+    {
+     "repo": "demo-releases",
+     "path": "dup/x.jar",
+     "content_b64": "c2FtZQ==",
+     "content_type": "text/plain"
+    },
+    {
+     "repo": "demo-releases",
+     "path": "dup/y.jar",
+     "content_b64": "c2FtZQ==",
+     "scheme": "vol"
+    },
+    {
+     "repo": "demo-releases",
+     "path": "dup/y.jar",
+     "content_b64": "c2FtZQ==",
+     "scheme": "vol",
+     "deleted": true
+    }
+   ],
+   "unparsable_locations": [],
+   "digest": "839677dfd5ff6277c47b2b30cc4b6ca865601aae84effb41bf262288a17442fc",
+   "per_spec": [
+    {
+     "blob_uuid": "109d6ee7-6731-5cff-8487-5f1f7c6ac042",
+     "sha1": "ff3390557335ba88d37755e41514beb03bc499ec",
+     "bytes_location": "content/2023/11/14/22/13/109d6ee7-6731-5cff-8487-5f1f7c6ac042.bytes",
+     "properties_location": "content/2023/11/14/22/13/109d6ee7-6731-5cff-8487-5f1f7c6ac042.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/dup/x.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "ff3390557335ba88d37755e41514beb03bc499ec"
+      ],
+      [
+       "size",
+       "4"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2R1cC94LmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9ZmYzMzkwNTU3MzM1YmE4OGQzNzc1NWU0MTUxNGJlYjAzYmM0OTllYwpzaXplPTQK"
+    },
+    {
+     "blob_uuid": "109d6ee7-6731-5cff-8487-5f1f7c6ac042",
+     "sha1": "ff3390557335ba88d37755e41514beb03bc499ec",
+     "bytes_location": "content/2023/11/14/22/13/109d6ee7-6731-5cff-8487-5f1f7c6ac042.bytes",
+     "properties_location": "content/2023/11/14/22/13/109d6ee7-6731-5cff-8487-5f1f7c6ac042.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/dup/x.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "text/plain"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "ff3390557335ba88d37755e41514beb03bc499ec"
+      ],
+      [
+       "size",
+       "4"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2R1cC94LmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT10ZXh0L3BsYWluCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPWZmMzM5MDU1NzMzNWJhODhkMzc3NTVlNDE1MTRiZWIwM2JjNDk5ZWMKc2l6ZT00Cg=="
+    },
+    {
+     "blob_uuid": "f9c9abb5-df83-5aa9-bb84-ec8ae1529231",
+     "sha1": "ff3390557335ba88d37755e41514beb03bc499ec",
+     "bytes_location": "content/vol-31/chap-16/f9c9abb5-df83-5aa9-bb84-ec8ae1529231.bytes",
+     "properties_location": "content/vol-31/chap-16/f9c9abb5-df83-5aa9-bb84-ec8ae1529231.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/dup/y.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "ff3390557335ba88d37755e41514beb03bc499ec"
+      ],
+      [
+       "size",
+       "4"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2R1cC95LmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9ZmYzMzkwNTU3MzM1YmE4OGQzNzc1NWU0MTUxNGJlYjAzYmM0OTllYwpzaXplPTQK"
+    },
+    {
+     "blob_uuid": "f9c9abb5-df83-5aa9-bb84-ec8ae1529231",
+     "sha1": "ff3390557335ba88d37755e41514beb03bc499ec",
+     "bytes_location": "content/vol-31/chap-16/f9c9abb5-df83-5aa9-bb84-ec8ae1529231.bytes",
+     "properties_location": "content/vol-31/chap-16/f9c9abb5-df83-5aa9-bb84-ec8ae1529231.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/dup/y.jar"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "deleted",
+       "true"
+      ],
+      [
+       "deletedDateTime",
+       "1700086400000"
+      ],
+      [
+       "deletedReason",
+       "Removing unused asset blob"
+      ],
+      [
+       "sha1",
+       "ff3390557335ba88d37755e41514beb03bc499ec"
+      ],
+      [
+       "size",
+       "4"
+      ],
+      [
+       "softDeletedLocation",
+       "2023-11-15T22:13"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2R1cC95LmphcgpAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCmRlbGV0ZWQ9dHJ1ZQpkZWxldGVkRGF0ZVRpbWU9MTcwMDA4NjQwMDAwMApkZWxldGVkUmVhc29uPVJlbW92aW5nIHVudXNlZCBhc3NldCBibG9iCnNoYTE9ZmYzMzkwNTU3MzM1YmE4OGQzNzc1NWU0MTUxNGJlYjAzYmM0OTllYwpzaXplPTQKc29mdERlbGV0ZWRMb2NhdGlvbj0yMDIzLTExLTE1VDIyXDoxMwo="
+    }
+   ]
+  },
+  {
+   "name": "unparsable_named",
+   "specs": [
+    {
+     "repo": "demo-releases",
+     "path": "u/live.txt",
+     "content_b64": "dQ=="
+    }
+   ],
+   "unparsable": [
+    "unparsable",
+    "demo-broken"
+   ],
+   "unparsable_locations": [
+    "content/vol-01/chap-01/unparsable.properties",
+    "content/vol-01/chap-01/demo-broken.properties"
+   ],
+   "digest": "a66b030e14b5d7455d3a8e0a36315ddbecc238be8d52118d379de463e537cc30",
+   "per_spec": [
+    {
+     "blob_uuid": "4563fad0-84ce-5556-b918-70e420d42e6e",
+     "sha1": "51e69892ab49df85c6230ccc57f8e1d1606caccc",
+     "bytes_location": "content/2023/11/14/22/13/4563fad0-84ce-5556-b918-70e420d42e6e.bytes",
+     "properties_location": "content/2023/11/14/22/13/4563fad0-84ce-5556-b918-70e420d42e6e.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/u/live.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "51e69892ab49df85c6230ccc57f8e1d1606caccc"
+      ],
+      [
+       "size",
+       "1"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L3UvbGl2ZS50eHQKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTUxZTY5ODkyYWI0OWRmODVjNjIzMGNjYzU3ZjhlMWQxNjA2Y2FjY2MKc2l6ZT0xCg=="
+    }
+   ]
+  },
+  {
+   "name": "unknown_scheme",
+   "specs": [
+    {
+     "repo": "demo-releases",
+     "path": "before/ok.txt",
+     "content_b64": "b2s="
+    },
+    {
+     "repo": "demo-releases",
+     "path": "bad/scheme.txt",
+     "content_b64": "YmFk",
+     "scheme": "bogus"
+    },
+    {
+     "repo": "demo-releases",
+     "path": "after/never.txt",
+     "content_b64": "bmV2ZXI="
+    }
+   ],
+   "error": "unknown scheme 'bogus'",
+   "unparsable_locations": [],
+   "digest": "35c8046efe5bf0710b8661f406d14777e138dadf7227fcdf72112e0c0fb158c0",
+   "per_spec": [
+    {
+     "blob_uuid": "79a82478-8d68-544f-a6a6-61a7fc3791c7",
+     "sha1": "7a85f4764bbd6daf1c3545efbbf0f279a6dc0beb",
+     "bytes_location": "content/2023/11/14/22/13/79a82478-8d68-544f-a6a6-61a7fc3791c7.bytes",
+     "properties_location": "content/2023/11/14/22/13/79a82478-8d68-544f-a6a6-61a7fc3791c7.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/before/ok.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "7a85f4764bbd6daf1c3545efbbf0f279a6dc0beb"
+      ],
+      [
+       "size",
+       "2"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2JlZm9yZS9vay50eHQKQEJsb2JTdG9yZS5jb250ZW50LXR5cGU9YXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtCkBCbG9iU3RvcmUuY3JlYXRlZC1ieT1kZW1vLXVzZXIKQEJsb2JTdG9yZS5jcmVhdGVkLWJ5LWlwPTE5Mi4wLjIuMTAKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yZWxlYXNlcwpjcmVhdGlvblRpbWU9MTcwMDAwMDAwMDAwMApzaGExPTdhODVmNDc2NGJiZDZkYWYxYzM1NDVlZmJiZjBmMjc5YTZkYzBiZWIKc2l6ZT0yCg=="
+    },
+    {
+     "blob_uuid": "a7428987-6569-56dc-b4be-2c5bec4be2be",
+     "sha1": "1902e3d6fc4e78a0bcc50ba12b882769afbf4a8c",
+     "error": "unknown scheme 'bogus'"
+    },
+    {
+     "blob_uuid": "f7d37430-8b4c-500f-9855-11624b075f03",
+     "sha1": "85777c03b72554cd08e721b6148dc27d2a50a7a6",
+     "bytes_location": "content/2023/11/14/22/13/f7d37430-8b4c-500f-9855-11624b075f03.bytes",
+     "properties_location": "content/2023/11/14/22/13/f7d37430-8b4c-500f-9855-11624b075f03.properties",
+     "spec_properties": [
+      [
+       "@BlobStore.blob-name",
+       "/after/never.txt"
+      ],
+      [
+       "@BlobStore.content-type",
+       "application/octet-stream"
+      ],
+      [
+       "@BlobStore.created-by",
+       "demo-user"
+      ],
+      [
+       "@BlobStore.created-by-ip",
+       "192.0.2.10"
+      ],
+      [
+       "@Bucket.repo-name",
+       "demo-releases"
+      ],
+      [
+       "creationTime",
+       "1700000000000"
+      ],
+      [
+       "sha1",
+       "85777c03b72554cd08e721b6148dc27d2a50a7a6"
+      ],
+      [
+       "size",
+       "5"
+      ]
+     ],
+     "properties_b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2FmdGVyL25ldmVyLnR4dApAQmxvYlN0b3JlLmNvbnRlbnQtdHlwZT1hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0KQEJsb2JTdG9yZS5jcmVhdGVkLWJ5PWRlbW8tdXNlcgpAQmxvYlN0b3JlLmNyZWF0ZWQtYnktaXA9MTkyLjAuMi4xMApAQnVja2V0LnJlcG8tbmFtZT1kZW1vLXJlbGVhc2VzCmNyZWF0aW9uVGltZT0xNzAwMDAwMDAwMDAwCnNoYTE9ODU3NzdjMDNiNzI1NTRjZDA4ZTcyMWI2MTQ4ZGMyN2QyYTUwYTdhNgpzaXplPTUK"
+    }
+   ]
+  }
+ ],
+ "trees": [
+  {
+   "name": "plain",
+   "files": {
+    "demo-raw/a.txt": "YQ==",
+    "demo-raw/sub/b.bin": "AP8=",
+    "demo-raw/sub/deeper/c.txt": "",
+    "other/caf\u00e9.txt": "Y2Fmw6k=",
+    "other/z": "enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6eg=="
+   },
+   "digest": "9f782dd0a38b0fa521be46ceaa387e01648383c9496231b84c83879352c0c60f",
+   "maven": [],
+   "metadata": []
+  },
+  {
+   "name": "maven",
+   "maven": [
+    {
+     "args": [
+      "com.example",
+      "demo-lib",
+      "1.0"
+     ],
+     "keys": [
+      "com/example/demo-lib/1.0/demo-lib-1.0.pom",
+      "com/example/demo-lib/1.0/demo-lib-1.0.pom.sha1",
+      "com/example/demo-lib/1.0/demo-lib-1.0.pom.md5",
+      "com/example/demo-lib/1.0/demo-lib-1.0.jar",
+      "com/example/demo-lib/1.0/demo-lib-1.0.jar.sha1",
+      "com/example/demo-lib/1.0/demo-lib-1.0.jar.md5"
+     ],
+     "files": {
+      "com/example/demo-lib/1.0/demo-lib-1.0.pom": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHByb2plY3Q+CiAgPG1vZGVsVmVyc2lvbj40LjAuMDwvbW9kZWxWZXJzaW9uPgogIDxncm91cElkPmNvbS5leGFtcGxlPC9ncm91cElkPgogIDxhcnRpZmFjdElkPmRlbW8tbGliPC9hcnRpZmFjdElkPgogIDx2ZXJzaW9uPjEuMDwvdmVyc2lvbj4KPC9wcm9qZWN0Pgo=",
+      "com/example/demo-lib/1.0/demo-lib-1.0.pom.sha1": "ZjcwNzFmNDRmNTYyODA3MzNmYjkxYzY2MjRjMDcyNmQzMGZkYWQ1ZQ==",
+      "com/example/demo-lib/1.0/demo-lib-1.0.pom.md5": "MTdkY2Q5MzQwNmQ0OWYxMGVmM2NjMGFhNDVmNzI4YTA=",
+      "com/example/demo-lib/1.0/demo-lib-1.0.jar": "UEsDBBQAAAAAAKqxble97cgIOwAAADsAAAAUAAAATUVUQS1JTkYvTUFOSUZFU1QuTUZJbXBsZW1lbnRhdGlvbi1UaXRsZTogZGVtby1saWIKSW1wbGVtZW50YXRpb24tVmVyc2lvbjogMS4wClBLAQIUAxQAAAAAAKqxble97cgIOwAAADsAAAAUAAAAAAAAAAAAAACAAQAAAABNRVRBLUlORi9NQU5JRkVTVC5NRlBLBQYAAAAAAQABAEIAAABtAAAAAAA=",
+      "com/example/demo-lib/1.0/demo-lib-1.0.jar.sha1": "YzEwZmYyNTFjYjU5NmQxODhjMDg1NjdkMTMzN2QxZTQ0MWM5YTVjNA==",
+      "com/example/demo-lib/1.0/demo-lib-1.0.jar.md5": "OGFiZWZlY2FiOGY1YzEyZTU3NTg3MzAwYjczNWNkMTA="
+     }
+    },
+    {
+     "args": [
+      "com.example.deep",
+      "demo-app",
+      "2.0-SNAPSHOT"
+     ],
+     "keys": [
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.pom",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.pom.sha1",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.pom.md5",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.jar",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.jar.sha1",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.jar.md5"
+     ],
+     "files": {
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.pom": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHByb2plY3Q+CiAgPG1vZGVsVmVyc2lvbj40LjAuMDwvbW9kZWxWZXJzaW9uPgogIDxncm91cElkPmNvbS5leGFtcGxlLmRlZXA8L2dyb3VwSWQ+CiAgPGFydGlmYWN0SWQ+ZGVtby1hcHA8L2FydGlmYWN0SWQ+CiAgPHZlcnNpb24+Mi4wLVNOQVBTSE9UPC92ZXJzaW9uPgo8L3Byb2plY3Q+Cg==",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.pom.sha1": "NDNkMDg5OWVmNTE4MTZkMWU5MGE5MGE5NGU2Nzk1Zjk4MDY2NTJjNA==",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.pom.md5": "NDY4MzI3YjdkOWRjODFjYjgwMjgwZjU5MWYyOWE0Y2M=",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.jar": "UEsDBBQAAAAAAKqxble3a1flRAAAAEQAAAAUAAAATUVUQS1JTkYvTUFOSUZFU1QuTUZJbXBsZW1lbnRhdGlvbi1UaXRsZTogZGVtby1hcHAKSW1wbGVtZW50YXRpb24tVmVyc2lvbjogMi4wLVNOQVBTSE9UClBLAQIUAxQAAAAAAKqxble3a1flRAAAAEQAAAAUAAAAAAAAAAAAAACAAQAAAABNRVRBLUlORi9NQU5JRkVTVC5NRlBLBQYAAAAAAQABAEIAAAB2AAAAAAA=",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.jar.sha1": "Mjg2ODNjNjQ1ZDE4MWQ1NGMzODBlY2FkZDAyZWVlN2ZjMWIwMjk4Yg==",
+      "com/example/deep/demo-app/2.0-SNAPSHOT/demo-app-2.0-SNAPSHOT.jar.md5": "Y2MwMzE5ZjI1ZGMyZDYxMzYzMjQ3MTZhOTI4YzRmNTQ="
+     }
+    }
+   ],
+   "metadata": [
+    {
+     "args": [
+      "com.example",
+      "demo-lib",
+      [
+       "0.9",
+       "1.0-SNAPSHOT",
+       "1.0"
+      ],
+      "20231114221320"
+     ],
+     "b64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPG1ldGFkYXRhPgogIDxncm91cElkPmNvbS5leGFtcGxlPC9ncm91cElkPgogIDxhcnRpZmFjdElkPmRlbW8tbGliPC9hcnRpZmFjdElkPgogIDx2ZXJzaW9uaW5nPgogICAgPGxhdGVzdD4xLjA8L2xhdGVzdD4KICAgIDxyZWxlYXNlPjEuMDwvcmVsZWFzZT4KICAgIDx2ZXJzaW9ucz4KICAgICAgPHZlcnNpb24+MC45PC92ZXJzaW9uPgogICAgICA8dmVyc2lvbj4xLjAtU05BUFNIT1Q8L3ZlcnNpb24+CiAgICAgIDx2ZXJzaW9uPjEuMDwvdmVyc2lvbj4KICAgIDwvdmVyc2lvbnM+CiAgICA8bGFzdFVwZGF0ZWQ+MjAyMzExMTQyMjEzMjA8L2xhc3RVcGRhdGVkPgogIDwvdmVyc2lvbmluZz4KPC9tZXRhZGF0YT4K"
+    },
+    {
+     "args": [
+      "com.example.deep",
+      "demo-app",
+      [
+       "2.0-SNAPSHOT"
+      ],
+      "20231115000000"
+     ],
+     "b64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPG1ldGFkYXRhPgogIDxncm91cElkPmNvbS5leGFtcGxlLmRlZXA8L2dyb3VwSWQ+CiAgPGFydGlmYWN0SWQ+ZGVtby1hcHA8L2FydGlmYWN0SWQ+CiAgPHZlcnNpb25pbmc+CiAgICA8bGF0ZXN0PjIuMC1TTkFQU0hPVDwvbGF0ZXN0PgogICAgPHZlcnNpb25zPgogICAgICA8dmVyc2lvbj4yLjAtU05BUFNIT1Q8L3ZlcnNpb24+CiAgICA8L3ZlcnNpb25zPgogICAgPGxhc3RVcGRhdGVkPjIwMjMxMTE1MDAwMDAwPC9sYXN0VXBkYXRlZD4KICA8L3ZlcnNpb25pbmc+CjwvbWV0YWRhdGE+Cg=="
+    },
+    {
+     "args": [
+      "com.example.none",
+      "demo-none",
+      [],
+      "20231116000000"
+     ],
+     "b64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPG1ldGFkYXRhPgogIDxncm91cElkPmNvbS5leGFtcGxlLm5vbmU8L2dyb3VwSWQ+CiAgPGFydGlmYWN0SWQ+ZGVtby1ub25lPC9hcnRpZmFjdElkPgogIDx2ZXJzaW9uaW5nPgogICAgPHZlcnNpb25zPgogICAgPC92ZXJzaW9ucz4KICAgIDxsYXN0VXBkYXRlZD4yMDIzMTExNjAwMDAwMDwvbGFzdFVwZGF0ZWQ+CiAgPC92ZXJzaW9uaW5nPgo8L21ldGFkYXRhPgo="
+    }
+   ],
+   "files": {
+    "demo-maven/README": "bWF2ZW4gdHJlZQ=="
+   },
+   "digest": "e1e4a5feb980205f4703ef1331483ac5bf8b93ba67ae2c037873dc76de0f5900"
+  },
+  {
+   "name": "dirs_and_links",
+   "dirs": [
+    "demo/empty",
+    "demo/empty2/nested"
+   ],
+   "links": [
+    [
+     "demo/link",
+     "a.txt"
+    ],
+    [
+     "demo/broken",
+     "missing"
+    ],
+    [
+     "demo/dirlink",
+     "sub"
+    ]
+   ],
+   "files": {
+    "demo/a.txt": "YQ==",
+    "demo/sub/b.txt": "Yg=="
+   },
+   "digest": "88dd4ebc6b517f50b3ef367a246ec10bc1eb7c5ccf9146f0697c066b65a650dd",
+   "maven": [],
+   "metadata": []
+  },
+  {
+   "name": "empty_root",
+   "files": {},
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "maven": [],
+   "metadata": []
+  },
+  {
+   "name": "missing_root",
+   "missing": true,
+   "files": {},
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+   "name": "symlink_root",
+   "via_link": true,
+   "files": {
+    "demo/a.txt": "dGhyb3VnaCBhIGxpbms="
+   },
+   "digest": "26c88dd60e0fcfd234ddf3e14304001336a64b8c0717251dedbe14adb1ffc4d9",
+   "maven": [],
+   "metadata": []
+  },
+  {
+   "name": "file_root",
+   "file_root": true,
+   "files": {},
+   "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+ ],
+ "manifests": [
+  {
+   "name": "plain",
+   "rows": [
+    [
+     "demo-raw",
+     "a/b.txt",
+     3,
+     1700000000000,
+     false,
+     "a9993e364706816aba3e25717850c26c9cd0d89d",
+     "text/plain"
+    ],
+    [
+     "demo-raw",
+     "a/c.bin",
+     0,
+     1700000000001,
+     true,
+     null,
+     null
+    ],
+    [
+     "demo-raw",
+     "a/d.bin",
+     12,
+     -5,
+     0,
+     "",
+     ""
+    ]
+   ],
+   "b64": "ZGVtby1zdG9yZQl2b2wtMDEvY2hhcC0wMS8zMWU2OWUxNC01MWRkLTUxOTctYmQxMC00OGVmNmIyNGFhMjMJZGVtby1yYXcJYS9iLnR4dAkzCTE3MDAwMDAwMDAwMDAJMAlhOTk5M2UzNjQ3MDY4MTZhYmEzZTI1NzE3ODUwYzI2YzljZDBkODlkCXRleHQvcGxhaW4KZGVtby1zdG9yZQl2b2wtMDEvY2hhcC0wMS8yMDBmZWVmZC1hZmVmLTViNjAtYjViMC1hMDgwNWJkODE4Y2UJZGVtby1yYXcJYS9jLmJpbgkwCTE3MDAwMDAwMDAwMDEJMQkJCmRlbW8tc3RvcmUJdm9sLTAxL2NoYXAtMDEvYzQ5ZjVlYjItMWQ0NC01NTgwLWJkNDQtM2M0MWM5ODNiYTkyCWRlbW8tcmF3CWEvZC5iaW4JMTIJLTUJMAkJCg=="
+  },
+  {
+   "name": "escapes",
+   "store": "demo-other-store",
+   "rows": [
+    [
+     "demo\traw",
+     "tab\tpath",
+     1,
+     1,
+     1,
+     null,
+     "type\twith\ttabs"
+    ],
+    [
+     "demo-raw",
+     "line\nbreak\r\\back",
+     2,
+     2,
+     false,
+     "00",
+     "x\ny"
+    ],
+    [
+     "demo-raw",
+     "caf\u00e9/\ud83d\ude00",
+     3,
+     3,
+     false,
+     null,
+     "text/plain; charset=utf-8"
+    ]
+   ],
+   "b64": "ZGVtby1vdGhlci1zdG9yZQl2b2wtMDEvY2hhcC0wMS8wN2UzMWMwNC0wMTI2LTVlNTItYWY1Yi04YjhhYjhkZDFiMmQJZGVtb1x0cmF3CXRhYlx0cGF0aAkxCTEJMQkJdHlwZVx0d2l0aFx0dGFicwpkZW1vLW90aGVyLXN0b3JlCXZvbC0wMS9jaGFwLTAxLzgzYjllNzcyLTBlOTYtNTAwZC04MjJkLTVmYzM3N2E3NWQ5NAlkZW1vLXJhdwlsaW5lXG5icmVha1xyXFxiYWNrCTIJMgkwCTAwCXhcbnkKZGVtby1vdGhlci1zdG9yZQl2b2wtMDEvY2hhcC0wMS9jYjAyZGE1Ny05MWRlLTUyN2ItYmMzYS0yNDNmYmJlYjNjZWIJZGVtby1yYXcJY2Fmw6kv8J+YgAkzCTMJMAkJdGV4dC9wbGFpbjsgY2hhcnNldD11dGYtOAo="
+  },
+  {
+   "name": "empty",
+   "rows": [],
+   "b64": ""
+  }
+ ],
+ "properties": [
+  {
+   "items": {
+    "type": "file/1"
+   },
+   "b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKdHlwZT1maWxlLzEK"
+  },
+  {
+   "items": {},
+   "created_ms": 0,
+   "b64": "IzE5NzAtMDEtMDEgMDA6MDA6MDAsMDAwKzAwMDAKI1RodSBKYW4gMDEgMDA6MDA6MDAgVVRDIDE5NzAK"
+  },
+  {
+   "items": {
+    "b": "2",
+    "a": "1",
+    "C": "3",
+    "\u00e9": "4"
+   },
+   "created_ms": 1700000000999,
+   "b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsOTk5KzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQz0zCmE9MQpiPTIKXHUwMEU5PTQK"
+  },
+  {
+   "items": {
+    " key with space": " value with space ",
+    "k:=#!": "v:=#!",
+    "tab\tkey": "tab\tvalue"
+   },
+   "created_ms": -1,
+   "b64": "IzE5NjktMTItMzEgMjM6NTk6NTksOTk5KzAwMDAKI1dlZCBEZWMgMzEgMjM6NTk6NTkgVVRDIDE5NjkKXCBrZXlcIHdpdGhcIHNwYWNlPVwgdmFsdWUgd2l0aCBzcGFjZSAKa1w6XD1cI1whPXZcOlw9XCNcIQp0YWJcdGtleT10YWJcdHZhbHVlCg=="
+  },
+  {
+   "items": {
+    "wide": "\u4e2d \ud83d\ude00 \u2014",
+    "nl": "a\nb\r\f",
+    "ctl": "\u0000\u007f\u0080\u00ff"
+   },
+   "created_ms": 1234567890123,
+   "b64": "IzIwMDktMDItMTMgMjM6MzE6MzAsMTIzKzAwMDAKI0ZyaSBGZWIgMTMgMjM6MzE6MzAgVVRDIDIwMDkKY3RsPVx1MDAwMFx1MDA3Rlx1MDA4MFx1MDBGRgpubD1hXG5iXHJcZgp3aWRlPVx1NEUyRCBcdUQ4M0RcdURFMDAgXHUyMDE0Cg=="
+  }
+ ]
+}

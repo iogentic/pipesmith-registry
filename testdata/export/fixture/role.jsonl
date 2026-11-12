@@ -1,0 +1,5 @@
+{"id":"demo-maven-lead","name":"Demo maven lead","description":"Writes to the Maven repositories","privileges":["demo-maven-write","demo-csel-maven"],"roles":["demo-viewer"],"read_only":false,"_removed":[]}
+{"id":"demo-ops","name":"Demo operations","description":null,"privileges":["demo-npm-admin","demo-script-run"],"roles":["missing-role"],"read_only":false,"_removed":[]}
+{"id":"demo-viewer","name":"Demo viewer","description":"Reads and browses every repository","privileges":["nx-repository-view-*-*-read","nx-repository-view-*-*-browse","nx-search-read"],"roles":[],"read_only":false,"_removed":[]}
+{"id":"developers","name":"developers","description":"Named like a directory group","privileges":["demo-wildcard-raw","demo-settings-read"],"roles":["demo-viewer"],"read_only":false,"_removed":[]}
+{"id":"nx-admin","name":"nx-admin","description":"Administrator Role","privileges":["nx-all"],"roles":[],"read_only":true,"_removed":[]}

@@ -1,0 +1,48 @@
+/* Styles of the security screens. Shared parts live in ../components.css. Colours come from the
+   tokens only. */
+
+/* A label and a control on one line, for a filter beside a table. */
+.inline-field { display: flex; align-items: center; gap: var(--s2); }
+.inline-field .select { width: auto; max-width: 100%; }
+
+.section-help { margin-bottom: var(--s3); }
+.after-panel { margin-top: var(--s3); }
+.after-notice { margin-top: var(--s3); }
+
+/* Lists of ids inside a cell or a static field. */
+.tags { display: inline-flex; flex-wrap: wrap; gap: 2px 0; min-width: 0; }
+.tags .tag { overflow-wrap: anywhere; }
+.kind-cell { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); }
+
+/* S23: source and filter above the table. */
+.user-search { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s3); margin-bottom: var(--s4); }
+.user-search .field { flex: 1 1 220px; min-width: 0; }
+.user-search .field + .field { margin-top: 0; }
+@media (max-width: 600px) {
+  .user-search .btn { width: 100%; }
+}
+
+/* S26: the order dialog. */
+.order-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.order-list li {
+  display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3);
+  border: 1px solid var(--border); border-radius: var(--radius-small); background: var(--surface-2);
+}
+.order-list .order-pos { color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 1.4em; text-align: right; }
+.order-list .order-name { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.order-list .order-moves { display: flex; gap: var(--s1); flex: none; }
+
+/* S27: tabs and verify results. */
+.tab-panel:focus { outline: none; }
+.verify-row { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--border); }
+.verify-result:not(:empty) { margin-top: var(--s4); }
+.verify-result > * + * { margin-top: var(--s3); }
+
+/* S29: the secret of a token just issued, and the issue form. */
+.token-secret, .token-issue { margin-bottom: var(--s4); }
+.token-secret > h2, .token-issue > h2 { margin-bottom: var(--s3); }
+.token-secret > h2:focus { outline: none; }
+.token-secret > * + * { margin-top: var(--s3); }
+.token-secret .secret-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s2) var(--s3); }
+.token-secret .secret { flex: 1 1 260px; min-width: 0; user-select: all; }
+.token-issue .form-actions { margin-top: var(--s4); }

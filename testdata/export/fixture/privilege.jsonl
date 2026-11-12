@@ -1,0 +1,6 @@
+{"id":"demo-csel-maven","name":"demo-csel-maven","description":"Selected Maven content","type":"repository-content-selector","properties":{"contentSelector":"demo-selector","repository":"*-maven2","actions":"read,browse"},"read_only":false,"_removed":[]}
+{"id":"demo-maven-write","name":"demo-maven-write","description":"Add and edit in Maven repositories","type":"repository-view","properties":{"format":"maven2","repository":"*","actions":"add,edit"},"read_only":false,"_removed":[]}
+{"id":"demo-npm-admin","name":"demo-npm-admin","description":"Administer demo-npm-proxy","type":"repository-admin","properties":{"format":"npm","repository":"demo-npm-proxy","actions":"*"},"read_only":false,"_removed":[]}
+{"id":"demo-script-run","name":"demo-script-run","description":"Run the demo script","type":"script","properties":{"name":"demo-script","actions":"browse,read,run"},"read_only":false,"_removed":[]}
+{"id":"demo-settings-read","name":"demo-settings-read","description":"Read the settings","type":"application","properties":{"domain":"settings","actions":"read"},"read_only":false,"_removed":[]}
+{"id":"demo-wildcard-raw","name":"demo-wildcard-raw","description":"Everything on demo-raw","type":"wildcard","properties":{"pattern":"nexus:repository-view:raw:demo-raw:*"},"read_only":false,"_removed":[]}

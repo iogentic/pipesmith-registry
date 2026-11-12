@@ -1,0 +1,6585 @@
+{
+ "generator": "tools/vectors/scan.py",
+ "python": "3.12.13",
+ "progress_every": 100,
+ "hint_order": [
+  "docker",
+  "npm",
+  "maven2"
+ ],
+ "cases": [
+  {
+   "name": "test_scan_nexus_store",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/live/1.0/live-1.0.jar",
+       "content_b64": "bGl2ZSBieXRlcw==",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/java-archive",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-releases",
+       "path": "com/example/gone/1.0/gone-1.0.jar",
+       "content_b64": "ZGVsZXRlZCBieXRlcw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": true,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-releases",
+       "path": "com/example/copy/1.0/copy-1.0.jar",
+       "content_b64": "Y29weQ==",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": true,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-releases",
+       "path": "com/example/nobytes/1.0/nobytes-1.0.jar",
+       "content_b64": "bWlzc2luZw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": true,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/java-archive",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "content_b64": "PHByb2plY3QvPg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/xml",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "content_b64": "aGVsbG8=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "text/plain",
+       "leading_slash": false
+      }
+     ]
+    },
+    {
+     "op": "unparsable",
+     "root": "store",
+     "result": {
+      "location": "content/vol-01/chap-01/unparsable.properties"
+     }
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 4,
+      "deleted": 1,
+      "copies": 1,
+      "no_bytes": 1,
+      "unparsable": 1,
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/a/1.0/a-1.0.jar",
+     "result": {
+      "asset": {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "store": "s1",
+       "location": "content/2023/11/14/22/13/4ac76011-3045-5082-a808-e5688f4bc9ba.bytes",
+       "size": 5,
+       "sha1": "f19a57f67e570fa19754b1d59f4574a511a06423",
+       "content_type": "application/java-archive",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-snapshots",
+     "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+     "result": {
+      "asset": {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "store": "s1",
+       "location": "content/vol-28/chap-20/e400e050-77b8-59fa-b7e1-9255f628142f.bytes",
+       "size": 10,
+       "sha1": "31a6e1717665b9fb4646a906d52abae65a7eefbc",
+       "content_type": "application/xml",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "docs/readme.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "store": "s1",
+       "location": "content/vol-36/chap-33/b41637e2-43cc-5cae-b059-76f0d45cfae3.bytes",
+       "size": 5,
+       "sha1": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+       "content_type": "text/plain",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/live/1.0/live-1.0.jar",
+     "result": {
+      "asset": {
+       "repo": "demo-releases",
+       "path": "com/example/live/1.0/live-1.0.jar",
+       "store": "s1",
+       "location": "content/2023/11/14/22/13/b0e8a89a-c28a-5641-8ef3-194c11acf177.bytes",
+       "size": 10,
+       "sha1": "c382a80272fbbcb1b5f72baac803b4f9a3dd75c6",
+       "content_type": "application/java-archive",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/gone/1.0/gone-1.0.jar",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/copy/1.0/copy-1.0.jar",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/nobytes/1.0/nobytes-1.0.jar",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "tmp/trap.txt",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "health-check/demo-releases/report.txt",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "repo_files",
+     "result": {
+      "files": 4
+     }
+    },
+    {
+     "op": "hints",
+     "result": {
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_scan_directory_store",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "tree",
+     "root": "tree",
+     "files": {
+      "demo-raw/docs/readme.txt": "aGVsbG8=",
+      "demo-raw/docs/readme.txt.sha1": "YWFmNGM2MWRkY2M1ZThhMmRhYmVkZTBmM2I0ODJjZDlhZWE5NDM0ZA==",
+      "demo-releases/com/example/x/1.0/x-1.0.jar": "amFy",
+      "demo-releases/com/example/x/1.0/x-1.0.pom": "cG9t"
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "t1",
+     "kind": "directory",
+     "name": "t1",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t1",
+     "progress": false,
+     "result": {
+      "store": "t1",
+      "live": 4,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-releases",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "docs/readme.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "store": "t1",
+       "location": "demo-raw/docs/readme.txt",
+       "size": 5,
+       "sha1": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+       "content_type": null,
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "docs/readme.txt.sha1",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt.sha1",
+       "store": "t1",
+       "location": "demo-raw/docs/readme.txt.sha1",
+       "size": 40,
+       "sha1": null,
+       "content_type": null,
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/x/1.0/x-1.0.jar",
+     "result": {
+      "asset": {
+       "repo": "demo-releases",
+       "path": "com/example/x/1.0/x-1.0.jar",
+       "store": "t1",
+       "location": "demo-releases/com/example/x/1.0/x-1.0.jar",
+       "size": 3,
+       "sha1": null,
+       "content_type": null,
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/x/1.0/x-1.0.pom",
+     "result": {
+      "asset": {
+       "repo": "demo-releases",
+       "path": "com/example/x/1.0/x-1.0.pom",
+       "store": "t1",
+       "location": "demo-releases/com/example/x/1.0/x-1.0.pom",
+       "size": 3,
+       "sha1": null,
+       "content_type": null,
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "hints",
+     "result": {
+      "hints": [
+       [
+        "demo-releases",
+        "maven2"
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_rescan_removes_vanished",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/java-archive",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "content_b64": "PHByb2plY3QvPg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/xml",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "content_b64": "aGVsbG8=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "text/plain",
+       "leading_slash": false
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 3,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "unlink",
+     "path": "store/content/2023/11/14/22/13/4ac76011-3045-5082-a808-e5688f4bc9ba.bytes"
+    },
+    {
+     "op": "unlink",
+     "path": "store/content/2023/11/14/22/13/4ac76011-3045-5082-a808-e5688f4bc9ba.properties"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 2,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/a/1.0/a-1.0.jar",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-snapshots",
+     "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+     "result": {
+      "asset": {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "store": "s1",
+       "location": "content/vol-28/chap-20/e400e050-77b8-59fa-b7e1-9255f628142f.bytes",
+       "size": 10,
+       "sha1": "31a6e1717665b9fb4646a906d52abae65a7eefbc",
+       "content_type": "application/xml",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "docs/readme.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "store": "s1",
+       "location": "content/vol-36/chap-33/b41637e2-43cc-5cae-b059-76f0d45cfae3.bytes",
+       "size": 5,
+       "sha1": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+       "content_type": "text/plain",
+       "created_ms": 1700000000000
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_rescan_with_bytes_gone_but_properties_left",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/java-archive",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "content_b64": "PHByb2plY3QvPg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/xml",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "content_b64": "aGVsbG8=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "text/plain",
+       "leading_slash": false
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 3,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "unlink",
+     "path": "store/content/vol-28/chap-20/e400e050-77b8-59fa-b7e1-9255f628142f.bytes"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 2,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 1,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-snapshots",
+     "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+     "result": {
+      "asset": null
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_rescan_picks_up_new_files",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "tree",
+     "root": "tree",
+     "files": {
+      "demo-raw/one.txt": "MQ=="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "t1",
+     "kind": "directory",
+     "name": "t1",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t1",
+     "progress": false,
+     "result": {
+      "store": "t1",
+      "live": 1,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "two.txt",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "tree",
+     "root": "tree",
+     "files": {
+      "demo-raw/two.txt": "MjI="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree",
+     "seconds": 1700000000
+    },
+    {
+     "op": "scan",
+     "store": "t1",
+     "progress": false,
+     "result": {
+      "store": "t1",
+      "live": 2,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "two.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "two.txt",
+       "store": "t1",
+       "location": "demo-raw/two.txt",
+       "size": 2,
+       "sha1": null,
+       "content_type": null,
+       "created_ms": 1700000000000
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_scan_keeps_other_stores",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "tree",
+     "root": "tree-a",
+     "files": {
+      "demo-raw/a.txt": "YQ=="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree-a",
+     "seconds": 1700000000
+    },
+    {
+     "op": "tree",
+     "root": "tree-b",
+     "files": {
+      "demo-raw/b.txt": "Yg=="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree-b",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "a",
+     "kind": "directory",
+     "name": "a",
+     "root": "tree-a"
+    },
+    {
+     "op": "store",
+     "id": "b",
+     "kind": "directory",
+     "name": "b",
+     "root": "tree-b"
+    },
+    {
+     "op": "scan",
+     "store": "a",
+     "progress": false,
+     "result": {
+      "store": "a",
+      "live": 1,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "scan",
+     "store": "b",
+     "progress": false,
+     "result": {
+      "store": "b",
+      "live": 1,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "unlink",
+     "path": "tree-a/demo-raw/a.txt"
+    },
+    {
+     "op": "store",
+     "id": "a",
+     "kind": "directory",
+     "name": "a",
+     "root": "tree-a"
+    },
+    {
+     "op": "scan",
+     "store": "a",
+     "progress": false,
+     "result": {
+      "store": "a",
+      "live": 0,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "a.txt",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "b.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "b.txt",
+       "store": "b",
+       "location": "demo-raw/b.txt",
+       "size": 1,
+       "sha1": null,
+       "content_type": null,
+       "created_ms": 1700000000000
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_progress_callback",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-raw",
+       "path": "files/f000.txt",
+       "content_b64": "Y29udGVudCAw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f001.txt",
+       "content_b64": "Y29udGVudCAx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f002.txt",
+       "content_b64": "Y29udGVudCAy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f003.txt",
+       "content_b64": "Y29udGVudCAz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f004.txt",
+       "content_b64": "Y29udGVudCA0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f005.txt",
+       "content_b64": "Y29udGVudCA1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f006.txt",
+       "content_b64": "Y29udGVudCA2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f007.txt",
+       "content_b64": "Y29udGVudCA3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f008.txt",
+       "content_b64": "Y29udGVudCA4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f009.txt",
+       "content_b64": "Y29udGVudCA5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f010.txt",
+       "content_b64": "Y29udGVudCAxMA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f011.txt",
+       "content_b64": "Y29udGVudCAxMQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f012.txt",
+       "content_b64": "Y29udGVudCAxMg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f013.txt",
+       "content_b64": "Y29udGVudCAxMw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f014.txt",
+       "content_b64": "Y29udGVudCAxNA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f015.txt",
+       "content_b64": "Y29udGVudCAxNQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f016.txt",
+       "content_b64": "Y29udGVudCAxNg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f017.txt",
+       "content_b64": "Y29udGVudCAxNw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f018.txt",
+       "content_b64": "Y29udGVudCAxOA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f019.txt",
+       "content_b64": "Y29udGVudCAxOQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f020.txt",
+       "content_b64": "Y29udGVudCAyMA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f021.txt",
+       "content_b64": "Y29udGVudCAyMQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f022.txt",
+       "content_b64": "Y29udGVudCAyMg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f023.txt",
+       "content_b64": "Y29udGVudCAyMw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f024.txt",
+       "content_b64": "Y29udGVudCAyNA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f025.txt",
+       "content_b64": "Y29udGVudCAyNQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f026.txt",
+       "content_b64": "Y29udGVudCAyNg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f027.txt",
+       "content_b64": "Y29udGVudCAyNw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f028.txt",
+       "content_b64": "Y29udGVudCAyOA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f029.txt",
+       "content_b64": "Y29udGVudCAyOQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f030.txt",
+       "content_b64": "Y29udGVudCAzMA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f031.txt",
+       "content_b64": "Y29udGVudCAzMQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f032.txt",
+       "content_b64": "Y29udGVudCAzMg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f033.txt",
+       "content_b64": "Y29udGVudCAzMw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f034.txt",
+       "content_b64": "Y29udGVudCAzNA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f035.txt",
+       "content_b64": "Y29udGVudCAzNQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f036.txt",
+       "content_b64": "Y29udGVudCAzNg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f037.txt",
+       "content_b64": "Y29udGVudCAzNw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f038.txt",
+       "content_b64": "Y29udGVudCAzOA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f039.txt",
+       "content_b64": "Y29udGVudCAzOQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f040.txt",
+       "content_b64": "Y29udGVudCA0MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f041.txt",
+       "content_b64": "Y29udGVudCA0MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f042.txt",
+       "content_b64": "Y29udGVudCA0Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f043.txt",
+       "content_b64": "Y29udGVudCA0Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f044.txt",
+       "content_b64": "Y29udGVudCA0NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f045.txt",
+       "content_b64": "Y29udGVudCA0NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f046.txt",
+       "content_b64": "Y29udGVudCA0Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f047.txt",
+       "content_b64": "Y29udGVudCA0Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f048.txt",
+       "content_b64": "Y29udGVudCA0OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f049.txt",
+       "content_b64": "Y29udGVudCA0OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f050.txt",
+       "content_b64": "Y29udGVudCA1MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f051.txt",
+       "content_b64": "Y29udGVudCA1MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f052.txt",
+       "content_b64": "Y29udGVudCA1Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f053.txt",
+       "content_b64": "Y29udGVudCA1Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f054.txt",
+       "content_b64": "Y29udGVudCA1NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f055.txt",
+       "content_b64": "Y29udGVudCA1NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f056.txt",
+       "content_b64": "Y29udGVudCA1Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f057.txt",
+       "content_b64": "Y29udGVudCA1Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f058.txt",
+       "content_b64": "Y29udGVudCA1OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f059.txt",
+       "content_b64": "Y29udGVudCA1OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f060.txt",
+       "content_b64": "Y29udGVudCA2MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f061.txt",
+       "content_b64": "Y29udGVudCA2MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f062.txt",
+       "content_b64": "Y29udGVudCA2Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f063.txt",
+       "content_b64": "Y29udGVudCA2Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f064.txt",
+       "content_b64": "Y29udGVudCA2NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f065.txt",
+       "content_b64": "Y29udGVudCA2NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f066.txt",
+       "content_b64": "Y29udGVudCA2Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f067.txt",
+       "content_b64": "Y29udGVudCA2Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f068.txt",
+       "content_b64": "Y29udGVudCA2OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f069.txt",
+       "content_b64": "Y29udGVudCA2OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f070.txt",
+       "content_b64": "Y29udGVudCA3MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f071.txt",
+       "content_b64": "Y29udGVudCA3MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f072.txt",
+       "content_b64": "Y29udGVudCA3Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f073.txt",
+       "content_b64": "Y29udGVudCA3Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f074.txt",
+       "content_b64": "Y29udGVudCA3NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f075.txt",
+       "content_b64": "Y29udGVudCA3NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f076.txt",
+       "content_b64": "Y29udGVudCA3Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f077.txt",
+       "content_b64": "Y29udGVudCA3Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f078.txt",
+       "content_b64": "Y29udGVudCA3OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f079.txt",
+       "content_b64": "Y29udGVudCA3OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f080.txt",
+       "content_b64": "Y29udGVudCA4MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f081.txt",
+       "content_b64": "Y29udGVudCA4MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f082.txt",
+       "content_b64": "Y29udGVudCA4Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f083.txt",
+       "content_b64": "Y29udGVudCA4Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f084.txt",
+       "content_b64": "Y29udGVudCA4NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f085.txt",
+       "content_b64": "Y29udGVudCA4NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f086.txt",
+       "content_b64": "Y29udGVudCA4Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f087.txt",
+       "content_b64": "Y29udGVudCA4Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f088.txt",
+       "content_b64": "Y29udGVudCA4OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f089.txt",
+       "content_b64": "Y29udGVudCA4OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f090.txt",
+       "content_b64": "Y29udGVudCA5MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f091.txt",
+       "content_b64": "Y29udGVudCA5MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f092.txt",
+       "content_b64": "Y29udGVudCA5Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f093.txt",
+       "content_b64": "Y29udGVudCA5Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f094.txt",
+       "content_b64": "Y29udGVudCA5NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f095.txt",
+       "content_b64": "Y29udGVudCA5NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f096.txt",
+       "content_b64": "Y29udGVudCA5Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f097.txt",
+       "content_b64": "Y29udGVudCA5Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f098.txt",
+       "content_b64": "Y29udGVudCA5OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f099.txt",
+       "content_b64": "Y29udGVudCA5OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f100.txt",
+       "content_b64": "Y29udGVudCAxMDA=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f101.txt",
+       "content_b64": "Y29udGVudCAxMDE=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f102.txt",
+       "content_b64": "Y29udGVudCAxMDI=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f103.txt",
+       "content_b64": "Y29udGVudCAxMDM=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f104.txt",
+       "content_b64": "Y29udGVudCAxMDQ=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f105.txt",
+       "content_b64": "Y29udGVudCAxMDU=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f106.txt",
+       "content_b64": "Y29udGVudCAxMDY=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f107.txt",
+       "content_b64": "Y29udGVudCAxMDc=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f108.txt",
+       "content_b64": "Y29udGVudCAxMDg=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f109.txt",
+       "content_b64": "Y29udGVudCAxMDk=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f110.txt",
+       "content_b64": "Y29udGVudCAxMTA=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f111.txt",
+       "content_b64": "Y29udGVudCAxMTE=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f112.txt",
+       "content_b64": "Y29udGVudCAxMTI=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f113.txt",
+       "content_b64": "Y29udGVudCAxMTM=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f114.txt",
+       "content_b64": "Y29udGVudCAxMTQ=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f115.txt",
+       "content_b64": "Y29udGVudCAxMTU=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f116.txt",
+       "content_b64": "Y29udGVudCAxMTY=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f117.txt",
+       "content_b64": "Y29udGVudCAxMTc=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f118.txt",
+       "content_b64": "Y29udGVudCAxMTg=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "files/f119.txt",
+       "content_b64": "Y29udGVudCAxMTk=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": true,
+     "result": {
+      "store": "s1",
+      "live": 120,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": [
+       100,
+       120
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_progress_callback_not_required",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "tree",
+     "root": "tree",
+     "files": {
+      "demo-raw/a.txt": "YQ=="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "t",
+     "kind": "directory",
+     "name": "t",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t",
+     "progress": false,
+     "result": {
+      "store": "t",
+      "live": 1,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_scan_of_a_missing_root_keeps_the_rows",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "tree",
+     "root": "tree",
+     "files": {
+      "demo-raw/a.txt": "YQ=="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "t1",
+     "kind": "directory",
+     "name": "t1",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t1",
+     "progress": false,
+     "result": {
+      "store": "t1",
+      "live": 1,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "rename",
+     "src": "tree",
+     "dst": "unmounted"
+    },
+    {
+     "op": "store",
+     "id": "t1",
+     "kind": "directory",
+     "name": "t1",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t1",
+     "progress": false,
+     "result": {
+      "error": {
+       "class": "FileNotFoundError",
+       "message": "store root <base>/tree is not a directory"
+      },
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "a.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "a.txt",
+       "store": "t1",
+       "location": "demo-raw/a.txt",
+       "size": 1,
+       "sha1": null,
+       "content_type": null,
+       "created_ms": 1700000000000
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_scan_without_content_keeps_the_rows",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/java-archive",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "content_b64": "PHByb2plY3QvPg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/xml",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "content_b64": "aGVsbG8=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "text/plain",
+       "leading_slash": false
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 3,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "rename",
+     "src": "store/content",
+     "dst": "content-elsewhere"
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "error": {
+       "class": "FileNotFoundError",
+       "message": "store root <base>/store has no content/ directory"
+      },
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/a/1.0/a-1.0.jar",
+     "result": {
+      "asset": {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "store": "s1",
+       "location": "content/2023/11/14/22/13/4ac76011-3045-5082-a808-e5688f4bc9ba.bytes",
+       "size": 5,
+       "sha1": "f19a57f67e570fa19754b1d59f4574a511a06423",
+       "content_type": "application/java-archive",
+       "created_ms": 1700000000000
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_scan_of_an_empty_mount_point_keeps_the_rows[nexus-file]",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/java-archive",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "content_b64": "PHByb2plY3QvPg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/xml",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "content_b64": "aGVsbG8=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "text/plain",
+       "leading_slash": false
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 3,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "mkdir",
+     "path": "away"
+    },
+    {
+     "op": "move_children",
+     "src": "store/content",
+     "dst": "away"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "error": {
+       "class": "FileNotFoundError",
+       "message": "store s1 at <base>/store holds no files, but the index has 3 rows of it; the rows are kept. Check that the disk is mounted, or detach the store with: store remove s1"
+      },
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "docs/readme.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "store": "s1",
+       "location": "content/vol-36/chap-33/b41637e2-43cc-5cae-b059-76f0d45cfae3.bytes",
+       "size": 5,
+       "sha1": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+       "content_type": "text/plain",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "store_stats",
+     "result": {
+      "stats": [
+       [
+        "s1",
+        3,
+        20
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_scan_of_an_empty_mount_point_keeps_the_rows[directory]",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "tree",
+     "root": "tree",
+     "files": {
+      "demo-raw/docs/readme.txt": "aGVsbG8=",
+      "demo-releases/a.txt": "YQ=="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "directory",
+     "name": "s1",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 2,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "mkdir",
+     "path": "away"
+    },
+    {
+     "op": "move_children",
+     "src": "tree",
+     "dst": "away"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "error": {
+       "class": "FileNotFoundError",
+       "message": "store s1 at <base>/tree holds no files, but the index has 2 rows of it; the rows are kept. Check that the disk is mounted, or detach the store with: store remove s1"
+      },
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "docs/readme.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "store": "s1",
+       "location": "demo-raw/docs/readme.txt",
+       "size": 5,
+       "sha1": null,
+       "content_type": null,
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "store_stats",
+     "result": {
+      "stats": [
+       [
+        "s1",
+        2,
+        6
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_scan_of_an_empty_new_store_is_fine",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "mkdir",
+     "path": "tree"
+    },
+    {
+     "op": "store",
+     "id": "t1",
+     "kind": "directory",
+     "name": "t1",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t1",
+     "progress": false,
+     "result": {
+      "store": "t1",
+      "live": 0,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "store_stats",
+     "result": {
+      "stats": [
+       [
+        "t1",
+        0,
+        0
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "test_scan_of_a_store_with_only_deleted_blobs_empties_it",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 1,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": true,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s1",
+     "kind": "nexus-file",
+     "name": "s1",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s1",
+     "progress": false,
+     "result": {
+      "store": "s1",
+      "live": 0,
+      "deleted": 1,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-releases",
+     "path": "com/example/a/1.0/a-1.0.jar",
+     "result": {
+      "asset": null
+     }
+    }
+   ]
+  },
+  {
+   "name": "extra_progress_per_directory",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "tree",
+     "root": "tree",
+     "files": {
+      "demo-raw/a/f000.txt": "eA==",
+      "demo-raw/a/f001.txt": "eA==",
+      "demo-raw/a/f002.txt": "eA==",
+      "demo-raw/a/f003.txt": "eA==",
+      "demo-raw/a/f004.txt": "eA==",
+      "demo-raw/a/f005.txt": "eA==",
+      "demo-raw/a/f006.txt": "eA==",
+      "demo-raw/a/f007.txt": "eA==",
+      "demo-raw/a/f008.txt": "eA==",
+      "demo-raw/a/f009.txt": "eA==",
+      "demo-raw/a/f010.txt": "eA==",
+      "demo-raw/a/f011.txt": "eA==",
+      "demo-raw/a/f012.txt": "eA==",
+      "demo-raw/a/f013.txt": "eA==",
+      "demo-raw/a/f014.txt": "eA==",
+      "demo-raw/a/f015.txt": "eA==",
+      "demo-raw/a/f016.txt": "eA==",
+      "demo-raw/a/f017.txt": "eA==",
+      "demo-raw/a/f018.txt": "eA==",
+      "demo-raw/a/f019.txt": "eA==",
+      "demo-raw/a/f020.txt": "eA==",
+      "demo-raw/a/f021.txt": "eA==",
+      "demo-raw/a/f022.txt": "eA==",
+      "demo-raw/a/f023.txt": "eA==",
+      "demo-raw/a/f024.txt": "eA==",
+      "demo-raw/a/f025.txt": "eA==",
+      "demo-raw/a/f026.txt": "eA==",
+      "demo-raw/a/f027.txt": "eA==",
+      "demo-raw/a/f028.txt": "eA==",
+      "demo-raw/a/f029.txt": "eA==",
+      "demo-raw/a/f030.txt": "eA==",
+      "demo-raw/a/f031.txt": "eA==",
+      "demo-raw/a/f032.txt": "eA==",
+      "demo-raw/a/f033.txt": "eA==",
+      "demo-raw/a/f034.txt": "eA==",
+      "demo-raw/a/f035.txt": "eA==",
+      "demo-raw/a/f036.txt": "eA==",
+      "demo-raw/a/f037.txt": "eA==",
+      "demo-raw/a/f038.txt": "eA==",
+      "demo-raw/a/f039.txt": "eA==",
+      "demo-raw/a/f040.txt": "eA==",
+      "demo-raw/a/f041.txt": "eA==",
+      "demo-raw/a/f042.txt": "eA==",
+      "demo-raw/a/f043.txt": "eA==",
+      "demo-raw/a/f044.txt": "eA==",
+      "demo-raw/a/f045.txt": "eA==",
+      "demo-raw/a/f046.txt": "eA==",
+      "demo-raw/a/f047.txt": "eA==",
+      "demo-raw/a/f048.txt": "eA==",
+      "demo-raw/a/f049.txt": "eA==",
+      "demo-raw/a/f050.txt": "eA==",
+      "demo-raw/a/f051.txt": "eA==",
+      "demo-raw/a/f052.txt": "eA==",
+      "demo-raw/a/f053.txt": "eA==",
+      "demo-raw/a/f054.txt": "eA==",
+      "demo-raw/a/f055.txt": "eA==",
+      "demo-raw/a/f056.txt": "eA==",
+      "demo-raw/a/f057.txt": "eA==",
+      "demo-raw/a/f058.txt": "eA==",
+      "demo-raw/a/f059.txt": "eA==",
+      "demo-raw/a/f060.txt": "eA==",
+      "demo-raw/a/f061.txt": "eA==",
+      "demo-raw/a/f062.txt": "eA==",
+      "demo-raw/a/f063.txt": "eA==",
+      "demo-raw/a/f064.txt": "eA==",
+      "demo-raw/a/f065.txt": "eA==",
+      "demo-raw/a/f066.txt": "eA==",
+      "demo-raw/a/f067.txt": "eA==",
+      "demo-raw/a/f068.txt": "eA==",
+      "demo-raw/a/f069.txt": "eA==",
+      "demo-raw/a/f070.txt": "eA==",
+      "demo-raw/a/f071.txt": "eA==",
+      "demo-raw/a/f072.txt": "eA==",
+      "demo-raw/a/f073.txt": "eA==",
+      "demo-raw/a/f074.txt": "eA==",
+      "demo-raw/a/f075.txt": "eA==",
+      "demo-raw/a/f076.txt": "eA==",
+      "demo-raw/a/f077.txt": "eA==",
+      "demo-raw/a/f078.txt": "eA==",
+      "demo-raw/a/f079.txt": "eA==",
+      "demo-raw/a/f080.txt": "eA==",
+      "demo-raw/a/f081.txt": "eA==",
+      "demo-raw/a/f082.txt": "eA==",
+      "demo-raw/a/f083.txt": "eA==",
+      "demo-raw/a/f084.txt": "eA==",
+      "demo-raw/a/f085.txt": "eA==",
+      "demo-raw/a/f086.txt": "eA==",
+      "demo-raw/a/f087.txt": "eA==",
+      "demo-raw/a/f088.txt": "eA==",
+      "demo-raw/a/f089.txt": "eA==",
+      "demo-raw/a/f090.txt": "eA==",
+      "demo-raw/a/f091.txt": "eA==",
+      "demo-raw/a/f092.txt": "eA==",
+      "demo-raw/a/f093.txt": "eA==",
+      "demo-raw/a/f094.txt": "eA==",
+      "demo-raw/a/f095.txt": "eA==",
+      "demo-raw/a/f096.txt": "eA==",
+      "demo-raw/a/f097.txt": "eA==",
+      "demo-raw/a/f098.txt": "eA==",
+      "demo-raw/a/f099.txt": "eA==",
+      "demo-raw/b/g000.txt": "eQ==",
+      "demo-raw/b/g001.txt": "eQ==",
+      "demo-raw/b/g002.txt": "eQ==",
+      "demo-raw/b/g003.txt": "eQ==",
+      "demo-raw/b/g004.txt": "eQ==",
+      "demo-raw/b/g005.txt": "eQ==",
+      "demo-raw/b/g006.txt": "eQ==",
+      "demo-raw/b/g007.txt": "eQ==",
+      "demo-raw/b/g008.txt": "eQ==",
+      "demo-raw/b/g009.txt": "eQ==",
+      "demo-raw/b/g010.txt": "eQ==",
+      "demo-raw/b/g011.txt": "eQ==",
+      "demo-raw/b/g012.txt": "eQ==",
+      "demo-raw/b/g013.txt": "eQ==",
+      "demo-raw/b/g014.txt": "eQ==",
+      "demo-raw/b/g015.txt": "eQ==",
+      "demo-raw/b/g016.txt": "eQ==",
+      "demo-raw/b/g017.txt": "eQ==",
+      "demo-raw/b/g018.txt": "eQ==",
+      "demo-raw/b/g019.txt": "eQ==",
+      "demo-raw/b/g020.txt": "eQ==",
+      "demo-raw/b/g021.txt": "eQ==",
+      "demo-raw/b/g022.txt": "eQ==",
+      "demo-raw/b/g023.txt": "eQ==",
+      "demo-raw/b/g024.txt": "eQ==",
+      "demo-raw/b/g025.txt": "eQ==",
+      "demo-raw/b/g026.txt": "eQ==",
+      "demo-raw/b/g027.txt": "eQ==",
+      "demo-raw/b/g028.txt": "eQ==",
+      "demo-raw/b/g029.txt": "eQ==",
+      "demo-raw/b/g030.txt": "eQ==",
+      "demo-raw/b/g031.txt": "eQ==",
+      "demo-raw/b/g032.txt": "eQ==",
+      "demo-raw/b/g033.txt": "eQ==",
+      "demo-raw/b/g034.txt": "eQ==",
+      "demo-raw/b/g035.txt": "eQ==",
+      "demo-raw/b/g036.txt": "eQ==",
+      "demo-raw/b/g037.txt": "eQ==",
+      "demo-raw/b/g038.txt": "eQ==",
+      "demo-raw/b/g039.txt": "eQ==",
+      "demo-raw/b/g040.txt": "eQ==",
+      "demo-raw/b/g041.txt": "eQ==",
+      "demo-raw/b/g042.txt": "eQ==",
+      "demo-raw/b/g043.txt": "eQ==",
+      "demo-raw/b/g044.txt": "eQ==",
+      "demo-raw/b/g045.txt": "eQ==",
+      "demo-raw/b/g046.txt": "eQ==",
+      "demo-raw/b/g047.txt": "eQ==",
+      "demo-raw/b/g048.txt": "eQ==",
+      "demo-raw/b/g049.txt": "eQ==",
+      "demo-raw/b/g050.txt": "eQ==",
+      "demo-raw/b/g051.txt": "eQ==",
+      "demo-raw/b/g052.txt": "eQ==",
+      "demo-raw/b/g053.txt": "eQ==",
+      "demo-raw/b/g054.txt": "eQ==",
+      "demo-raw/b/g055.txt": "eQ==",
+      "demo-raw/b/g056.txt": "eQ==",
+      "demo-raw/b/g057.txt": "eQ==",
+      "demo-raw/b/g058.txt": "eQ==",
+      "demo-raw/b/g059.txt": "eQ==",
+      "demo-raw/b/g060.txt": "eQ==",
+      "demo-raw/b/g061.txt": "eQ==",
+      "demo-raw/b/g062.txt": "eQ==",
+      "demo-raw/b/g063.txt": "eQ==",
+      "demo-raw/b/g064.txt": "eQ==",
+      "demo-raw/b/g065.txt": "eQ==",
+      "demo-raw/b/g066.txt": "eQ==",
+      "demo-raw/b/g067.txt": "eQ==",
+      "demo-raw/b/g068.txt": "eQ==",
+      "demo-raw/b/g069.txt": "eQ==",
+      "demo-raw/b/g070.txt": "eQ==",
+      "demo-raw/b/g071.txt": "eQ==",
+      "demo-raw/b/g072.txt": "eQ==",
+      "demo-raw/b/g073.txt": "eQ==",
+      "demo-raw/b/g074.txt": "eQ==",
+      "demo-raw/b/g075.txt": "eQ==",
+      "demo-raw/b/g076.txt": "eQ==",
+      "demo-raw/b/g077.txt": "eQ==",
+      "demo-raw/b/g078.txt": "eQ==",
+      "demo-raw/b/g079.txt": "eQ==",
+      "demo-raw/b/g080.txt": "eQ==",
+      "demo-raw/b/g081.txt": "eQ==",
+      "demo-raw/b/g082.txt": "eQ==",
+      "demo-raw/b/g083.txt": "eQ==",
+      "demo-raw/b/g084.txt": "eQ==",
+      "demo-raw/b/g085.txt": "eQ==",
+      "demo-raw/b/g086.txt": "eQ==",
+      "demo-raw/b/g087.txt": "eQ==",
+      "demo-raw/b/g088.txt": "eQ==",
+      "demo-raw/b/g089.txt": "eQ==",
+      "demo-raw/b/g090.txt": "eQ==",
+      "demo-raw/b/g091.txt": "eQ==",
+      "demo-raw/b/g092.txt": "eQ==",
+      "demo-raw/b/g093.txt": "eQ==",
+      "demo-raw/b/g094.txt": "eQ==",
+      "demo-raw/b/g095.txt": "eQ==",
+      "demo-raw/b/g096.txt": "eQ==",
+      "demo-raw/b/g097.txt": "eQ==",
+      "demo-raw/b/g098.txt": "eQ==",
+      "demo-raw/b/g099.txt": "eQ==",
+      "demo-raw/b/g100.txt": "eQ==",
+      "demo-raw/b/g101.txt": "eQ==",
+      "demo-raw/b/g102.txt": "eQ==",
+      "demo-raw/b/g103.txt": "eQ==",
+      "demo-raw/b/g104.txt": "eQ==",
+      "demo-raw/b/g105.txt": "eQ==",
+      "demo-raw/b/g106.txt": "eQ==",
+      "demo-raw/b/g107.txt": "eQ==",
+      "demo-raw/b/g108.txt": "eQ==",
+      "demo-raw/b/g109.txt": "eQ==",
+      "demo-raw/b/g110.txt": "eQ==",
+      "demo-raw/b/g111.txt": "eQ==",
+      "demo-raw/b/g112.txt": "eQ==",
+      "demo-raw/b/g113.txt": "eQ==",
+      "demo-raw/b/g114.txt": "eQ==",
+      "demo-raw/b/g115.txt": "eQ==",
+      "demo-raw/b/g116.txt": "eQ==",
+      "demo-raw/b/g117.txt": "eQ==",
+      "demo-raw/b/g118.txt": "eQ==",
+      "demo-raw/b/g119.txt": "eQ==",
+      "demo-raw/b/g120.txt": "eQ==",
+      "demo-raw/b/g121.txt": "eQ==",
+      "demo-raw/b/g122.txt": "eQ==",
+      "demo-raw/b/g123.txt": "eQ==",
+      "demo-raw/b/g124.txt": "eQ==",
+      "demo-raw/b/g125.txt": "eQ==",
+      "demo-raw/b/g126.txt": "eQ==",
+      "demo-raw/b/g127.txt": "eQ==",
+      "demo-raw/b/g128.txt": "eQ==",
+      "demo-raw/b/g129.txt": "eQ==",
+      "demo-raw/b/g130.txt": "eQ==",
+      "demo-raw/b/g131.txt": "eQ==",
+      "demo-raw/b/g132.txt": "eQ==",
+      "demo-raw/b/g133.txt": "eQ==",
+      "demo-raw/b/g134.txt": "eQ==",
+      "demo-raw/b/g135.txt": "eQ==",
+      "demo-raw/b/g136.txt": "eQ==",
+      "demo-raw/b/g137.txt": "eQ==",
+      "demo-raw/b/g138.txt": "eQ==",
+      "demo-raw/b/g139.txt": "eQ==",
+      "demo-raw/b/g140.txt": "eQ==",
+      "demo-raw/b/g141.txt": "eQ==",
+      "demo-raw/b/g142.txt": "eQ==",
+      "demo-raw/b/g143.txt": "eQ==",
+      "demo-raw/b/g144.txt": "eQ==",
+      "demo-raw/b/g145.txt": "eQ==",
+      "demo-raw/b/g146.txt": "eQ==",
+      "demo-raw/b/g147.txt": "eQ==",
+      "demo-raw/b/g148.txt": "eQ==",
+      "demo-raw/b/g149.txt": "eQ==",
+      "demo-raw/c/last.txt": "eg=="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "t",
+     "kind": "directory",
+     "name": "t",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t",
+     "progress": true,
+     "result": {
+      "store": "t",
+      "live": 251,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": [
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       100,
+       251
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "extra_progress_exact_hundreds",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-raw",
+       "path": "p/f000.txt",
+       "content_b64": "YzA=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f001.txt",
+       "content_b64": "YzE=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f002.txt",
+       "content_b64": "YzI=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f003.txt",
+       "content_b64": "YzM=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f004.txt",
+       "content_b64": "YzQ=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f005.txt",
+       "content_b64": "YzU=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f006.txt",
+       "content_b64": "YzY=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f007.txt",
+       "content_b64": "Yzc=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f008.txt",
+       "content_b64": "Yzg=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f009.txt",
+       "content_b64": "Yzk=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f010.txt",
+       "content_b64": "YzEw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f011.txt",
+       "content_b64": "YzEx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f012.txt",
+       "content_b64": "YzEy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f013.txt",
+       "content_b64": "YzEz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f014.txt",
+       "content_b64": "YzE0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f015.txt",
+       "content_b64": "YzE1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f016.txt",
+       "content_b64": "YzE2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f017.txt",
+       "content_b64": "YzE3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f018.txt",
+       "content_b64": "YzE4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f019.txt",
+       "content_b64": "YzE5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f020.txt",
+       "content_b64": "YzIw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f021.txt",
+       "content_b64": "YzIx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f022.txt",
+       "content_b64": "YzIy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f023.txt",
+       "content_b64": "YzIz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f024.txt",
+       "content_b64": "YzI0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f025.txt",
+       "content_b64": "YzI1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f026.txt",
+       "content_b64": "YzI2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f027.txt",
+       "content_b64": "YzI3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f028.txt",
+       "content_b64": "YzI4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f029.txt",
+       "content_b64": "YzI5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f030.txt",
+       "content_b64": "YzMw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f031.txt",
+       "content_b64": "YzMx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f032.txt",
+       "content_b64": "YzMy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f033.txt",
+       "content_b64": "YzMz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f034.txt",
+       "content_b64": "YzM0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f035.txt",
+       "content_b64": "YzM1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f036.txt",
+       "content_b64": "YzM2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f037.txt",
+       "content_b64": "YzM3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f038.txt",
+       "content_b64": "YzM4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f039.txt",
+       "content_b64": "YzM5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f040.txt",
+       "content_b64": "YzQw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f041.txt",
+       "content_b64": "YzQx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f042.txt",
+       "content_b64": "YzQy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f043.txt",
+       "content_b64": "YzQz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f044.txt",
+       "content_b64": "YzQ0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f045.txt",
+       "content_b64": "YzQ1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f046.txt",
+       "content_b64": "YzQ2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f047.txt",
+       "content_b64": "YzQ3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f048.txt",
+       "content_b64": "YzQ4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f049.txt",
+       "content_b64": "YzQ5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f050.txt",
+       "content_b64": "YzUw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f051.txt",
+       "content_b64": "YzUx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f052.txt",
+       "content_b64": "YzUy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f053.txt",
+       "content_b64": "YzUz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f054.txt",
+       "content_b64": "YzU0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f055.txt",
+       "content_b64": "YzU1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f056.txt",
+       "content_b64": "YzU2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f057.txt",
+       "content_b64": "YzU3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f058.txt",
+       "content_b64": "YzU4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f059.txt",
+       "content_b64": "YzU5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f060.txt",
+       "content_b64": "YzYw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f061.txt",
+       "content_b64": "YzYx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f062.txt",
+       "content_b64": "YzYy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f063.txt",
+       "content_b64": "YzYz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f064.txt",
+       "content_b64": "YzY0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f065.txt",
+       "content_b64": "YzY1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f066.txt",
+       "content_b64": "YzY2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f067.txt",
+       "content_b64": "YzY3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f068.txt",
+       "content_b64": "YzY4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f069.txt",
+       "content_b64": "YzY5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f070.txt",
+       "content_b64": "Yzcw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f071.txt",
+       "content_b64": "Yzcx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f072.txt",
+       "content_b64": "Yzcy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f073.txt",
+       "content_b64": "Yzcz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f074.txt",
+       "content_b64": "Yzc0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f075.txt",
+       "content_b64": "Yzc1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f076.txt",
+       "content_b64": "Yzc2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f077.txt",
+       "content_b64": "Yzc3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f078.txt",
+       "content_b64": "Yzc4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f079.txt",
+       "content_b64": "Yzc5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f080.txt",
+       "content_b64": "Yzgw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f081.txt",
+       "content_b64": "Yzgx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f082.txt",
+       "content_b64": "Yzgy",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f083.txt",
+       "content_b64": "Yzgz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f084.txt",
+       "content_b64": "Yzg0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f085.txt",
+       "content_b64": "Yzg1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f086.txt",
+       "content_b64": "Yzg2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f087.txt",
+       "content_b64": "Yzg3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f088.txt",
+       "content_b64": "Yzg4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f089.txt",
+       "content_b64": "Yzg5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f090.txt",
+       "content_b64": "Yzkw",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f091.txt",
+       "content_b64": "Yzkx",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f092.txt",
+       "content_b64": "Yzky",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f093.txt",
+       "content_b64": "Yzkz",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f094.txt",
+       "content_b64": "Yzk0",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f095.txt",
+       "content_b64": "Yzk1",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f096.txt",
+       "content_b64": "Yzk2",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f097.txt",
+       "content_b64": "Yzk3",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f098.txt",
+       "content_b64": "Yzk4",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f099.txt",
+       "content_b64": "Yzk5",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f100.txt",
+       "content_b64": "YzEwMA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f101.txt",
+       "content_b64": "YzEwMQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f102.txt",
+       "content_b64": "YzEwMg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f103.txt",
+       "content_b64": "YzEwMw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f104.txt",
+       "content_b64": "YzEwNA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f105.txt",
+       "content_b64": "YzEwNQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f106.txt",
+       "content_b64": "YzEwNg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f107.txt",
+       "content_b64": "YzEwNw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f108.txt",
+       "content_b64": "YzEwOA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f109.txt",
+       "content_b64": "YzEwOQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f110.txt",
+       "content_b64": "YzExMA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f111.txt",
+       "content_b64": "YzExMQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f112.txt",
+       "content_b64": "YzExMg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f113.txt",
+       "content_b64": "YzExMw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f114.txt",
+       "content_b64": "YzExNA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f115.txt",
+       "content_b64": "YzExNQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f116.txt",
+       "content_b64": "YzExNg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f117.txt",
+       "content_b64": "YzExNw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f118.txt",
+       "content_b64": "YzExOA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f119.txt",
+       "content_b64": "YzExOQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f120.txt",
+       "content_b64": "YzEyMA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f121.txt",
+       "content_b64": "YzEyMQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f122.txt",
+       "content_b64": "YzEyMg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f123.txt",
+       "content_b64": "YzEyMw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f124.txt",
+       "content_b64": "YzEyNA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f125.txt",
+       "content_b64": "YzEyNQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f126.txt",
+       "content_b64": "YzEyNg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f127.txt",
+       "content_b64": "YzEyNw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f128.txt",
+       "content_b64": "YzEyOA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f129.txt",
+       "content_b64": "YzEyOQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f130.txt",
+       "content_b64": "YzEzMA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f131.txt",
+       "content_b64": "YzEzMQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f132.txt",
+       "content_b64": "YzEzMg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f133.txt",
+       "content_b64": "YzEzMw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f134.txt",
+       "content_b64": "YzEzNA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f135.txt",
+       "content_b64": "YzEzNQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f136.txt",
+       "content_b64": "YzEzNg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f137.txt",
+       "content_b64": "YzEzNw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f138.txt",
+       "content_b64": "YzEzOA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f139.txt",
+       "content_b64": "YzEzOQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f140.txt",
+       "content_b64": "YzE0MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f141.txt",
+       "content_b64": "YzE0MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f142.txt",
+       "content_b64": "YzE0Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f143.txt",
+       "content_b64": "YzE0Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f144.txt",
+       "content_b64": "YzE0NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f145.txt",
+       "content_b64": "YzE0NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f146.txt",
+       "content_b64": "YzE0Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f147.txt",
+       "content_b64": "YzE0Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f148.txt",
+       "content_b64": "YzE0OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f149.txt",
+       "content_b64": "YzE0OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f150.txt",
+       "content_b64": "YzE1MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f151.txt",
+       "content_b64": "YzE1MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f152.txt",
+       "content_b64": "YzE1Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f153.txt",
+       "content_b64": "YzE1Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f154.txt",
+       "content_b64": "YzE1NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f155.txt",
+       "content_b64": "YzE1NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f156.txt",
+       "content_b64": "YzE1Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f157.txt",
+       "content_b64": "YzE1Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f158.txt",
+       "content_b64": "YzE1OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f159.txt",
+       "content_b64": "YzE1OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f160.txt",
+       "content_b64": "YzE2MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f161.txt",
+       "content_b64": "YzE2MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f162.txt",
+       "content_b64": "YzE2Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f163.txt",
+       "content_b64": "YzE2Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f164.txt",
+       "content_b64": "YzE2NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f165.txt",
+       "content_b64": "YzE2NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f166.txt",
+       "content_b64": "YzE2Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f167.txt",
+       "content_b64": "YzE2Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f168.txt",
+       "content_b64": "YzE2OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f169.txt",
+       "content_b64": "YzE2OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f170.txt",
+       "content_b64": "YzE3MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f171.txt",
+       "content_b64": "YzE3MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f172.txt",
+       "content_b64": "YzE3Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f173.txt",
+       "content_b64": "YzE3Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f174.txt",
+       "content_b64": "YzE3NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f175.txt",
+       "content_b64": "YzE3NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f176.txt",
+       "content_b64": "YzE3Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f177.txt",
+       "content_b64": "YzE3Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f178.txt",
+       "content_b64": "YzE3OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f179.txt",
+       "content_b64": "YzE3OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f180.txt",
+       "content_b64": "YzE4MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f181.txt",
+       "content_b64": "YzE4MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f182.txt",
+       "content_b64": "YzE4Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f183.txt",
+       "content_b64": "YzE4Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f184.txt",
+       "content_b64": "YzE4NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f185.txt",
+       "content_b64": "YzE4NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f186.txt",
+       "content_b64": "YzE4Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f187.txt",
+       "content_b64": "YzE4Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f188.txt",
+       "content_b64": "YzE4OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f189.txt",
+       "content_b64": "YzE4OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f190.txt",
+       "content_b64": "YzE5MA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f191.txt",
+       "content_b64": "YzE5MQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f192.txt",
+       "content_b64": "YzE5Mg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f193.txt",
+       "content_b64": "YzE5Mw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f194.txt",
+       "content_b64": "YzE5NA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f195.txt",
+       "content_b64": "YzE5NQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f196.txt",
+       "content_b64": "YzE5Ng==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f197.txt",
+       "content_b64": "YzE5Nw==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f198.txt",
+       "content_b64": "YzE5OA==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "p/f199.txt",
+       "content_b64": "YzE5OQ==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s",
+     "kind": "nexus-file",
+     "name": "s",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s",
+     "progress": true,
+     "result": {
+      "store": "s",
+      "live": 200,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": [
+       100,
+       200
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "extra_progress_empty",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "mkdir",
+     "path": "tree"
+    },
+    {
+     "op": "store",
+     "id": "t",
+     "kind": "directory",
+     "name": "t",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t",
+     "progress": true,
+     "result": {
+      "store": "t",
+      "live": 0,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": [
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "extra_hints",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "tree",
+     "root": "tree",
+     "files": {
+      "demo-docker/v2/demo/app/manifests/latest": "e30=",
+      "demo-docker/v2/demo/app/blobs/sha256:x": "YmxvYg==",
+      "demo-mixed/com/example/a/1.0/a-1.0.pom": "cG9t",
+      "demo-mixed/demo-pkg/-/demo-pkg-1.0.tgz": "dGd6",
+      "demo-mixed/v2/x": "ZG9ja2VyIHdpbnM=",
+      "demo-maven/com/example/maven-metadata.xml": "bWV0YQ==",
+      "demo-maven/com/example/a/1.0/a-1.0.jar": "amFy",
+      "demo-npm/@demo/pkg/-/pkg-1.0.tgz": "dGd6",
+      "demo-raw/docs/readme.txt": "cmF3",
+      "demo-raw/x/v2/y": "bm90IGF0IHRoZSB0b3A="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "t",
+     "kind": "directory",
+     "name": "t",
+     "root": "tree"
+    },
+    {
+     "op": "scan",
+     "store": "t",
+     "progress": false,
+     "result": {
+      "store": "t",
+      "live": 10,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-docker",
+        "docker"
+       ],
+       [
+        "demo-maven",
+        "maven2"
+       ],
+       [
+        "demo-mixed",
+        "docker"
+       ],
+       [
+        "demo-npm",
+        "npm"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "hints",
+     "result": {
+      "hints": [
+       [
+        "demo-docker",
+        "docker"
+       ],
+       [
+        "demo-maven",
+        "maven2"
+       ],
+       [
+        "demo-mixed",
+        "docker"
+       ],
+       [
+        "demo-npm",
+        "npm"
+       ]
+      ]
+     }
+    },
+    {
+     "op": "tree",
+     "root": "tree2",
+     "files": {
+      "demo-raw/a.pom": "cG9t",
+      "demo-npm/x.txt": "eA=="
+     }
+    },
+    {
+     "op": "touch_all",
+     "root": "tree2",
+     "seconds": 1700000000
+    },
+    {
+     "op": "store",
+     "id": "u",
+     "kind": "directory",
+     "name": "u",
+     "root": "tree2"
+    },
+    {
+     "op": "scan",
+     "store": "u",
+     "progress": false,
+     "result": {
+      "store": "u",
+      "live": 2,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-raw",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "hints",
+     "result": {
+      "hints": [
+       [
+        "demo-docker",
+        "docker"
+       ],
+       [
+        "demo-maven",
+        "maven2"
+       ],
+       [
+        "demo-mixed",
+        "docker"
+       ],
+       [
+        "demo-npm",
+        "npm"
+       ],
+       [
+        "demo-raw",
+        "maven2"
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "extra_walk_fails_keeps_rows",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/java-archive",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "content_b64": "PHByb2plY3QvPg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/xml",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "content_b64": "aGVsbG8=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "text/plain",
+       "leading_slash": false
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s",
+     "kind": "nexus-file",
+     "name": "s",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s",
+     "progress": false,
+     "result": {
+      "store": "s",
+      "live": 3,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "write",
+     "path": "store/content/vol-09/digits.properties",
+     "b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2QudHh0CkBCdWNrZXQucmVwby1uYW1lPWRlbW8tcmF3CmNyZWF0aW9uVGltZT0xCnNpemU9OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTk5OTkK"
+    },
+    {
+     "op": "scan",
+     "store": "s",
+     "progress": false,
+     "result": {
+      "error": {
+       "class": "ValueError",
+       "message": "Exceeds the limit (4300 digits) for integer string conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit"
+      },
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "docs/readme.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "store": "s",
+       "location": "content/vol-36/chap-33/b41637e2-43cc-5cae-b059-76f0d45cfae3.bytes",
+       "size": 5,
+       "sha1": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+       "content_type": "text/plain",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "store_stats",
+     "result": {
+      "stats": [
+       [
+        "s",
+        3,
+        20
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "extra_overflow_keeps_rows",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-releases",
+       "path": "com/example/a/1.0/a-1.0.jar",
+       "content_b64": "YSBqYXI=",
+       "scheme": "date",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/java-archive",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-snapshots",
+       "path": "com/example/b/2.0-SNAPSHOT/b-2.0.pom",
+       "content_b64": "PHByb2plY3QvPg==",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/xml",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "content_b64": "aGVsbG8=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "text/plain",
+       "leading_slash": false
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s",
+     "kind": "nexus-file",
+     "name": "s",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s",
+     "progress": false,
+     "result": {
+      "store": "s",
+      "live": 3,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [
+       [
+        "demo-snapshots",
+        "maven2"
+       ]
+      ],
+      "progress": []
+     }
+    },
+    {
+     "op": "write",
+     "path": "store/content/vol-09/big.properties",
+     "b64": "IzIwMjMtMTEtMTQgMjI6MTM6MjAsMDAwKzAwMDAKI1R1ZSBOb3YgMTQgMjI6MTM6MjAgVVRDIDIwMjMKQEJsb2JTdG9yZS5ibG9iLW5hbWU9L2JpZy50eHQKQEJ1Y2tldC5yZXBvLW5hbWU9ZGVtby1yYXcKY3JlYXRpb25UaW1lPTEKc2l6ZT05OTk5OTk5OTk5OTk5OTk5OTk5OQo="
+    },
+    {
+     "op": "write",
+     "path": "store/content/vol-09/big.bytes",
+     "b64": "Yg=="
+    },
+    {
+     "op": "scan",
+     "store": "s",
+     "progress": false,
+     "result": {
+      "error": {
+       "class": "OverflowError",
+       "message": "Python int too large to convert to SQLite INTEGER"
+      },
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "docs/readme.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "docs/readme.txt",
+       "store": "s",
+       "location": "content/vol-36/chap-33/b41637e2-43cc-5cae-b059-76f0d45cfae3.bytes",
+       "size": 5,
+       "sha1": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+       "content_type": "text/plain",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "big.txt",
+     "result": {
+      "asset": null
+     }
+    },
+    {
+     "op": "store_stats",
+     "result": {
+      "stats": [
+       [
+        "s",
+        3,
+        20
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "extra_unmounted_without_rows",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": []
+    },
+    {
+     "op": "store",
+     "id": "s",
+     "kind": "nexus-file",
+     "name": "s",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s",
+     "progress": false,
+     "result": {
+      "store": "s",
+      "live": 0,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "store_stats",
+     "result": {
+      "stats": [
+       [
+        "s",
+        0,
+        0
+       ]
+      ]
+     }
+    },
+    {
+     "op": "rename",
+     "src": "store/content",
+     "dst": "away"
+    },
+    {
+     "op": "mkdir",
+     "path": "store/content"
+    },
+    {
+     "op": "scan",
+     "store": "s",
+     "progress": false,
+     "result": {
+      "store": "s",
+      "live": 0,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "store_stats",
+     "result": {
+      "stats": [
+       [
+        "s",
+        0,
+        0
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "extra_same_path_twice",
+   "steps": [
+    {
+     "op": "index"
+    },
+    {
+     "op": "blob_store",
+     "root": "store",
+     "specs": [
+      {
+       "repo": "demo-raw",
+       "path": "dup/x.txt",
+       "content_b64": "b2xkZXI=",
+       "scheme": "vol",
+       "created_ms": 1600000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "dup/x.txt",
+       "content_b64": "bmV3ZXI=",
+       "scheme": "vol",
+       "created_ms": 1700000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "dup/y.txt",
+       "content_b64": "Zmlyc3Q=",
+       "scheme": "vol",
+       "created_ms": 1650000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      },
+      {
+       "repo": "demo-raw",
+       "path": "dup/y.txt",
+       "content_b64": "c2Vjb25k",
+       "scheme": "vol",
+       "created_ms": 1650000000000,
+       "deleted": false,
+       "copy_only": false,
+       "no_bytes": false,
+       "content_type": "application/octet-stream",
+       "leading_slash": true
+      }
+     ]
+    },
+    {
+     "op": "store",
+     "id": "s",
+     "kind": "nexus-file",
+     "name": "s",
+     "root": "store"
+    },
+    {
+     "op": "scan",
+     "store": "s",
+     "progress": false,
+     "result": {
+      "store": "s",
+      "live": 4,
+      "deleted": 0,
+      "copies": 0,
+      "no_bytes": 0,
+      "unparsable": 0,
+      "hints": [],
+      "progress": []
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "dup/x.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "dup/x.txt",
+       "store": "s",
+       "location": "content/vol-06/chap-37/9b02360c-3bbd-5247-a52a-7c35786e4906.bytes",
+       "size": 5,
+       "sha1": "1d47386a9777a927aac611d869a7baed63609654",
+       "content_type": "application/octet-stream",
+       "created_ms": 1700000000000
+      }
+     }
+    },
+    {
+     "op": "lookup",
+     "repo": "demo-raw",
+     "path": "dup/y.txt",
+     "result": {
+      "asset": {
+       "repo": "demo-raw",
+       "path": "dup/y.txt",
+       "store": "s",
+       "location": "content/vol-04/chap-21/4096e1bf-5c15-5739-9448-978fb06db063.bytes",
+       "size": 6,
+       "sha1": "352f7829a2384b001cc12b0c2613c756454a1f6a",
+       "content_type": "application/octet-stream",
+       "created_ms": 1650000000000
+      }
+     }
+    },
+    {
+     "op": "repo_files",
+     "result": {
+      "files": 2
+     }
+    }
+   ]
+  }
+ ],
+ "guess_format": [
+  {
+   "path": "v2/",
+   "expect": "docker"
+  },
+  {
+   "path": "v2/x",
+   "expect": "docker"
+  },
+  {
+   "path": "v2",
+   "expect": null
+  },
+  {
+   "path": "x/v2/y",
+   "expect": null
+  },
+  {
+   "path": "V2/x",
+   "expect": null
+  },
+  {
+   "path": "pkg/-/pkg-1.0.tgz",
+   "expect": "npm"
+  },
+  {
+   "path": "@scope/pkg/-/pkg-1.0.tgz",
+   "expect": "npm"
+  },
+  {
+   "path": "@/pkg/-/pkg-1.0.tgz",
+   "expect": null
+  },
+  {
+   "path": "@scope//-/pkg-1.0.tgz",
+   "expect": null
+  },
+  {
+   "path": "/-/pkg.tgz",
+   "expect": null
+  },
+  {
+   "path": "a/b/-/c.tgz",
+   "expect": null
+  },
+  {
+   "path": "@a/b/c/-/d.tgz",
+   "expect": null
+  },
+  {
+   "path": "pkg/-/x.tar",
+   "expect": null
+  },
+  {
+   "path": "pkg/-/.tgz",
+   "expect": "npm"
+  },
+  {
+   "path": "pkg/x/pkg.tgz",
+   "expect": null
+  },
+  {
+   "path": "-/pkg.tgz",
+   "expect": null
+  },
+  {
+   "path": "pkg/-/sub/x.tgz",
+   "expect": null
+  },
+  {
+   "path": "@scope/-/x.tgz",
+   "expect": null
+  },
+  {
+   "path": "a.pom",
+   "expect": "maven2"
+  },
+  {
+   "path": "com/example/a/1.0/a-1.0.pom",
+   "expect": "maven2"
+  },
+  {
+   "path": "com/example/maven-metadata.xml",
+   "expect": "maven2"
+  },
+  {
+   "path": "maven-metadata.xml",
+   "expect": "maven2"
+  },
+  {
+   "path": "maven-metadata.xml.sha1",
+   "expect": null
+  },
+  {
+   "path": "a.pom.sha1",
+   "expect": null
+  },
+  {
+   "path": "x.POM",
+   "expect": null
+  },
+  {
+   "path": "",
+   "expect": null
+  },
+  {
+   "path": "/",
+   "expect": null
+  },
+  {
+   "path": "a/",
+   "expect": null
+  },
+  {
+   "path": "pkg/-/pkg.tgz/",
+   "expect": null
+  },
+  {
+   "path": "@\u00e4/pkg/-/x.tgz",
+   "expect": "npm"
+  },
+  {
+   "path": "\u00e4/-/x.tgz",
+   "expect": "npm"
+  },
+  {
+   "path": "v2/x.pom",
+   "expect": "docker"
+  },
+  {
+   "path": "pkg/-/a.pom",
+   "expect": "maven2"
+  },
+  {
+   "path": "@s/p/-/x.pom.tgz",
+   "expect": "npm"
+  }
+ ]
+}

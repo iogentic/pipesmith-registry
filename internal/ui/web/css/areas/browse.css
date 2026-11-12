@@ -1,0 +1,53 @@
+/* Styles of the browse screens. Shared parts live in ../components.css. */
+
+/* Tree of S05 */
+.tree-panel { padding: var(--s3); }
+.tree .tree-level {
+  list-style: none; margin: 0 0 0 var(--s4); padding: 0 0 0 var(--s1);
+  border-left: 1px solid var(--border);
+}
+.tree .node-name { flex: 1 1 auto; min-width: 0; }
+.tree button.node[aria-busy="true"] { cursor: progress; }
+.tree .more-row { padding: var(--s2) var(--s3); }
+.tree .empty-row { padding: 6px var(--s3); color: var(--text-muted); font-size: var(--size-small); }
+@media (max-width: 600px) {
+  .tree .tree-level { margin-left: var(--s2); }
+}
+
+/* Detail of S05: below the tree on narrow screens. Beside a tree taller than the window the page
+   sets .pinned, and the detail stays in view and scrolls on its own. */
+.browser > .panel + .panel { margin-top: 0; }
+.detail-panel { min-width: 0; scroll-margin-top: calc(var(--top-height) + var(--s3)); }
+@media (min-width: 1001px) {
+  .browser.pinned .detail-panel {
+    position: sticky; top: calc(var(--top-height) + var(--s4));
+    max-height: calc(100vh - var(--top-height) - var(--s5)); overflow-y: auto; overflow-x: hidden;
+  }
+}
+.detail-head h2 { margin-bottom: var(--s1); }
+.detail-actions { margin-top: var(--s3); }
+.detail-section { margin-top: var(--s5); }
+.detail-section > h3 { margin-bottom: var(--s2); }
+.checksums .sum { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s2); align-items: start; }
+.checksums .sum .btn { margin-top: -4px; }
+
+/* Upload form of S07 */
+.file-input { padding: 4px var(--s2); }
+.file-input::file-selector-button {
+  font: inherit; font-size: var(--size-small); font-weight: 600; color: var(--text);
+  margin-right: var(--s3); padding: 4px var(--s3); cursor: pointer;
+  border: 1px solid var(--control-border); border-radius: var(--radius-small); background: var(--surface-2);
+}
+.file-input[aria-invalid="true"] { border-color: var(--danger); border-width: 2px; }
+.asset-actions { margin-top: var(--s4); }
+
+/* Browse list of S04 and search results of S03 */
+.browse-note { margin-bottom: var(--s4); }
+@media (min-width: 701px) {
+  .browse-table td.name-cell { white-space: nowrap; }
+}
+.result-line { margin-bottom: var(--s3); }
+
+/* Account of S41 */
+.panel-title { margin-bottom: var(--s4); }
+.account > .panel + .panel { margin-top: var(--s5); }
