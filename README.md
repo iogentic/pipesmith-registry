@@ -56,6 +56,12 @@ chmod +x pipesmith-registry-linux-amd64
 
 On macOS, use `shasum -a 256 --check --ignore-missing SHA256SUMS`. Release 0.1.0 is not signed. Signed releases come with the self update in a later version; the checksum only shows that the download is complete.
 
+The container image is on Docker Hub, built for linux/amd64:
+
+```bash
+docker pull iogentic/pipesmith-registry:0.1.0
+```
+
 Attach a blob store, import the repository list, scan, and start:
 
 ```bash
