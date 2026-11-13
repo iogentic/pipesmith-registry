@@ -11,7 +11,7 @@ func TestServeNetworkBindNeedsUsersAndHostNames(t *testing.T) {
 	// without state.sqlite a network bind keeps the refusal of the reference;
 	// port 0 makes a missing check fail fast instead of serving
 	code, _, errOut := run(t, "serve", "--port", "0", "--bind", "0.0.0.0", "--server-names", "registry.test")
-	if code != 1 || errOut != "error: bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1\n" {
+	if code != 1 || errOut != "error: bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed until users are imported (import), then with --server-names NAME[,NAME]\n" {
 		t.Fatalf("%d %q", code, errOut)
 	}
 	st, err := state.Create(dir)

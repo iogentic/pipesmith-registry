@@ -193,9 +193,17 @@ func checkError(t *testing.T, name string, err error, root string, want *pyError
 		t.Errorf("%s: %T %v, want %s %q", name, err, err, want.Class, want.Message)
 		return
 	}
-	if got := strings.ReplaceAll(pe.Message, root, "<root>"); pe.Class != want.Class || got != want.Message {
-		t.Errorf("%s:\n got %s %q\nwant %s %q", name, pe.Class, got, want.Class, want.Message)
+	if got := strings.ReplaceAll(pe.Message, root, "<root>"); pe.Class != want.Class || got != productReason(want.Message) {
+		t.Errorf("%s:\n got %s %q\nwant %s %q", name, pe.Class, got, want.Class, productReason(want.Message))
 	}
+}
+
+// productReason is a message of the reference with the reason this product
+// gives for a bind address that is not local: the reference names a phase of
+// its plan, the product says how a network address is given.
+func productReason(message string) string {
+	return strings.Replace(message, " are allowed: no authentication in phase 1",
+		" are allowed in config.json; a network address is given with serve --bind once users are imported", 1)
 }
 
 func tree(t *testing.T, root string) []string {
@@ -491,7 +499,7 @@ func TestCheckBind(t *testing.T) {
 		}
 	}
 	err := config.CheckBind("0.0.0.0")
-	want := "bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1"
+	want := "bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed in config.json; a network address is given with serve --bind once users are imported"
 	if err == nil || err.Error() != want || !pyjson.IsValueError(err) {
 		t.Errorf("CheckBind(0.0.0.0) = %v", err)
 	}

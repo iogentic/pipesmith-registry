@@ -201,7 +201,7 @@ func WriteAtomic(target, prefix string, data []byte) error {
 // CheckBind refuses an address that is not local.
 func CheckBind(bind string) error {
 	if !slices.Contains(localBinds, bind) {
-		return valueError("bind address %s is not local; only %s are allowed: no authentication in phase 1",
+		return valueError("bind address %s is not local; only %s are allowed in config.json; a network address is given with serve --bind once users are imported",
 			pystr.Repr(bind), strings.Join(localBinds, ", "))
 	}
 	return nil

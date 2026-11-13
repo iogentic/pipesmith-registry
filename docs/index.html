@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pipesmith Registry Manual</title>
-<meta name="description" content="Manual of Pipesmith Registry 0.1.0, a read only server for the file blob stores of an existing artifact repository install.">
+<meta name="description" content="Manual of Pipesmith Registry 0.1.1, a read only server for the file blob stores of an existing artifact repository install.">
 <link rel="icon" type="image/png" href="assets/favicon-32.png">
 <script>
 (function () {
@@ -101,7 +101,7 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; color: var(--text-mut
 <header class="top">
   <img src="assets/logo.png" alt="Pipesmith Registry logo">
   <span class="name">Pipesmith Registry</span>
-  <span class="version">Manual for 0.1.0</span>
+  <span class="version">Manual for 0.1.1</span>
   <span class="spacer"></span>
   <button class="theme" type="button" id="theme-toggle" aria-label="Switch between light and dark theme">Light theme</button>
 </header>
@@ -116,6 +116,7 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; color: var(--text-mut
     <li><a href="#users">Users</a></li>
     <li><a href="#service">Service</a></li>
     <li><a href="#network">Network</a></li>
+    <li><a href="#container">Container</a></li>
     <li><a href="#interface">Interface</a></li>
     <li><a href="#api">API</a></li>
     <li><a href="#clients">Clients</a></li>
@@ -127,24 +128,24 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; color: var(--text-mut
 
 <main>
 <h1>Pipesmith Registry Manual</h1>
-<p class="lead">Version 0.1.0. Pipesmith Registry serves the file blob stores of an existing artifact repository install, read only, from one static binary.</p>
+<p class="lead">Version 0.1.1. Pipesmith Registry serves the file blob stores of an existing artifact repository install, read only, from one static binary.</p>
 
 <section id="overview">
 <h2>Overview</h2>
 <p>An existing artifact repository install keeps its files in file blob stores on disk. Pipesmith Registry reads those stores in place, in the layout the install already uses, and never writes to them. It keeps its own state in a separate data directory.</p>
 <p><code>scan</code> walks a store and writes one row per live file into an SQLite index. <code>serve</code> answers requests from that index and reads the bytes from the store. Files added to a store after the last scan appear after the next one.</p>
 <figure>
-  <img id="architecture" src="assets/architecture.svg" alt="Architecture of Pipesmith Registry 0.1.0: Maven, npm and Docker clients and a browser send requests through the listeners, the Host gate and sign in of one binary to the interface, the REST API and the read path, which read the file blob stores in place and use an SQLite index in the data directory.">
+  <img id="architecture" src="assets/architecture.svg" alt="Architecture of Pipesmith Registry 0.1.1: Maven, npm and Docker clients and a browser send requests through the listeners, the Host gate and sign in of one binary to the interface, the REST API and the read path, which read the file blob stores in place and use an SQLite index in the data directory.">
   <figcaption>Requests pass the listeners, the Host gate and sign in. The read path reads the blob stores; the data directory holds the configuration, the imported state and the index.</figcaption>
 </figure>
 <h3>Formats</h3>
 <table>
-  <thead><tr><th>Format</th><th>What 0.1.0 serves</th></tr></thead>
+  <thead><tr><th>Format</th><th>What 0.1.1 serves</th></tr></thead>
   <tbody>
     <tr><td>Maven</td><td>Files under <code>/repository/&lt;name&gt;/</code>. A group repository answers from its members in their order and merges <code>maven-metadata.xml</code> across them.</td></tr>
     <tr><td>npm</td><td>Package documents and tarballs. Tarball URLs in a document point at this server. Group repositories merge the documents of their members.</td></tr>
     <tr><td>Docker</td><td>The registry API for pulls (manifests, blobs, tags) under <code>/v2/</code> on one port per Docker repository, and under <code>/repository/&lt;name&gt;/v2/</code>.</td></tr>
-    <tr><td>Other formats</td><td>PyPI, raw and every other format: the stored files by their path. There is no format logic for them in 0.1.0.</td></tr>
+    <tr><td>Other formats</td><td>PyPI, raw and every other format: the stored files by their path. There is no format logic for them in 0.1.1.</td></tr>
   </tbody>
 </table>
 <p>A directory URL answers with an HTML listing of at most 10,000 entries; <code>?offset=</code> selects the next page.</p>
@@ -165,12 +166,12 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; color: var(--text-mut
   </tbody>
 </table>
 <h3>Verify</h3>
-<pre><code>VERSION=0.1.0
+<pre><code>VERSION=0.1.1
 BASE=https://github.com/iogentic/pipesmith-registry/releases/download/v$VERSION
 curl -fLO "$BASE/pipesmith-registry-linux-amd64"
 curl -fLO "$BASE/SHA256SUMS"
 sha256sum --check --ignore-missing SHA256SUMS</code></pre>
-<p>On macOS the checksum command is <code>shasum -a 256 --check --ignore-missing SHA256SUMS</code>. Release 0.1.0 is not signed. Signed releases come with the self update in a later version; the checksum only shows that the download is complete.</p>
+<p>On macOS the checksum command is <code>shasum -a 256 --check --ignore-missing SHA256SUMS</code>. Release 0.1.1 is not signed. Signed releases come with the self update in a later version; the checksum only shows that the download is complete.</p>
 <h3>Place</h3>
 <div class="note"><p>The commands of this section, of Service and of Network have not run on a Linux host yet.</p></div>
 <pre><code>sudo install -d -m 0755 /opt/pipesmith-registry
@@ -308,16 +309,35 @@ curl -s http://localhost:8793/api/health</code></pre>
 <pre><code>pipesmith-registry serve --bind 0.0.0.0 --port 8793 \
   --server-names registry.example.com,10.0.0.12</code></pre>
 <div class="note"><p>The network bind has not run on a Linux host yet. Its refusals and the Host gate are covered by tests.</p></div>
-<p>Without users <code>serve</code> stops with "no authentication in phase 1"; without names it stops with "name this server with --server-names NAME[,NAME]". Names are DNS names or IP addresses, separated by commas, an IPv6 address in brackets.</p>
+<p>Without users <code>serve</code> stops with "allowed until users are imported"; without names it stops with "name this server with --server-names NAME[,NAME]". Names are DNS names or IP addresses, separated by commas, an IPv6 address in brackets.</p>
 <h3>Host Gate</h3>
 <p>Every request whose <code>Host</code> header does not name <code>localhost</code>, <code>127.0.0.1</code>, <code>[::1]</code> or one of the server names gets <code>403</code>.</p>
 <h3>Plain HTTP</h3>
-<p>0.1.0 has no TLS listener. Passwords travel in clear between client and server. An SSH tunnel or a TLS proxy keeps them off the network:</p>
+<p>0.1.1 has no TLS listener. Passwords travel in clear between client and server. An SSH tunnel or a TLS proxy keeps them off the network:</p>
 <ul>
   <li>An SSH tunnel from each workstation: <code>ssh -N -L 8793:localhost:8793 user@registry.example.com</code>, plus one more <code>-L</code> per Docker port. Then the server is <code>localhost</code> for browser and clients.</li>
   <li>A reverse proxy on the same host that ends TLS and forwards to <code>127.0.0.1</code>. Add the public name to <code>--server-names</code>, because the proxy passes the <code>Host</code> header on.</li>
 </ul>
 <p>From the addresses in <code>FORWARDED_ALLOW_IPS</code> (default <code>127.0.0.1,::1</code>) the server takes <code>X-Forwarded-Proto</code> for the scheme of the URLs it writes and <code>X-Forwarded-For</code> for the client in the access log. The sign in throttle ignores forwarded headers and counts the address of the connection, so behind a proxy all clients share one count per user name.</p>
+</section>
+
+<section id="container">
+<h2>Container</h2>
+<p>The image <code>iogentic/pipesmith-registry</code> on Docker Hub is built for linux/amd64. It runs as user 65532 and keeps its data in <code>/data</code>. Put <code>/data</code> on a Docker volume; a new volume takes the owner of <code>/data</code> from the image.</p>
+<pre><code>IMAGE=iogentic/pipesmith-registry:0.1.1
+docker volume create pipesmith-data
+docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" \
+  store add default --kind directory --root /stores/default
+docker run --rm -v pipesmith-data:/data -v "$PWD/export:/import:ro" "$IMAGE" import /import
+docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" scan
+docker run -d --name pipesmith-registry -p 127.0.0.1:8081:8081 \
+  -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" \
+  serve --port 8081 --bind 0.0.0.0 --server-names localhost</code></pre>
+<ul>
+  <li><code>import</code> reads an export of the users made with <code>tools/h2export.sh</code>. The bind address <code>0.0.0.0</code>, which <code>-p</code> needs, works only with imported users.</li>
+  <li>One process at a time on the data directory: stop the server before <code>scan</code>, or start a scan through the server with <code>POST /api/scan</code> as an administrator.</li>
+  <li>A data directory on a Docker Desktop share from macOS or Windows, on NFS, SMB or FUSE loses index writes when two processes use it at once. Measured: a scan and a server that started and stopped during it left the index without the tables of the scan. <code>scan</code> and <code>serve</code> print a warning on such a file system.</li>
+</ul>
 </section>
 
 <section id="interface">
@@ -372,7 +392,7 @@ curl -u reader "http://localhost:8793/service/rest/v1/search?q=invoice-core"</co
 <section id="clients">
 <h2>Clients</h2>
 <p>Clients send Basic credentials of an imported user. The examples use an SSH tunnel, so the server is <code>localhost:8793</code>.</p>
-<div class="note"><p>0.1.0 was checked with HTTP requests against the routes these clients use. The settings below follow the documentation of each tool and have not been run with each client yet.</p></div>
+<div class="note"><p>0.1.1 was checked with HTTP requests against the routes these clients use. The settings below follow the documentation of each tool and have not been run with each client yet.</p></div>
 <h3>Maven</h3>
 <p>In <code>~/.m2/settings.xml</code>, a mirror on a Maven group and a server entry with the same id:</p>
 <pre><code>&lt;settings&gt;
@@ -411,7 +431,7 @@ docker pull localhost:15001/team/web:1.4.2</code></pre>
 <section id="security">
 <h2>Security</h2>
 <table>
-  <thead><tr><th>Topic</th><th>0.1.0</th></tr></thead>
+  <thead><tr><th>Topic</th><th>0.1.1</th></tr></thead>
   <tbody>
     <tr><td>Blob stores</td><td>Opened for reading only. A systemd unit can mount them with <code>ReadOnlyPaths=</code>.</td></tr>
     <tr><td>Network</td><td>Local addresses only, until users exist and <code>--server-names</code> names the server. Every request passes the Host gate.</td></tr>
@@ -442,7 +462,7 @@ docker pull localhost:15001/team/web:1.4.2</code></pre>
 
 <section id="upgrade">
 <h2>Upgrade</h2>
-<p>0.1.0 is the first release, so there is no upgrade path to describe yet. A later release is installed the same way: verify the download, stop the service, replace the binary, start it again. Read the release notes of that release first.</p>
+<p>0.1.1 is the first release, so there is no upgrade path to describe yet. A later release is installed the same way: verify the download, stop the service, replace the binary, start it again. Read the release notes of that release first.</p>
 <h3>Back Out</h3>
 <p>The blob stores are only read, so removing Pipesmith Registry leaves the existing install as it was:</p>
 <pre><code>sudo systemctl disable --now pipesmith-registry
@@ -451,7 +471,7 @@ sudo rm -rf /opt/pipesmith-registry /var/lib/pipesmith-registry /etc/pipesmith-r
 </main>
 </div>
 
-<footer>Pipesmith Registry 0.1.0. Licensed under the Apache License 2.0. Source and releases on <a href="https://github.com/iogentic/pipesmith-registry">GitHub</a>.</footer>
+<footer>Pipesmith Registry 0.1.1. Licensed under the Apache License 2.0. Source and releases on <a href="https://github.com/iogentic/pipesmith-registry">GitHub</a>.</footer>
 
 <script>
 (function () {

@@ -6,7 +6,7 @@ Pipesmith Registry is a single static binary that serves the file blob stores of
 
 ## State of 0.1
 
-Version 0.1.0 is the first public release. It reads and never writes the blob stores.
+Version 0.1.1. It reads and never writes the blob stores.
 
 What works:
 
@@ -46,7 +46,7 @@ The screenshots show invented data.
 The release has binaries for `linux-amd64`, `linux-arm64` and `darwin-arm64`. Download one of them with the checksum file and check it:
 
 ```bash
-VERSION=0.1.0
+VERSION=0.1.1
 BASE=https://github.com/iogentic/pipesmith-registry/releases/download/v$VERSION
 curl -fLO "$BASE/pipesmith-registry-linux-amd64"
 curl -fLO "$BASE/SHA256SUMS"
@@ -54,13 +54,7 @@ sha256sum --check --ignore-missing SHA256SUMS
 chmod +x pipesmith-registry-linux-amd64
 ```
 
-On macOS, use `shasum -a 256 --check --ignore-missing SHA256SUMS`. Release 0.1.0 is not signed. Signed releases come with the self update in a later version; the checksum only shows that the download is complete.
-
-The container image is on Docker Hub, built for linux/amd64:
-
-```bash
-docker pull iogentic/pipesmith-registry:0.1.0
-```
+On macOS, use `shasum -a 256 --check --ignore-missing SHA256SUMS`. Release 0.1.1 is not signed. Signed releases come with the self update in a later version; the checksum only shows that the download is complete.
 
 Attach a blob store, import the repository list, scan, and start:
 
@@ -76,6 +70,23 @@ $BIN serve --port 8793
 `$BIN store add --help` prints the name of the blob store kind. `repository-settings.json` is the JSON list that `GET /service/rest/v1/repositorySettings` of the existing install returns. The server listens on `127.0.0.1:8793`; open `http://localhost:8793/`.
 
 Without imported users there is no sign in, and the server stays on the local address. The users, roles and permissions come from an export of the old database, made with `tools/h2export.sh` and read with `import`. The manual describes both steps.
+
+## Container
+
+The image is on Docker Hub, built for linux/amd64. It runs as user 65532 and keeps its data in `/data`. Put `/data` on a Docker volume:
+
+```bash
+IMAGE=iogentic/pipesmith-registry:0.1.1
+docker volume create pipesmith-data
+docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" store add default --kind directory --root /stores/default
+docker run --rm -v pipesmith-data:/data -v "$PWD/export:/import:ro" "$IMAGE" import /import
+docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" scan
+docker run -d --name pipesmith-registry -p 127.0.0.1:8081:8081 -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" serve --port 8081 --bind 0.0.0.0 --server-names localhost
+```
+
+- `import` reads an export of the users made with `tools/h2export.sh`. The bind address `0.0.0.0`, which `-p` needs, works only with imported users.
+- One process at a time on the data directory: stop the server before `scan`, or start a scan through the server with `POST /api/scan` as an administrator.
+- A data directory on a Docker Desktop share from macOS or Windows, on NFS, SMB or FUSE loses index writes when two processes use it at once. `scan` and `serve` print a warning there.
 
 ## Manual
 

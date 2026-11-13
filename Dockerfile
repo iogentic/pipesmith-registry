@@ -9,9 +9,14 @@ COPY internal ./internal
 COPY VERSION ./
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X github.com/iogentic/pipesmith-registry/internal/version.Version=$(cat VERSION)" \
     -o /out/pipesmith-registry ./cmd/pipesmith-registry
+# The data directory belongs to the user of the runtime image, so an empty
+# named volume mounted on /data takes that owner and the server can write it.
+RUN mkdir -p /out/data
 
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
 COPY --from=build /out/pipesmith-registry /usr/local/bin/pipesmith-registry
+COPY --from=build --chown=65532:65532 /out/data /data
+ENV PIPESMITH_REGISTRY_DATA=/data
 USER 65532:65532
 ENTRYPOINT ["/usr/local/bin/pipesmith-registry"]
 CMD ["serve"]

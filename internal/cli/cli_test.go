@@ -698,7 +698,7 @@ func TestServeRefusals(t *testing.T) {
 		text string
 	}{
 		{[]string{"serve", "--port", "14556", "--bind", "0.0.0.0"},
-			"error: bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed: no authentication in phase 1\n"},
+			"error: bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed until users are imported (import), then with --server-names NAME[,NAME]\n"},
 		{[]string{"serve", "--port", "0"}, "error: port 0 is outside 1 to 65535\n"},
 		{[]string{"serve", "--port", "99999999999999999999"}, "error: port 99999999999999999999 is outside 1 to 65535\n"},
 		{[]string{"serve", "--port", "8791"}, "error: port 8791 is reserved on this machine; use --port N\n"},

@@ -23,6 +23,7 @@ import (
 	"syscall"
 
 	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/datafs"
 	"github.com/iogentic/pipesmith-registry/internal/docker"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/listeners"
@@ -342,6 +343,7 @@ func (c *command) serve() (int, error) {
 	if err != nil {
 		return 1, err
 	}
+	c.warnSharedFS(cfg.DataDir)
 	port := big.NewInt(int64(cfg.Port))
 	if value, ok := c.ns.values["port"].(*big.Int); ok {
 		port = value
@@ -358,7 +360,7 @@ func (c *command) serve() (int, error) {
 	if !slices.Contains(config.LocalBinds(), cfg.Bind) {
 		// a network bind needs the users of state.sqlite and the names of this server
 		if _, err := os.Stat(state.Path(cfg.DataDir)); err != nil {
-			return 1, refuse("bind address %s is not local; only %s are allowed: no authentication in phase 1", pystr.Repr(cfg.Bind),
+			return 1, refuse("bind address %s is not local; only %s are allowed until users are imported (import), then with --server-names NAME[,NAME]", pystr.Repr(cfg.Bind),
 				strings.Join(config.LocalBinds(), ", "))
 		}
 		if len(hostNames) == 0 {
@@ -618,11 +620,25 @@ func (c *command) endProgress(progress func(int)) {
 	}
 }
 
+// sharedFS is datafs.Shared; tests replace it.
+var sharedFS = datafs.Shared
+
+// warnSharedFS warns when the data directory lies on a file system where two
+// processes that use the index at once can lose its writes.
+func (c *command) warnSharedFS(dataDir string) {
+	if kind := sharedFS(dataDir); kind != "" {
+		fmt.Fprintf(c.err, "warning: the data directory %s lies on a %s file system; two processes that use the index"+
+			" there at the same time can lose its writes. Run one process on it and start scans through the server"+
+			" (POST /api/scan), or put the data directory on a local Linux file system such as a Docker volume.\n", dataDir, kind)
+	}
+}
+
 func (c *command) scan() (int, error) {
 	cfg, err := load()
 	if err != nil {
 		return 1, err
 	}
+	c.warnSharedFS(cfg.DataDir)
 	list := cfg.Stores
 	if name, ok := c.text("name"); ok {
 		list = slices.DeleteFunc(slices.Clone(cfg.Stores), func(s config.StoreConfig) bool { return s.Name != name })
