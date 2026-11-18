@@ -308,8 +308,10 @@ function redrawNav() {
 
 preview.onChange(redrawNav);
 
-async function runProbes() {
-  if (state.session) await preview.probe(ROUTES, allowed);
+// Without the areas answer the probes of preview.js ask the server. Nobody waits for them: the
+// navigation follows as their answers arrive.
+function runProbes() {
+  return state.session ? preview.probe(ROUTES, allowed) : null;
 }
 
 function redrawBands() {
@@ -359,24 +361,26 @@ async function loadSession() {
 }
 
 // What the server serves: GET /api/areas names the requests it refuses and its read only state for
-// every signed in user (docs/ui/API.md, section Areas). Without the answer the probes of preview.js
-// find the same out.
+// every signed in user (docs/ui/API.md, section Areas), and the areas are marked from it without a
+// probe. True when the answer came; without it the probes of preview.js find the same out.
 async function loadAreas() {
   setRefused([]);
-  if (!state.session) return;
+  if (!state.session) return false;
   let answer = null;
   try {
     answer = await api.areas();
   } catch (e) {
-    return;
+    return false;
   }
-  if (!answer || typeof answer !== "object") return;
+  if (!answer || typeof answer !== "object") return false;
   setRefused(answer.refused);
+  preview.fromAreas(ROUTES, allowed, answer.refused);
   const ro = answer.readOnly;
   if (ro && typeof ro === "object") {
     state.readOnly = { frozen: Boolean(ro.frozen), summaryReason: typeof ro.reason === "string" ? ro.reason : "" };
     redrawBands();
   }
+  return true;
 }
 
 async function loadReadOnly() {
@@ -414,9 +418,9 @@ function context(main, current, params, query) {
     async signedIn(session) {
       state.session = session;
       setCsrfToken(session.csrfToken);
-      await loadAreas();
+      const areas = await loadAreas();
       await loadReadOnly();
-      await runProbes();
+      if (!areas) runProbes();
     },
     refreshReadOnly: loadReadOnly
   };
@@ -527,8 +531,8 @@ window.addEventListener("hashchange", route);
 
 (async function start() {
   await loadSession();
-  await loadAreas();
+  const areas = await loadAreas();
   await loadReadOnly();
-  await runProbes();
+  if (!areas) runProbes();
   route();
 })();

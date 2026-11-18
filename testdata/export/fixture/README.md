@@ -4,10 +4,11 @@ The identity set of the fixture database of `tests/import/`, written by the expo
 
 ```
 tools/h2export.sh fixture .tmp/import/x/fixture.mv.db
-tools/h2export.sh export --database .tmp/import/x/fixture.mv.db --out testdata/export/fixture --set identity --with-password-hashes
+tools/h2export.sh export --database .tmp/import/x/fixture.mv.db --out .tmp/import/x/identity --set identity --with-password-hashes
+cp .tmp/import/x/identity/* testdata/export/fixture/
 ```
 
-`../fixture-content/` is the content set of the same database (`--set content`, blob stores and repositories). `tests/import/test_h2export.py` checks that both folders equal a fresh export byte for byte. Do not edit the files by hand: change `tests/import/FixtureDb.java` and export again.
+`../fixture-content/` is the content set of the same database (`--set content`, blob stores and repositories). Its stores without a soft quota carry an empty `blobStoreQuotaConfig`. The Docker port of `demo-docker` is written `14511.0`. The old product stores both values this way. `tests/import/test_h2export.py` checks that both folders equal a fresh export byte for byte. Do not edit the files by hand: change `tests/import/FixtureDb.java` and export again. The export refuses a folder that is not empty, so it goes to an empty folder first.
 
 Every name, address and password here is invented. The hashes are Shiro 1 hashes (SHA-512, 1024 rounds) of these passwords:
 
@@ -18,6 +19,6 @@ Every name, address and password here is invented. The hashes are Shiro 1 hashes
 | `maven-lead` | `example-maven-1` | active | `demo-maven-lead` (stored privileges `demo-maven-write`, `demo-csel-maven`, and the role `demo-viewer`) |
 | `locked.user` | `example-locked-1` | locked | `demo-viewer` |
 
-Also in the set: the role `developers`, named like a directory group; the role `demo-ops`, which contains a role that does not exist; one stored privilege of each of the six types; the directory user `ldap.person` with an explicit mapping of source `LDAP`; the LDAP connection `demo-directory` to `ldap.example.com`, its bind password removed by the export; the realms `NexusAuthenticatingRealm`, `NexusAuthorizingRealm`, `LdapRealm`, `DockerToken`; anonymous access off.
+Also in the set: the role `developers`, named like a directory group; the role `demo-ops`, which contains a role that does not exist; one stored privilege of each of the six types; the directory user `ldap.person` with an explicit mapping of source `LDAP`; the LDAP connection `demo-directory` to `ldap.example.com` in the shape the old product stores it (the host as an object, `systemUsername`, no group type), its bind password `systemPassword` removed by the export; the realms `NexusAuthenticatingRealm`, `NexusAuthorizingRealm`, `LdapRealm`, `DockerToken`; anonymous access off.
 
 The demo lays this set over a real repository list: `pipesmith-registry import testdata/export/fixture` replaces users, roles, privileges, LDAP connections, realms and the anonymous setting, and leaves repositories and blob stores as they are.

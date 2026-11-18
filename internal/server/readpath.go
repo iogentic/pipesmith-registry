@@ -95,7 +95,7 @@ func newReadPath(cfg *config.Config, dockerPorts map[int]string) (*readPath, err
 		return nil, err
 	}
 	st.stores = attached
-	ix, err := index.Open(cfg.IndexPath())
+	ix, err := index.OpenRead(cfg.IndexPath())
 	if err != nil {
 		return nil, err
 	}

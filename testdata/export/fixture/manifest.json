@@ -59,7 +59,7 @@
       "columns": ["id","name","order","connection","mapping"],
       "rows": 1,
       "removed": 2,
-      "sha256": "1a78122f2c0d271b5ed1a7582f96daf5d9657f2f4446292262ad85202f669604"
+      "sha256": "7825f06cf7e76db05cd156a1df536d616c01485c3f69e1b9ac0fa61ea7fa079b"
     }
   ]
 }

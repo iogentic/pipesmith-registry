@@ -42,6 +42,9 @@ func askSecret(in *os.File, prompt io.Writer) askFunc {
 			return "", err
 		}
 		defer restore()
+		if err := dropQueuedInput(fd); err != nil {
+			return "", err
+		}
 		_, _ = fmt.Fprint(prompt, text)
 		line, err := bufio.NewReader(in).ReadString('\n')
 		_, _ = fmt.Fprintln(prompt)

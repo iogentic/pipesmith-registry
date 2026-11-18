@@ -162,8 +162,26 @@ func dsn(path string, params url.Values) (string, error) {
 }
 
 // Open opens or creates the index at path and its parent directory. Every
-// open is a write: it bumps the generation, as in Python.
+// open is a write: it bumps the generation, as in Python. A process that
+// writes the index opens it so; a process that reads it uses OpenRead.
 func Open(path string) (*Index, error) {
+	return open(path, (*Index).setUp)
+}
+
+// OpenRead opens the index at path for a process that reads it while
+// another process may write it: a scan holds the write lock for as long as
+// it reads its store. An existing file of schema 1 in WAL mode opens without
+// a write, so the open neither waits for that lock nor changes the file, and
+// every read answers the rows of the last finished write. Any other file
+// gets the set up of Open, a write: a missing file, one without the tables
+// or the meta rows, one in another journal mode. A file of another schema is
+// refused with the error of Open. A write through the index waits for the
+// lock as one of Open does.
+func OpenRead(path string) (*Index, error) {
+	return open(path, (*Index).attach)
+}
+
+func open(path string, prepare func(*Index) error) (*Index, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return nil, err
 	}
@@ -186,22 +204,19 @@ func Open(path string) (*Index, error) {
 		return nil, err
 	}
 	ix.readers.SetMaxIdleConns(poolSize)
-	if err := ix.setUp(); err != nil {
+	if err := prepare(ix); err != nil {
 		_ = ix.Close() // cleanup; the set up error is the one returned
 		return nil, err
 	}
 	return ix, nil
 }
 
+// setUp is the open of Python: WAL mode, then the tables and the meta rows
+// in a write, which waits for the lock of another writer and bumps the
+// generation.
 func (ix *Index) setUp() error {
-	var err error
-	if ix.writer, err = ix.writerDB.Conn(bg); err != nil {
+	if err := ix.connectWriter("PRAGMA journal_mode = WAL"); err != nil {
 		return err
-	}
-	for _, pragma := range []string{"PRAGMA journal_mode = WAL", fmt.Sprintf("PRAGMA journal_size_limit = %d", walSizeLimit)} {
-		if _, err := ix.writer.ExecContext(bg, pragma); err != nil {
-			return err
-		}
 	}
 	return ix.write(func(tx *sql.Tx) error {
 		for _, statement := range schema {
@@ -216,15 +231,107 @@ func (ix *Index) setUp() error {
 		if err := tx.QueryRowContext(bg, "SELECT value FROM meta WHERE key = 'schema'").Scan(&version); err != nil {
 			return err
 		}
-		// Python compares with ==, so 1.0 matches as well.
-		if v, ok := version.(int64); ok && v == SchemaVersion {
-			return nil
-		}
-		if v, ok := version.(float64); ok && v == SchemaVersion {
-			return nil
-		}
-		return fmt.Errorf("%s has index schema %v, expected %d; delete it and scan again", pathText(ix.path), version, SchemaVersion)
+		return ix.checkSchema(version)
 	})
+}
+
+// attach is the open of OpenRead: a file that holds what setUp writes is
+// taken over after one read, any other file gets setUp.
+func (ix *Index) attach() error {
+	ready, err := ix.ready()
+	if err != nil {
+		return err
+	}
+	if !ready {
+		return ix.setUp()
+	}
+	return ix.connectWriter()
+}
+
+// connectWriter takes the writer connection and runs the statements on it,
+// then the size limit of the WAL file, which takes no lock.
+func (ix *Index) connectWriter(statements ...string) error {
+	var err error
+	if ix.writer, err = ix.writerDB.Conn(bg); err != nil {
+		return err
+	}
+	for _, statement := range append(statements, fmt.Sprintf("PRAGMA journal_size_limit = %d", walSizeLimit)) {
+		if _, err := ix.writer.ExecContext(bg, statement); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ready reads, in one read transaction, whether the file holds what setUp
+// writes: every table of schema, both meta rows and WAL mode. A file of
+// another schema version is the error of setUp.
+func (ix *Index) ready() (bool, error) {
+	ready := false
+	err := ix.read(func(tx *sql.Tx) error {
+		tables := map[string]bool{}
+		rows, err := tx.QueryContext(bg, "SELECT name FROM sqlite_master WHERE type = 'table'")
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				return err
+			}
+			tables[name] = true
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		if !tables["meta"] {
+			return nil
+		}
+		var version any
+		err = tx.QueryRowContext(bg, "SELECT value FROM meta WHERE key = 'schema'").Scan(&version)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if err := ix.checkSchema(version); err != nil {
+			return err
+		}
+		var generations int
+		if err := tx.QueryRowContext(bg, "SELECT count(*) FROM meta WHERE key = 'generation'").Scan(&generations); err != nil {
+			return err
+		}
+		var mode string
+		if err := tx.QueryRowContext(bg, "PRAGMA journal_mode").Scan(&mode); err != nil {
+			return err
+		}
+		ready = generations == 1 && mode == "wal"
+		for _, statement := range schema {
+			ready = ready && tables[tableOf(statement)]
+		}
+		return nil
+	})
+	return ready, err
+}
+
+// tableOf is the name of the table a statement of schema creates.
+func tableOf(statement string) string {
+	name, _, _ := strings.Cut(strings.TrimPrefix(statement, "CREATE TABLE IF NOT EXISTS "), " ")
+	return name
+}
+
+// checkSchema refuses a schema version other than SchemaVersion. Python
+// compares with ==, so 1.0 matches as well.
+func (ix *Index) checkSchema(version any) error {
+	if v, ok := version.(int64); ok && v == SchemaVersion {
+		return nil
+	}
+	if v, ok := version.(float64); ok && v == SchemaVersion {
+		return nil
+	}
+	return fmt.Errorf("%s has index schema %v, expected %d; delete it and scan again", pathText(ix.path), version, SchemaVersion)
 }
 
 // Path is the file of the index as given to Open.

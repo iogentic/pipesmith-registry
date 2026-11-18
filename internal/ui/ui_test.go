@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path"
 	"regexp"
 	"sort"
@@ -20,12 +21,23 @@ import (
 // 1e6d884:ui/web on 2026-11-12.
 const treeID = "43014e95e7dcd77ef6e6e1552a6b3d2dce35b638"
 
+// changed are the files of web that differ from the taken commit, as
+// LOCAL_CHANGES.md lists them: the git blob id each had at 1e6d884 (git
+// rev-parse 1e6d884:ui/web/<file>) and the one it has here (git
+// hash-object), both read on 2026-11-18.
+var changed = map[string]struct{ taken, here string }{
+	"js/app.js":     {taken: "4562a6861333f633f1375aa0105c98f23231833d", here: "239e4c76d702472633ada81c3121a615659e2548"},
+	"js/preview.js": {taken: "20675502d1edc6305e4529f80513279dd10b2075", here: "7f8738e53e9d79154450b08029992a61d83e99e2"},
+}
+
 const policy = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; " +
 	"font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 
 // gitTree is the id git gives the directory dir of fsys: blobs and trees
-// in git's order, where a directory sorts as its name with a slash.
-func gitTree(t *testing.T, fsys fs.FS, dir string) []byte {
+// in git's order, where a directory sorts as its name with a slash. blob
+// gives the id the tree records for a file, from its path below fsys and
+// the id of its content.
+func gitTree(t *testing.T, fsys fs.FS, dir string, blob func(name string, id []byte) []byte) []byte {
 	t.Helper()
 	entries, err := fs.ReadDir(fsys, dir)
 	if err != nil {
@@ -45,28 +57,62 @@ func gitTree(t *testing.T, fsys fs.FS, dir string) []byte {
 		full := path.Join(dir, e.Name())
 		if e.IsDir() {
 			fmt.Fprintf(&body, "40000 %s\x00", e.Name())
-			body.Write(gitTree(t, fsys, full))
+			body.Write(gitTree(t, fsys, full, blob))
 			continue
 		}
 		data, err := fs.ReadFile(fsys, full)
 		if err != nil {
 			t.Fatal(err)
 		}
-		blob := sha1.Sum(append([]byte(fmt.Sprintf("blob %d\x00", len(data))), data...)) // #nosec G401 -- git object id.
+		id := sha1.Sum(append([]byte(fmt.Sprintf("blob %d\x00", len(data))), data...)) // #nosec G401 -- git object id.
 		fmt.Fprintf(&body, "100644 %s\x00", e.Name())
-		body.Write(blob[:])
+		body.Write(blob(full, id[:]))
 	}
 	tree := sha1.Sum(append([]byte(fmt.Sprintf("tree %d\x00", body.Len())), body.Bytes()...)) // #nosec G401 -- git object id.
 	return tree[:]
 }
 
-func TestEmbeddedTreeIsTheTakenCommit(t *testing.T) {
+// The embedded files are the taken commit, apart from the files of changed:
+// each holds the content its blob id here names, and with the taken blob put
+// back for each of them the tree is the taken tree.
+func TestEmbeddedFilesAreTheTakenCommitAndTheListedChanges(t *testing.T) {
 	web, err := fs.Sub(files, "web")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := hex.EncodeToString(gitTree(t, web, ".")); got != treeID {
-		t.Fatalf("tree id of the embedded files %s, want %s: internal/ui/web differs from the taken commit", got, treeID)
+	seen := map[string]bool{}
+	asTaken := func(name string, id []byte) []byte {
+		file, ok := changed[name]
+		if !ok {
+			return id
+		}
+		seen[name] = true
+		if got := hex.EncodeToString(id); got != file.here {
+			t.Errorf("%s has the blob id %s, the list names %s: record the change in changed and in LOCAL_CHANGES.md", name, got, file.here)
+		}
+		taken, err := hex.DecodeString(file.taken)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return taken
+	}
+	if got := hex.EncodeToString(gitTree(t, web, ".", asTaken)); got != treeID {
+		t.Fatalf("tree id of the embedded files with the listed files as taken %s, want %s: a file of internal/ui/web differs from the taken commit and is not listed", got, treeID)
+	}
+	notes, err := os.ReadFile("LOCAL_CHANGES.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, file := range changed {
+		if !seen[name] {
+			t.Errorf("%s is listed as changed but not embedded", name)
+		}
+		if file.taken == file.here {
+			t.Errorf("%s is listed as changed with the blob id it had at the taken commit", name)
+		}
+		if !strings.Contains(string(notes), "`web/"+name+"`") {
+			t.Errorf("LOCAL_CHANGES.md does not name web/%s", name)
+		}
 	}
 }
 

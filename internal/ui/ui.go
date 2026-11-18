@@ -1,9 +1,10 @@
 // Package ui serves the administration interface: the files of ui/web of
 // the interface repository at commit 1e6d884a06f44de2a3c42b5ce91476b8540a80d0,
-// taken over unchanged with git archive on 2026-11-12 and embedded in the
-// binary. index.html is served at "/", the other files below /css/, /js/
-// and /assets/, with the headers of the Serving section of the interface
-// README. Nothing else is served from here.
+// taken over with git archive on 2026-11-12 and embedded in the binary. Two
+// of them were changed here on 2026-11-18, js/app.js and js/preview.js, and
+// LOCAL_CHANGES.md gives the reason. index.html is served at "/", the other
+// files below /css/, /js/ and /assets/, with the headers of the Serving
+// section of the interface README. Nothing else is served from here.
 package ui
 
 import (

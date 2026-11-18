@@ -126,7 +126,7 @@ func startWatchdog(n *notify.Notifier) (stop func()) {
 }
 
 func openIndexReader(path string) (listeners.IndexReader, error) {
-	return index.Open(path)
+	return index.OpenRead(path)
 }
 
 // Serve is listeners.serve: one listener on the main port and one per

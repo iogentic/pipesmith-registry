@@ -11,16 +11,19 @@ package importer
 
 import (
 	"bytes"
+	"cmp"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/iogentic/pipesmith-registry/internal/config"
@@ -553,24 +556,113 @@ var ldapKeys = func() map[string]bool {
 	return keys
 }()
 
+// ldapIntegers are the keys of ldapKeys whose field is an integer.
+var ldapIntegers = func() []string {
+	var keys []string
+	t := reflect.TypeFor[model.LDAPServer]()
+	for i := range t.NumField() {
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		if ldapKeys[name] && t.Field(i).Type.Kind() == reflect.Int {
+			keys = append(keys, name)
+		}
+	}
+	return keys
+}()
+
+// The old product stores the fields of its entity in the two JSON columns:
+// the host is an object of host name, port and protocol, and six names
+// differ from those of model.LDAPServer, which are the names of its REST
+// surface. The import reads both forms, so an export written with the REST
+// names, as the fixture of 0.1.1 is, still imports.
+var (
+	ldapHostKeys   = map[string]string{"hostName": "host", "port": "port", "protocol": "protocol"}
+	ldapStoredKeys = map[string]string{
+		"systemUsername":        "authUsername",
+		"saslRealm":             "authRealm",
+		"connectionTimeout":     "connectionTimeoutSeconds",
+		"connectionRetryDelay":  "connectionRetryDelaySeconds",
+		"emailAddressAttribute": "userEmailAddressAttribute",
+		"ldapFilter":            "userLdapFilter",
+	}
+)
+
+// ldapFields gathers the fields of one LDAP row with the key path each was
+// read from, so that a refusal names the key of the row.
+type ldapFields struct {
+	values   map[string]any
+	source   map[string]string
+	unmapped map[string]bool
+}
+
+// add takes one key of a column; path is the column and the key.
+func (f *ldapFields) add(path, key string, value any) error {
+	if host, ok := value.(map[string]any); ok && key == "host" {
+		for _, part := range slices.Sorted(maps.Keys(host)) {
+			field, known := ldapHostKeys[part]
+			if !known {
+				f.unmapped[path+"."+part] = true
+				continue
+			}
+			if err := f.set(field, path+"."+part, host[part]); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	field := cmp.Or(ldapStoredKeys[key], key)
+	if !ldapKeys[field] {
+		f.unmapped[path] = true
+		return nil
+	}
+	return f.set(field, path, value)
+}
+
+// set refuses a field the row gives twice, in both forms or in both columns.
+func (f *ldapFields) set(field, path string, value any) error {
+	if earlier, twice := f.source[field]; twice {
+		return fmt.Errorf("%s and %s both set %s, a row may hold only one of them", earlier, path, field)
+	}
+	f.values[field], f.source[field] = value, path
+	return nil
+}
+
+// ldapGroupType is the group type of a row that stores none. The public
+// source of the old product reads the groups from the member of attribute of
+// the user entry when that attribute is set and not blank (dynamic), else
+// from the group entries (static).
+func ldapGroupType(memberOf any) string {
+	if s, ok := memberOf.(string); ok && strings.TrimSpace(s) != "" {
+		return "dynamic"
+	}
+	return "static"
+}
+
 func mapLDAP(export *Export, data map[string][]row) error {
 	snap := export.Snapshot
 	unmapped := map[string]bool{}
 	err := eachRow("ldap_configuration.jsonl", data["LDAP_CONFIGURATION"], func(rd *reader) error {
 		id := rd.text("id")
-		merged := map[string]any{}
+		fields := &ldapFields{values: map[string]any{}, source: map[string]string{}, unmapped: unmapped}
 		for _, column := range []string{"connection", "mapping"} {
 			var removed []string
-			fields, _ := clean(rd.object(column), column, &removed).(map[string]any)
-			for key, value := range fields {
-				if ldapKeys[key] {
-					merged[key] = value
-				} else {
-					unmapped[column+"."+key] = true
+			keys, _ := clean(rd.object(column), column, &removed).(map[string]any)
+			for _, key := range slices.Sorted(maps.Keys(keys)) {
+				if err := fields.add(column+"."+key, key, keys[key]); err != nil {
+					return fmt.Errorf("%s: LDAP server %q: %w", rd.file, id, err)
 				}
 			}
 		}
-		text, err := json.Marshal(merged)
+		if _, given := fields.values["groupType"]; !given {
+			fields.values["groupType"] = ldapGroupType(fields.values["userMemberOfAttribute"])
+		}
+		// A whole number with a zero fraction (389.0) is the integer. Any
+		// other value stays, so the type check below refuses it as before.
+		for _, field := range ldapIntegers {
+			if n, err := repos.WholeNumber(fields.values[field]); err == nil {
+				fields.values[field] = json.Number(strconv.FormatInt(n, 10))
+			}
+		}
+		text, err := json.Marshal(fields.values)
 		if err != nil {
 			return err
 		}
@@ -578,7 +670,8 @@ func mapLDAP(export *Export, data map[string][]row) error {
 		if err := json.Unmarshal(text, &server); err != nil {
 			var typeErr *json.UnmarshalTypeError
 			if errors.As(err, &typeErr) {
-				return fmt.Errorf("%s: LDAP server %q: %s is not of type %s", rd.file, id, typeErr.Field, typeErr.Type)
+				return fmt.Errorf("%s: LDAP server %q: %s is not of type %s", rd.file, id,
+					cmp.Or(fields.source[typeErr.Field], typeErr.Field), typeErr.Type)
 			}
 			return fmt.Errorf("%s: LDAP server %q cannot be read", rd.file, id)
 		}
@@ -617,11 +710,13 @@ func mapBlobStores(export *Export, data map[string][]row) error {
 		if path, ok := section(attributes, "file")["path"].(string); ok {
 			b.Path = path
 		}
-		if quota, ok := attributes["blobStoreQuotaConfig"].(map[string]any); ok {
+		// The old product stores an empty object for a store without a soft
+		// quota and reads it as none, as a missing key; so does the import.
+		// A limit with a zero fraction (1073741824.0) is the integer.
+		if quota, ok := attributes["blobStoreQuotaConfig"].(map[string]any); ok && len(quota) > 0 {
 			kind, okType := quota["quotaType"].(string)
-			number, okLimit := quota["quotaLimitBytes"].(json.Number)
-			limit, err := number.Int64()
-			if !okType || !okLimit || err != nil {
+			limit, err := repos.WholeNumber(quota["quotaLimitBytes"])
+			if !okType || err != nil {
 				return fmt.Errorf("%s: the soft quota of blob store %q has no type or no integer limit", rd.file, b.Name)
 			}
 			b.SoftQuota = &model.SoftQuota{Type: kind, Limit: limit}
@@ -643,6 +738,9 @@ func mapRepositories(export *Export, data map[string][]row) error {
 		}
 		removed := rd.removed()
 		attributes, _ := clean(rd.object("attributes"), "attributes", &removed).(map[string]any)
+		if _, _, err := dockerPort(attributes); err != nil {
+			return fmt.Errorf("%s: repository %q: %w", rd.file, name, err)
+		}
 		if len(removed) > 0 {
 			export.NeedsCredentials = append(export.NeedsCredentials, name)
 		}
@@ -676,12 +774,19 @@ func Import(dir string, cfg *config.Config) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	withRepositories := slices.Contains(export.Kinds, state.KindRepositories)
+	var definitions []*pyjson.Object
+	if withRepositories {
+		if definitions, err = Definitions(export.Snapshot.Repositories); err != nil {
+			return nil, err
+		}
+	}
 	result, err := write(export, cfg)
 	if err != nil {
 		return nil, err
 	}
-	if slices.Contains(export.Kinds, state.KindRepositories) {
-		if err := repos.WriteDefinitions(cfg.RepositoriesPath(), Definitions(export.Snapshot.Repositories)); err != nil {
+	if withRepositories {
+		if err := repos.WriteDefinitions(cfg.RepositoriesPath(), definitions); err != nil {
 			return nil, fmt.Errorf("state.sqlite holds the import, but %s was not written: %w", cfg.RepositoriesPath(), err)
 		}
 		result.RepositoriesPath = cfg.RepositoriesPath()
@@ -696,9 +801,29 @@ func nonEmpty(v any) any {
 	return nil
 }
 
+// dockerPort is docker.httpPort of the attributes. A missing key and null
+// are no port; a whole number from 1 to 65535 is the port, also when it is
+// written with a zero fraction, as the old product stores it (14511.0).
+// Anything else is an error, never a port dropped without a word.
+func dockerPort(attributes map[string]any) (int, bool, error) {
+	value, found := section(attributes, "docker")["httpPort"]
+	if !found || value == nil {
+		return 0, false, nil
+	}
+	n, err := repos.WholeNumber(value)
+	if errors.Is(err, repos.ErrRange) || err == nil && (n < 1 || n > 65535) {
+		return 0, false, errors.New("docker.httpPort is outside 1 to 65535")
+	}
+	if err != nil {
+		return 0, false, fmt.Errorf("docker.httpPort %w", err)
+	}
+	return int(n), true, nil
+}
+
 // Definitions are the entries of repositories.json for the repositories,
-// with the fields that import-settings takes from a settings snapshot.
-func Definitions(list []model.Repository) []*pyjson.Object {
+// with the fields that import-settings takes from a settings snapshot. A
+// Docker port that is no port is an error with the repository named.
+func Definitions(list []model.Repository) ([]*pyjson.Object, error) {
 	out := make([]*pyjson.Object, 0, len(list))
 	for _, r := range list {
 		members := []any{}
@@ -710,10 +835,12 @@ func Definitions(list []model.Repository) []*pyjson.Object {
 			}
 		}
 		var port any
-		if n, ok := section(r.Attributes, "docker")["httpPort"].(json.Number); ok {
-			if p, err := n.Int64(); err == nil && p >= 1 && p <= 65535 {
-				port = int(p)
-			}
+		p, ok, err := dockerPort(r.Attributes)
+		if err != nil {
+			return nil, fmt.Errorf("repository %q: %w", r.Name, err)
+		}
+		if ok {
+			port = p
 		}
 		out = append(out, pyjson.NewObject().
 			Set("name", r.Name).
@@ -726,7 +853,7 @@ func Definitions(list []model.Repository) []*pyjson.Object {
 			Set("remote_url", nonEmpty(section(r.Attributes, "proxy")["remoteUrl"])).
 			Set("http_port", port))
 	}
-	return out
+	return out, nil
 }
 
 // ReadSettings maps a repository settings snapshot, the file import-settings

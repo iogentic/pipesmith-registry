@@ -56,14 +56,18 @@ func echoOn(t *testing.T, tty *os.File) bool {
 
 // lockedBuffer collects what the terminal shows on the master side.
 type lockedBuffer struct {
-	mu  sync.Mutex
-	buf bytes.Buffer
+	mu   sync.Mutex
+	buf  bytes.Buffer
+	more chan struct{} // closed and replaced by each write
 }
 
 func (b *lockedBuffer) Write(p []byte) (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.buf.Write(p)
+	n, err := b.buf.Write(p)
+	close(b.more)
+	b.more = make(chan struct{})
+	return n, err
 }
 
 func (b *lockedBuffer) String() string {
@@ -72,9 +76,28 @@ func (b *lockedBuffer) String() string {
 	return b.buf.String()
 }
 
+// waitFor waits until the terminal has shown text.
+func (b *lockedBuffer) waitFor(t *testing.T, text string) {
+	t.Helper()
+	deadline := time.After(10 * time.Second)
+	for {
+		b.mu.Lock()
+		found, more := strings.Contains(b.buf.String(), text), b.more
+		b.mu.Unlock()
+		if found {
+			return
+		}
+		select {
+		case <-more:
+		case <-deadline:
+			t.Fatalf("the terminal did not show %q within 10 s", text)
+		}
+	}
+}
+
 // drain reads the master side until the slave side is closed.
 func drain(master *os.File) (*lockedBuffer, chan struct{}) {
-	shown, done := &lockedBuffer{}, make(chan struct{})
+	shown, done := &lockedBuffer{more: make(chan struct{})}, make(chan struct{})
 	go func() {
 		_, _ = io.Copy(shown, master)
 		close(done)
@@ -102,36 +125,19 @@ func within(t *testing.T, ch <-chan struct{}, what string) {
 	}
 }
 
-// Keys typed before the prompt are not part of the password, the answer is
-// not echoed, and echo is on again afterwards.
+// Keys typed and shown before the prompt are not part of the password, the
+// answer is not echoed, and echo is on again afterwards.
 func TestPromptDropsTypeAhead(t *testing.T) {
 	master, slave := openPTY(t)
 	shown, drained := drain(master)
 	if _, err := master.Write([]byte("early")); err != nil {
 		t.Fatal(err)
 	}
-	prompt := &signalWriter{first: make(chan struct{})}
-	type result struct {
-		answer string
-		err    error
-	}
-	done := make(chan result, 1)
-	go func() {
-		answer, err := askSecret(slave, prompt)("bind password: ")
-		done <- result{answer, err}
-	}()
-	within(t, prompt.first, "prompt")
-	if _, err := master.Write([]byte("s3cret-pw\n")); err != nil {
-		t.Fatal(err)
-	}
-	var got result
-	select {
-	case got = <-done:
-	case <-time.After(10 * time.Second):
-		t.Fatal("no answer within 10 s")
-	}
-	if got.err != nil || got.answer != "s3cret-pw" {
-		t.Fatalf("answer %q, error %v; keys typed before the prompt must not count", got.answer, got.err)
+	// the echo comes from the line discipline, so it holds the keys now
+	shown.waitFor(t, "early")
+	got := ask(t, master, slave, "s3cret-pw\n")
+	if got.err != nil || got.text != "s3cret-pw" {
+		t.Fatalf("answer %q, error %v; keys typed before the prompt must not count", got.text, got.err)
 	}
 	if !echoOn(t, slave) {
 		t.Fatal("echo is still off after the answer")
@@ -140,6 +146,62 @@ func TestPromptDropsTypeAhead(t *testing.T) {
 	within(t, drained, "end of the terminal output")
 	if out := shown.String(); strings.Contains(out, "s3cret") || !strings.Contains(out, "early") {
 		t.Fatalf("terminal showed %q", out)
+	}
+}
+
+type answer struct {
+	text string
+	err  error
+}
+
+// ask starts the prompt on slave, types line at master once the prompt is
+// on the screen and returns the answer.
+func ask(t *testing.T, master, slave *os.File, line string) answer {
+	t.Helper()
+	prompt := &signalWriter{first: make(chan struct{})}
+	done := make(chan answer, 1)
+	go func() {
+		text, err := askSecret(slave, prompt)("bind password: ")
+		done <- answer{text, err}
+	}()
+	within(t, prompt.first, "prompt")
+	if _, err := master.Write([]byte(line)); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case got := <-done:
+		return got
+	case <-time.After(10 * time.Second):
+		t.Fatal("no answer within 10 s")
+	}
+	return answer{}
+}
+
+// Keys still queued in the tty layer when the prompt starts are dropped too.
+// Linux hands them to the line discipline from a worker of its own, and
+// TCSETSF drops only what the line discipline holds (set_termios in
+// drivers/tty/tty_ioctl.c). A full line buffer with a finished line in it
+// takes no more keys (n_tty_receive_buf_common and N_TTY_BUF_SIZE 4096 in
+// drivers/tty/n_tty.c, read 2026-11-18), so the end of what is typed here
+// waits in that queue whatever the timing of the worker.
+func TestPromptDropsQueuedTypeAhead(t *testing.T) {
+	master, slave := openPTY(t)
+	shown, drained := drain(master)
+	if _, err := master.Write([]byte("line\n" + strings.Repeat("x", 5000) + "queued")); err != nil {
+		t.Fatal(err)
+	}
+	got := ask(t, master, slave, "s3cret-pw\n")
+	if got.err != nil || got.text != "s3cret-pw" {
+		t.Fatalf("answer of %d bytes, %q at its end, error %v; keys queued before the prompt must not count",
+			len(got.text), got.text[max(0, len(got.text)-15):], got.err)
+	}
+	if !echoOn(t, slave) {
+		t.Fatal("echo is still off after the answer")
+	}
+	_ = slave.Close()
+	within(t, drained, "end of the terminal output")
+	if out := shown.String(); strings.Contains(out, "s3cret") {
+		t.Fatalf("terminal showed the answer: %q", out[max(0, len(out)-60):])
 	}
 }
 

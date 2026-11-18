@@ -128,7 +128,7 @@ func wantContent(t *testing.T) *model.Snapshot {
 		},
 		Repositories: []model.Repository{
 			{Name: "demo-docker", Format: "docker", Type: "hosted", Online: false, Attributes: attrs(t,
-				`{`+storage+`,"writePolicy":"ALLOW"},"docker":{"httpPort":14511,"forceBasicAuth":true,"v1Enabled":false}}`)},
+				`{`+storage+`,"writePolicy":"ALLOW"},"docker":{"httpPort":14511.0,"forceBasicAuth":true,"v1Enabled":false}}`)},
 			{Name: "demo-maven-group", Format: "maven2", Type: "group", Online: true, Attributes: attrs(t,
 				`{`+storage+`},"group":{"memberNames":["demo-maven-proxy","demo-maven-hosted"]}}`)},
 			{Name: "demo-maven-hosted", Format: "maven2", Type: "hosted", Online: true, Attributes: attrs(t,

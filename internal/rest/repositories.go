@@ -1,7 +1,9 @@
 package rest
 
 import (
+	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -50,7 +52,7 @@ func (env *Env) repositoryXO(r repos.Repo) repositoryXO {
 	if r.Type == "proxy" {
 		var remote any
 		if rec := env.record(r.Name); rec != nil {
-			remote = section(rec.Attributes, "proxy")["remoteUrl"]
+			remote = clean(section(rec.Attributes, "proxy")["remoteUrl"])
 		}
 		if remote == nil && r.RemoteURL != nil {
 			remote = *r.RemoteURL
@@ -166,9 +168,16 @@ func secret(key string) bool {
 }
 
 // clean is a deep copy of a stored value without its secret keys, so that
-// the answer never changes the snapshot.
+// the answer never changes the snapshot. A number with a zero fraction
+// becomes the integer: the old product stores many integers as floating
+// point values (14511.0) and its REST surface shows them as integers.
 func clean(value any) any {
 	switch v := value.(type) {
+	case json.Number:
+		if n, err := repos.WholeNumber(v); err == nil {
+			return json.Number(strconv.FormatInt(n, 10))
+		}
+		return v
 	case map[string]any:
 		out := make(map[string]any, len(v))
 		for key, item := range v {

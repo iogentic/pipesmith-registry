@@ -309,7 +309,7 @@ func load() (*config.Config, error) {
 }
 
 func openIndexReader(path string) (listeners.IndexReader, error) {
-	return index.Open(path)
+	return index.OpenRead(path)
 }
 
 // Server
@@ -517,7 +517,7 @@ func storeStats(cfg *config.Config) (map[string]index.StoreStat, error) {
 	if ok, err := exists(cfg.IndexPath()); err != nil || !ok {
 		return stats, err
 	}
-	ix, err := index.Open(cfg.IndexPath())
+	ix, err := index.OpenRead(cfg.IndexPath())
 	if err != nil {
 		return nil, err
 	}
@@ -692,7 +692,7 @@ func (c *command) repos() (int, error) {
 	if ok, err := exists(cfg.IndexPath()); err != nil {
 		return 1, err
 	} else if ok {
-		ix, err := index.Open(cfg.IndexPath())
+		ix, err := index.OpenRead(cfg.IndexPath())
 		if err != nil {
 			return 1, err
 		}
@@ -912,7 +912,7 @@ func (c *command) dockerCheck() (int, error) {
 		}
 		return 1, refuse("no index yet; attach a store and run: scan")
 	}
-	ix, err := index.Open(cfg.IndexPath())
+	ix, err := index.OpenRead(cfg.IndexPath())
 	if err != nil {
 		return 1, err
 	}

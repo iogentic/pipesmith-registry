@@ -1,10 +1,12 @@
-// Package state is state.sqlite of the data directory, schema version 1: the
-// users, roles, privileges, role mappings, LDAP servers, settings, blob store
-// definitions and repositories an administrator set in the old product.
+// Package state is state.sqlite of the data directory: the users, roles,
+// privileges, role mappings, LDAP servers, settings, blob store definitions
+// and repositories an administrator set in the old product.
 //
 // The file has mode 0600 and its directory 0750. Writes go through one
 // writer connection, each Write in one transaction; Load reads in one read
-// transaction on its own pool. A file of a newer schema is refused.
+// transaction on its own pool. The schema steps are in migrations.go: Open
+// and Create copy an older file to state.sqlite.v<old> and migrate it, and
+// refuse a file of a newer schema with both versions named.
 package state
 
 import (
@@ -21,6 +23,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/iogentic/pipesmith-registry/internal/migrate"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	_ "modernc.org/sqlite" // the driver "sqlite"
 )
@@ -28,8 +31,6 @@ import (
 const (
 	// FileName is the file in the data directory.
 	FileName = "state.sqlite"
-	// SchemaVersion is the value of the schema row of the meta table.
-	SchemaVersion = 1
 
 	busyTimeoutMS = 30_000
 	readerPool    = 4
@@ -61,29 +62,6 @@ const (
 	settingRealms    = "realms"
 	settingAnonymous = "anonymous"
 )
-
-var schema = []string{
-	"CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value INTEGER NOT NULL) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT NOT NULL," +
-		" email TEXT NOT NULL, status TEXT NOT NULL, source TEXT NOT NULL, password_hash TEXT NOT NULL) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS user_roles (user_id TEXT NOT NULL, source TEXT NOT NULL, position INTEGER NOT NULL," +
-		" role_id TEXT NOT NULL, PRIMARY KEY (user_id, source, position)) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS roles (id TEXT PRIMARY KEY, source TEXT NOT NULL, name TEXT NOT NULL," +
-		" description TEXT NOT NULL, read_only INTEGER NOT NULL) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS role_privileges (role_id TEXT NOT NULL REFERENCES roles (id) ON DELETE CASCADE," +
-		" position INTEGER NOT NULL, privilege_id TEXT NOT NULL, PRIMARY KEY (role_id, position)) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS role_roles (role_id TEXT NOT NULL REFERENCES roles (id) ON DELETE CASCADE," +
-		" position INTEGER NOT NULL, member_id TEXT NOT NULL, PRIMARY KEY (role_id, position)) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS privileges (name TEXT PRIMARY KEY, type TEXT NOT NULL, description TEXT NOT NULL," +
-		" read_only INTEGER NOT NULL, properties TEXT NOT NULL) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS ldap_servers (id TEXT PRIMARY KEY, name TEXT NOT NULL, position INTEGER NOT NULL," +
-		" record TEXT NOT NULL) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS blob_stores (name TEXT PRIMARY KEY, type TEXT NOT NULL, path TEXT NOT NULL," +
-		" soft_quota TEXT) WITHOUT ROWID",
-	"CREATE TABLE IF NOT EXISTS repositories (name TEXT PRIMARY KEY, format TEXT NOT NULL, type TEXT NOT NULL," +
-		" online INTEGER NOT NULL, attributes TEXT NOT NULL) WITHOUT ROWID",
-}
 
 var bg = context.Background()
 
@@ -150,7 +128,11 @@ func dsn(path string, params url.Values) (string, error) {
 	return "file:" + (&url.URL{Path: filepath.ToSlash(abs)}).EscapedPath() + "?" + params.Encode(), nil
 }
 
-func open(path string, setUp bool) (*Store, error) {
+func open(path string, setUp bool) (*Store, error) { return openWith(path, setUp, steps) }
+
+// openWith opens path and brings it to the last of the steps given; with
+// setUp a file without tables takes every step.
+func openWith(path string, setUp bool, steps []migrate.Step) (*Store, error) {
 	busy := fmt.Sprintf("busy_timeout(%d)", busyTimeoutMS)
 	writerDSN, err := dsn(path, url.Values{"mode": {"rw"}, "_pragma": {busy, "foreign_keys(1)", "synchronous(NORMAL)"},
 		"_txlock": {"immediate"}})
@@ -171,50 +153,11 @@ func open(path string, setUp bool) (*Store, error) {
 		return nil, err
 	}
 	st.readers.SetMaxOpenConns(readerPool)
-	if err := st.check(setUp); err != nil {
-		_ = st.Close() // cleanup; the check error is returned
+	if _, err := migrate.Run(st.writer, st.path, steps, migrate.Options{Kind: "state file", Create: setUp, Backup: true}); err != nil {
+		_ = st.Close() // cleanup; the migration error is returned
 		return nil, err
 	}
 	return st, nil
-}
-
-// check refuses a file of another schema; with setUp it writes schema 1
-// into a file that has no meta table yet.
-func (st *Store) check(setUp bool) error {
-	var tables int
-	if err := st.writer.QueryRowContext(bg, "SELECT count(*) FROM sqlite_master WHERE type = 'table'").Scan(&tables); err != nil {
-		return fmt.Errorf("%s is not a SQLite file: %w", st.path, err)
-	}
-	var hasMeta int
-	if err := st.writer.QueryRowContext(bg, "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'meta'").
-		Scan(&hasMeta); err != nil {
-		return err
-	}
-	if hasMeta == 0 {
-		if !setUp || tables > 0 {
-			return fmt.Errorf("%s has no meta table, so it is no state file", st.path)
-		}
-		if _, err := st.writer.ExecContext(bg, "PRAGMA journal_mode = WAL"); err != nil {
-			return err
-		}
-		return st.write(func(tx *sql.Tx) error {
-			for _, statement := range schema {
-				if _, err := tx.ExecContext(bg, statement); err != nil {
-					return err
-				}
-			}
-			_, err := tx.ExecContext(bg, "INSERT INTO meta VALUES ('schema', ?)", SchemaVersion)
-			return err
-		})
-	}
-	var version int64
-	if err := st.writer.QueryRowContext(bg, "SELECT value FROM meta WHERE key = 'schema'").Scan(&version); err != nil {
-		return fmt.Errorf("%s has no schema row: %w", st.path, err)
-	}
-	if version != SchemaVersion {
-		return fmt.Errorf("%s has schema %d, this binary knows schema %d", st.path, version, SchemaVersion)
-	}
-	return nil
 }
 
 // Close closes both pools.

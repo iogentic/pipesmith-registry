@@ -3,7 +3,7 @@
 # the host. Module and build caches live in .cache/.
 #
 # usage: tools/go.sh <command>
-#   check     gofmt, go vet and go test -race over every package
+#   check     gofmt, go vet for every target of build, go test -race
 #   build     the binary for darwin/arm64, linux/amd64 and linux/arm64 into bin/
 #   vuln      govulncheck over every package
 #   sec       gosec as the sast stage of Pipesmith CI runs it, then the gate
@@ -60,6 +60,15 @@ check() {
     unformatted="$(gofmt -l cmd internal tools)"
     if [ -n "$unformatted" ]; then echo "gofmt: these files need formatting:"; echo "$unformatted"; exit 1; fi
     go vet ./...
+    # The tests run for the platform of the container only. vet also type
+    # checks the other targets of build, which a file for one platform breaks.
+    native="$(go env GOOS)/$(go env GOARCH)"
+    for target in darwin/arm64 linux/amd64 linux/arm64; do
+      if [ "$target" != "$native" ]; then
+        echo "go vet for $target"
+        CGO_ENABLED=0 GOOS="${target%/*}" GOARCH="${target#*/}" go vet ./...
+      fi
+    done
     go test -race -count=1 ./...
   '
 }
