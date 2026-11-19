@@ -296,7 +296,7 @@ func TestNpmLoginRefusals(t *testing.T) {
 	}
 	// whoami asks for a subject; the anonymous one names itself while the switch is on
 	status(t, do(t, a.addr(), "GET", "/repository/demo-npm/-/whoami", nil), 401)
-	old := do(t, a.addr(), "GET", "/repository/demo-npm/-/whoami", nil, "Authorization", "Bearer NpmToken." + "4b9c2a6e-0000-4000" + "-8000-00000000c0de")
+	old := do(t, a.addr(), "GET", "/repository/demo-npm/-/whoami", nil, "Authorization", "Bearer NpmToken."+"4b9c2a6e-0000-4000"+"-8000-00000000c0de")
 	if old.status != 401 || !strings.Contains(string(old.body), "issues tokens new") {
 		t.Fatalf("old token: %d %q", old.status, old.body)
 	}
