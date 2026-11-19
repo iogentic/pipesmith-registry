@@ -38,8 +38,14 @@ func (r *rig) serveVector(name string) {
 			r.t.Fatal(err)
 		}
 	}
-	key, err := filepath.Abs(filepath.Join(vectors, "keys", "trusted.pub"))
+	// a copy below the root, so the key belongs to the user of the test, as
+	// the owner check wants, also where the checkout belongs to another user
+	pub, err := os.ReadFile(filepath.Join(vectors, "keys", "trusted.pub"))
 	if err != nil {
+		r.t.Fatal(err)
+	}
+	key := filepath.Join(r.root, "vector-trusted.pub")
+	if err := os.WriteFile(key, pub, 0o644); err != nil {
 		r.t.Fatal(err)
 	}
 	r.start(nil, map[string]any{"trusted_key": key})
