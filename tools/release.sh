@@ -5,6 +5,7 @@
 #   sbom.spdx.json, sbom.cdx.json   Syft over the repository at the commit,
 #                                   as the release job of the pipeline runs it
 #   image.tar                       docker save of the image from Dockerfile
+#   pipesmith-registry-manual.pdf   the manual, docs/pdf/ of the commit
 #   SHA256SUMS                      per file: SHA-256 in hex, two spaces, name
 #   SHA256SUMS.sigstore.json        cosign bundle over SHA256SUMS, signed with
 #                                   a key, without a transparency log entry
@@ -19,7 +20,11 @@
 #                  there; work/release-key/ by default; never committed
 #
 # <version> is the content of VERSION, which the binaries carry. The tree must
-# be clean, so binaries, bills of materials and image all come from HEAD. An
+# be clean, so binaries, bills of materials and image all come from HEAD. The
+# manual PDF must be built from the manual of HEAD: tools/manual_pdf.py --check
+# runs before the build and names the command that rebuilds it, and
+# tools/sync_manual.py --check stops a release whose embedded manual is not
+# the copy of docs/. An
 # existing <out>/<version>/ is refused: a release does not change. The files
 # are written to a folder next to it, cosign.pub last, and the folder is
 # renamed at the end. DOCKER_CONFIG must point at a configuration without
@@ -39,8 +44,9 @@ SYFT_CONFIG='{
 }'
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+MANUAL_PDF="pipesmith-registry-manual.pdf"
 
-usage() { sed -n '2,27p' "$0" >&2; exit 2; }
+usage() { sed -n '2,32p' "$0" >&2; exit 2; }
 fail() { echo "tools/release.sh: $*" >&2; exit 1; }
 realpath_of() { python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$1"; }
 
@@ -72,13 +78,16 @@ case "$KEY_DIR/" in
 esac
 
 [ -z "$(git -C "$ROOT" status --porcelain)" ] || fail "the tree is not clean; commit first"
+manual_check="$(python3 "$ROOT/tools/manual_pdf.py" --check)" || fail "$manual_check"
+sync_check="$(python3 "$ROOT/tools/sync_manual.py" --check)" || fail "internal/ui/manual/ is not the copy of docs/: $sync_check; run python3 tools/sync_manual.py and commit"
 HEAD="$(git -C "$ROOT" rev-parse HEAD)"
 DEST="$OUT/$VERSION"
 [ ! -e "$DEST" ] || fail "$DEST exists; a release does not change"
 
-# The platforms of tools/go.sh build, so a new platform needs no change here.
-TARGETS="$(sed -n 's/^ *for target in \(.*\); do$/\1/p' "$ROOT/tools/go.sh")"
-[ -n "$TARGETS" ] || fail "found no build targets in tools/go.sh"
+# The platforms of tools/go.sh build from its TARGETS line, which check and
+# build read too, so a new platform needs no change here.
+TARGETS="$(sed -n 's/^TARGETS="\([^"]*\)"$/\1/p' "$ROOT/tools/go.sh")"
+[ -n "$TARGETS" ] && [[ "$TARGETS" != *$'\n'* ]] || fail "tools/go.sh must set TARGETS in exactly one line"
 BINARIES=()
 for target in $TARGETS; do BINARIES+=("pipesmith-registry-${target%/*}-${target#*/}"); done
 
@@ -134,12 +143,15 @@ docker build --file "$TMP/src/Dockerfile" --tag "$TAG" \
 docker save --output "$STAGE/image.tar" "$TAG"
 docker image rm "$TAG" > /dev/null
 
+echo "== manual"
+cp "$ROOT/docs/pdf/$MANUAL_PDF" "$STAGE/$MANUAL_PDF"
+
 echo "== SHA256SUMS"
 if command -v sha256sum > /dev/null; then SUM=(sha256sum); else SUM=(shasum -a 256); fi
-(cd "$STAGE" && "${SUM[@]}" sbom.spdx.json sbom.cdx.json image.tar "${BINARIES[@]}" > SHA256SUMS)
+(cd "$STAGE" && "${SUM[@]}" sbom.spdx.json sbom.cdx.json image.tar "$MANUAL_PDF" "${BINARIES[@]}" > SHA256SUMS)
 cat "$STAGE/SHA256SUMS"
 
-chmod 0644 "$STAGE"/sbom.spdx.json "$STAGE"/sbom.cdx.json "$STAGE"/image.tar "$STAGE"/SHA256SUMS
+chmod 0644 "$STAGE"/sbom.spdx.json "$STAGE"/sbom.cdx.json "$STAGE"/image.tar "$STAGE/$MANUAL_PDF" "$STAGE"/SHA256SUMS
 if [ "$SIGN" -eq 1 ]; then
 echo "== signature"
 printf '%s\n' "$SIGNING_CONFIG" > "$TMP/signing-config.json"

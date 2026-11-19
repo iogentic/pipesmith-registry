@@ -52,6 +52,9 @@ func (s *Server) docker(w http.ResponseWriter, req *request, st *state, repo rep
 	if t.directory && rest != "" {
 		rest += "/"
 	}
+	if upload := s.uploadCall(rest); upload != nil {
+		return s.uploadStatus(w, req, repo, upload) // the status of an upload session (write_docker_upload.go)
+	}
 	call, err := docker.ParseV2(rest)
 	if err != nil {
 		var pathErr *docker.PathError

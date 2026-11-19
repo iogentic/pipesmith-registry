@@ -182,7 +182,8 @@ func TestRecursionLimit(t *testing.T) {
 		t.Fatalf("depth beyond the limit: %v", err)
 	}
 	// Only the document that is written out counts.
-	flat := []byte("<metadata>" + strings.Repeat("<x>", 5000) + strings.Repeat("</x>", 5000) + "</metadata>")
+	n := maxElementDepth - 1
+	flat := []byte("<metadata>" + strings.Repeat("<x>", n) + strings.Repeat("</x>", n) + "</metadata>")
 	if got, err := MergeMetadata([][]byte{flat, []byte("<metadata/>")}); err != nil || got == nil {
 		t.Fatalf("deep document without snapshot: %v", err)
 	}

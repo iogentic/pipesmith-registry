@@ -103,7 +103,7 @@ func (s *Server) apiStatus(w *recorder, req *request, _ []string) error {
 	}
 	totals := pyjson.NewObject().Set("stores", len(list)).Set("repositories", len(st.repositories.All())).
 		Set("files", files).Set("bytes", size)
-	return writeJSON(w, req, http.StatusOK, pyjson.NewObject().
+	return writeJSON(w, req, http.StatusOK, s.statusView(req, pyjson.NewObject().
 		Set("name", productName).
 		Set("version", version.Version).
 		Set("data_dir", s.rp.cfg.DataDir).
@@ -112,7 +112,7 @@ func (s *Server) apiStatus(w *recorder, req *request, _ []string) error {
 		Set("docker_ports", ports).
 		Set("stores", list).
 		Set("totals", totals).
-		Set("scan", scanState))
+		Set("scan", scanState)))
 }
 
 // apiRepositories is GET /api/repositories. The Docker ports are those of
@@ -334,7 +334,10 @@ func (s *Server) apiScan(w *recorder, req *request, _ []string) error {
 	if refusal, refused := postRefusal(req.r, s.port, s.hostNames); refused {
 		return jsonError(w, req, http.StatusForbidden, refusal)
 	}
-	data, err := io.ReadAll(req.r.Body)
+	data, err := io.ReadAll(http.MaxBytesReader(w, req.r.Body, maxScanBody))
+	if tooLarge(err) {
+		return refuseScanBody(w, req)
+	}
 	if err != nil {
 		// a body h11 cannot read ends the request as uvicorn ends it
 		s.invalidRequest(w.ResponseWriter)

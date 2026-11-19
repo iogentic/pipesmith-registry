@@ -728,7 +728,7 @@ func TestScanGuards(t *testing.T) {
 		{"body last key wins", h, []byte(`{"store": "s1", "store": "nope"}`), 404, notAttached},
 		{"body unicode name", h, []byte(`{"store": "née"}`), 404, `{"error":"store née is not attached"}`},
 		{"body lone surrogate", h, []byte(`{"store": "\ud800"}`), 500, "Internal Server Error"},
-		{"body too deep", h, append(bytes.Repeat([]byte("["), 100000), bytes.Repeat([]byte("]"), 100000)...), 500, "Internal Server Error"},
+		{"body too deep", h, append(bytes.Repeat([]byte("["), 30000), bytes.Repeat([]byte("]"), 30000)...), 500, "Internal Server Error"},
 	} {
 		r := a.post(c.body, c.headers...)
 		if r.status != c.status || string(r.body) != c.answer {

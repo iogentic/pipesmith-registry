@@ -1,0 +1,29 @@
+{
+  "about": "The bidirectional control characters U+202A to U+202E and U+2066 to U+2069 in a pom, one row at least for each. marks names, per line, the code of every control character in the order of the text; each is drawn as a mark of its own, and the other characters keep the order of the text. Lines 1 and 7 hold none.",
+  "kind": "xml",
+  "text": "<project>\n  <version>1.0\u202e-beta</version>\n  <name>a\u202ab\u202cc</name>\n  <url>https://example.com/x\u202by\u202dz</url>\n  <!-- \u2066i\u2069 \u2067j\u2069 \u2068k\u2069 -->\n  <groupId>com.example\u202e.evil</groupId>\n</project>\n",
+  "marks": {
+    "2": [
+      "202e"
+    ],
+    "3": [
+      "202a",
+      "202c"
+    ],
+    "4": [
+      "202b",
+      "202d"
+    ],
+    "5": [
+      "2066",
+      "2069",
+      "2067",
+      "2069",
+      "2068",
+      "2069"
+    ],
+    "6": [
+      "202e"
+    ]
+  }
+}

@@ -3,6 +3,7 @@ package auth_test
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -123,6 +124,32 @@ func TestPasswordDispatch(t *testing.T) {
 	sha1 := vectorNamed(t, "legacy-sha1")
 	if !auth.VerifyPassword(sha1.Password, strings.ToUpper(sha1.Hash)) {
 		t.Error("an upper case hex digest does not verify")
+	}
+}
+
+// The PBKDF2 form names its key length, and each block of the key costs the
+// full round count, so the length has a bound as the rounds have one
+// (decision N22): MaxKeyBits. A longer key is refused before any digest.
+func TestPasswordKeyLength(t *testing.T) {
+	if auth.MaxKeyBits != 512 {
+		t.Errorf("MaxKeyBits %d, want 512", auth.MaxKeyBits)
+	}
+	// at the bound: written by Python hashlib.pbkdf2_hmac, sha256, 1000
+	// rounds, 64 bytes, the salt from the name of the vector
+	const atBound = "$PBKDF2WithHmacSHA256$key_iteration=1000,key_len=512$1WdVcGdDOSmddAvRrEwP+w==$" +
+		"L0HTKEfFUocn9lr84IUCTDTIJsFHAcLcY7x0gooFFhIL/x9RTAhJAIyfIrTKKVDTlGrCPk6bC0MYWjm8xGBfBg=="
+	before := auth.HashRuns()
+	if !auth.VerifyPassword("demo-keylen-pass-1", atBound) || auth.HashRuns() != before+1 {
+		t.Fatal("a key of 512 bits does not verify with one digest")
+	}
+	salt := strings.Split(atBound, "$")[3]
+	for _, bits := range []int{520, 1024, 8 << 20} {
+		digest := base64.StdEncoding.EncodeToString(make([]byte, bits/8))
+		stored := fmt.Sprintf("$PBKDF2WithHmacSHA1$key_iteration=1,key_len=%d$%s$%s", bits, salt, digest)
+		before := auth.HashRuns()
+		if auth.VerifyPassword("demo-keylen-pass-1", stored) || auth.HashRuns() != before {
+			t.Errorf("a key of %d bits: verified or ran %d digests", bits, auth.HashRuns()-before)
+		}
 	}
 }
 

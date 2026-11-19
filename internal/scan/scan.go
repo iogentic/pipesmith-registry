@@ -1,5 +1,6 @@
 // Package scan replaces the rows of one store in the index with what the
-// store holds now.
+// store holds now, and then the rows of that store in catalog.sqlite beside
+// the index.
 package scan
 
 import (
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/catalog"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
@@ -68,6 +70,13 @@ var errStopped = errors.New("scan: walk stopped")
 // and has rows fails with an error that matches fs.ErrNotExist and keeps
 // them too.
 func Run(s stores.Store, ix *index.Index, progress func(live int)) (Result, error) {
+	return RunWith(s, ix, progress, nil)
+}
+
+// RunWith is Run with an arbiter of the rows of the store (index.Arbiter):
+// the scan of a store whose write order the caller knows. A nil arbiter is
+// Run.
+func RunWith(s stores.Store, ix *index.Index, progress func(live int), arbiter index.Arbiter) (Result, error) {
 	var counts stores.ScanCounts
 	started := time.Now()
 	reported := -1
@@ -113,7 +122,10 @@ func Run(s stores.Store, ix *index.Index, progress func(live int)) (Result, erro
 		}
 	}
 
-	_, err := ix.ReplaceStore(s.Name(), func(yield func(stores.Entry) error) error {
+	// catalog.sqlite beside the index takes the same entries once the index
+	// holds them; it never fails the scan.
+	fill := catalog.StartScan(ix, s.Name())
+	_, err := ix.ReplaceStoreWith(s.Name(), func(yield func(stores.Entry) error) error {
 		for ok {
 			rank, seen := ranks[entry.Repo]
 			if !seen || rank != 0 {
@@ -127,6 +139,7 @@ func Run(s stores.Store, ix *index.Index, progress func(live int)) (Result, erro
 			if err := yield(entry); err != nil {
 				return err
 			}
+			fill.Add(entry)
 			if progress != nil && counts.Live%ProgressEvery == 0 {
 				reported = counts.Live
 				progress(reported)
@@ -134,15 +147,18 @@ func Run(s stores.Store, ix *index.Index, progress func(live int)) (Result, erro
 			entry, ok = next()
 		}
 		return walkErr
-	})
+	}, arbiter)
 	if err != nil {
+		fill.Finish(ix, false)
 		return Result{}, err
 	}
 	hints := map[string]string{}
 	for repo, rank := range ranks {
 		hints[repo] = HintOrder[rank]
 	}
-	if err := ix.SetHints(s.Name(), hints); err != nil {
+	err = ix.SetHints(s.Name(), hints)
+	fill.Finish(ix, err == nil)
+	if err != nil {
 		return Result{}, err
 	}
 	if progress != nil && reported != counts.Live {

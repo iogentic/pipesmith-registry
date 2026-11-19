@@ -48,6 +48,9 @@ type Options struct {
 	// Backup writes the copy <file>.v<old>, mode 0600, before the first step
 	// of a file that has a version. An existing copy is never replaced.
 	Backup bool
+	// CopyWhen, when set and Backup is not, is asked before the first step
+	// of a file that has a version; true writes the copy as Backup does.
+	CopyWhen func(file string) bool
 }
 
 // Result is what Run found and did.
@@ -99,7 +102,7 @@ func Run(db *sql.DB, file string, steps []Step, opts Options) (Result, error) {
 		if err := walMode(db, file); err != nil {
 			return res, err
 		}
-	case opts.Backup:
+	case opts.Backup || opts.CopyWhen != nil && opts.CopyWhen(file):
 		if res.Copy, err = writeCopy(db, file, from); err != nil {
 			return res, err
 		}

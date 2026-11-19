@@ -211,10 +211,19 @@ func parseRange(value string, size int64) (int64, int64, rangeKind, error) {
 	return start.Int64(), end.Int64(), rangeSatisfiable, nil
 }
 
+// storedFileHeaders are set on every answer of a stored file while
+// security is on (finding of 2026-11-19): the browser keeps the stored type
+// and runs no script of the file, which it treats as a document of an origin
+// of its own, so a stored HTML or SVG file cannot act with the session of
+// the interface. Without security there is no interface and no session, and
+// the answers stay those of step 2, which the format vectors pin.
+var storedFileHeaders = [][2]string{{"X-Content-Type-Options", "nosniff"}, {"Content-Security-Policy", "sandbox"}}
+
 // send is _send: the answer of a file with ETag, Last-Modified, ranges and
-// the conditional requests. extra headers are set on every answer it gives,
-// as the Docker read path sets its own after _send. The error is a failure
-// Python does not catch; the body is closed in every case.
+// the conditional requests. The extra headers, and storedFileHeaders with
+// security on, are set on every answer it gives, as the Docker read path
+// sets its own after _send. The error is a failure Python does not catch;
+// the body is closed in every case.
 func send(w http.ResponseWriter, req *request, b *body, extra [][2]string) error {
 	h := w.Header()
 	lastModified := ""
@@ -222,6 +231,11 @@ func send(w http.ResponseWriter, req *request, b *body, extra [][2]string) error
 		lastModified, _ = httpDate(*b.modifiedMS)
 	}
 	setExtra := func() {
+		if req.secure {
+			for _, kv := range storedFileHeaders {
+				h.Set(kv[0], kv[1])
+			}
+		}
 		for _, kv := range extra {
 			h.Set(kv[0], kv[1])
 		}

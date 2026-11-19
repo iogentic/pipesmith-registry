@@ -1,0 +1,10 @@
+{
+  "tokens": [
+    [[0, 14, "comment"]],
+    [[0, 14, "comment"]],
+    [[3, 21, "comment"]],
+    [[0, 3, "key"], [3, 4, "punct"], [4, 25, "string"]]
+  ],
+  "folds": [],
+  "pairs": []
+}

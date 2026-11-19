@@ -1,0 +1,12 @@
+ports = [ 8001, 8002 ]
+matrix = [
+  [ 1, 2 ],
+  [ "a", "b" ], # trailing comma
+]
+
+[[product]]
+name = "first"
+
+[[product]]
+name = "second"
+sizes = [1,2]

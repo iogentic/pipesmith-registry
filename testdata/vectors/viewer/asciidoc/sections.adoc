@@ -1,0 +1,14 @@
+= Demo Guide
+:toc:
+:version: 1.0.0
+
+== Install
+Text with `code` and +literal+.
+
+=== Details
+* item
+. ordered
+
+== Use
+// a comment line
+Done.

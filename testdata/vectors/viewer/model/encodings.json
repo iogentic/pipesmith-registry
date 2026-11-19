@@ -1,0 +1,66 @@
+{
+  "about": "Files without a byte order mark that name an encoding in their XML declaration. The check encodes text with the Python codec codec (after a UTF-8 mark where bom is true), loads the bytes as the viewer does and expects the text back without a replacement character, and encoding as the name the decoder reports. The last rows keep UTF-8: a mark wins over the declaration, an unknown label or UTF-16 without a mark is left aside, and a declaration counts only at the start of the file.",
+  "rows": [
+    {
+      "name": "iso-8859-1 in double quotes",
+      "codec": "iso-8859-1",
+      "text": "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<project>\n  <name>M\u00fcller</name>\n</project>\n",
+      "encoding": "windows-1252"
+    },
+    {
+      "name": "iso-8859-15 in single quotes",
+      "codec": "iso-8859-15",
+      "text": "<?xml version='1.0' encoding='iso-8859-15'?>\n<a>caf\u00e9 \u20ac</a>\n",
+      "encoding": "iso-8859-15"
+    },
+    {
+      "name": "windows-1252",
+      "codec": "cp1252",
+      "text": "<?xml version=\"1.0\" encoding=\"windows-1252\" standalone=\"yes\"?>\n<a>\u201cquoted\u201d \u20ac</a>\n",
+      "encoding": "windows-1252"
+    },
+    {
+      "name": "shift_jis",
+      "codec": "shift_jis",
+      "text": "<?xml version=\"1.0\" encoding=\"Shift_JIS\"?>\n<a>\u65e5\u672c</a>\n",
+      "encoding": "shift_jis"
+    },
+    {
+      "name": "utf-8 declared",
+      "codec": "utf-8",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<a>M\u00fcller</a>\n",
+      "encoding": "utf-8"
+    },
+    {
+      "name": "no declaration",
+      "codec": "utf-8",
+      "text": "<project>\n  <name>M\u00fcller</name>\n</project>\n",
+      "encoding": "utf-8"
+    },
+    {
+      "name": "mark before a latin declaration",
+      "codec": "utf-8",
+      "bom": true,
+      "text": "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<a>M\u00fcller</a>\n",
+      "encoding": "utf-8"
+    },
+    {
+      "name": "unknown label",
+      "codec": "utf-8",
+      "text": "<?xml version=\"1.0\" encoding=\"x-no-such-encoding\"?>\n<a>M\u00fcller</a>\n",
+      "encoding": "utf-8"
+    },
+    {
+      "name": "utf-16 declared without a mark",
+      "codec": "utf-8",
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<a>M\u00fcller</a>\n",
+      "encoding": "utf-8"
+    },
+    {
+      "name": "declaration not at the start",
+      "codec": "utf-8",
+      "text": "<!-- note -->\n<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n<a>M\u00fcller</a>\n",
+      "encoding": "utf-8"
+    }
+  ]
+}

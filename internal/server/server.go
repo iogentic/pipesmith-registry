@@ -4,9 +4,11 @@
 // maven-metadata.xml of groups with its checksums, the npm read path, the
 // folder listing of every directory URL, the Docker registry read path on
 // the main port and on the Docker ports, the JSON API with the scan job,
-// the page and the browse routes. Nothing here writes into a store; the
-// index is written by Index.Drop for a row whose bytes file has vanished
-// and by a scan started through POST /api/scan.
+// the page and the browse routes. With writes on (phase 4) the write route
+// hands writes to the handlers of the formats (write.go), which write
+// through ingest.go only; the stores of the old product are never written.
+// The index is written by Index.Drop for a row whose bytes file has
+// vanished, by a scan started through POST /api/scan and by the writes.
 package server
 
 import (
@@ -27,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/blobwrite"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
@@ -69,6 +72,33 @@ type Options struct {
 	// HostNames are the names a Host header may carry besides localhost,
 	// 127.0.0.1 and [::1]: lower case, an IPv6 address in brackets, no port.
 	HostNames []string
+	// ExportMaxFiles and ExportMaxBytes bound one export of a folder; zero
+	// takes the default of 20,000 files and 2 GiB.
+	ExportMaxFiles, ExportMaxBytes int64
+	// ExportStall is how long one write of an export may wait for the
+	// client to read; zero takes the default of 60 s.
+	ExportStall time.Duration
+	// ExportTimeLimit is how long one export may run in all before its
+	// transfer is broken; 0 means 2 hours.
+	ExportTimeLimit time.Duration
+	// Writes switches writes on (W17 of the phase 4 plan): the write store
+	// of the data directory is made when it is missing and opened by its one
+	// writer (W1, W12). It needs Security (decision E4). With writes off a
+	// write store that exists is attached read only.
+	Writes bool
+	// Catalog is the catalog hook of every write and delete (decision E5);
+	// nil does nothing.
+	Catalog CatalogHook
+	// writeOptions fix the clock and the blob ids of the writer in tests.
+	writeOptions blobwrite.Options
+	// Secure reports a request that reached a reverse proxy of
+	// trusted_proxies over TLS (auth.TrustedProxies.Secure); nil trusts no
+	// proxy.
+	Secure func(*http.Request) bool
+	// Forwarded sees every request before the host guard: serve gives it
+	// the warning of forwarded headers from a peer that is no trusted proxy
+	// (auth.ForwardedWarner.Check). Nil sees none.
+	Forwarded func(*http.Request)
 }
 
 // Server is the http.Handler of every listener of one server process.
@@ -82,19 +112,40 @@ type Server struct {
 	trusted     *trustedHosts
 	port        int // the main port; POST /api/scan is guarded with it
 	job         *scanJob
-	sec         model.Security // nil: security off
-	ui          *ui.Handler    // the interface, with security on
-	catalog     *rest.Catalog  // the search, with security on
-	hostNames   []string       // Options.HostNames
+	sec         model.Security           // nil: security off
+	ui          *ui.Handler              // the interface, with security on
+	manual      *ui.Handler              // the manual below /manual/, in both modes
+	catalog     *rest.Catalog            // the search, with security on
+	hostNames   []string                 // Options.HostNames
+	secure      func(*http.Request) bool // Options.Secure
+	forwarded   func(*http.Request)      // Options.Forwarded
+	exports     *exports                 // the export of a folder (export.go)
+
+	writes *writePath // the write path of phase 4 (writestore.go, ingest.go)
+	oci    ociWrites  // the Docker upload sessions of the writes (write_oci.go)
 }
 
 // New opens the index and attaches the stores of cfg. dockerPorts maps a
 // listening port to the Docker repository it serves; a request that comes
 // in on such a port is routed to that repository's registry path.
 func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server, error) {
-	rp, err := newReadPath(cfg, dockerPorts)
+	writes, writeStore, err := openWrites(cfg, opts)
 	if err != nil {
 		return nil, err
+	}
+	rp, err := newReadPath(cfg, dockerPorts, writeStore, snapshotOf(opts.Security))
+	if err != nil {
+		_ = writes.close() // the error of the set up is the one returned
+		return nil, err
+	}
+	if writes.writer != nil {
+		if err := writes.scanUnindexed(rp.index); err != nil {
+			_ = rp.index.Close() // the error of the scan is the one returned
+			_ = writes.close()
+			return nil, err
+		}
+	} else if writeStore == nil {
+		rp.lateWrite = writes.lateStore(cfg) // finding S4 of review 4
 	}
 	ports := map[int]string{}
 	for port, repo := range dockerPorts {
@@ -108,13 +159,21 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 	}
 	s := &Server{rp: rp, dockerPorts: ports, access: opts.AccessLog, hostNames: slices.Clone(opts.HostNames), marker: "/" + hex.EncodeToString(token) + "/",
 		escape: hex.EncodeToString(token) + "~", trusted: newTrustedHosts(forwardedAllowIPs()), port: cfg.Port,
-		job: newScanJob(rp.index, takeOver)}
+		job: newScanJob(rp.index, takeOver), writes: writes, secure: opts.Secure, forwarded: opts.Forwarded,
+		exports: newExports(opts)}
+	s.job.runFor = writes.scanRunnerFor
+	if s.manual, err = ui.NewManual(); err != nil {
+		_ = rp.index.Close() // the error of the set up is the one returned
+		_ = writes.close()
+		return nil, err
+	}
 	if opts.Security != nil {
 		if s.ui, err = ui.New(); err == nil {
 			s.catalog, err = rest.OpenCatalog(cfg.IndexPath())
 		}
 		if err != nil {
 			_ = rp.index.Close() // the error of the set up is the one returned
+			_ = writes.close()
 			return nil, err
 		}
 		s.sec = opts.Security
@@ -123,18 +182,21 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 }
 
 // Close stops a running scan and closes the index, as the lifespan of the
-// Python application does. A scan that does not stop within
-// scanStopTimeout keeps the index open until the process exits.
+// Python application does, ends every Docker upload session with its work
+// file and gives the lock of the write store back. A scan that does not stop
+// within scanStopTimeout keeps the index open until the process exits.
 func (s *Server) Close() error {
+	s.oci.endAll()
+	err := s.writes.close()
 	if !s.job.stop(scanStopTimeout) {
 		logAt(slogWarn, serverLogger, "a scan did not stop within %s s; the index is left to the process exit",
 			strconv.FormatFloat(scanStopTimeout.Seconds(), 'f', 0, 64))
-		return nil
+		return err
 	}
 	if s.catalog != nil {
 		_ = s.catalog.Close() // read only connections; the index close below is the one that counts
 	}
-	return s.rp.index.Close()
+	return errors.Join(s.rp.index.Close(), err)
 }
 
 func sortedPorts(m map[int]string) []int {
@@ -157,9 +219,10 @@ type request struct {
 	raw        string // raw path, in its routed form on a Docker port
 	path       string // the decoded path the router matches
 	query      string // raw query string
-	scheme     string // "http", or the X-Forwarded-Proto of a trusted client
+	scheme     string // "http", "https" on a TLS listener or behind a trusted proxy, or the X-Forwarded-Proto of a trusted client (origin)
 	dockerRepo string // the request came in on this repository's Docker port
 	head       bool
+	secure     bool // security is on: an answer of a stored file carries storedFileHeaders
 	parsed     queryValues
 	parsedOK   bool
 	// the caller with security on, resolved once by subjectOf
@@ -237,13 +300,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	unescapeHeaders(r, s.escape)
-	scheme, client := "http", r.RemoteAddr
-	if host, port, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		scheme, client = s.trusted.forwarded(host, port, r.Header)
+	r = withTLS(r)
+	if s.forwarded != nil {
+		s.forwarded(r)
 	}
+	scheme, client := s.origin(r)
 	rawPath, query, _ := strings.Cut(uri, "?")
-	rec := &recorder{ResponseWriter: w, s: s, r: r, path: accessPath(rawPath, query), client: client}
-	req := &request{r: r, raw: rawPath, path: routePath(rawPath), query: query, scheme: scheme, head: r.Method == http.MethodHead}
+	rec := &recorder{ResponseWriter: w, s: s, r: r, path: maskToken(accessPath(rawPath, query)), client: client}
+	req := &request{r: r, raw: rawPath, path: routePath(rawPath), query: query, scheme: scheme, head: r.Method == http.MethodHead,
+		secure: s.sec != nil}
 	if !localHost(r.Host) && !namedHost(r.Host, s.hostNames) {
 		writeText(rec, req, http.StatusForbidden, forbidden)
 		return
@@ -260,6 +325,23 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := s.route(rec, req); err != nil {
 		s.fail(rec, req, err)
 	}
+}
+
+// origin gives the scheme of a request and the client of its access line.
+// The scheme is https over TLS; from a peer of FORWARDED_ALLOW_IPS it is the
+// last X-Forwarded-Proto as uvicorn reads it; and it is https from a peer of
+// trusted_proxies whose X-Forwarded-Proto names https for a hop (review
+// S3). Every URL the server builds takes it, the realm of the Bearer
+// challenge and the tarball URLs of npm among them.
+func (s *Server) origin(r *http.Request) (scheme, client string) {
+	scheme, client = baseScheme(r), r.RemoteAddr
+	if host, port, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		scheme, client = s.trusted.forwarded(scheme, host, port, r.Header)
+	}
+	if s.secure != nil && s.secure(r) {
+		scheme = "https"
+	}
+	return scheme, client
 }
 
 // invalidRequest is uvicorn's answer to a request its parser refuses.
@@ -299,14 +381,16 @@ var routes = []route{
 	{regexp.MustCompile(`^/\n?$`), []string{"GET"}, public, (*Server).page},
 	{regexp.MustCompile(`^/api/health\n?$`), []string{"GET"}, public, (*Server).health},
 	{regexp.MustCompile(`^/api/status\n?$`), []string{"GET"}, public, (*Server).apiStatus},
+	{regexp.MustCompile(`^/api/openapi\.json\n?$`), []string{"GET"}, public, (*Server).openAPI},
 	{regexp.MustCompile(`^/api/repositories\n?$`), []string{"GET"}, signedIn, (*Server).apiRepositories},
 	{regexp.MustCompile(`^/api/browse/([^/]+)\n?$`), []string{"GET"}, view(1, "browse"), (*Server).apiBrowse},
 	{regexp.MustCompile(`^/api/asset/([^/]+)\n?$`), []string{"GET"}, view(1, "browse"), (*Server).asset},
+	{regexp.MustCompile(`^/api/export/([^/]+)\n?$`), []string{"GET"}, view(1, "read"), (*Server).exportRoute},
 	{regexp.MustCompile(`^/api/scan\n?$`), []string{"POST"}, perm("nexus:*"), (*Server).apiScan},
 	{regexp.MustCompile(`^/service/rest/v1/status\n?$`), []string{"GET"}, public, (*Server).status},
 	{regexp.MustCompile(`^/service/rest/v1/status/writable\n?$`), []string{"GET"}, public, (*Server).writable},
 	{regexp.MustCompile(`^/repository/(.*)\n?$`), []string{"GET", "HEAD"}, client, (*Server).repository},
-	{regexp.MustCompile(`^/repository/(.*)\n?$`), []string{"PUT", "POST", "DELETE", "PATCH"}, client, (*Server).refuseWrite},
+	{regexp.MustCompile(`^/repository/(.*)\n?$`), []string{"PUT", "POST", "DELETE", "PATCH"}, client, (*Server).write},
 	{regexp.MustCompile(`^/service/rest/repository/browse/(.*)\n?$`), []string{"GET", "HEAD"}, client, (*Server).browse},
 }
 
@@ -314,6 +398,10 @@ func (s *Server) route(w *recorder, req *request) error {
 	table := s.table()
 	if s.ui != nil && s.ui.Has(req.path) {
 		s.ui.Serve(w, req.r, req.path)
+		return nil
+	}
+	if s.manual != nil && s.manual.Has(req.path) {
+		s.manual.Serve(w, req.r, req.path)
 		return nil
 	}
 	var partial *route
@@ -464,8 +552,15 @@ func (s *Server) status(w *recorder, req *request, _ []string) error {
 	return nil
 }
 
+// writable is GET /v1/status/writable: 503, as in 0.1.1, while writes are
+// off; with writes on 200 while the write store takes a write and 503 when
+// it does not (writePath.writable).
 func (s *Server) writable(w *recorder, req *request, _ []string) error {
-	writeBody(w, req, http.StatusServiceUnavailable, nil, nil)
+	status := http.StatusServiceUnavailable
+	if s.writes.writable() {
+		status = http.StatusOK
+	}
+	writeBody(w, req, status, nil, nil)
 	return nil
 }
 

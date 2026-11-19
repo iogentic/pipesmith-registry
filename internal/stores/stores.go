@@ -211,9 +211,10 @@ func (b *base) requireRoot() error {
 // <uuid>.bytes below content/.
 type BlobStore struct {
 	base
+	writable bool
 }
 
-// NewBlobStore returns the file blob store at root.
+// NewBlobStore returns the file blob store at root, read only.
 func NewBlobStore(name, root string) (*BlobStore, error) {
 	b, err := newBase(name, root)
 	if err != nil {
@@ -228,6 +229,20 @@ func (s *BlobStore) Kind() string { return KindBlobStore }
 // directory before its subdirectories, and skips content/tmp and
 // content/directpath.
 func (s *BlobStore) Entries(counts *ScanCounts, yield func(Entry) error) error {
+	return s.Walk(counts, yield, nil)
+}
+
+// Marked is a blob with the delete mark as a walk meets it: the entry its
+// properties give, its bytes file present or not, and the reason of the mark.
+type Marked struct {
+	Entry
+	Reason string
+}
+
+// Walk is Entries that also gives every blob with the delete mark to marked,
+// in the order of the walk; a nil marked makes it Entries. A copy of the
+// properties of a marked blob (originalLocation) is not given.
+func (s *BlobStore) Walk(counts *ScanCounts, yield func(Entry) error, marked func(Marked) error) error {
 	if counts == nil {
 		counts = &ScanCounts{}
 	}
@@ -284,7 +299,7 @@ func (s *BlobStore) Entries(counts *ScanCounts, yield func(Entry) error) error {
 				continue
 			}
 			stem := strings.TrimSuffix(name, PropertiesSuffix)
-			entry, err := s.entry(pyJoin(directory, name), rel, stem, files[stem+BytesSuffix], counts)
+			entry, err := s.entry(pyJoin(directory, name), rel, stem, files[stem+BytesSuffix], counts, marked)
 			if err != nil {
 				return err
 			}
@@ -298,7 +313,7 @@ func (s *BlobStore) Entries(counts *ScanCounts, yield func(Entry) error) error {
 	return nil
 }
 
-func (s *BlobStore) entry(propertiesPath, rel, stem string, hasBytes bool, counts *ScanCounts) (*Entry, error) {
+func (s *BlobStore) entry(propertiesPath, rel, stem string, hasBytes bool, counts *ScanCounts, marked func(Marked) error) (*Entry, error) {
 	data, err := readUpTo(propertiesPath, MaxPropertiesBytes+1)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -323,33 +338,43 @@ func (s *BlobStore) entry(propertiesPath, rel, stem string, hasBytes bool, count
 		return nil, nil
 	case props.Deleted:
 		counts.Deleted++
-		return nil, nil
+		if marked == nil {
+			return nil, nil
+		}
+		return nil, marked(Marked{Entry: entryOf(props, rel, stem), Reason: props.DeletedReason})
 	case !hasBytes:
 		counts.NoBytes++
 		return nil, nil
 	}
 	counts.Live++
-	directory := ContentDir
-	if rel != "" {
-		directory = ContentDir + "/" + rel
-	}
-	location := directory + "/" + stem + BytesSuffix
+	e := entryOf(props, rel, stem)
 	// The Python index cannot bind these values and fails the scan there.
-	if !utf8.ValidString(location) {
-		return nil, encodeError(location)
+	if !utf8.ValidString(e.Location) {
+		return nil, encodeError(e.Location)
 	}
 	if props.Overflow {
 		return nil, &Error{Class: "OverflowError", Message: "Python int too large to convert to SQLite INTEGER"}
 	}
-	return &Entry{
+	return &e, nil
+}
+
+// entryOf is the entry of the blob stem in the directory rel below content/.
+func entryOf(props *blobprops.BlobProps, rel, stem string) Entry {
+	directory := ContentDir
+	if rel != "" {
+		directory = ContentDir + "/" + rel
+	}
+	return Entry{
 		Repo:        props.Repo,
 		Path:        props.Path,
 		Size:        props.Size,
 		SHA1:        props.SHA1,
 		ContentType: props.ContentType,
 		CreatedMS:   props.CreatedMS,
-		Location:    location,
-	}, nil
+		Location:    directory + "/" + stem + BytesSuffix,
+		Uploader:    props.CreatedBy,
+		UploaderIP:  props.CreatedByIP,
+	}
 }
 
 // DirectoryStore is a plain tree <root>/<repo>/<path>. It can name a blob

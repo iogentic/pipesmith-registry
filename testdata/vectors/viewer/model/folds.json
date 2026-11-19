@@ -1,0 +1,24 @@
+{
+  "about": "Steps on the folds and pairs of the view, written by hand. Each step acts on the view of text and is followed by the visible lines expected, and where named the marked positions [line, start, end] and the columns of the guides per line. The text is scanned as kind.",
+  "kind": "xml",
+  "text": "<root>\n  <a>\n    <b>\n      x\n    </b>\n  </a>\n  <c>\n    y\n  </c>\n</root>\n",
+  "steps": [
+    {"do": "none", "visible": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "marks": [],
+     "guides": {"1": [], "2": [0], "3": [0, 2], "4": [0, 2, 4], "5": [0, 2], "6": [0], "7": [0], "8": [0, 2], "9": [0], "10": []}},
+    {"do": "toggle", "line": 2, "visible": [1, 2, 7, 8, 9, 10]},
+    {"do": "toggle", "line": 7, "visible": [1, 2, 7, 10],
+     "guides": {"1": [], "2": [0], "7": [0], "10": []}},
+    {"do": "toggle", "line": 4, "visible": [1, 2, 7, 10]},
+    {"do": "expandAll", "visible": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+    {"do": "collapseAll", "visible": [1]},
+    {"do": "toggle", "line": 1, "visible": [1, 2, 7, 10]},
+    {"do": "toggle", "line": 2, "visible": [1, 2, 3, 6, 7, 10]},
+    {"do": "expandAll", "visible": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+    {"do": "partner", "line": 3, "col": 5, "visible": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "marks": [[3, 5, 6], [5, 6, 7]]},
+    {"do": "partner", "line": 10, "col": 2, "marks": [[1, 1, 5], [10, 2, 6]]},
+    {"do": "partner", "line": 4, "col": 6, "marks": []},
+    {"do": "toggle", "line": 1, "visible": [1]},
+    {"do": "partner", "line": 1, "col": 1, "visible": [1], "marks": [[1, 1, 5]]},
+    {"do": "expandAll", "visible": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "marks": [[1, 1, 5], [10, 2, 6]]}
+  ]
+}

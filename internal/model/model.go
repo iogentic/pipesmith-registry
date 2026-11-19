@@ -4,7 +4,10 @@
 // them. The package imports nothing of this repository.
 package model
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
 // User is a local user, or an external user known through a role mapping.
 type User struct {
@@ -91,6 +94,10 @@ type LDAPServer struct {
 	GroupMemberAttribute        string `json:"groupMemberAttribute"`
 	GroupMemberFormat           string `json:"groupMemberFormat"`
 	UserMemberOfAttribute       string `json:"userMemberOfAttribute"`
+	// CAFile names a file of PEM certificates that an ldaps connection is
+	// verified against besides the system roots (decision N18 of the phase 3
+	// plan). The old product has no such field; `ldap ca` sets it.
+	CAFile string `json:"caFile,omitempty"`
 }
 
 // Anonymous is the anonymous access setting.
@@ -136,8 +143,40 @@ type Snapshot struct {
 	LDAP         []LDAPServer
 	Realms       []string // active realm ids in their order
 	Anonymous    Anonymous
+	// DefaultRole is the role the realm DefaultRole gives every signed in
+	// subject while it is in Realms; empty for none.
+	DefaultRole  string
 	BlobStores   []BlobStore
 	Repositories []Repository
+}
+
+// Token is a token this server issued, as a row of the tokens table holds
+// it: the public half in clear, the secret half only as its SHA-256
+// (decisions N9 and N10 of the phase 3 plan). Docker bearer tokens live in
+// memory and are no rows (N11).
+type Token struct {
+	Public   string   // the public half, the key of the row
+	Kind     string   // "npm" or "user"
+	UserID   string   // the user the token signs in
+	Source   string   // the source of that user: "default" or "LDAP"
+	Digest   [32]byte // SHA-256 of the secret half
+	Created  time.Time
+	LastUsed time.Time // zero while the token was never used
+}
+
+// String names the token by its public half and owner, without the digest.
+func (t Token) String() string {
+	return "token " + t.Kind + " " + t.Public + " of " + t.UserID + " (" + t.Source + ")"
+}
+
+// GoString is String.
+func (t Token) GoString() string { return t.String() }
+
+// IssuedToken is a token in its wire form, the one time it is shown.
+type IssuedToken struct {
+	Text      string
+	ExpiresIn int // seconds; 0 for a token that lives until it is revoked
+	IssuedAt  time.Time
 }
 
 // Subject is a signed in caller.
@@ -169,6 +208,31 @@ type Security interface {
 	SessionHandler() http.Handler
 	// Snapshot is the state the subjects were resolved against.
 	Snapshot() *Snapshot
+	// DockerAccess is how a Docker repository asks for credentials and
+	// whether it may be pulled without any (decision N12 of the phase 3
+	// plan).
+	DockerAccess(repository string) DockerAccess
+	// DockerToken answers the token route of the Docker flow below a
+	// repository: a bearer token for the Basic credentials of r, or for the
+	// anonymous subject when the repository may be pulled anonymously. The
+	// scope a client asks for decides nothing; the rights are checked at
+	// each request.
+	DockerToken(r *http.Request, repository string) (IssuedToken, error)
+	// NpmLogin signs a user name and password in and issues an npm token.
+	NpmLogin(r *http.Request, user, password string) (IssuedToken, error)
+	// RevokeToken revokes a token the subject holds; ErrNoToken when it holds
+	// no token of that text.
+	RevokeToken(s *Subject, token string) error
+}
+
+// DockerAccess is the sign in a Docker repository asks for (decision N12 of
+// the phase 3 plan).
+type DockerAccess struct {
+	// Bearer means the challenge names the token route; else it is Basic.
+	Bearer bool
+	// AnonymousPull means the realm of Docker tokens, anonymous access and
+	// the attribute of the repository all let a pull in without credentials.
+	AnonymousPull bool
 }
 
 // Error is an error of Security with the status the server answers.
@@ -186,4 +250,10 @@ var (
 	// ErrThrottled is returned while sign in is slowed down; the caller
 	// copies RetryAfter from the error it gets, which may be a new *Error.
 	ErrThrottled = &Error{Status: http.StatusTooManyRequests, Message: "too many failed sign ins"}
+	// ErrOldToken is a token in the shape of the server this one replaces,
+	// whose tokens are not taken over (decision N9 of the phase 3 plan).
+	ErrOldToken = &Error{Status: http.StatusUnauthorized,
+		Message: "this token comes from the server this one replaces and is not accepted: this server issues tokens new, sign in again"}
+	// ErrNoToken is a token to revoke that the subject does not hold.
+	ErrNoToken = &Error{Status: http.StatusNotFound, Message: "no such token"}
 )

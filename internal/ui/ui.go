@@ -4,7 +4,8 @@
 // of them were changed here on 2026-11-18, js/app.js and js/preview.js, and
 // LOCAL_CHANGES.md gives the reason. index.html is served at "/", the other
 // files below /css/, /js/ and /assets/, with the headers of the Serving
-// section of the interface README. Nothing else is served from here.
+// section of the interface README. NewManual in manual.go serves the manual
+// of docs/ below /manual/ in the same way.
 package ui
 
 import (
@@ -40,11 +41,13 @@ type file struct {
 	data        []byte
 	contentType string
 	etag        string
+	disposition string // Content-Disposition, set for a download only
 }
 
 // Handler serves the embedded files. It is safe for concurrent use.
 type Handler struct {
-	byPath map[string]file // URL path -> file
+	byPath   map[string]file // URL path -> file
+	redirect string          // a path answered with a redirect to itself plus "/"; empty for none
 }
 
 // New reads the embedded files once. A file of an extension without a
@@ -91,7 +94,7 @@ func served(target string) bool {
 // Has reports whether path is the page or one of its files.
 func (h *Handler) Has(path string) bool {
 	_, ok := h.byPath[path]
-	return ok
+	return ok || (h.redirect != "" && path == h.redirect)
 }
 
 // ServeHTTP is Serve for the path of the request URL.
@@ -103,7 +106,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // matching If-None-Match, 405 for another method and 404 for another path.
 func (h *Handler) Serve(w http.ResponseWriter, r *http.Request, path string) {
 	f, ok := h.byPath[path]
-	if !ok {
+	redirect := !ok && h.redirect != "" && path == h.redirect
+	if !ok && !redirect {
 		http.NotFound(w, r)
 		return
 	}
@@ -118,12 +122,21 @@ func (h *Handler) Serve(w http.ResponseWriter, r *http.Request, path string) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+	if redirect {
+		header.Set("Location", path[strings.LastIndex(path, "/")+1:]+"/") // relative, so a prefix in front survives
+		header.Set("Content-Length", "0")
+		w.WriteHeader(http.StatusPermanentRedirect)
+		return
+	}
 	header.Set("ETag", f.etag)
 	if matches(r.Header.Get("If-None-Match"), f.etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
 	header.Set("Content-Type", f.contentType)
+	if f.disposition != "" {
+		header.Set("Content-Disposition", f.disposition)
+	}
 	header.Set("Content-Length", strconv.Itoa(len(f.data)))
 	w.WriteHeader(http.StatusOK)
 	if r.Method == http.MethodGet {

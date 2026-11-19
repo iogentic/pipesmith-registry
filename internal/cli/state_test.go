@@ -117,7 +117,7 @@ func TestImportAndStateShow(t *testing.T) {
 	if strings.Contains(text, "$shiro1$") || strings.Contains(text, "SHA-512") || strings.Contains(text, `"passwordHash"`) {
 		t.Fatal("state show prints a hash")
 	}
-	if s.Schema != 1 || s.UsersWithPasswordHash != 4 || len(s.Users) != 4 || s.Users[0].ID != "admin" ||
+	if s.Schema != state.SchemaVersion || s.UsersWithPasswordHash != 4 || len(s.Users) != 4 || s.Users[0].ID != "admin" ||
 		s.Users[0].Roles[0] != "nx-admin" || len(s.Repositories) != 6 || s.Counts["roles"] != 5 || s.Anonymous.Enabled {
 		t.Fatalf("state show: %+v", s)
 	}

@@ -123,7 +123,7 @@
   --control-height: 36px;
   --nav-width: 236px;
   --top-height: 56px;
-  --content-max: 1180px;
+  --content-max: none;
 
   --z-top: 20;
   --z-drawer: 40;

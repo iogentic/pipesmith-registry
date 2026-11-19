@@ -1,0 +1,13 @@
+{
+  "tokens": [
+    [[0, 6, "key"], [6, 7, "punct"], [7, 16, "string"]],
+    [[0, 5, "key"], [5, 6, "punct"], [6, 15, "string"]],
+    [[0, 5, "key"], [6, 17, "string"]],
+    [[0, 6, "key"], [7, 8, "punct"], [9, 19, "string"]],
+    [[0, 12, "key"], [12, 13, "punct"], [13, 23, "string"]],
+    [[0, 5, "key"], [5, 6, "punct"]],
+    [[0, 6, "key"], [7, 8, "punct"], [9, 18, "string"]]
+  ],
+  "folds": [],
+  "pairs": []
+}

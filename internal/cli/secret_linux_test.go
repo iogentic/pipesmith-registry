@@ -219,13 +219,13 @@ func TestHelperPrompt(t *testing.T) {
 	os.Exit(0)
 }
 
-// Ctrl-C or SIGTERM during the prompt restore the terminal and end the
-// process by that signal.
+// Ctrl-C, SIGTERM, SIGHUP or SIGQUIT during the prompt restore the terminal
+// and end the process by that signal (review N9 for SIGHUP and SIGQUIT).
 func TestPromptRestoresTheTerminalWhenInterrupted(t *testing.T) {
 	for _, c := range []struct {
 		name string
 		sig  syscall.Signal
-	}{{"ctrl-c", syscall.SIGINT}, {"sigterm", syscall.SIGTERM}} {
+	}{{"ctrl-c", syscall.SIGINT}, {"sigterm", syscall.SIGTERM}, {"sighup", syscall.SIGHUP}, {"sigquit", syscall.SIGQUIT}} {
 		t.Run(c.name, func(t *testing.T) {
 			master, slave := openPTY(t)
 			_, _ = drain(master)
@@ -285,7 +285,11 @@ func TestPromptRestoresTheTerminalWhenInterrupted(t *testing.T) {
 			if !errors.As(err, &exit) {
 				t.Fatalf("the child ended with %v, stdout %q", err, stdout.String())
 			}
-			if ws := exit.Sys().(syscall.WaitStatus); !ws.Signaled() || ws.Signal() != c.sig {
+			// a Go program ends on SIGQUIT with a dump of its goroutines and
+			// exit status 2, with the prompt as without it
+			ws := exit.Sys().(syscall.WaitStatus)
+			byQuit := c.sig == syscall.SIGQUIT && ws.Exited() && ws.ExitStatus() == 2
+			if !byQuit && (!ws.Signaled() || ws.Signal() != c.sig) {
 				t.Errorf("the child did not end by %v: signaled %v by %v, exit status %d", c.sig, ws.Signaled(), ws.Signal(), ws.ExitStatus())
 			}
 			if !echoOn(t, slave) {

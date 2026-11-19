@@ -127,27 +127,32 @@ func wantHelp(v *cliVectors) string {
 		"The data directory is PIPESMITH_REGISTRY_DATA, else ARTIFACT_REPOSITORY_DATA, else <project root>/data.\n", 1)
 	text = strings.Replace(text, "ARTIFACT_REPOSITORY_PORT overrides the port of the configuration.\n",
 		"PIPESMITH_REGISTRY_PORT, else ARTIFACT_REPOSITORY_PORT, overrides the port of the configuration.\n", 1)
-	// The commands of the import are new in this product; the rest of the
+	// The commands of the import, the identity commands, the maven command
+	// and the commands of the update are new in this product; the rest of the
 	// help is that of the reference.
-	return strings.Replace(text, "\n\nSettings\n", "\n\n"+stateHelpBody+"Settings\n", 1)
+	return strings.Replace(text, "\n\nSettings\n", "\n\n"+stateHelpBody+identityHelpBody+mavenHelpBody+updateHelpBody+"Settings\n", 1)
 }
 
 // withStateCommands is a usage message of the reference with the commands
-// of the import in the list of choices.
+// of the import, the identity commands and the maven command in the list
+// of choices.
 func withStateCommands(text string) string {
-	return strings.Replace(text, "import-settings, config", "import-settings, import, import-state, state, config", 1)
+	return strings.Replace(text, "import-settings, config",
+		"import-settings, import, import-state, state, user, anonymous, realms, ldap, token, maven, update, rollback, schema, config", 1)
 }
 
 // withServeFlag is a text of the reference with the flags of serve that name
-// the host names of a network bind and that ask
-// for LDAP bind passwords, as argparse 3.12.13 prints it.
+// the host names of a network bind, that ask for LDAP bind passwords, that
+// name the files of the TLS listener and that switch writes on, as argparse
+// 3.12.13 prints it.
 func withServeFlag(text string) string {
 	text = strings.Replace(text, "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n",
 		"usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n                                [--server-names SERVER_NAMES]\n"+
-			"                                [--ask-ldap-password]\n", 1)
+			"                                [--ask-ldap-password] [--tls-cert FILE]\n"+
+			"                                [--tls-key FILE] [--writes]\n", 1)
 	return strings.Replace(text, "  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
 		"  -h, --help            show this help message and exit\n  --port PORT\n  --bind BIND\n  --server-names SERVER_NAMES\n"+
-			"  --ask-ldap-password\n", 1)
+			"  --ask-ldap-password\n  --tls-cert FILE\n  --tls-key FILE\n  --writes\n", 1)
 }
 
 func TestHelpTexts(t *testing.T) {
@@ -194,10 +199,14 @@ func TestParseVectors(t *testing.T) {
 			}
 			want := c.Values
 			if ns.run == "cmd_serve" {
-				// The flag of serve for LDAP bind passwords is new in this product.
+				// The flags of serve for host names, LDAP bind passwords, TLS and
+				// writes are new in this product.
 				want = maps.Clone(c.Values)
 				want["ask_ldap_password"] = json.RawMessage("false")
 				want["server_names"] = json.RawMessage("null")
+				want["tls_cert"] = json.RawMessage("null")
+				want["tls_key"] = json.RawMessage("null")
+				want["writes"] = json.RawMessage("false")
 			}
 			if len(ns.values) != len(want) {
 				t.Errorf("%q: values %v, want %v", c.Argv, ns.values, want)
@@ -305,7 +314,7 @@ func TestOutputHelperVectors(t *testing.T) {
 func TestUsageErrorsAndVersion(t *testing.T) {
 	dataDir(t)
 	code, out, errOut := run(t, "frobnicate")
-	if code != 2 || out != "" || errOut != "error: pipesmith-registry: argument command: invalid choice: 'frobnicate' (choose from serve, store, scan, repos, docker-check, import-settings, import, import-state, state, config, version)\nsee: pipesmith-registry help\n" {
+	if code != 2 || out != "" || errOut != "error: pipesmith-registry: argument command: invalid choice: 'frobnicate' (choose from serve, store, scan, repos, docker-check, import-settings, import, import-state, state, user, anonymous, realms, ldap, token, maven, update, rollback, schema, config, version)\nsee: pipesmith-registry help\n" {
 		t.Fatalf("%d %q %q", code, out, errOut)
 	}
 	code, out, _ = run(t, "version")
@@ -697,8 +706,7 @@ func TestServeRefusals(t *testing.T) {
 		args []string
 		text string
 	}{
-		{[]string{"serve", "--port", "14556", "--bind", "0.0.0.0"},
-			"error: bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed until users are imported (import), then with --server-names NAME[,NAME]\n"},
+		{[]string{"serve", "--port", "14556", "--bind", "0.0.0.0"}, nobodySignsIn},
 		{[]string{"serve", "--port", "0"}, "error: port 0 is outside 1 to 65535\n"},
 		{[]string{"serve", "--port", "99999999999999999999"}, "error: port 99999999999999999999 is outside 1 to 65535\n"},
 		{[]string{"serve", "--port", "8791"}, "error: port 8791 is reserved on this machine; use --port N\n"},

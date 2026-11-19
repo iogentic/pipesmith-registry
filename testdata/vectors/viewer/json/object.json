@@ -1,0 +1,9 @@
+{
+  "name": "demo-lib",
+  "version": "1.0.0",
+  "private": false,
+  "scripts": {
+    "test": "node test.js"
+  },
+  "main": null
+}

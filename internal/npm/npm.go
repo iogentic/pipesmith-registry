@@ -315,8 +315,9 @@ type Tarball struct {
 func DocumentFromTarballs(name string, tarballs []Tarball) (*pyjson.Object, error) {
 	entries := pyjson.NewObject()
 	created := map[string]int64{}
+	budget := &inflateBudget{left: maxDocumentInflated}
 	for _, tb := range tarballs {
-		manifest, err := PackageManifest(tb.Data)
+		manifest, err := manifestWithin(tb.Data, budget)
 		if err != nil {
 			return nil, err
 		}

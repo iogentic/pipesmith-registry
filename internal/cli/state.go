@@ -230,6 +230,7 @@ func (c *command) stateShow() (int, error) {
 		}
 		snap.Users[i].PasswordHash = ""
 	}
+	publicAddresses(snap)
 	doc := shownState{Schema: state.SchemaVersion, Path: state.Path(cfg.DataDir), Counts: state.Counts(snap),
 		UsersWithPasswordHash: hashes, Users: snap.Users, RoleMappings: snap.RoleMappings, Roles: snap.Roles,
 		Privileges: snap.Privileges, LDAP: snap.LDAP, Realms: snap.Realms, Anonymous: snap.Anonymous,

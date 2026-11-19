@@ -186,9 +186,12 @@ func (s *Server) npm(w http.ResponseWriter, req *request, st *state, repo repos.
 	if npmDash(t) {
 		if t.path == npm.TarballDirectory+"/ping" && !t.directory {
 			npmJSON(w, req, http.StatusOK, []byte("{}"))
-		} else {
-			npmNotFound(w, req)
+			return true, nil
 		}
+		if name, ok := npm.DistTagsPath(t.path); ok && !t.directory && s.writes.writer != nil {
+			return true, s.npmDistTags(w, req, st, members, name)
+		}
+		npmNotFound(w, req)
 		return true, nil
 	}
 	if t.directory {

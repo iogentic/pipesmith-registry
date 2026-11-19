@@ -1,0 +1,7 @@
+{
+  "escaped": "a \"quoted\" word and a \\ backslash",
+  "unicode": "café 𝄞",
+  "empty": "",
+  "key like": ["not a key", "x"],
+  "spaced key"   : "value"
+}

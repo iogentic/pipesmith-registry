@@ -44,7 +44,36 @@ var (
 	ErrUnavailable = errors.New("ldapauth: directory not available")
 	// ErrConfiguration is wrapped by every connection setting New refuses.
 	ErrConfiguration = errors.New("ldapauth: connection setting refused")
+	// ErrNoEntry is a user name of no single entry, the refusal of Lookup:
+	// none, more than one, or a name outside the bounds of a user name.
+	ErrNoEntry = errors.New("ldapauth: no single entry of the user name")
+	// ErrBusy is wrapped by a sign in the connection had no place for:
+	// MaxChecksInFlight sign ins ran against it for the whole wait, which
+	// ends at the connection timeout or with the context of the sign in, or
+	// MaxWaiting sign ins waited already, so it did not wait. It opened no
+	// connection and asked nothing.
+	ErrBusy = errors.New("ldapauth: every place for a sign in of the connection is taken")
 )
+
+// MaxChecksInFlight bounds the sign ins that run against one connection at
+// a time (finding A2 of the security assessment): without it every sign in
+// with an unknown name opened a connection of its own. Parallel sign ins of
+// one name and password share one check and repeated Basic credentials come
+// from the cache of the identity code, so the checks in flight at one moment
+// come from distinct accounts that sign in together, as after a start. A
+// burst of more than 16 such accounts waits for places in the order of
+// arrival (places), and a flood of unknown names keeps 16 connections per
+// directory open.
+const MaxChecksInFlight = 16
+
+// MaxWaiting bounds the sign ins that wait for a place of one connection
+// (finding T2 of review 3), four for each place. Every sign in that waits
+// holds the reservation of its pair in the limiter of the identity code, so
+// with 16 sign ins in flight and 64 waiting, the requests at one directory
+// hold at most 80 pairs of its table per connection. 64 lets four times the
+// places of distinct accounts that sign in together wait their turn; a
+// flood of unknown names beyond them gets 429 at once.
+const MaxWaiting = 4 * MaxChecksInFlight
 
 // VariablePrefix starts the name of the environment variable that holds the
 // bind password of one connection (T12).
@@ -106,7 +135,8 @@ func withClock(now func() time.Time) Option {
 }
 
 // Directory is one directory connection. Login is safe for concurrent use;
-// each sign in opens its own connection.
+// each sign in opens its own connection, at most MaxChecksInFlight at a
+// time, and at most MaxWaiting others wait for a place.
 type Directory struct {
 	server       model.LDAPServer
 	bindPassword string
@@ -120,6 +150,7 @@ type Directory struct {
 	groupScope   int
 	dynamic      bool
 	breaker      *breaker
+	places       *places
 }
 
 // New checks the settings of one connection and builds its directory. The
@@ -240,6 +271,7 @@ func New(server model.LDAPServer, bindPassword string, opts ...Option) (*Directo
 
 	d.timeout = seconds(server.ConnectionTimeoutSeconds, defaultTimeout)
 	d.breaker = newBreaker(max(server.MaxIncidentsCount, 0), seconds(server.ConnectionRetryDelaySeconds, defaultRetryDelay), o.now)
+	d.places = newPlaces(d.timeout)
 	return d, nil
 }
 
@@ -271,8 +303,11 @@ func (d Directory) Format(f fmt.State, _ rune) { _, _ = io.WriteString(f, d.Stri
 // active, the id in the spelling of the directory, the real name as first
 // name and no roles: the caller maps groups and role mappings to roles. A
 // refused pair gives ErrInvalidCredentials, a failure of the directory an
-// error that wraps ErrUnavailable. An empty password is refused before any
-// connection (N17).
+// error that wraps ErrUnavailable. A sign in beyond MaxChecksInFlight waits
+// for a place, at most the connection timeout and while ctx lasts; one that
+// gets none, and one that finds MaxWaiting sign ins waiting already, gives
+// an error that wraps ErrBusy and counts no incident. An empty password is
+// refused before any connection (N17).
 func (d *Directory) Login(ctx context.Context, username, password string) (model.User, []string, error) {
 	if username == "" || len(username) > maxUsernameBytes || !utf8.ValidString(username) ||
 		password == "" || len(password) > maxPasswordBytes {
@@ -285,6 +320,11 @@ func (d *Directory) Login(ctx context.Context, username, password string) (model
 		return model.User{}, nil, fmt.Errorf("%w: connection %q rests after %d failures in a row",
 			ErrUnavailable, d.server.Name, d.breaker.failures())
 	}
+	back, err := d.places.take(ctx)
+	if err != nil {
+		return model.User{}, nil, fmt.Errorf("%w: connection %q runs %d sign ins: %w", ErrBusy, d.server.Name, MaxChecksInFlight, err)
+	}
+	defer back()
 	user, groups, err := d.login(ctx, username, password)
 	switch {
 	case err == nil || err == ErrInvalidCredentials:
@@ -300,21 +340,36 @@ func (d *Directory) Login(ctx context.Context, username, password string) (model
 	return user, groups, nil
 }
 
-func (d *Directory) login(ctx context.Context, username, password string) (model.User, []string, error) {
+// open connects and binds as the service; done closes the connection. The
+// stop of the request closes conn from a goroutine of its own, so conn is a
+// variable that no return writes: a return with an error after the stop
+// began leaves it to close the connection, not nil.
+func (d *Directory) open(ctx context.Context) (*ldap.Conn, func(), error) {
 	conn, err := d.dial(ctx)
 	if err != nil {
-		return model.User{}, nil, d.unavailable(ctx, "connect", err)
+		return nil, nil, d.unavailable(ctx, "connect", err)
 	}
-	defer func() { _ = conn.Close() }()
 	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
-	defer stop()
+	done := func() {
+		stop()
+		_ = conn.Close()
+	}
 	conn.SetTimeout(d.timeout)
-
 	if d.scheme == schemeSimple {
 		if err := conn.Bind(d.server.AuthUsername, d.bindPassword); err != nil {
-			return model.User{}, nil, d.unavailable(ctx, "service bind", err)
+			done()
+			return nil, nil, d.unavailable(ctx, "service bind", err)
 		}
 	}
+	return conn, done, nil
+}
+
+func (d *Directory) login(ctx context.Context, username, password string) (model.User, []string, error) {
+	conn, done, err := d.open(ctx)
+	if err != nil {
+		return model.User{}, nil, err
+	}
+	defer done()
 	entry, err := d.findUser(conn, username)
 	if err == ErrInvalidCredentials {
 		return model.User{}, nil, err
@@ -328,6 +383,11 @@ func (d *Directory) login(ctx context.Context, username, password string) (model
 		}
 		return model.User{}, nil, d.unavailable(ctx, "user bind", err)
 	}
+	return d.userOf(ctx, conn, entry, username)
+}
+
+// userOf is the user of an entry and the names of its groups.
+func (d *Directory) userOf(ctx context.Context, conn *ldap.Conn, entry *ldap.Entry, username string) (model.User, []string, error) {
 	id := pickID(entry.GetEqualFoldAttributeValues(d.server.UserIDAttribute), username)
 	groups, err := d.groups(conn, entry, id)
 	if err != nil {
@@ -341,6 +401,86 @@ func (d *Directory) login(ctx context.Context, username, password string) (model
 		Source:    "LDAP",
 		Roles:     []string{},
 	}, groups, nil
+}
+
+// Lookup finds the entry of a user name under the service bind, the search
+// of Login before its bind, and returns the user with the names of its
+// groups as Login does. It binds as no user and checks no password: the user
+// of a token is found this way. A name of no single entry, which covers one
+// the user filter of the connection leaves out, gives ErrNoEntry; a failure
+// of the directory an error that wraps ErrUnavailable. It counts incidents
+// as Login does.
+func (d *Directory) Lookup(ctx context.Context, username string) (model.User, []string, error) {
+	if username == "" || len(username) > maxUsernameBytes || !utf8.ValidString(username) {
+		return model.User{}, nil, ErrNoEntry
+	}
+	if err := ctx.Err(); err != nil {
+		return model.User{}, nil, d.unavailable(ctx, "lookup", err)
+	}
+	if !d.breaker.allow() {
+		return model.User{}, nil, fmt.Errorf("%w: connection %q rests after %d failures in a row",
+			ErrUnavailable, d.server.Name, d.breaker.failures())
+	}
+	user, groups, err := d.lookup(ctx, username)
+	switch {
+	case err == nil || err == ErrNoEntry:
+		d.breaker.success()
+	case ctx.Err() != nil:
+	default:
+		d.breaker.failure()
+	}
+	if err != nil {
+		return model.User{}, nil, err
+	}
+	return user, groups, nil
+}
+
+func (d *Directory) lookup(ctx context.Context, username string) (model.User, []string, error) {
+	conn, done, err := d.open(ctx)
+	if err != nil {
+		return model.User{}, nil, err
+	}
+	defer done()
+	entry, err := d.findUser(conn, username)
+	if err == ErrInvalidCredentials {
+		return model.User{}, nil, ErrNoEntry
+	}
+	if err != nil {
+		return model.User{}, nil, d.unavailable(ctx, "user search", err)
+	}
+	return d.userOf(ctx, conn, entry, username)
+}
+
+// Check connects and binds as a sign in does, then reads the entry of the
+// search base, for `ldap check`. It counts no incident. The text names what
+// passed; an error wraps ErrUnavailable and names the step that failed.
+func (d *Directory) Check(ctx context.Context) (string, error) {
+	conn, err := d.dial(ctx)
+	if err != nil {
+		return "", d.unavailable(ctx, "connect", err)
+	}
+	defer func() { _ = conn.Close() }()
+	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
+	defer stop()
+	conn.SetTimeout(d.timeout)
+	done := []string{"ldap://" + d.addr}
+	if d.tlsConfig != nil {
+		done = []string{"ldaps://" + d.addr, "certificate verified"}
+	}
+	if d.scheme == schemeSimple {
+		if err := conn.Bind(d.server.AuthUsername, d.bindPassword); err != nil {
+			return "", d.unavailable(ctx, "service bind", err)
+		}
+		done = append(done, "service bind as "+d.server.AuthUsername)
+	} else {
+		done = append(done, "no service bind (scheme NONE)")
+	}
+	base := strings.TrimSpace(d.server.SearchBase)
+	if _, err := conn.Search(ldap.NewSearchRequest(base, ldap.ScopeBaseObject, ldap.NeverDerefAliases, 1, d.timeLimit(), false,
+		"(objectClass=*)", []string{"1.1"}, nil)); err != nil {
+		return "", d.unavailable(ctx, "search base", err)
+	}
+	return strings.Join(append(done, "search base "+base+" found"), ", "), nil
 }
 
 func (d *Directory) dial(ctx context.Context) (*ldap.Conn, error) {
@@ -393,8 +533,8 @@ func pickEntry(entries []*ldap.Entry) (*ldap.Entry, error) {
 	return entries[0], nil
 }
 
-// groups gives the group names of a signed in entry. Static groups are read
-// as the service again, since the user bind changed who the connection is.
+// groups gives the group names of an entry. Static groups are read as the
+// service again, since a user bind changed who the connection is.
 func (d *Directory) groups(conn *ldap.Conn, entry *ldap.Entry, id string) ([]string, error) {
 	if !d.server.LDAPGroupsAsRoles {
 		return []string{}, nil

@@ -1,0 +1,91 @@
+{
+ "family": "administrators",
+ "note": "Ruling R7 (decision A10): a user holds the full permission set when its roles expand, through internal/authz, to a permission that implies nexus:*, whatever role carries it; it counts when its status is active and its source is default. A change is refused with 409 when the snapshot before it holds at least one such user and the snapshot after it holds none. Each kind of change (op) has a case as the last such user, refused, and one with a second such user, allowed; the snapshots none and locked-only hold no such user before, so nothing is protected. administrators lists the users that count in each snapshot.",
+ "snapshots": {
+  "one": {
+   "users": [{"userId": "demo-admin", "status": "active", "source": "default", "roles": ["nx-admin"]},
+             {"userId": "demo-reader", "status": "active", "source": "default", "roles": ["demo-read"]}],
+   "roles": [{"id": "demo-read", "source": "default", "privileges": ["nx-search-read"], "roles": []}]},
+  "two": {
+   "users": [{"userId": "demo-admin", "status": "active", "source": "default", "roles": ["nx-admin"]},
+             {"userId": "demo-admin-2", "status": "active", "source": "default", "roles": ["nx-admin"]},
+             {"userId": "demo-reader", "status": "active", "source": "default", "roles": ["demo-read"]}],
+   "roles": [{"id": "demo-read", "source": "default", "privileges": ["nx-search-read"], "roles": []}]},
+  "custom": {
+   "users": [{"userId": "demo-ops-admin", "status": "active", "source": "default", "roles": ["demo-full"]}],
+   "roles": [{"id": "demo-full", "source": "default", "privileges": ["nx-all"], "roles": []}]},
+  "custom-two": {
+   "users": [{"userId": "demo-ops-admin", "status": "active", "source": "default", "roles": ["demo-full"]},
+             {"userId": "demo-admin", "status": "active", "source": "default", "roles": ["nx-admin"]}],
+   "roles": [{"id": "demo-full", "source": "default", "privileges": ["nx-all"], "roles": []}]},
+  "wildcard": {
+   "users": [{"userId": "demo-wild", "status": "active", "source": "default", "roles": ["demo-wild-role"]}],
+   "roles": [{"id": "demo-wild-role", "source": "default", "privileges": ["demo-wild-all"], "roles": []}],
+   "privileges": [{"name": "demo-wild-all", "type": "wildcard", "properties": {"pattern": "nexus:*"}}]},
+  "application": {
+   "users": [{"userId": "demo-app", "status": "active", "source": "default", "roles": ["demo-app-role"]}],
+   "roles": [{"id": "demo-app-role", "source": "default", "privileges": ["demo-app-all"], "roles": []}],
+   "privileges": [{"name": "demo-app-all", "type": "application", "properties": {"domain": "*", "actions": "*"}}]},
+  "nested": {
+   "users": [{"userId": "demo-nested", "status": "active", "source": "default", "roles": ["demo-outer"]}],
+   "roles": [{"id": "demo-outer", "source": "default", "privileges": [], "roles": ["demo-inner"]},
+             {"id": "demo-inner", "source": "default", "privileges": ["nx-all"], "roles": []}]},
+  "partial": {
+   "users": [{"userId": "demo-admin", "status": "active", "source": "default", "roles": ["nx-admin"]},
+             {"userId": "demo-repo-admin", "status": "active", "source": "default", "roles": ["demo-repo-all"]}],
+   "roles": [{"id": "demo-repo-all", "source": "default", "privileges": ["demo-repo-wild"], "roles": []}],
+   "privileges": [{"name": "demo-repo-wild", "type": "wildcard", "properties": {"pattern": "nexus:repository-admin:*"}}]},
+  "changepassword": {
+   "users": [{"userId": "demo-admin", "status": "active", "source": "default", "roles": ["nx-admin"]},
+             {"userId": "demo-admin-new", "status": "changepassword", "source": "default", "roles": ["nx-admin"]}]},
+  "directory": {
+   "users": [{"userId": "demo-admin", "status": "active", "source": "default", "roles": ["nx-admin"]},
+             {"userId": "demo-directory-admin", "status": "active", "source": "LDAP", "roles": ["nx-admin"]}]},
+  "none": {
+   "users": [{"userId": "demo-reader", "status": "active", "source": "default", "roles": ["demo-read"]}],
+   "roles": [{"id": "demo-read", "source": "default", "privileges": ["nx-search-read"], "roles": []}]},
+  "locked-only": {
+   "users": [{"userId": "demo-admin", "status": "locked", "source": "default", "roles": ["nx-admin"]}]}
+ },
+ "administrators": {
+  "one": ["demo-admin"], "two": ["demo-admin", "demo-admin-2"], "custom": ["demo-ops-admin"],
+  "custom-two": ["demo-admin", "demo-ops-admin"], "wildcard": ["demo-wild"], "application": ["demo-app"],
+  "nested": ["demo-nested"], "partial": ["demo-admin"], "changepassword": ["demo-admin"],
+  "directory": ["demo-admin"], "none": [], "locked-only": []
+ },
+ "cases": [
+  {"row": "R7", "snapshot": "one", "change": {"op": "delete-user", "user": "demo-admin"},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-admin"]}]},
+  {"row": "R7", "snapshot": "two", "change": {"op": "delete-user", "user": "demo-admin"}, "refusals": []},
+  {"row": "R7", "snapshot": "one", "change": {"op": "user-status", "user": "demo-admin", "status": "disabled"},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-admin"]}]},
+  {"row": "R7", "snapshot": "one", "change": {"op": "user-status", "user": "demo-admin", "status": "changepassword"},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-admin"]}]},
+  {"row": "R7", "snapshot": "two", "change": {"op": "user-status", "user": "demo-admin", "status": "locked"}, "refusals": []},
+  {"row": "R7", "snapshot": "one", "change": {"op": "user-roles", "user": "demo-admin", "roles": ["demo-read"]},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-admin"]}]},
+  {"row": "R7", "snapshot": "two", "change": {"op": "user-roles", "user": "demo-admin", "roles": []}, "refusals": []},
+  {"row": "R7", "snapshot": "custom", "change": {"op": "role-save", "role": {"id": "demo-full", "source": "default", "privileges": ["nx-search-read"], "roles": []}},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-ops-admin"]}]},
+  {"row": "R7", "snapshot": "custom-two", "change": {"op": "role-save", "role": {"id": "demo-full", "source": "default", "privileges": ["nx-search-read"], "roles": []}},
+   "refusals": []},
+  {"row": "R7", "snapshot": "custom", "change": {"op": "role-delete", "id": "demo-full"},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-ops-admin"]}]},
+  {"row": "R7", "snapshot": "custom-two", "change": {"op": "role-delete", "id": "demo-full"}, "refusals": []},
+  {"row": "R7", "snapshot": "wildcard", "change": {"op": "delete-user", "user": "demo-wild"},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-wild"]}]},
+  {"row": "R7", "snapshot": "application", "change": {"op": "user-roles", "user": "demo-app", "roles": []},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-app"]}]},
+  {"row": "R7", "snapshot": "nested", "change": {"op": "role-save", "role": {"id": "demo-inner", "source": "default", "privileges": [], "roles": []}},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-nested"]}]},
+  {"row": "R7", "snapshot": "partial", "change": {"op": "delete-user", "user": "demo-admin"},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-admin"]}]},
+  {"row": "R7", "snapshot": "changepassword", "change": {"op": "delete-user", "user": "demo-admin"},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-admin"]}]},
+  {"row": "R7", "snapshot": "directory", "change": {"op": "user-status", "user": "demo-admin", "status": "disabled"},
+   "refusals": [{"code": "last-administrator", "status": 409, "field": "", "names": ["demo-admin"]}]},
+  {"row": "R7", "snapshot": "none", "change": {"op": "delete-user", "user": "demo-reader"}, "refusals": []},
+  {"row": "R7", "snapshot": "none", "change": {"op": "user-roles", "user": "demo-reader", "roles": ["nx-admin"]}, "refusals": []},
+  {"row": "R7", "snapshot": "locked-only", "change": {"op": "delete-user", "user": "demo-admin"}, "refusals": []}
+ ]
+}

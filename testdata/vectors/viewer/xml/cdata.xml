@@ -1,0 +1,7 @@
+<script><![CDATA[if (a < b && c > d) { run(); }]]></script>
+<block>
+  <![CDATA[
+  <not-a-tag attr="x">
+  &amp; stays text
+  ]]>
+</block>

@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/blobwrite"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -119,6 +120,13 @@ type appOptions struct {
 	security model.Security
 	// hostNames are the names the Host header may carry besides the local ones
 	hostNames []string
+	// writes switches writes on; writeOptions fix the clock and ids of the writer
+	writes       bool
+	writeOptions blobwrite.Options
+	// catalog is the catalog hook of the writes
+	catalog CatalogHook
+	// secure is Options.Secure
+	secure func(*http.Request) bool
 }
 
 func prepare(t *testing.T, base string, storeCfgs []config.StoreConfig, opts appOptions) *config.Config {
@@ -182,7 +190,8 @@ func startApp(t *testing.T, base string, cfg *config.Config, opts appOptions) *a
 		t.Fatal(err)
 	}
 	cfg.Port = main.Addr().(*net.TCPAddr).Port
-	srv, err := New(cfg, ports, Options{AccessLog: a.access, Security: opts.security, HostNames: opts.hostNames})
+	srv, err := New(cfg, ports, Options{AccessLog: a.access, Security: opts.security, HostNames: opts.hostNames,
+		Writes: opts.writes, writeOptions: opts.writeOptions, Catalog: opts.catalog, Secure: opts.secure})
 	if err != nil {
 		t.Fatal(err)
 	}

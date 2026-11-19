@@ -181,6 +181,46 @@ func TestLiveServiceBindRefused(t *testing.T) {
 	}
 }
 
+// Check of `ldap check`: the service bind and the entry of the search base,
+// over ldap and over ldaps with the CA of the test.
+func TestLiveCheck(t *testing.T) {
+	s := liveServer(t)
+	done, err := liveDirectory(t, s).Check(context.Background())
+	if err != nil || done != "ldap://"+net.JoinHostPort(s.Host, strconv.Itoa(s.Port))+", service bind as "+s.AuthUsername+
+		", search base dc=example,dc=com found" {
+		t.Fatalf("check: %q %v", done, err)
+	}
+	wrong, err := ldapauth.New(s, canaryBindPassword)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := wrong.Check(context.Background()); !errors.Is(err, ldapauth.ErrUnavailable) || !strings.Contains(err.Error(), "service bind") ||
+		strings.Contains(err.Error(), canaryBindPassword) {
+		t.Fatalf("check with a wrong bind password: %v", err)
+	}
+	missing := s
+	missing.SearchBase = "dc=missing,dc=example,dc=com"
+	if _, err := liveDirectory(t, missing).Check(context.Background()); !errors.Is(err, ldapauth.ErrUnavailable) ||
+		!strings.Contains(err.Error(), "search base") {
+		t.Fatalf("check of a search base that does not exist: %v", err)
+	}
+	tls := s
+	tls.Protocol = "ldaps"
+	tls.Host, tls.Port = addrFromEnv(t, "PSR_LDAPS_ADDR")
+	ca, err := os.ReadFile(os.Getenv("PSR_LDAP_CA"))
+	if err != nil {
+		t.Fatalf("PSR_LDAP_CA: %v", err)
+	}
+	if done, err := liveDirectory(t, tls, ldapauth.WithCACertificates(ca)).Check(context.Background()); err != nil ||
+		!strings.HasPrefix(done, "ldaps://") || !strings.Contains(done, "certificate verified") {
+		t.Fatalf("check over ldaps: %q %v", done, err)
+	}
+	if _, err := liveDirectory(t, tls).Check(context.Background()); !errors.Is(err, ldapauth.ErrUnavailable) ||
+		!strings.Contains(err.Error(), "connect") {
+		t.Fatalf("check over ldaps without the CA of the test: %v", err)
+	}
+}
+
 func TestLiveUserSubtree(t *testing.T) {
 	s := liveServer(t)
 	d := liveDirectory(t, s)

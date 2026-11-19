@@ -18,6 +18,7 @@ export const ROUTES = [
   { id: "S03", path: "/search", title: "Search", module: "./pages/browse/search.js", section: "browse", nav: "Search", perm: "nexus:search:read" },
   { id: "S04", path: "/browse", title: "Browse", module: "./pages/browse/repositories.js", section: "browse", nav: "Browse" },
   { id: "S05", path: "/browse/:repository", title: "Repository", module: "./pages/browse/tree.js", section: "browse", parent: "S04" },
+  { id: "S46", path: "/view/:repository", title: "Viewer", module: "./pages/browse/view.js", section: "browse", parent: "S04" },
   { id: "S06", path: "/upload", title: "Upload", module: "./pages/browse/upload.js", section: "browse", nav: "Upload", perm: "nexus:component:add" },
   { id: "S07", path: "/upload/:repository", title: "Upload", module: "./pages/browse/upload-form.js", section: "browse", parent: "S06", perm: "nexus:component:add" },
 

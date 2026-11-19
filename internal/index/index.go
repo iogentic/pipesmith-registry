@@ -12,6 +12,7 @@
 package index
 
 import (
+	"cmp"
 	"container/heap"
 	"context"
 	"database/sql"
@@ -25,6 +26,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/stores"
 	"modernc.org/sqlite"
@@ -48,6 +50,12 @@ const (
 
 // ErrClosed is returned by every call after Close.
 var ErrClosed = errors.New("the index is closed")
+
+// ErrBusy is the error of a bounded write (PutWithin, DeleteWithin) that did
+// not get the write lock of the index within its wait: another write held
+// it, in this process or in another one, a scan for the whole walk of its
+// store. The bounded write changed nothing.
+var ErrBusy = errors.New("another write holds the index")
 
 var schema = []string{
 	"CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value INTEGER NOT NULL) WITHOUT ROWID",
@@ -364,6 +372,42 @@ func (ix *Index) write(fn func(tx *sql.Tx) error) error {
 	return ix.transaction(fn)
 }
 
+// lockPoll is the longest pause between two tries of lockWithin.
+const lockPoll = 10 * time.Millisecond
+
+// writeWithin is write with a bound on the wait for the write lock: first
+// the lock of this process, then the lock of the file through the busy
+// timeout of the writer connection, together at most wait. After it the
+// result is ErrBusy and fn did not run, or its transaction rolled back.
+func (ix *Index) writeWithin(wait time.Duration, fn func(tx *sql.Tx) error) (err error) {
+	deadline := time.Now().Add(wait)
+	for pause := time.Millisecond; !ix.writeMu.TryLock(); pause = min(2*pause, lockPoll) {
+		left := time.Until(deadline)
+		if left <= 0 {
+			return ErrBusy
+		}
+		time.Sleep(min(pause, left))
+	}
+	defer ix.writeMu.Unlock()
+	if ix.closed.Load() {
+		return ErrClosed
+	}
+	left := max(time.Until(deadline), time.Millisecond)
+	if _, err := ix.writer.ExecContext(bg, fmt.Sprintf("PRAGMA busy_timeout = %d", left.Milliseconds())); err != nil {
+		return err
+	}
+	defer func() {
+		if _, restore := ix.writer.ExecContext(bg, fmt.Sprintf("PRAGMA busy_timeout = %d", busyTimeoutMS)); restore != nil && err == nil {
+			err = restore
+		}
+	}()
+	err = ix.transaction(fn)
+	if busy(err) {
+		return ErrBusy
+	}
+	return err
+}
+
 // transaction is BEGIN IMMEDIATE, fn, the generation bump and COMMIT; on an
 // error or a panic of fn it rolls back. The caller holds the write lock.
 func (ix *Index) transaction(fn func(tx *sql.Tx) error) (err error) {
@@ -449,12 +493,86 @@ func optional(s sql.NullString) *string {
 
 // Writes
 
+// storeTables makes the two tables of a store when they are missing.
+func storeTables(tx *sql.Tx, id int64) (files, dirs string, err error) {
+	files, dirs = filesTable(id), dirsTable(id)
+	for _, statement := range []string{
+		"CREATE TABLE IF NOT EXISTS " + files + " (" +
+			" repo TEXT NOT NULL, parent TEXT NOT NULL, name TEXT NOT NULL, location TEXT NOT NULL," +
+			" size INTEGER NOT NULL, sha1 TEXT, content_type TEXT, created_ms INTEGER NOT NULL," +
+			" PRIMARY KEY (repo, parent, name)) WITHOUT ROWID",
+		"CREATE TABLE IF NOT EXISTS " + dirs + " (" +
+			" repo TEXT NOT NULL, parent TEXT NOT NULL, name TEXT NOT NULL," +
+			" PRIMARY KEY (repo, parent, name)) WITHOUT ROWID",
+	} {
+		if _, err := tx.ExecContext(bg, statement); err != nil {
+			return "", "", err
+		}
+	}
+	return files, dirs, nil
+}
+
 // ReplaceStore replaces the rows of one store with the entries, in one
 // transaction, and returns the rows written. Entries whose path is empty,
 // starts or ends with "/" are skipped; of two entries of one path the newer
 // wins. When entries returns an error, the old rows stay and ReplaceStore
 // returns that error.
 func (ix *Index) ReplaceStore(store string, entries func(yield func(stores.Entry) error) error) (int64, error) {
+	return ix.ReplaceStoreWith(store, entries, nil)
+}
+
+// Arbiter takes part in ReplaceStoreWith for a store whose write order is
+// known beyond the creation time of its entries: the store a server writes.
+type Arbiter interface {
+	// Newer reports whether next, met later in the walk than held and of the
+	// same path, takes the row of that path.
+	Newer(held, next stores.Entry) bool
+	// Settle runs once after the last entry, in the same transaction, and
+	// may drop rows of the store.
+	Settle(rows Rows) error
+}
+
+// Rows are the rows of one store while ReplaceStoreWith writes them.
+type Rows interface {
+	// Row is the entry the row of a path holds, nil for none.
+	Row(repo, path string) (*stores.Entry, error)
+	// Drop removes the row of a path.
+	Drop(repo, path string) error
+}
+
+// storeRows are the Rows of one files table inside a transaction.
+type storeRows struct {
+	tx    *sql.Tx
+	files string
+}
+
+func (r storeRows) Row(repo, path string) (*stores.Entry, error) {
+	parent, name := split(path)
+	e := stores.Entry{Repo: repo, Path: path}
+	var sha1, contentType sql.NullString
+	err := r.tx.QueryRowContext(bg, "SELECT location, size, sha1, content_type, created_ms FROM "+r.files+ // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
+		" WHERE repo = ? AND parent = ? AND name = ?", repo, parent, name).Scan(&e.Location, &e.Size, &sha1, &contentType, &e.CreatedMS)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	e.SHA1, e.ContentType = optional(sha1), optional(contentType)
+	return &e, nil
+}
+
+func (r storeRows) Drop(repo, path string) error {
+	parent, name := split(path)
+	_, err := r.tx.ExecContext(bg, "DELETE FROM "+r.files+" WHERE repo = ? AND parent = ? AND name = ?", repo, parent, name) // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
+	return err
+}
+
+// ReplaceStoreWith is ReplaceStore with an arbiter: of two entries of one
+// path the arbiter decides which takes the row, and after the last entry it
+// may drop rows, before the directories and counts are written from the rows
+// that stay. A nil arbiter is ReplaceStore.
+func (ix *Index) ReplaceStoreWith(store string, entries func(yield func(stores.Entry) error) error, arbiter Arbiter) (int64, error) {
 	var written int64
 	err := ix.write(func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(bg, fmt.Sprintf("PRAGMA cache_size = -%d", writeCacheKiB)); err != nil {
@@ -464,18 +582,11 @@ func (ix *Index) ReplaceStore(store string, entries func(yield func(stores.Entry
 		if err != nil {
 			return err
 		}
-		files, dirs := filesTable(id), dirsTable(id)
-		for _, statement := range []string{
-			"CREATE TABLE IF NOT EXISTS " + files + " (" +
-				" repo TEXT NOT NULL, parent TEXT NOT NULL, name TEXT NOT NULL, location TEXT NOT NULL," +
-				" size INTEGER NOT NULL, sha1 TEXT, content_type TEXT, created_ms INTEGER NOT NULL," +
-				" PRIMARY KEY (repo, parent, name)) WITHOUT ROWID",
-			"CREATE TABLE IF NOT EXISTS " + dirs + " (" +
-				" repo TEXT NOT NULL, parent TEXT NOT NULL, name TEXT NOT NULL," +
-				" PRIMARY KEY (repo, parent, name)) WITHOUT ROWID",
-			"DELETE FROM " + files,
-			"DELETE FROM " + dirs,
-		} {
+		files, dirs, err := storeTables(tx, id)
+		if err != nil {
+			return err
+		}
+		for _, statement := range []string{"DELETE FROM " + files, "DELETE FROM " + dirs} {
 			if _, err := tx.ExecContext(bg, statement); err != nil {
 				return err
 			}
@@ -483,17 +594,11 @@ func (ix *Index) ReplaceStore(store string, entries func(yield func(stores.Entry
 		if _, err := tx.ExecContext(bg, "DELETE FROM repo_counts WHERE store_id = ?", id); err != nil {
 			return err
 		}
-		insert, err := tx.PrepareContext(bg,
-			"INSERT INTO "+files+" (repo, parent, name, location, size, sha1, content_type, created_ms)"+ // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
-				" VALUES (?, ?, ?, ?, ?, ?, ?, ?)"+
-				" ON CONFLICT (repo, parent, name) DO UPDATE SET"+
-				" location = excluded.location, size = excluded.size, sha1 = excluded.sha1,"+
-				" content_type = excluded.content_type, created_ms = excluded.created_ms"+
-				" WHERE excluded.created_ms > "+files+".created_ms")
+		put, err := entryWriter(tx, files, arbiter)
 		if err != nil {
 			return err
 		}
-		defer insert.Close()
+		defer put.close()
 		var failed error
 		err = entries(func(e stores.Entry) error {
 			if failed != nil {
@@ -502,8 +607,7 @@ func (ix *Index) ReplaceStore(store string, entries func(yield func(stores.Entry
 			if !addressable(e.Path) {
 				return nil
 			}
-			parent, name := split(e.Path)
-			_, failed = insert.ExecContext(bg, e.Repo, parent, name, e.Location, e.Size, nullable(e.SHA1), nullable(e.ContentType), e.CreatedMS)
+			failed = put.write(e)
 			return failed
 		})
 		if err != nil {
@@ -511,6 +615,11 @@ func (ix *Index) ReplaceStore(store string, entries func(yield func(stores.Entry
 		}
 		if failed != nil {
 			return failed
+		}
+		if arbiter != nil {
+			if err := arbiter.Settle(storeRows{tx: tx, files: files}); err != nil {
+				return err
+			}
 		}
 		if err := insertDirs(tx, files, dirs); err != nil {
 			return err
@@ -525,6 +634,66 @@ func (ix *Index) ReplaceStore(store string, entries func(yield func(stores.Entry
 		return 0, err
 	}
 	return written, nil
+}
+
+// entryWrites writes the entries of one walk into a files table.
+type entryWrites struct {
+	insert, update *sql.Stmt
+	rows           storeRows
+	arbiter        Arbiter
+}
+
+// entryWriter prepares the statements of ReplaceStoreWith. Without an
+// arbiter an entry of a path takes the row when it is newer than the one the
+// row holds; with one the arbiter decides.
+func entryWriter(tx *sql.Tx, files string, arbiter Arbiter) (*entryWrites, error) {
+	columns := "INSERT INTO " + files + " (repo, parent, name, location, size, sha1, content_type, created_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+	conflict := " ON CONFLICT (repo, parent, name) DO UPDATE SET" +
+		" location = excluded.location, size = excluded.size, sha1 = excluded.sha1," +
+		" content_type = excluded.content_type, created_ms = excluded.created_ms" +
+		" WHERE excluded.created_ms > " + files + ".created_ms"
+	if arbiter != nil {
+		conflict = " ON CONFLICT (repo, parent, name) DO NOTHING"
+	}
+	w := &entryWrites{rows: storeRows{tx: tx, files: files}, arbiter: arbiter}
+	var err error
+	if w.insert, err = tx.PrepareContext(bg, columns+conflict); err != nil { // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
+		return nil, err
+	}
+	if arbiter != nil {
+		w.update, err = tx.PrepareContext(bg, "UPDATE "+files+" SET location = ?, size = ?, sha1 = ?, content_type = ?, created_ms = ?"+ // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
+			" WHERE repo = ? AND parent = ? AND name = ?")
+		if err != nil {
+			w.close()
+			return nil, err
+		}
+	}
+	return w, nil
+}
+
+func (w *entryWrites) write(e stores.Entry) error {
+	parent, name := split(e.Path)
+	result, err := w.insert.ExecContext(bg, e.Repo, parent, name, e.Location, e.Size, nullable(e.SHA1), nullable(e.ContentType), e.CreatedMS)
+	if err != nil || w.arbiter == nil {
+		return err
+	}
+	if n, err := result.RowsAffected(); err != nil || n > 0 {
+		return err
+	}
+	held, err := w.rows.Row(e.Repo, e.Path)
+	if err != nil || held == nil || !w.arbiter.Newer(*held, e) {
+		return err
+	}
+	_, err = w.update.ExecContext(bg, e.Location, e.Size, nullable(e.SHA1), nullable(e.ContentType), e.CreatedMS, e.Repo, parent, name)
+	return err
+}
+
+func (w *entryWrites) close() {
+	for _, statement := range []*sql.Stmt{w.insert, w.update} {
+		if statement != nil {
+			_ = statement.Close() // the transaction ends with it; its error is the one returned
+		}
+	}
 }
 
 // insertDirs writes one row per directory of the files table, with every
@@ -644,31 +813,49 @@ func (ix *Index) Drop(repo, path, store string) (err error) {
 			err = restore
 		}
 	}()
-	err = ix.transaction(func(tx *sql.Tx) error { return dropRow(tx, repo, path, store) })
+	err = ix.transaction(func(tx *sql.Tx) error {
+		_, err := dropRow(tx, repo, path, store)
+		return err
+	})
 	if busy(err) {
 		return nil
 	}
 	return err
 }
 
-func dropRow(tx *sql.Tx, repo, path, store string) error {
+// rowOf is the row of a path in the files table of one store, nil for none.
+func rowOf(tx *sql.Tx, files, store, repo, path string) (*Asset, error) {
+	parent, name := split(path)
+	a := Asset{Repo: repo, Path: path, Store: store}
+	var sha1, contentType sql.NullString
+	err := tx.QueryRowContext(bg, "SELECT location, size, sha1, content_type, created_ms FROM "+files+ // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
+		" WHERE repo = ? AND parent = ? AND name = ?", repo, parent, name).Scan(&a.Location, &a.Size, &sha1, &contentType, &a.CreatedMS)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	a.SHA1, a.ContentType = optional(sha1), optional(contentType)
+	return &a, nil
+}
+
+// dropRow removes the row of a path from one store with the directories it
+// leaves empty and keeps the counts of its repository; it returns the row,
+// nil when there was none.
+func dropRow(tx *sql.Tx, repo, path, store string) (*Asset, error) {
 	id, found, err := storeID(tx, store)
 	if err != nil || !found {
-		return err
+		return nil, err
 	}
 	files, dirs := filesTable(id), dirsTable(id)
 	parent, name := split(path)
-	var size, created int64
-	err = tx.QueryRowContext(bg, "SELECT size, created_ms FROM "+files+" WHERE repo = ? AND parent = ? AND name = ?",
-		repo, parent, name).Scan(&size, &created)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil
-	}
-	if err != nil {
-		return err
+	removed, err := rowOf(tx, files, store, repo, path)
+	if err != nil || removed == nil {
+		return nil, err
 	}
 	if _, err := tx.ExecContext(bg, "DELETE FROM "+files+" WHERE repo = ? AND parent = ? AND name = ?", repo, parent, name); err != nil { // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
-		return err
+		return nil, err
 	}
 	exists := func(query string, args ...any) (bool, error) {
 		var one int
@@ -684,37 +871,184 @@ func dropRow(tx *sql.Tx, repo, path, store string) error {
 			held, err = exists("SELECT 1 FROM "+dirs+" WHERE repo = ? AND parent = ? LIMIT 1", repo, directory)
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if held {
 			break
 		}
 		up, leaf := split(directory)
 		if _, err := tx.ExecContext(bg, "DELETE FROM "+dirs+" WHERE repo = ? AND parent = ? AND name = ?", repo, up, leaf); err != nil { // #nosec G202 -- the table name is dirsTable of an integer store id; every value is a placeholder.
-			return err
+			return nil, err
 		}
 		directory = up
 	}
 	var count, newest int64
 	err = tx.QueryRowContext(bg, "SELECT files, newest_ms FROM repo_counts WHERE store_id = ? AND repo = ?", id, repo).Scan(&count, &newest)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil
+		return removed, nil
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if count <= 1 {
 		_, err := tx.ExecContext(bg, "DELETE FROM repo_counts WHERE store_id = ? AND repo = ?", id, repo)
-		return err
+		return removed, err
 	}
-	if created >= newest {
+	if removed.CreatedMS >= newest {
 		if err := tx.QueryRowContext(bg, "SELECT max(created_ms) FROM "+files+" WHERE repo = ?", repo).Scan(&newest); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	_, err = tx.ExecContext(bg, "UPDATE repo_counts SET files = files - 1, bytes = bytes - ?, newest_ms = ? WHERE store_id = ? AND repo = ?",
-		size, newest, id, repo)
+		removed.Size, newest, id, repo)
+	return removed, err
+}
+
+// Put writes the row of one entry into the tables of a store, with the
+// directories of its path and the counts of its repository, in one
+// transaction, as a scan of the store writes them. The row of the same path
+// in that store is replaced whatever its creation time: the writer marks
+// the blob it replaced as deleted (W4), so the store holds one live blob
+// per path and a scan agrees. Put returns the replaced row, nil for a new
+// path. A path that is empty or starts or ends with "/" is refused.
+func (ix *Index) Put(store string, e stores.Entry) (*Asset, error) {
+	if !addressable(e.Path) {
+		return nil, fmt.Errorf("index: path %q is empty or starts or ends with a slash", e.Path)
+	}
+	return ix.put(store, func() (stores.Entry, error) { return e, nil }, ix.write)
+}
+
+// PutAfter is Put of the entry of a blob that place puts into the store.
+// place runs once the write lock of the index is held, within wait
+// (writeWithin), so that a scan of the store, which holds that lock for its
+// whole walk, never meets the blob before its row can follow. After wait it
+// returns ErrBusy and place did not run. When place fails, or the row
+// cannot be written after it, the rows stay as they were.
+func (ix *Index) PutAfter(store string, wait time.Duration, place func() (stores.Entry, error)) (*Asset, error) {
+	return ix.put(store, place, func(fn func(tx *sql.Tx) error) error { return ix.writeWithin(wait, fn) })
+}
+
+func (ix *Index) put(store string, entry func() (stores.Entry, error), write func(fn func(tx *sql.Tx) error) error) (*Asset, error) {
+	var replaced *Asset
+	err := write(func(tx *sql.Tx) error {
+		e, err := entry()
+		if err != nil {
+			return err
+		}
+		if !addressable(e.Path) {
+			return fmt.Errorf("index: path %q is empty or starts or ends with a slash", e.Path)
+		}
+		id, err := storeIDOrNew(tx, store)
+		if err != nil {
+			return err
+		}
+		files, dirs, err := storeTables(tx, id)
+		if err != nil {
+			return err
+		}
+		old, err := rowOf(tx, files, store, e.Repo, e.Path)
+		if err != nil {
+			return err
+		}
+		parent, name := split(e.Path)
+		if _, err := tx.ExecContext(bg, "INSERT INTO "+files+" (repo, parent, name, location, size, sha1, content_type, created_ms)"+ // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
+			" VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (repo, parent, name) DO UPDATE SET"+
+			" location = excluded.location, size = excluded.size, sha1 = excluded.sha1,"+
+			" content_type = excluded.content_type, created_ms = excluded.created_ms",
+			e.Repo, parent, name, e.Location, e.Size, nullable(e.SHA1), nullable(e.ContentType), e.CreatedMS); err != nil {
+			return err
+		}
+		for directory := parent; directory != ""; {
+			up, leaf := split(directory)
+			if _, err := tx.ExecContext(bg, "INSERT OR IGNORE INTO "+dirs+" VALUES (?, ?, ?)", e.Repo, up, leaf); err != nil { // #nosec G202 -- the table name is dirsTable of an integer store id; every value is a placeholder.
+				return err
+			}
+			directory = up
+		}
+		if err := putCounts(tx, id, files, e, old); err != nil {
+			return err
+		}
+		replaced = old
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return replaced, nil
+}
+
+// putCounts keeps the counts of the repository of an entry that Put wrote;
+// old is the row it replaced.
+func putCounts(tx *sql.Tx, id int64, files string, e stores.Entry, old *Asset) error {
+	var newest int64
+	err := tx.QueryRowContext(bg, "SELECT newest_ms FROM repo_counts WHERE store_id = ? AND repo = ?", id, e.Repo).Scan(&newest)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		_, err := tx.ExecContext(bg, "INSERT INTO repo_counts"+ // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
+			" SELECT ?, repo, count(*), sum(size), max(created_ms) FROM "+files+" WHERE repo = ? GROUP BY repo", id, e.Repo)
+		return err
+	case err != nil:
+		return err
+	case old == nil:
+		_, err := tx.ExecContext(bg, "UPDATE repo_counts SET files = files + 1, bytes = bytes + ?, newest_ms = max(newest_ms, ?)"+
+			" WHERE store_id = ? AND repo = ?", e.Size, e.CreatedMS, id, e.Repo)
+		return err
+	}
+	switch {
+	case e.CreatedMS >= newest:
+		newest = e.CreatedMS
+	case old.CreatedMS >= newest:
+		if err := tx.QueryRowContext(bg, "SELECT max(created_ms) FROM "+files+" WHERE repo = ?", e.Repo).Scan(&newest); err != nil {
+			return err
+		}
+	}
+	_, err = tx.ExecContext(bg, "UPDATE repo_counts SET bytes = bytes - ? + ?, newest_ms = ? WHERE store_id = ? AND repo = ?",
+		old.Size, e.Size, newest, id, e.Repo)
 	return err
+}
+
+// Delete removes the row of a path from the tables of a store, with the
+// directories it leaves empty and the counts of its repository, and
+// returns the removed row, nil when the store had none. Unlike Drop it
+// waits for the write lock and the busy timeout of every write.
+func (ix *Index) Delete(repo, path, store string) (*Asset, error) {
+	if !addressable(path) {
+		return nil, nil
+	}
+	var removed *Asset
+	err := ix.write(func(tx *sql.Tx) error {
+		var err error
+		removed, err = dropRow(tx, repo, path, store)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return removed, nil
+}
+
+// DeleteWithin is Delete with a bound on the wait for the write lock of the
+// index (writeWithin), and with before, which runs once the lock is held and
+// before the row goes: the delete mark of the blob, so that a busy index
+// leaves the blob as it was. After wait it returns ErrBusy and before did not
+// run; an error of before keeps the row.
+func (ix *Index) DeleteWithin(repo, path, store string, wait time.Duration, before func() error) (*Asset, error) {
+	if !addressable(path) {
+		return nil, nil
+	}
+	var removed *Asset
+	err := ix.writeWithin(wait, func(tx *sql.Tx) error {
+		if err := before(); err != nil {
+			return err
+		}
+		var err error
+		removed, err = dropRow(tx, repo, path, store)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return removed, nil
 }
 
 // Reads
@@ -1115,4 +1449,37 @@ func (ix *Index) Close() error {
 		err = errors.Join(err, ix.writer.Close())
 	}
 	return errors.Join(err, ix.writerDB.Close())
+}
+
+// Rows are the rows of a path in every store that holds it, the winning
+// row first, as Lookup picks it: the newest, on a tie the store whose name
+// sorts first. Empty when no store has the path or the path is empty,
+// starts or ends with "/".
+func (ix *Index) Rows(repo, path string) ([]Asset, error) {
+	if !addressable(path) {
+		return nil, nil
+	}
+	var rows []Asset
+	err := ix.read(func(tx *sql.Tx) error {
+		list, err := storeList(tx)
+		if err != nil {
+			return err
+		}
+		for _, s := range list {
+			a, err := rowOf(tx, filesTable(s.id), s.name, repo, path)
+			if err != nil {
+				return err
+			}
+			if a != nil {
+				rows = append(rows, *a)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	// the stores come in name order; a stable sort keeps it on a tie
+	slices.SortStableFunc(rows, func(a, b Asset) int { return cmp.Compare(b.CreatedMS, a.CreatedMS) })
+	return rows, nil
 }

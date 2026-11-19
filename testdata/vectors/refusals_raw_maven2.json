@@ -1,0 +1,367 @@
+{
+ "source": "section Refusals of docs/plans/phase-4-write-path.md; the rows of raw and maven2, one case per request; text is a part of the answer body",
+ "rows": [
+  {
+   "case": "Any write while writes are off",
+   "format": "raw",
+   "repository": "demo-raw",
+   "method": "PUT",
+   "path": "docs/a.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": false,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (W17): the answer of 0.1.1, which the suite of step 0 pins; no public page states it"
+  },
+  {
+   "case": "Any write while writes are off",
+   "format": "raw",
+   "repository": "demo-raw",
+   "method": "DELETE",
+   "path": "docs/a.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": false,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (W17): the answer of 0.1.1, which the suite of step 0 pins; no public page states it"
+  },
+  {
+   "case": "Any write while writes are off",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+   "body": "body\n",
+   "setup": [],
+   "writes": false,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (W17): the answer of 0.1.1, which the suite of step 0 pins; no public page states it"
+  },
+  {
+   "case": "Any write while writes are off",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "DELETE",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+   "body": "body\n",
+   "setup": [],
+   "writes": false,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (W17): the answer of 0.1.1, which the suite of step 0 pins; no public page states it"
+  },
+  {
+   "case": "Write to a group or a proxy",
+   "format": "raw",
+   "repository": "demo-raw-group",
+   "method": "PUT",
+   "path": "docs/a.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (P10): the answer of 0.1.1 for every write; no public page states it"
+  },
+  {
+   "case": "Write to a group or a proxy",
+   "format": "raw",
+   "repository": "demo-raw-proxy",
+   "method": "PUT",
+   "path": "docs/a.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (P10): the answer of 0.1.1 for every write; no public page states it"
+  },
+  {
+   "case": "Write to a group or a proxy",
+   "format": "maven2",
+   "repository": "demo-maven-group",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (P10): the answer of 0.1.1 for every write; no public page states it"
+  },
+  {
+   "case": "Write to a group or a proxy",
+   "format": "maven2",
+   "repository": "demo-maven-proxy",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (P10): the answer of 0.1.1 for every write; no public page states it"
+  },
+  {
+   "case": "Write policy read only",
+   "format": "raw",
+   "repository": "demo-raw-readonly",
+   "method": "PUT",
+   "path": "docs/a.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 400,
+   "text": "the repository is read only",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Write policy read only",
+   "format": "raw",
+   "repository": "demo-raw-readonly",
+   "method": "DELETE",
+   "path": "docs/a.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 400,
+   "text": "the repository is read only",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Write policy read only",
+   "format": "maven2",
+   "repository": "demo-maven-readonly",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 400,
+   "text": "the repository is read only",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Second write of a path under the allow once policy",
+   "format": "raw",
+   "repository": "demo-raw-once",
+   "method": "PUT",
+   "path": "docs/a.txt",
+   "body": "body\n",
+   "setup": [
+    {
+     "method": "PUT",
+     "path": "docs/a.txt",
+     "body": "first\n"
+    }
+   ],
+   "writes": true,
+   "status": 400,
+   "text": "the repository does not allow updating assets",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Second write of a path under the allow once policy",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+   "body": "<project><version>2</version></project>\n",
+   "setup": [
+    {
+     "method": "PUT",
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+     "body": "<project/>\n"
+    }
+   ],
+   "writes": true,
+   "status": 400,
+   "text": "the repository does not allow updating assets",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Second write of a path under the allow once policy: maven-metadata.xml is exempt",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "PUT",
+   "path": "com/example/demo-lib/maven-metadata.xml",
+   "body": "<metadata/>\n",
+   "setup": [
+    {
+     "method": "PUT",
+     "path": "com/example/demo-lib/maven-metadata.xml",
+     "body": "<metadata/>\n"
+    }
+   ],
+   "writes": true,
+   "status": 201,
+   "text": "",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Second write of a path under the allow once policy: a checksum file of maven-metadata.xml is exempt",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "PUT",
+   "path": "com/example/demo-lib/maven-metadata.xml.sha1",
+   "body": "0000000000000000000000000000000000000000",
+   "setup": [
+    {
+     "method": "PUT",
+     "path": "com/example/demo-lib/maven-metadata.xml.sha1",
+     "body": "1111111111111111111111111111111111111111"
+    }
+   ],
+   "writes": true,
+   "status": 201,
+   "text": "",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Version against the version policy",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.1.0-SNAPSHOT/demo-lib-1.1.0-20261118.101530-1.jar",
+   "body": "PK\u0003\u0004",
+   "setup": [],
+   "writes": true,
+   "status": 400,
+   "text": "the repository takes release versions only, not 1.1.0-SNAPSHOT",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Version against the version policy",
+   "format": "maven2",
+   "repository": "demo-snapshots",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+   "body": "PK\u0003\u0004",
+   "setup": [],
+   "writes": true,
+   "status": 400,
+   "text": "the repository takes snapshot versions only, not 1.0.0",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Path that is no Maven path under the strict layout policy",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "PUT",
+   "path": "docs/readme.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 400,
+   "text": "docs/readme.txt is not a path of the Maven repository layout",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Content against the strict content type validation",
+   "format": "raw",
+   "repository": "demo-raw-strict",
+   "method": "PUT",
+   "path": "dist/demo.jar",
+   "body": "not an archive",
+   "setup": [],
+   "writes": true,
+   "status": 400,
+   "text": "the content of demo.jar does not match its extension",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Content against the strict content type validation",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+   "body": "not an archive",
+   "setup": [],
+   "writes": true,
+   "status": 400,
+   "text": "the content of demo-lib-1.0.0.jar does not match its extension",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Delete of a path whose row lies in a read only store",
+   "format": "raw",
+   "repository": "demo-raw",
+   "method": "DELETE",
+   "path": "old/kept.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 409,
+   "text": "old/kept.txt of repository demo-raw lies in store old-store, which is read only",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Delete of a path whose row lies in a read only store",
+   "format": "maven2",
+   "repository": "demo-releases",
+   "method": "DELETE",
+   "path": "com/example/demo-old/1.0.0/demo-old-1.0.0.pom",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 409,
+   "text": "com/example/demo-old/1.0.0/demo-old-1.0.0.pom of repository demo-releases lies in store old-store, which is read only",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Body above the limit",
+   "format": "raw",
+   "repository": "demo-raw-small",
+   "method": "PUT",
+   "path": "docs/big.bin",
+   "body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "setup": [],
+   "writes": true,
+   "status": 413,
+   "text": "the body is larger than the limit of 64 bytes of repository demo-raw-small",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Body above the limit",
+   "format": "maven2",
+   "repository": "demo-maven-small",
+   "method": "PUT",
+   "path": "com/example/demo-big/1.0/demo-big-1.0.bin",
+   "body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "setup": [],
+   "writes": true,
+   "status": 413,
+   "text": "the body is larger than the limit of 64 bytes of repository demo-maven-small",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Store below the floor",
+   "format": "raw",
+   "repository": "demo-raw-full",
+   "method": "PUT",
+   "path": "docs/a.txt",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 507,
+   "text": "bytes free; the write needs",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  },
+  {
+   "case": "Store below the floor",
+   "format": "maven2",
+   "repository": "demo-maven-full",
+   "method": "PUT",
+   "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+   "body": "body\n",
+   "setup": [],
+   "writes": true,
+   "status": 507,
+   "text": "bytes free; the write needs",
+   "source": "provisional (W6): the public documentation of the old product states that the request fails and not the code (lab research/03-public-facts.md, read 2026-11-18)"
+  }
+ ]
+}

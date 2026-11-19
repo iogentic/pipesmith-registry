@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -45,6 +46,17 @@ type ServeOptions struct {
 	// open, WATCHDOG=1 at its interval and STOPPING=1 when the stop begins;
 	// nil tells nothing.
 	Notify *notify.Notifier
+	// Writes is Options.Writes.
+	Writes bool
+	// Catalog is Options.Catalog.
+	Catalog CatalogHook
+	// TLS is the configuration of every listener, the main port and each
+	// Docker port (LoadTLS); nil serves plain HTTP.
+	TLS *tls.Config
+	// Secure is Options.Secure.
+	Secure func(*http.Request) bool
+	// Forwarded is Options.Forwarded.
+	Forwarded func(*http.Request)
 }
 
 // errorLog sends what net/http logs to the log of the server.
@@ -137,6 +149,10 @@ func Serve(ctx context.Context, cfg *config.Config, opts ServeOptions) error {
 	if listeners.IsReserved(cfg.Port) {
 		return &pyjson.Error{Class: "ValueError", Message: fmt.Sprintf("port %d is reserved on this machine", cfg.Port)}
 	}
+	grace, err := drainTime()
+	if err != nil {
+		return err
+	}
 	repositories, err := listeners.LoadRepositories(cfg, openIndexReader)
 	if err != nil {
 		return err
@@ -155,7 +171,8 @@ func Serve(ctx context.Context, cfg *config.Config, opts ServeOptions) error {
 			l.Close()
 		}
 	}()
-	srv, err := New(cfg, dockerPorts, Options{AccessLog: opts.AccessLog, Security: opts.Security, HostNames: opts.HostNames})
+	srv, err := New(cfg, dockerPorts, Options{AccessLog: opts.AccessLog, Security: opts.Security, HostNames: opts.HostNames, Writes: opts.Writes,
+		Catalog: opts.Catalog, Secure: opts.Secure, Forwarded: opts.Forwarded})
 	if err != nil {
 		return err
 	}
@@ -167,6 +184,10 @@ func Serve(ctx context.Context, cfg *config.Config, opts ServeOptions) error {
 	for _, port := range listeners.SortedPorts(dockerPorts) {
 		logAt(slogInfo, listenersLogger, "Docker repository %s listening on %s port %d", dockerPorts[port], cfg.Bind, port)
 	}
+	if srv.writes.writer != nil {
+		// With writes off the log keeps the lines of the port (W17).
+		logAt(slogInfo, serverLogger, "writes on: new blobs go into store %s at %s", srv.writes.writer.Name(), srv.writes.writer.Root())
+	}
 	servers := make([]*http.Server, len(opened))
 	stopped := make(chan error, len(opened))
 	addrs := make([]net.Addr, len(opened))
@@ -175,6 +196,10 @@ func Serve(ctx context.Context, cfg *config.Config, opts ServeOptions) error {
 		servers[i] = newHTTPServer(srv)
 		servers[i].ConnState = conns.track
 		addrs[i] = l.Addr()
+		if opts.TLS != nil {
+			// TLS below the gate, which reads the decrypted requests
+			l = tls.NewListener(l, opts.TLS)
+		}
 		go func(hs *http.Server, l net.Listener) {
 			stopped <- hs.Serve(&gateListener{Listener: l, marker: srv.marker, escape: srv.escape})
 		}(servers[i], l)
@@ -198,7 +223,7 @@ func Serve(ctx context.Context, cfg *config.Config, opts ServeOptions) error {
 		hs.SetKeepAlivesEnabled(false)
 	}
 	conns.expire()
-	shutdown, cancel := context.WithTimeout(context.Background(), shutdownGrace)
+	shutdown, cancel := context.WithTimeout(context.Background(), grace)
 	defer cancel()
 	var wg sync.WaitGroup
 	for _, hs := range servers {

@@ -10,19 +10,20 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
 )
 
 // promptSignals end the prompt as interrupted once the terminal is
-// restored (review 6, finding 10).
-var promptSignals = []syscall.Signal{syscall.SIGINT, syscall.SIGTERM}
+// restored (review 6, finding 10; SIGHUP and SIGQUIT review N9).
+var promptSignals = []syscall.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGQUIT}
 
 // askSecret writes the prompt and reads one line from the terminal in with
 // echo off. Keys typed before the prompt are dropped. The terminal settings
-// are restored before it returns, and on SIGINT or SIGTERM during the prompt
-// before the process ends as interrupted.
+// are restored before it returns, and on a signal of promptSignals during
+// the prompt before the process ends by that signal.
 func askSecret(in *os.File, prompt io.Writer) askFunc {
 	return func(text string) (string, error) {
 		if !isTerminal(in) {
@@ -34,12 +35,17 @@ func askSecret(in *os.File, prompt io.Writer) askFunc {
 			return "", err
 		}
 		restore := func() { _ = termios(fd, ioctlWriteTermios, &old) } // nothing is left to do if the terminal refuses
-		stop := watchPrompt(restore, prompt)
+		var guard terminalGuard
+		stop := watchPrompt(func() { guard.restore(restore) }, prompt)
 		defer stop()
 		quiet := old
 		quiet.Lflag &^= syscall.ECHO
-		if err := termios(fd, ioctlFlushTermios, &quiet); err != nil {
+		changed, err := guard.change(func() error { return termios(fd, ioctlFlushTermios, &quiet) })
+		if err != nil {
 			return "", err
+		}
+		if !changed {
+			select {} // a caught signal restored the terminal and ends the process
 		}
 		defer restore()
 		if err := dropQueuedInput(fd); err != nil {
@@ -53,6 +59,34 @@ func askSecret(in *os.File, prompt io.Writer) askFunc {
 		}
 		return strings.TrimRight(line, "\r\n"), nil
 	}
+}
+
+// terminalGuard orders the change of the terminal for the prompt and its
+// restore by a caught signal (review N9): once a signal restored the
+// terminal, the change does not run, so no signal between the start of the
+// watch and the change leaves echo off.
+type terminalGuard struct {
+	mu    sync.Mutex
+	ended bool
+}
+
+// change runs f unless a signal restored the terminal first; then it reports
+// false.
+func (g *terminalGuard) change(f func() error) (bool, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.ended {
+		return false, nil
+	}
+	return true, f()
+}
+
+// restore runs f and keeps every later change from running.
+func (g *terminalGuard) restore(f func()) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.ended = true
+	f()
 }
 
 // watchPrompt catches the signals of promptSignals that were not ignored at

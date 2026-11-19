@@ -235,8 +235,9 @@ func eachLine(r *bufio.Reader, fn func([]byte) error) error {
 func zstdLines(path string, fn func([]byte) error) error {
 	cmd := exec.Command("zstd", "-dc", "--", path) // #nosec G204 -- a fixed program with an argument list and no shell; the part of the operator's manifest comes after "--".
 	if errors.Is(cmd.Err, exec.ErrDot) {
-		cmd.Err = nil // Python's Popen runs a zstd found through "." in PATH
+		return zstdRelativeError(path)
 	}
+	cmd.Env = zstdEnvironment()
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

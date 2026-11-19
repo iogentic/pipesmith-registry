@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -37,6 +38,9 @@ const (
 	// finding 7). The text is the message of DENIED in the Docker registry
 	// protocol.
 	repositoryRefusal = "requested access to the resource is denied"
+	// crossSiteRefusal is the 403 of a write that a page of another site
+	// sends (crossSite).
+	crossSiteRefusal = "a write that a page of another origin sends is refused"
 )
 
 // ruleKind is what a route asks of the caller.
@@ -51,6 +55,7 @@ const (
 	ruleAdmin             // a subject with the administration permission of the repository in the path
 	ruleAssetID           // a subject with the browse permission of the repository of the asset id
 	ruleClient            // the client read path: the view permission of the repository in the path (T7, review 6)
+	ruleContent           // a REST write: the view permission of the repository of the id or of the query, with the action (rest_write.go)
 )
 
 type rule struct {
@@ -136,7 +141,14 @@ var secureRoutes = []route{
 	get(restBase+"/security/ldap/"+segment, perm("nexus:ldap:read"), named(rest.LDAPServer)),
 	get(restBase+"/status/check", perm("nexus:atlas:read"), plain(rest.StatusChecks)),
 	get(restBase+"/read-only", perm(settingsRead), plain(func(*rest.Env) (rest.Answer, error) { return rest.ReadOnly(), nil })),
-	get("/api/areas", signedIn, plain(func(*rest.Env) (rest.Answer, error) { return rest.Areas(refused), nil })),
+	get("/api/areas", signedIn, func(s *Server, w *recorder, req *request, _ []string) error {
+		return s.restAnswer(w, req, func(*rest.Env, url.Values) (rest.Answer, error) { return rest.Areas(s.refusedList()), nil })
+	}),
+	// the routes of tokens (tokens.go), more specific than /repository/(.*)
+	{exact(repositoryPrefix + segment + `/-/user/org\.couchdb\.user:(.+)`), []string{"PUT"}, public, (*Server).npmLogin},
+	{exact(repositoryPrefix + segment + `/-/whoami`), []string{"GET"}, public, (*Server).npmWhoami},
+	{exact(repositoryPrefix + segment + npmTokenPath + `(.+)`), []string{"DELETE"}, public, (*Server).npmLogout},
+	{exact(repositoryPrefix + segment + `/v2/token`), []string{"GET"}, public, (*Server).dockerToken},
 }
 
 // A refusal is a request of the contract this server does not serve yet: a
@@ -157,12 +169,21 @@ func refusal(template, area string, methods ...string) refusalDecl {
 
 const usersBase = restBase + "/security/users"
 
-// refusalTable holds the other requests of docs/ui/API.md at the taken
-// commit of the interface (1e6d884).
-var refusalTable = []refusalDecl{
+// writeRefusals are the requests that the REST writes serve while writes are
+// on (rest_write.go). With writes off the three of docs/ui/API.md answer the
+// 501 of 0.1.1, in the place 0.1.1 lists them. The field list of every
+// format, which docs/ui/API.md does not name, answered 404 in 0.1.1; it
+// answers like them since 2026-11-19 (decision of the planning session).
+var writeRefusals = []refusalDecl{
 	refusal(restBase+"/assets/{id}", "content", "DELETE"),
 	refusal(restBase+"/formats/{format}/upload-specs", "content", "GET"),
 	refusal(restBase+"/components", "content", "POST"),
+	refusal(restBase+"/formats/upload-specs", "content", "GET"),
+}
+
+// refusalTable holds the other requests of docs/ui/API.md at the taken
+// commit of the interface (1e6d884).
+var refusalTable = []refusalDecl{
 	refusal(restBase+"/repositories/{segment}/{type}", "repositories", "POST"),
 	refusal(restBase+"/repositories/{segment}/{type}/{name}", "repositories", "PUT"),
 	refusal(restBase+"/repositories/{name}", "repositories", "DELETE"),
@@ -291,18 +312,38 @@ func refusedOf(table []refusalDecl) []rest.Refused {
 
 var (
 	refusalRoutes = routesOf(refusalTable)
-	refused       = refusedOf(refusalTable)
+	// refused is the list of GET /api/areas while writes are on; with
+	// writes off the requests of writeRefusals come first, the three of
+	// 0.1.1 in its order
+	refused          = refusedOf(refusalTable)
+	refusedWritesOff = refusedOf(slices.Concat(writeRefusals, refusalTable))
 )
 
 // securedRoutes is the table with security on: the new routes, the
-// refusals, then the routes of step 2 with their rules.
-var securedRoutes = slices.Concat(secureRoutes, refusalRoutes, routes)
+// refusals, then the routes of step 2 with their rules. writingRoutes is the
+// table while writes are on, with the REST writes in place of their
+// refusals.
+var (
+	securedRoutes = slices.Concat(secureRoutes, routesOf(writeRefusals), refusalRoutes, routes)
+	writingRoutes = slices.Concat(secureRoutes, contentWriteRoutes, refusalRoutes, routes)
+)
 
 func (s *Server) table() []route {
-	if s.sec == nil {
+	switch {
+	case s.sec == nil:
 		return routes
+	case s.writes.writer != nil:
+		return writingRoutes
 	}
 	return securedRoutes
+}
+
+// refusedList is the list of GET /api/areas.
+func (s *Server) refusedList() []rest.Refused {
+	if s.writes.writer != nil {
+		return refused
+	}
+	return refusedWritesOff
 }
 
 // subjectOf resolves the caller once per request.
@@ -355,7 +396,7 @@ func (s *Server) credentialError(w *recorder, req *request, err error, clientPat
 	}
 	switch e.Status {
 	case http.StatusUnauthorized:
-		s.unauthorized(w, req, clientPath)
+		s.unauthorizedWith(w, req, clientPath, e.Message)
 	case http.StatusTooManyRequests:
 		retry := strconv.Itoa(max(e.RetryAfter, 1))
 		if req.dockerRepo != "" || dockerTarget(req) {
@@ -376,22 +417,37 @@ func dockerTarget(req *request) bool { return dockerPath.MatchString(req.path) }
 
 // unauthorized is the 401 of a request without a subject. The interface
 // routes below /api/ and every request of a browser get the challenge of
-// the session, so no credential dialog opens; scripts and clients get
-// Basic. The client read path answers in the shape of its protocol.
+// the session, so no credential dialog opens; a Docker route gets the
+// challenge of N12 (dockerChallenge); other scripts and clients get Basic.
+// The client read path answers in the shape of its protocol.
 func (s *Server) unauthorized(w *recorder, req *request, clientPath bool) {
+	s.unauthorizedWith(w, req, clientPath, model.ErrUnauthorized.Message)
+}
+
+// unauthorizedWith is unauthorized with the message of a refusal of
+// Security, as the answer to a token in the shape of the old product.
+func (s *Server) unauthorizedWith(w *recorder, req *request, clientPath bool, message string) {
+	docker := clientPath && (req.dockerRepo != "" || dockerTarget(req))
 	challenge := basicChallenge
-	if strings.HasPrefix(req.path, "/api/") || fromBrowser(req.r) {
+	switch {
+	case strings.HasPrefix(req.path, "/api/") || fromBrowser(req.r):
 		challenge = sessionChallenge
+	case docker:
+		challenge = s.dockerChallenge(req)
 	}
 	header := [2]string{"WWW-Authenticate", challenge}
 	switch {
-	case clientPath && (req.dockerRepo != "" || dockerTarget(req)):
-		dockerError(w, req, http.StatusUnauthorized, "UNAUTHORIZED", "authentication required", [][2]string{header})
+	case docker:
+		dockerError(w, req, http.StatusUnauthorized, "UNAUTHORIZED", message, [][2]string{header})
 	case clientPath:
+		text := "Authentication required\n"
+		if message != model.ErrUnauthorized.Message {
+			text = message + "\n"
+		}
 		writeBody(w, req, http.StatusUnauthorized, [][2]string{{"Content-Type", textType}, {"X-Content-Type-Options", "nosniff"}, header},
-			[]byte("Authentication required\n"))
+			[]byte(text))
 	default:
-		s.message(w, req, http.StatusUnauthorized, model.ErrUnauthorized.Message, header)
+		s.message(w, req, http.StatusUnauthorized, message, header)
 	}
 }
 
@@ -408,10 +464,75 @@ func (s *Server) formatOf(name string) (string, error) {
 	return rest.UnknownFormat, nil
 }
 
+// crossSite reports a request that a page of another site sends (assessment
+// A3 of review 4): its Origin names another origin than the one of the
+// request, scheme and host as this server sees them, or its Sec-Fetch-Site
+// says cross-site. A browser sends the Basic credentials it holds for this
+// server with such a request too. Maven, npm, Docker and curl send neither
+// header.
+func crossSite(req *request) bool {
+	if strings.EqualFold(strings.TrimSpace(req.r.Header.Get("Sec-Fetch-Site")), "cross-site") {
+		return true
+	}
+	for _, origin := range req.r.Header.Values("Origin") {
+		if !sameOrigin(origin, req.scheme, req.r.Host) {
+			return true
+		}
+	}
+	return false
+}
+
+// sameOrigin compares an Origin header with the scheme and the Host header
+// of a request; the default port of the scheme counts as no port, as a
+// browser leaves it out of an origin.
+func sameOrigin(origin, scheme, host string) bool {
+	u, err := url.Parse(strings.TrimSpace(origin))
+	if err != nil || u.Host == "" || u.Path != "" || u.RawQuery != "" || u.User != nil || !strings.EqualFold(u.Scheme, scheme) {
+		return false
+	}
+	return hostPort(u.Host, scheme) == hostPort(host, scheme)
+}
+
+// hostPort is a host and its port in lower case, "" for the default port of
+// the scheme.
+func hostPort(host, scheme string) string {
+	name, port, err := net.SplitHostPort(host)
+	if err != nil {
+		name, port = host, ""
+	}
+	if port == strconv.Itoa(defaultPorts[strings.ToLower(scheme)]) {
+		port = ""
+	}
+	return strings.ToLower(strings.Trim(name, "[]")) + " " + port
+}
+
+// writeOfAnotherSite refuses a write of the write path that a page of
+// another site sends, with 403 and before its body is read: a client write
+// below /repository/ and on the Docker ports, and a REST write. false means
+// the answer is written.
+func (s *Server) writeOfAnotherSite(w *recorder, req *request, r rule) bool {
+	writePath := r.kind == ruleContent || r.kind == ruleClient && strings.HasPrefix(req.path, repositoryPrefix)
+	if s.writes.writer == nil || !writeMethod(req.r.Method) || !writePath || !crossSite(req) {
+		return false
+	}
+	switch {
+	case r.kind == ruleContent:
+		s.message(w, req, http.StatusForbidden, crossSiteRefusal)
+	case req.dockerRepo != "" || dockerTarget(req):
+		dockerError(w, req, http.StatusForbidden, "DENIED", crossSiteRefusal, nil)
+	default:
+		writeText(w, req, http.StatusForbidden, crossSiteRefusal)
+	}
+	return true
+}
+
 // allow applies the rule of a route; false means the answer is written.
 func (s *Server) allow(w *recorder, req *request, r rule, match []string) (bool, error) {
 	if r.kind == rulePublic {
 		return true, nil
+	}
+	if s.writeOfAnotherSite(w, req, r) {
+		return false, nil
 	}
 	subject, err := s.subjectOf(req)
 	if err != nil && r.kind == ruleClient && s.staleCookie(req, err) {
@@ -439,6 +560,8 @@ func (s *Server) allow(w *recorder, req *request, r rule, match []string) (bool,
 	switch r.kind {
 	case ruleSignedIn:
 		return true, nil
+	case ruleContent:
+		return s.allowContent(w, req, subject, r, match)
 	case ruleApp:
 		needed = r.permissions
 	case ruleView, ruleAdmin, ruleAssetID:
@@ -489,7 +612,11 @@ func (s *Server) staleCookie(req *request, err error) bool {
 // allowClient is the rule of the client read path (T7 with the decision on
 // review 6, finding 3): the view permission of the repository in the path,
 // read below /repository/ and on the Docker ports, browse below the browse
-// route. A nil subject holds the rights of the anonymous user while
+// route. While writes are on a write below /repository/ asks the action of
+// writeAction instead (seam Permission of a write), and a nil subject is
+// asked for credentials whatever the anonymous user holds: no write without
+// credentials (decision E4), and the Docker token of the anonymous subject
+// is none. Else a nil subject holds the rights of the anonymous user while
 // anonymous access is on and is asked for credentials when they do not
 // suffice. The Docker base /v2/ of a Docker port needs sign in only. A path
 // that names no repository goes on to the handler, whose answer names none.
@@ -508,6 +635,20 @@ func (s *Server) allowClient(w *recorder, req *request, subject *model.Subject) 
 	}
 	if req.dockerRepo != "" && t.path == "v2" {
 		return true, nil
+	}
+	if s.writes.writer != nil && prefix == repositoryPrefix {
+		if action, err = s.writeAction(req.r.Method, t); err != nil {
+			return false, err
+		}
+		if writeMethod(req.r.Method) && subject == nil {
+			s.unauthorized(w, req, true)
+			return false, nil
+		}
+		// a write of a browser session needs its request token here too
+		if writeMethod(req.r.Method) && !s.sec.CSRF(req.r, subject) {
+			writeText(w, req, http.StatusForbidden, csrfRefusal)
+			return false, nil
+		}
 	}
 	format, err := s.formatOf(t.repo)
 	if err != nil {
@@ -534,7 +675,9 @@ func (s *Server) session(w *recorder, req *request, _ []string) error {
 	return nil
 }
 
-// restEnv is what internal/rest builds the answer of one request from.
+// restEnv is what internal/rest builds the answer of one request from. The
+// url and downloadUrl fields take the scheme of the request (origin), as
+// every URL the server builds does (review R3).
 func (s *Server) restEnv(req *request) (*rest.Env, error) {
 	st, err := s.rp.sync()
 	if err != nil {
@@ -545,10 +688,6 @@ func (s *Server) restEnv(req *request) (*rest.Env, error) {
 		store := st.stores[sc.Name]
 		list = append(list, rest.Store{Name: sc.Name, Kind: sc.Kind, Root: sc.Root, Available: store != nil && !stores.LooksUnmounted(store)})
 	}
-	scheme := "http"
-	if req.r.TLS != nil {
-		scheme = "https"
-	}
 	subject := req.subject
 	return &rest.Env{
 		Context:      req.r.Context(),
@@ -558,7 +697,7 @@ func (s *Server) restEnv(req *request) (*rest.Env, error) {
 		Catalog:      s.catalog,
 		Stores:       list,
 		Permits:      func(p string) bool { return s.sec.Permits(subject, p) },
-		Base:         scheme + "://" + req.r.Host,
+		Base:         req.scheme + "://" + req.r.Host,
 	}, nil
 }
 

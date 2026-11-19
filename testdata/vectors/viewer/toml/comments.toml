@@ -1,0 +1,7 @@
+# A comment line
+a = 1 # after a value
+b = "# not a comment" # but this is
+c = [ # inside an array
+  1, # after an item
+]
+    # indented

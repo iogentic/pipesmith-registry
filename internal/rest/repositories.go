@@ -57,6 +57,9 @@ func (env *Env) repositoryXO(r repos.Repo) repositoryXO {
 		if remote == nil && r.RemoteURL != nil {
 			remote = *r.RemoteURL
 		}
+		if text, ok := remote.(string); ok {
+			remote = repos.PublicURL(text)
+		}
 		if remote != nil {
 			attributes["proxy"] = map[string]any{"remoteUrl": remote}
 		}
@@ -122,6 +125,11 @@ func (env *Env) settings(r repos.Repo) map[string]any {
 		online = rec.Online
 		for key, value := range rec.Attributes {
 			out[key] = clean(value)
+		}
+	}
+	if proxy, _ := out["proxy"].(map[string]any); proxy != nil {
+		if remote, ok := proxy["remoteUrl"].(string); ok {
+			proxy["remoteUrl"] = repos.PublicURL(remote)
 		}
 	}
 	if client, found := out["httpclient"]; found {
@@ -192,6 +200,8 @@ func clean(value any) any {
 			out[i] = clean(item)
 		}
 		return out
+	case string:
+		return repos.PublicValue(v)
 	default:
 		return v
 	}

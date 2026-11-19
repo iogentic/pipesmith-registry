@@ -1,6 +1,7 @@
 // Package state is state.sqlite of the data directory: the users, roles,
 // privileges, role mappings, LDAP servers, settings, blob store definitions
-// and repositories an administrator set in the old product.
+// and repositories an administrator set in the old product, and from schema
+// 2 on the tokens this server issues and the generation (tokens.go).
 //
 // The file has mode 0600 and its directory 0750. Writes go through one
 // writer connection, each Write in one transaction; Load reads in one read
@@ -53,14 +54,19 @@ const (
 	KindAnonymous    Kind = "anonymous"    // settings row "anonymous"
 	KindBlobStores   Kind = "blob_stores"  // blob_stores
 	KindRepositories Kind = "repositories" // repositories
+	// KindDefaultRole is the settings row "default_role" of `realms set`. No
+	// export holds it, so an import keeps it.
+	KindDefaultRole Kind = "default_role"
 )
 
 // Kinds are all kinds in the order Write handles them.
-var Kinds = []Kind{KindUsers, KindRoles, KindPrivileges, KindLDAP, KindRealms, KindAnonymous, KindBlobStores, KindRepositories}
+var Kinds = []Kind{KindUsers, KindRoles, KindPrivileges, KindLDAP, KindRealms, KindAnonymous, KindBlobStores, KindRepositories,
+	KindDefaultRole}
 
 const (
-	settingRealms    = "realms"
-	settingAnonymous = "anonymous"
+	settingRealms      = "realms"
+	settingAnonymous   = "anonymous"
+	settingDefaultRole = "default_role"
 )
 
 var bg = context.Background()
@@ -186,10 +192,21 @@ func (st *Store) write(fn func(tx *sql.Tx) error) (err error) {
 }
 
 // Write replaces the rows of the kinds named with the records of snap, in
-// one transaction. Kinds not named keep their rows. The local roles of a
-// user are User.Roles; RoleMappings hold the users of other sources, so a
-// mapping of a user's own id and source is refused.
+// one transaction that raises the generation (tokens.go). Kinds not named
+// keep their rows. The local roles of a user are User.Roles; RoleMappings
+// hold the users of other sources, so a mapping of a user's own id and
+// source is refused.
 func (st *Store) Write(kinds []Kind, snap *model.Snapshot) error {
+	if err := checkKinds(kinds); err != nil {
+		return err
+	}
+	if snap == nil {
+		snap = &model.Snapshot{}
+	}
+	return st.identityWrite(func(tx *sql.Tx) error { return writeKinds(tx, kinds, snap) })
+}
+
+func checkKinds(kinds []Kind) error {
 	if len(kinds) == 0 {
 		return errors.New("no record kind named for the write")
 	}
@@ -198,20 +215,20 @@ func (st *Store) Write(kinds []Kind, snap *model.Snapshot) error {
 			return fmt.Errorf("unknown record kind %q", k)
 		}
 	}
-	if snap == nil {
-		snap = &model.Snapshot{}
-	}
-	return st.write(func(tx *sql.Tx) error {
-		for _, k := range Kinds {
-			if !slices.Contains(kinds, k) {
-				continue
-			}
-			if err := writers[k](tx, snap); err != nil {
-				return fmt.Errorf("%s: %w", k, err)
-			}
+	return nil
+}
+
+// writeKinds replaces the rows of the kinds named, in the order of Kinds.
+func writeKinds(tx *sql.Tx, kinds []Kind, snap *model.Snapshot) error {
+	for _, k := range Kinds {
+		if !slices.Contains(kinds, k) {
+			continue
 		}
-		return nil
-	})
+		if err := writers[k](tx, snap); err != nil {
+			return fmt.Errorf("%s: %w", k, err)
+		}
+	}
+	return nil
 }
 
 var writers = map[Kind]func(*sql.Tx, *model.Snapshot) error{
@@ -223,6 +240,7 @@ var writers = map[Kind]func(*sql.Tx, *model.Snapshot) error{
 	KindAnonymous:    writeAnonymous,
 	KindBlobStores:   writeBlobStores,
 	KindRepositories: writeRepositories,
+	KindDefaultRole:  writeDefaultRole,
 }
 
 func exec(tx *sql.Tx, query string, args ...any) error {
@@ -242,7 +260,15 @@ func encode(v any) (string, error) {
 	return string(data), err
 }
 
+// writeUsers replaces the users and their roles. The token rows of a user
+// leave with its id, and an id that arrives starts without the rows an
+// earlier user of that id left (review S4), so a user of the same name
+// added later never inherits a token.
 func writeUsers(tx *sql.Tx, snap *model.Snapshot) error {
+	before, err := userPairs(tx)
+	if err != nil {
+		return err
+	}
 	if err := exec(tx, "DELETE FROM user_roles"); err != nil {
 		return err
 	}
@@ -277,7 +303,37 @@ func writeUsers(tx *sql.Tx, snap *model.Snapshot) error {
 			return err
 		}
 	}
+	for pair := range before {
+		if !local[pair] {
+			local[pair] = true
+		} else {
+			delete(local, pair)
+		}
+	}
+	for pair := range local { // the ids that left and the ids that arrived
+		if err := exec(tx, "DELETE FROM tokens WHERE user_id = ? AND source = ?", pair[0], pair[1]); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// userPairs are the id and source of every user row.
+func userPairs(tx *sql.Tx) (map[[2]string]bool, error) {
+	rows, err := tx.QueryContext(bg, "SELECT id, source FROM users")
+	if err != nil {
+		return nil, err
+	}
+	pairs := map[[2]string]bool{}
+	for rows.Next() {
+		var pair [2]string
+		if err := rows.Scan(&pair[0], &pair[1]); err != nil {
+			_ = rows.Close() // the scan error counts
+			return nil, err
+		}
+		pairs[pair] = true
+	}
+	return pairs, errors.Join(rows.Err(), rows.Close())
 }
 
 func userRoles(tx *sql.Tx, user, source string, roles []string) error {
@@ -370,6 +426,10 @@ func writeAnonymous(tx *sql.Tx, snap *model.Snapshot) error {
 	return setting(tx, settingAnonymous, snap.Anonymous)
 }
 
+func writeDefaultRole(tx *sql.Tx, snap *model.Snapshot) error {
+	return setting(tx, settingDefaultRole, snap.DefaultRole)
+}
+
 func writeBlobStores(tx *sql.Tx, snap *model.Snapshot) error {
 	if err := exec(tx, "DELETE FROM blob_stores"); err != nil {
 		return err
@@ -420,6 +480,11 @@ func (st *Store) Load() (*model.Snapshot, error) {
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }() // a read transaction has nothing to keep
+	return loadAll(tx)
+}
+
+// loadAll reads every record in the transaction tx.
+func loadAll(tx *sql.Tx) (*model.Snapshot, error) {
 	snap := &model.Snapshot{}
 	for _, step := range []func(*sql.Tx, *model.Snapshot) error{loadUsers, loadRoles, loadPrivileges, loadLDAP,
 		loadSettings, loadBlobStores, loadRepositories} {
@@ -583,6 +648,10 @@ func loadSettings(tx *sql.Tx, snap *model.Snapshot) error {
 			}
 		case settingAnonymous:
 			if err := decode(value, &snap.Anonymous); err != nil {
+				return fmt.Errorf("setting %s: %w", key, err)
+			}
+		case settingDefaultRole:
+			if err := decode(value, &snap.DefaultRole); err != nil {
 				return fmt.Errorf("setting %s: %w", key, err)
 			}
 		}

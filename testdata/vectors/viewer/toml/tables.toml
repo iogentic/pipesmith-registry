@@ -1,0 +1,15 @@
+# Invented build settings.
+title = "demo"
+
+[project]
+name = "demo-lib"
+version = '1.0.0'
+"quoted key" = true
+site.url = "https://example.com"
+
+[tool.demo."sub table"]
+level = 3
+ratio = 0.75
+big = 1_000_000
+hex = 0xDEAD_beef
+neg = -inf

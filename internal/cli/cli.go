@@ -9,6 +9,7 @@ package cli
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -21,7 +22,9 @@ import (
 	"slices"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/auth"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/datafs"
 	"github.com/iogentic/pipesmith-registry/internal/docker"
@@ -78,7 +81,7 @@ Repositories
                                        list the blobs and manifests they name that are not
                                        in the index; exit code 1 when one is missing
 
-` + stateHelpBody + `Settings
+` + stateHelpBody + identityHelpBody + mavenHelpBody + updateHelpBody + `Settings
   config [--get KEY | --check | --json | --docker-ports]
                                        show the configuration, one value, or its problems;
                                        --docker-ports prints "<port> <repository>" for each
@@ -115,6 +118,9 @@ func Main(args []string, stdout, stderr io.Writer) int {
 	previous := slog.Default()
 	slog.SetDefault(slog.New(newLogHandler(stderr, false)))
 	defer slog.SetDefault(previous)
+	if args[0] == "routes" {
+		return routesCommand(args[1:], stdout, stderr)
+	}
 	ns, err := parseArgs(args)
 	if err != nil {
 		var help *helpExit
@@ -186,6 +192,9 @@ func buildParser() *parser {
 	serve.add(&action{dest: "bind", options: []string{"--bind"}})
 	serve.add(&action{dest: "server_names", options: []string{"--server-names"}})
 	serve.add(&action{dest: "ask_ldap_password", options: []string{"--ask-ldap-password"}, nargs: "0", flag: true})
+	serve.add(&action{dest: "tls_cert", options: []string{"--tls-cert"}, metavar: "FILE"})
+	serve.add(&action{dest: "tls_key", options: []string{"--tls-key"}, metavar: "FILE"})
+	serve.add(&action{dest: "writes", options: []string{"--writes"}, nargs: "0", flag: true})
 	serve.defaults["run"] = "cmd_serve"
 
 	store := sub(commands, "store", "store")
@@ -226,6 +235,9 @@ func buildParser() *parser {
 	settings.add(&action{dest: "file"})
 	settings.defaults["run"] = "cmd_import_settings"
 	addStateCommands(commands, sub)
+	addIdentityCommands(commands, sub)
+	addMavenCommands(commands, sub)
+	addUpdateCommands(commands, sub)
 
 	configCommand := sub(commands, "config", "config")
 	get := configCommand.add(&action{dest: "get", options: []string{"--get"}, metavar: "KEY"})
@@ -239,7 +251,7 @@ func buildParser() *parser {
 
 	top.add(&action{dest: "command", nargs: "parser", required: true,
 		choices: slices.Concat([]string{"serve", "store", "scan", "repos", "docker-check", "import-settings"},
-			stateCommandNames, []string{"config", "version"}),
+			stateCommandNames, identityCommandNames, mavenCommandNames, updateCommandNames, []string{"config", "version"}),
 		commands: commands})
 	return top
 }
@@ -295,11 +307,22 @@ func (c *command) run() (int, error) {
 		return c.importState()
 	case "cmd_state_show":
 		return c.stateShow()
+	case "cmd_maven_rebuild":
+		return c.mavenRebuild()
+	case "cmd_update":
+		return c.update()
+	case "cmd_rollback":
+		return c.rollback()
+	case "cmd_schema":
+		return c.schema()
 	case "cmd_config":
 		return c.config()
 	case "cmd_version":
 		c.print("%s %s", program, version.Version)
 		return 0, nil
+	}
+	if code, ok, err := c.identityCommand(); ok {
+		return code, err
 	}
 	return 1, fmt.Errorf("no command %q", c.ns.run)
 }
@@ -344,6 +367,14 @@ func (c *command) serve() (int, error) {
 		return 1, err
 	}
 	c.warnSharedFS(cfg.DataDir)
+	// writes (W17): the option, then the environment, then config.json
+	writes, err := config.WritesFrom(os.Getenv, cfg.Writes)
+	if err != nil {
+		return 1, err
+	}
+	if c.ns.values["writes"] == true {
+		writes = true
+	}
 	port := big.NewInt(int64(cfg.Port))
 	if value, ok := c.ns.values["port"].(*big.Int); ok {
 		port = value
@@ -358,10 +389,15 @@ func (c *command) serve() (int, error) {
 		}
 	}
 	if !slices.Contains(config.LocalBinds(), cfg.Bind) {
-		// a network bind needs the users of state.sqlite and the names of this server
-		if _, err := os.Stat(state.Path(cfg.DataDir)); err != nil {
-			return 1, refuse("bind address %s is not local; only %s are allowed until users are imported (import), then with --server-names NAME[,NAME]", pystr.Repr(cfg.Bind),
-				strings.Join(config.LocalBinds(), ", "))
+		// a network bind needs someone in state.sqlite who can sign in, and the names of this server
+		signs, err := someoneSignsIn(cfg.DataDir)
+		if err != nil {
+			return 1, err
+		}
+		if !signs {
+			return 1, refuse("bind address %s is not local; only %s are allowed until users are imported (import) or added (user add), "+
+				"or an LDAP connection is imported, with its realm active (realms set), then with --server-names NAME[,NAME]",
+				pystr.Repr(cfg.Bind), strings.Join(config.LocalBinds(), ", "))
 		}
 		if len(hostNames) == 0 {
 			return 1, refuse("bind address %s is not local; name this server with --server-names NAME[,NAME]", pystr.Repr(cfg.Bind))
@@ -374,23 +410,112 @@ func (c *command) serve() (int, error) {
 	if listeners.IsReserved(cfg.Port) {
 		return 1, refuse("port %d is reserved on this machine; use --port N", cfg.Port)
 	}
+	tlsConfig, certFile, err := c.listenerTLS(cfg)
+	if err != nil {
+		return 1, err
+	}
 	slog.SetDefault(slog.New(newLogHandler(c.err, true)))
 	var ask askFunc
 	if c.ns.values["ask_ldap_password"] == true {
 		ask = askSecret(os.Stdin, c.err)
 	}
-	sec, err := buildSecurity(cfg.DataDir, ask, slog.New(fieldHandler{newLogHandler(c.err, true)}).With("logger", securityLogger))
+	proxies, err := config.ParseTrustedProxies(cfg.TrustedProxies)
 	if err != nil {
 		return 1, err
+	}
+	securityLog := slog.New(fieldHandler{newLogHandler(c.err, true)}).With("logger", securityLogger)
+	sec, err := buildSecurity(cfg.DataDir, proxies, ask, securityLog)
+	if err != nil {
+		return 1, err
+	}
+	if writes && sec == nil {
+		// decision E4: without state.sqlite every caller is anonymous
+		return 1, refuse("writes need state.sqlite with the users who may write; import them first (import), then start with writes on")
+	}
+	defer closeSecurity(sec)
+	if tlsConfig != nil {
+		slog.Info("TLS on every listener with the certificate "+certFile, "logger", listenersLogger)
+	} else if !slices.Contains(config.LocalBinds(), cfg.Bind) {
+		// hardening line 14 of the phase 3 plan
+		securityLog.Warn(fmt.Sprintf("bind address %s is not local and TLS is off: Basic credentials and session cookies cross "+
+			"the network in clear text; give --tls-cert and --tls-key, or bind to loopback behind a reverse proxy on this host "+
+			"that ends TLS", cfg.Bind))
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), stopSignals...)
 	defer stop()
 	defer catchContinue()()
-	opts := server.ServeOptions{AccessLog: c.err, Security: sec, HostNames: hostNames, Notify: notify.FromEnv(os.Getenv)}
+	opts := server.ServeOptions{AccessLog: c.err, Security: sec, HostNames: hostNames, Notify: notify.FromEnv(os.Getenv), Writes: writes,
+		TLS: tlsConfig, Secure: auth.TrustedProxies(proxies).Secure}
+	if sec != nil {
+		// review D1: one warning per peer that sends forwarded headers and is no trusted proxy
+		opts.Forwarded = auth.NewForwardedWarner(proxies, securityLog, time.Now).Check
+	}
 	if err := server.Serve(ctx, cfg, opts); err != nil {
 		return 1, err
 	}
 	return 0, nil
+}
+
+// someoneSignsIn reports whether state.sqlite of dataDir holds someone who
+// can sign in, the condition of a network bind: a local user that signs in
+// with a password (signInUser) while the realm of the local users is
+// active, or an LDAP connection while the LDAP realm is active. Without the
+// file nobody can.
+func someoneSignsIn(dataDir string) (bool, error) {
+	st, err := state.Open(dataDir)
+	if errors.Is(err, state.ErrAbsent) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	defer st.Close()
+	snap, err := st.Load()
+	if err != nil {
+		return false, err
+	}
+	if slices.Contains(snap.Realms, auth.RealmLocal) {
+		for _, u := range snap.Users {
+			if signsInWithPassword(u) {
+				return true, nil
+			}
+		}
+	}
+	return len(snap.LDAP) > 0 && slices.Contains(snap.Realms, auth.RealmLDAP), nil
+}
+
+// listenersLogger is the logger of the listeners in package server.
+const listenersLogger = "pipesmith_registry.listeners"
+
+// listenerTLS is the TLS of every listener (decision E9 of the execution
+// plan): the files of --tls-cert and --tls-key, else tls_cert and tls_key of
+// config.json, read once at start. Without both files it is nil and the
+// listeners speak plain HTTP.
+func (c *command) listenerTLS(cfg *config.Config) (*tls.Config, string, error) {
+	certFile, keyFile := cfg.TLSCert, cfg.TLSKey
+	if value, ok := c.text("tls_cert"); ok {
+		certFile = value
+	}
+	if value, ok := c.text("tls_key"); ok {
+		keyFile = value
+	}
+	tlsConfig, err := loadTLS(certFile, keyFile)
+	return tlsConfig, certFile, err
+}
+
+// loadTLS reads a certificate and its key; one file alone is refused.
+func loadTLS(certFile, keyFile string) (*tls.Config, error) {
+	switch {
+	case certFile == "" && keyFile == "":
+		return nil, nil
+	case certFile == "" || keyFile == "":
+		return nil, refuse("TLS needs a certificate and a key: give --tls-cert and --tls-key, or tls_cert and tls_key in config.json")
+	}
+	tlsConfig, err := server.LoadTLS(certFile, keyFile)
+	if err != nil {
+		return nil, refuse("%v", err)
+	}
+	return tlsConfig, nil
 }
 
 // Stores
@@ -639,14 +764,24 @@ func (c *command) scan() (int, error) {
 		return 1, err
 	}
 	c.warnSharedFS(cfg.DataDir)
+	// The write store holds the rows of every written path and is no store of
+	// config.json: it is scanned after them, so that an index built again
+	// serves what was written (finding S1 of review 4).
+	writeStore, err := server.ExistingWriteStore(cfg)
+	if err != nil {
+		return 1, err
+	}
 	list := cfg.Stores
 	if name, ok := c.text("name"); ok {
 		list = slices.DeleteFunc(slices.Clone(cfg.Stores), func(s config.StoreConfig) bool { return s.Name != name })
-		if len(list) == 0 {
+		if writeStore != nil && writeStore.Name() != name {
+			writeStore = nil
+		}
+		if len(list) == 0 && writeStore == nil {
 			return 1, refuse("no store named %s is attached", name)
 		}
 	}
-	if len(list) == 0 {
+	if len(list) == 0 && writeStore == nil {
 		return 1, refuse("no stores attached; add one with: store add <name> --kind <kind> --root <path>")
 	}
 	ix, err := index.Open(cfg.IndexPath())
@@ -655,24 +790,41 @@ func (c *command) scan() (int, error) {
 	}
 	defer ix.Close()
 	failed := 0
-	for _, sc := range list {
-		progress := c.progressPrinter(sc.Name)
-		s, err := stores.Make(sc, cfg.DataDir)
-		var result scan.Result
-		if err == nil {
-			result, err = scan.Run(s, ix, progress)
-		}
+	scanned := func(name string, run func(progress func(int)) (scan.Result, error)) error {
+		progress := c.progressPrinter(name)
+		result, err := run(progress)
 		c.endProgress(progress)
 		if err != nil {
 			if !server.Caught(err) {
-				return 1, err
+				return err
 			}
-			fmt.Fprintf(c.err, "error: scan %s failed, the index keeps its previous rows: %s\n", sc.Name, server.PyText(err))
+			fmt.Fprintf(c.err, "error: scan %s failed, the index keeps its previous rows: %s\n", name, server.PyText(err))
 			failed++
-			continue
+			return nil
 		}
 		c.print("scan %s: live=%d deleted=%d copies=%d no_bytes=%d unparsable=%d seconds=%.2f", result.Store, result.Live,
 			result.Deleted, result.Copies, result.NoBytes, result.Unparsable, result.Seconds)
+		return nil
+	}
+	for _, sc := range list {
+		err := scanned(sc.Name, func(progress func(int)) (scan.Result, error) {
+			s, err := stores.Make(sc, cfg.DataDir)
+			if err != nil {
+				return scan.Result{}, err
+			}
+			return scan.Run(s, ix, progress)
+		})
+		if err != nil {
+			return 1, err
+		}
+	}
+	if writeStore != nil {
+		err := scanned(writeStore.Name(), func(progress func(int)) (scan.Result, error) {
+			return server.ScanWriteStore(writeStore, ix, progress)
+		})
+		if err != nil {
+			return 1, err
+		}
 	}
 	if failed > 0 {
 		return 1, nil
@@ -1124,6 +1276,9 @@ func (c *command) config() (int, error) {
 			ports.Set(name, cfg.DockerPorts[name])
 		}
 		doc.Set("docker_ports", ports)
+		for _, item := range cfg.ProcessItems() {
+			doc.Set(item[0].(string), item[1])
+		}
 		data, err := pyjson.DumpsIndent(doc, 2)
 		if err != nil {
 			return 1, err
@@ -1134,6 +1289,17 @@ func (c *command) config() (int, error) {
 	rows := make([][]string, 0, len(values)+1)
 	for _, kv := range values {
 		rows = append(rows, []string{kv[0].(string), fmt.Sprint(kv[1])})
+	}
+	for _, item := range cfg.ProcessItems() {
+		value := fmt.Sprint(item[1])
+		if list, ok := item[1].([]any); ok {
+			parts := make([]string, len(list))
+			for i, part := range list {
+				parts[i] = fmt.Sprint(part)
+			}
+			value = strings.Join(parts, ", ")
+		}
+		rows = append(rows, []string{item[0].(string), value})
 	}
 	rows = append(rows, []string{"stores", fmt.Sprint(len(cfg.Stores))})
 	if err := table(c.out, rows); err != nil {
@@ -1226,6 +1392,9 @@ func problems() ([]string, error) {
 				}
 			}
 		}
+	}
+	if _, err := loadTLS(cfg.TLSCert, cfg.TLSKey); err != nil {
+		out = append(out, err.Error())
 	}
 	if _, err := repos.LoadDefinitions(cfg.RepositoriesPath()); err != nil {
 		if !server.Caught(err) {

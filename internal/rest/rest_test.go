@@ -399,9 +399,12 @@ func TestAnonymousAndRealms(t *testing.T) {
 	if got := body(t, a, err, 200); !reflect.DeepEqual(got, []any{}) {
 		t.Fatalf("%#v", got)
 	}
+	// the realms this server builds, the token realms and the default role
+	// included (internal/auth, Realms)
 	a, err = RealmsAvailable(f.admin())
 	items := list(t, body(t, a, err, 200))
-	if got := names(items, "id"); !reflect.DeepEqual(got, []string{"NexusAuthenticatingRealm", "LdapRealm"}) {
+	if got := names(items, "id"); !reflect.DeepEqual(got, []string{"NexusAuthenticatingRealm", "NexusAuthorizingRealm", "LdapRealm",
+		"NpmToken", "DockerToken", "User-Token-Realm", "DefaultRole"}) {
 		t.Fatalf("%v", got)
 	}
 	for _, item := range items {

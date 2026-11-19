@@ -3,12 +3,14 @@ package auth_test
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -354,6 +356,93 @@ func TestSessionBounds(t *testing.T) {
 	}
 	if _, err := e.svc.Subject(request(http.MethodGet, "/", cookies[1])); !errors.Is(err, model.ErrUnauthorized) {
 		t.Errorf("the oldest session lives past the total bound: %v", err)
+	}
+}
+
+// Task 7 of the phase 3 plan and hardening line 1: 64 goroutines sign in,
+// read and sign out at once while the store holds small bounds, so the bound
+// per user, the bound in all and the compaction of the order run in
+// parallel under -race. TestConcurrent does the same within the bounds.
+// Every session exists before the first read, so the reads are known: the
+// last 10 of 128 sessions live.
+func TestSessionStoreParallel(t *testing.T) {
+	e := newEnv(t, fixture(t))
+	const perUser, total, workers, rounds = 3, 10, 64, 2
+	auth.SetSessionLimits(e.svc, perUser, total)
+	users := []string{"demo-admin", "demo-reader", "demo-legacy-sha1", "demo-legacy-md5", "demo-nobody"}
+	type held struct {
+		cookie *http.Cookie
+		token  string
+	}
+	var signedIn sync.WaitGroup
+	signedIn.Add(workers)
+	checked := make(chan struct{})
+	reads := make(chan [2]int, workers)
+	var done sync.WaitGroup
+	for i := range workers {
+		done.Add(1)
+		go func() {
+			defer done.Done()
+			user := users[i%len(users)]
+			addr := fmt.Sprintf("192.0.2.%d", 100+i)
+			var mine []held
+			for range rounds {
+				rec := e.signIn(user, password(t, user), addr)
+				if rec.Code != http.StatusOK {
+					t.Errorf("%s: sign in %d", user, rec.Code)
+					continue
+				}
+				var a sessionAnswer
+				_ = json.Unmarshal(rec.Body.Bytes(), &a)
+				mine = append(mine, held{sessionCookie(t, rec), *a.CSRFToken})
+			}
+			signedIn.Done()
+			signedIn.Wait()
+			live, dead := 0, 0
+			for _, h := range mine {
+				s, err := e.svc.Subject(request(http.MethodGet, "/", h.cookie))
+				switch {
+				case err == nil && s != nil && s.User.ID == user:
+					live++
+				case errors.Is(err, model.ErrUnauthorized):
+					dead++
+				default:
+					t.Errorf("%s: subject %+v %v", user, s, err)
+				}
+				e.do(request(http.MethodGet, "/api/session", h.cookie))
+			}
+			reads <- [2]int{live, dead}
+			<-checked
+			for _, h := range mine {
+				r := request(http.MethodDelete, "/api/session", h.cookie)
+				r.Header.Set(auth.CSRFHeader, h.token)
+				if rec := e.do(r); rec.Code != http.StatusNoContent {
+					t.Errorf("%s: sign out %d", user, rec.Code)
+				}
+			}
+		}()
+	}
+	signedIn.Wait()
+	if n := auth.SessionCount(e.svc); n != total {
+		t.Errorf("%d sessions after %d sign ins, want the bound of %d", n, workers*rounds, total)
+	}
+	for user, n := range auth.SessionsPerUser(e.svc) {
+		if n > perUser {
+			t.Errorf("%s holds %d sessions, the bound is %d", user, n, perUser)
+		}
+	}
+	live, dead := 0, 0
+	for range workers {
+		r := <-reads
+		live, dead = live+r[0], dead+r[1]
+	}
+	close(checked)
+	done.Wait()
+	if live != total || dead != workers*rounds-total {
+		t.Errorf("reads: %d live and %d ended, want %d and %d", live, dead, total, workers*rounds-total)
+	}
+	if n := auth.SessionCount(e.svc); n != 0 {
+		t.Errorf("%d sessions after every sign out", n)
 	}
 }
 

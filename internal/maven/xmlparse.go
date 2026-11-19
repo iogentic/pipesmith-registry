@@ -269,6 +269,7 @@ type parser struct {
 	tags           []openTag
 	indirect       uint64
 	tree           builder
+	count          treeCount
 }
 
 // builder is the TreeBuilder of ElementTree: character data goes to the
@@ -373,7 +374,7 @@ func (p *parser) tolerated() bool {
 
 func (p *parser) expanded(n int) error {
 	p.indirect += uint64(n) // #nosec G115 -- n is the length of an entity text, never negative.
-	if !p.tolerated() {
+	if p.indirect > maxExpansion || !p.tolerated() {
 		return errNotWellFormed
 	}
 	return nil
@@ -750,6 +751,9 @@ func (p *parser) storeAtts(s *source, rawName string, atts []rawAtt) error {
 			list = append(list, reported{d.id, *d.value})
 		}
 	}
+	if err := p.count.add(len(list)); err != nil {
+		return err
+	}
 	e := &element{tag: rawName}
 	expandedNames := map[string]bool{}
 	for _, att := range list {
@@ -772,6 +776,9 @@ func (p *parser) storeAtts(s *source, rawName string, atts []rawAtt) error {
 			return errNotWellFormed
 		}
 		e.tag = local
+	}
+	if len(p.tags) >= maxElementDepth {
+		return errNotWellFormed
 	}
 	p.tags = append(p.tags, tag)
 	p.tree.start(e)

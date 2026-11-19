@@ -1,0 +1,17 @@
+== Blocks
+[source,java]
+----
+class Demo {}
+// not a comment here
+----
+
+....
+literal text
+....
+
+////
+a comment block
+////
+
+[NOTE]
+A note.

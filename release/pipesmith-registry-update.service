@@ -1,0 +1,20 @@
+# The daily update check of Pipesmith Registry, started by
+# pipesmith-registry-update.timer. It runs the fetch stage: it downloads and
+# checks the highest complete version above the running one into
+# /opt/pipesmith-registry/releases/. It restarts the server only when
+# scheduled_switch of /opt/pipesmith-registry/update.json is true.
+[Unit]
+Description=Pipesmith Registry update check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# The owner of the install root /opt/pipesmith-registry; update refuses
+# any other user.
+User=root
+Environment=PIPESMITH_REGISTRY_DATA=/var/lib/pipesmith-registry
+ExecStart=/opt/pipesmith-registry/current/pipesmith-registry update --fetch --scheduled
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectHome=yes

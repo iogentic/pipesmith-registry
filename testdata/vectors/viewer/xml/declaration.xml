@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml-stylesheet type="text/xsl" href="style.xsl"?>
+<!DOCTYPE note [
+  <!ELEMENT note (to, body)>
+  <!ENTITY writer "Example Writer">
+]>
+<note>
+  <to>demo</to>
+  <?pi data?>
+</note>

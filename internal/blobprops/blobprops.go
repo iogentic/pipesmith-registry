@@ -20,6 +20,13 @@ const (
 	TypeKey = "@BlobStore.content-type"
 )
 
+// Keys of the uploader and its address. The reference does not read them;
+// they never make a blob unparsable.
+const (
+	CreatedByKey   = "@BlobStore.created-by"
+	CreatedByIPKey = "@BlobStore.created-by-ip"
+)
+
 // maxIntDigits is the digit limit of int(str) in Python 3.12.
 const maxIntDigits = 4300
 
@@ -32,7 +39,12 @@ type BlobProps struct {
 	ContentType *string // @BlobStore.content-type, nil when absent or empty
 	CreatedMS   int64   // creationTime, 0 when Overflow says so
 	Deleted     bool    // key "deleted" present with value true
-	IsCopy      bool    // key "originalLocation" present: a soft delete copy, not a blob
+	// DeletedReason is the value of deletedReason, "" when absent.
+	DeletedReason string
+	IsCopy        bool // key "originalLocation" present: a soft delete copy, not a blob
+	// CreatedBy and CreatedByIP are the uploader and its address, nil when
+	// the key is absent, empty or not a valid text.
+	CreatedBy, CreatedByIP *string
 	// Overflow is set when size or creationTime is a number beyond 64 bits.
 	// Python keeps such a number, and its index then fails to store a live
 	// entry; the field lets a store fail the same way.
@@ -82,19 +94,30 @@ func Parse(data []byte) (*BlobProps, error) {
 		return nil, nil
 	}
 	props := &BlobProps{
-		Repo:        repo,
-		Path:        path,
-		Size:        size,
-		ContentType: contentType,
-		CreatedMS:   created,
-		Deleted:     asciiLower(strings.TrimFunc(items["deleted"], pyIsSpace)) == "true",
-		Overflow:    sizeOver || createdOver,
+		Repo:          repo,
+		Path:          path,
+		Size:          size,
+		ContentType:   contentType,
+		CreatedMS:     created,
+		Deleted:       asciiLower(strings.TrimFunc(items["deleted"], pyIsSpace)) == "true",
+		DeletedReason: items["deletedReason"],
+		Overflow:      sizeOver || createdOver,
 	}
 	if sha := asciiLower(strings.TrimFunc(items["sha1"], pyIsSpace)); isSHA1(sha) {
 		props.SHA1 = &sha
 	}
 	_, props.IsCopy = items["originalLocation"]
+	props.CreatedBy, props.CreatedByIP = optionalText(items[CreatedByKey]), optionalText(items[CreatedByIPKey])
 	return props, nil
+}
+
+// optionalText is nil for an empty value and for one that is no valid
+// UTF-8, as a lone surrogate is.
+func optionalText(value string) *string {
+	if value == "" || !utf8.ValidString(value) {
+		return nil
+	}
+	return &value
 }
 
 // Load returns the keys and values of a properties text as

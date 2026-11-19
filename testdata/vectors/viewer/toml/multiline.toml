@@ -1,0 +1,10 @@
+text = """
+Roses are red
+Violets are "blue"
+"""
+path = '''
+C:\Users\example\no escapes here
+'''
+joined = """one \
+  two"""
+after = 1

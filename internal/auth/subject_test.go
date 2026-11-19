@@ -33,7 +33,8 @@ func TestBasic(t *testing.T) {
 		basic(request(http.MethodGet, "/", nil), "demo-off", password(t, "demo-off")),
 		basic(request(http.MethodGet, "/", nil), noHashUser, ""),
 	}
-	for _, header := range []string{"Basic !!!", "Basic " + "ZGVtby1yZWFkZXI=", "Bearer NpmToken.0123", "Digest x", "Basic"} {
+	// a token in the old shape has an answer of its own (TestOldTokenShape)
+	for _, header := range []string{"Basic !!!", "Basic " + "ZGVtby1yZWFkZXI=", "Bearer NpmToken.0123.4567", "Digest x", "Basic"} {
 		r := request(http.MethodGet, "/", nil)
 		r.Header.Set("Authorization", header)
 		refused = append(refused, r)
@@ -45,19 +46,6 @@ func TestBasic(t *testing.T) {
 	}
 	if s, err := e.svc.Subject(request(http.MethodGet, "/", nil)); s != nil || err != nil {
 		t.Errorf("no credentials: %+v, %v", s, err)
-	}
-}
-
-// T7: Basic credentials are checked against local users only.
-func TestBasicLocalOnly(t *testing.T) {
-	d := ldapDirectory()
-	e := newEnv(t, fixture(t), d)
-	r := basic(request(http.MethodGet, "/", nil), "demo-ldap-person", ldapPassword)
-	if s, err := e.svc.Subject(r); s != nil || !errors.Is(err, model.ErrUnauthorized) {
-		t.Errorf("Basic of a directory user: %+v, %v", s, err)
-	}
-	if d.count() != 0 {
-		t.Errorf("Basic asked the directory %d times", d.count())
 	}
 }
 

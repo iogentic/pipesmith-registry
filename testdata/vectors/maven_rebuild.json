@@ -1,0 +1,344 @@
+{
+ "generator": "written by hand from https://maven.apache.org/ref/3.9.9/maven-repository-metadata/repository-metadata.html and https://maven.apache.org/repository/layout.html (read 2026-11-18); the documents in the shape of the merge of internal/maven, with the element order of the files the Maven client deploys; the checksum lines and the plugin jar made with Python hashlib and zipfile; provisional (W6)",
+ "cases": [
+  {
+   "name": "artifact level of two releases and a snapshot, and the snapshot version level",
+   "scope": {},
+   "files": [
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+     "created": "2026-11-18T10:15:30.123Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar.sha1",
+     "created": "2026-11-18T10:15:30.500Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+     "created": "2026-11-18T10:15:31.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.1.0/demo-lib-1.1.0.jar",
+     "created": "2026-11-18T11:15:30.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.1.0/demo-lib-1.1.0.pom",
+     "created": "2026-11-18T11:15:30.500Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.2.0-SNAPSHOT/demo-lib-1.2.0-20261118.121530-1.jar",
+     "created": "2026-11-18T12:15:30.900Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.2.0-SNAPSHOT/demo-lib-1.2.0-20261118.121530-1.pom",
+     "created": "2026-11-18T12:15:31.200Z"
+    },
+    {
+     "path": "com/example/demo-lib/maven-metadata.xml",
+     "created": "2026-11-18T09:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/maven-metadata.xml.sha256",
+     "created": "2026-11-18T09:00:00.000Z"
+    }
+   ],
+   "documents": {
+    "com/example/demo-lib/1.2.0-SNAPSHOT/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata modelVersion=\"1.1.0\">\n  <groupId>com.example</groupId>\n  <artifactId>demo-lib</artifactId>\n  <version>1.2.0-SNAPSHOT</version>\n  <versioning>\n    <snapshot>\n      <timestamp>20261118.121530</timestamp>\n      <buildNumber>1</buildNumber>\n    </snapshot>\n    <lastUpdated>20261118121531</lastUpdated>\n    <snapshotVersions>\n      <snapshotVersion>\n        <extension>jar</extension>\n        <value>1.2.0-20261118.121530-1</value>\n        <updated>20261118121530</updated>\n      </snapshotVersion>\n      <snapshotVersion>\n        <extension>pom</extension>\n        <value>1.2.0-20261118.121530-1</value>\n        <updated>20261118121531</updated>\n      </snapshotVersion>\n    </snapshotVersions>\n  </versioning>\n</metadata>\n",
+    "com/example/demo-lib/1.2.0-SNAPSHOT/maven-metadata.xml.md5": "ca5b396af8533d03db8cdf55de409d37",
+    "com/example/demo-lib/1.2.0-SNAPSHOT/maven-metadata.xml.sha1": "6e075f8db9fe7a745d46e2be4e52d3129c7adfed",
+    "com/example/demo-lib/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example</groupId>\n  <artifactId>demo-lib</artifactId>\n  <versioning>\n    <latest>1.2.0-SNAPSHOT</latest>\n    <release>1.1.0</release>\n    <versions>\n      <version>1.0.0</version>\n      <version>1.1.0</version>\n      <version>1.2.0-SNAPSHOT</version>\n    </versions>\n    <lastUpdated>20261118121531</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/demo-lib/maven-metadata.xml.md5": "c45149019073010a966d608992befacd",
+    "com/example/demo-lib/maven-metadata.xml.sha1": "f5fac9413e967a43b0f9854903431a2a04684036",
+    "com/example/demo-lib/maven-metadata.xml.sha256": "2c29f34e37d6d24448709ab1d393c1cf6e59188c2e8d710262619c2e0f9dac43"
+   },
+   "stale": []
+  },
+  {
+   "name": "snapshot version level of two builds: the newest build of each classifier and extension",
+   "scope": {},
+   "files": [
+    {
+     "path": "com/example/demo-app/2.0.0-SNAPSHOT/demo-app-2.0.0-20261118.101530-1.jar",
+     "created": "2026-11-18T10:15:30.000Z"
+    },
+    {
+     "path": "com/example/demo-app/2.0.0-SNAPSHOT/demo-app-2.0.0-20261118.101530-1.pom",
+     "created": "2026-11-18T10:15:31.000Z"
+    },
+    {
+     "path": "com/example/demo-app/2.0.0-SNAPSHOT/demo-app-2.0.0-20261118.101530-1-javadoc.jar",
+     "created": "2026-11-18T10:15:32.000Z"
+    },
+    {
+     "path": "com/example/demo-app/2.0.0-SNAPSHOT/demo-app-2.0.0-20261118.111530-2.jar",
+     "created": "2026-11-18T11:15:30.000Z"
+    },
+    {
+     "path": "com/example/demo-app/2.0.0-SNAPSHOT/demo-app-2.0.0-20261118.111530-2.pom",
+     "created": "2026-11-18T11:15:31.000Z"
+    },
+    {
+     "path": "com/example/demo-app/2.0.0-SNAPSHOT/demo-app-2.0.0-20261118.111530-2-sources.jar",
+     "created": "2026-11-18T11:15:32.000Z"
+    },
+    {
+     "path": "com/example/demo-app/2.0.0-SNAPSHOT/demo-app-2.0.0-20261118.111530-2.pom.asc",
+     "created": "2026-11-18T11:15:33.000Z"
+    },
+    {
+     "path": "com/example/demo-app/2.0.0-SNAPSHOT/maven-metadata.xml",
+     "created": "2026-11-18T10:15:33.000Z"
+    }
+   ],
+   "documents": {
+    "com/example/demo-app/2.0.0-SNAPSHOT/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata modelVersion=\"1.1.0\">\n  <groupId>com.example</groupId>\n  <artifactId>demo-app</artifactId>\n  <version>2.0.0-SNAPSHOT</version>\n  <versioning>\n    <snapshot>\n      <timestamp>20261118.111530</timestamp>\n      <buildNumber>2</buildNumber>\n    </snapshot>\n    <lastUpdated>20261118111533</lastUpdated>\n    <snapshotVersions>\n      <snapshotVersion>\n        <extension>jar</extension>\n        <value>2.0.0-20261118.111530-2</value>\n        <updated>20261118111530</updated>\n      </snapshotVersion>\n      <snapshotVersion>\n        <extension>pom</extension>\n        <value>2.0.0-20261118.111530-2</value>\n        <updated>20261118111531</updated>\n      </snapshotVersion>\n      <snapshotVersion>\n        <extension>pom.asc</extension>\n        <value>2.0.0-20261118.111530-2</value>\n        <updated>20261118111533</updated>\n      </snapshotVersion>\n      <snapshotVersion>\n        <classifier>javadoc</classifier>\n        <extension>jar</extension>\n        <value>2.0.0-20261118.101530-1</value>\n        <updated>20261118101532</updated>\n      </snapshotVersion>\n      <snapshotVersion>\n        <classifier>sources</classifier>\n        <extension>jar</extension>\n        <value>2.0.0-20261118.111530-2</value>\n        <updated>20261118111532</updated>\n      </snapshotVersion>\n    </snapshotVersions>\n  </versioning>\n</metadata>\n",
+    "com/example/demo-app/2.0.0-SNAPSHOT/maven-metadata.xml.md5": "01edf808f6acbf89041a636c9e52c55c",
+    "com/example/demo-app/2.0.0-SNAPSHOT/maven-metadata.xml.sha1": "5b46da439e6309a344dca52cd243d705d91e8f9f",
+    "com/example/demo-app/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example</groupId>\n  <artifactId>demo-app</artifactId>\n  <versioning>\n    <latest>2.0.0-SNAPSHOT</latest>\n    <versions>\n      <version>2.0.0-SNAPSHOT</version>\n    </versions>\n    <lastUpdated>20261118111533</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/demo-app/maven-metadata.xml.md5": "fcff6969cc098bc7004f4465d71d58ef",
+    "com/example/demo-app/maven-metadata.xml.sha1": "0e87c09a2cc98b2a64c218b7745b1620dd192134"
+   },
+   "stale": []
+  },
+  {
+   "name": "plugin group: packaging maven-plugin of the newest version, the prefix of the descriptor or of the artifact id",
+   "scope": {},
+   "files": [
+    {
+     "path": "com/example/plugins/demo-maven-plugin/0.9.0/demo-maven-plugin-0.9.0.pom",
+     "created": "2026-11-18T09:00:00.000Z",
+     "text": "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><artifactId>demo-maven-plugin</artifactId><packaging>jar</packaging></project>\n"
+    },
+    {
+     "path": "com/example/plugins/demo-maven-plugin/1.0.0/demo-maven-plugin-1.0.0.pom",
+     "created": "2026-11-18T10:00:00.000Z",
+     "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\n  <modelVersion>4.0.0</modelVersion>\n  <artifactId>demo-maven-plugin</artifactId>\n  <packaging>maven-plugin</packaging>\n  <name> Demo Maven Plugin </name>\n  <build><plugins><plugin><name>inner</name></plugin></plugins></build>\n</project>\n"
+    },
+    {
+     "path": "com/example/plugins/demo-maven-plugin/1.0.0/demo-maven-plugin-1.0.0.jar",
+     "created": "2026-11-18T10:00:01.000Z",
+     "base64": "UEsDBBQAAAAAAAAAcl1631ogFgAAABYAAAAUAAAATUVUQS1JTkYvTUFOSUZFU1QuTUZNYW5pZmVzdC1WZXJzaW9uOiAxLjAKUEsDBBQAAAAAAAAAcl07jSv6gQAAAIEAAAAZAAAATUVUQS1JTkYvbWF2ZW4vcGx1Z2luLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04Ij8+CjxwbHVnaW4+CiAgPG5hbWU+RGVtbyBNYXZlbiBQbHVnaW48L25hbWU+CiAgPGdvYWxQcmVmaXg+ZGVtby1nb2FsczwvZ29hbFByZWZpeD4KPC9wbHVnaW4+ClBLAQIUAxQAAAAAAAAAcl1631ogFgAAABYAAAAUAAAAAAAAAAAAAACAAQAAAABNRVRBLUlORi9NQU5JRkVTVC5NRlBLAQIUAxQAAAAAAAAAcl07jSv6gQAAAIEAAAAZAAAAAAAAAAAAAACAAUgAAABNRVRBLUlORi9tYXZlbi9wbHVnaW4ueG1sUEsFBgAAAAACAAIAiQAAAAABAAAAAA=="
+    },
+    {
+     "path": "com/example/plugins/maven-other-plugin/2.0/maven-other-plugin-2.0.pom",
+     "created": "2026-11-18T10:00:02.000Z",
+     "text": "<project><packaging>maven-plugin</packaging></project>\n"
+    },
+    {
+     "path": "com/example/plugins/maven-other-plugin/2.0/maven-other-plugin-2.0.jar",
+     "created": "2026-11-18T10:00:03.000Z",
+     "text": "no archive"
+    },
+    {
+     "path": "com/example/plugins/demo-lib/1.0/demo-lib-1.0.pom",
+     "created": "2026-11-18T10:00:04.000Z",
+     "text": "<project><packaging>jar</packaging><name>Demo Lib</name></project>\n"
+    }
+   ],
+   "documents": {
+    "com/example/plugins/demo-lib/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example.plugins</groupId>\n  <artifactId>demo-lib</artifactId>\n  <versioning>\n    <latest>1.0</latest>\n    <release>1.0</release>\n    <versions>\n      <version>1.0</version>\n    </versions>\n    <lastUpdated>20261118100004</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/plugins/demo-lib/maven-metadata.xml.md5": "cfef9a66ff8447959ce69eba08c3a874",
+    "com/example/plugins/demo-lib/maven-metadata.xml.sha1": "b05b78181349cb22aaa993e70d19459ae568c6ec",
+    "com/example/plugins/demo-maven-plugin/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example.plugins</groupId>\n  <artifactId>demo-maven-plugin</artifactId>\n  <versioning>\n    <latest>1.0.0</latest>\n    <release>1.0.0</release>\n    <versions>\n      <version>0.9.0</version>\n      <version>1.0.0</version>\n    </versions>\n    <lastUpdated>20261118100001</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/plugins/demo-maven-plugin/maven-metadata.xml.md5": "fa4ecacb1687203d8dbbe48936b82803",
+    "com/example/plugins/demo-maven-plugin/maven-metadata.xml.sha1": "40c5668865311007fedac532f70f2e3ce1ac4162",
+    "com/example/plugins/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <plugins>\n    <plugin>\n      <name>Demo Maven Plugin</name>\n      <prefix>demo-goals</prefix>\n      <artifactId>demo-maven-plugin</artifactId>\n    </plugin>\n    <plugin>\n      <prefix>other</prefix>\n      <artifactId>maven-other-plugin</artifactId>\n    </plugin>\n  </plugins>\n</metadata>\n",
+    "com/example/plugins/maven-metadata.xml.md5": "5392ae756e23c6126a8048447ada6858",
+    "com/example/plugins/maven-metadata.xml.sha1": "6b2c7508bae317969e2ed3974dfd99ce649d05c5",
+    "com/example/plugins/maven-other-plugin/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example.plugins</groupId>\n  <artifactId>maven-other-plugin</artifactId>\n  <versioning>\n    <latest>2.0</latest>\n    <release>2.0</release>\n    <versions>\n      <version>2.0</version>\n    </versions>\n    <lastUpdated>20261118100003</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/plugins/maven-other-plugin/maven-metadata.xml.md5": "ec9cf68e624f1c50a7af468e325f0081",
+    "com/example/plugins/maven-other-plugin/maven-metadata.xml.sha1": "662a46737addb9e07e7524a2419fbb2ffa2c01bb"
+   },
+   "stale": []
+  },
+  {
+   "name": "a deleted version is no longer listed; metadata with no file below it is stale",
+   "scope": {},
+   "files": [
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+     "created": "2026-11-18T10:15:30.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/maven-metadata.xml",
+     "created": "2026-11-18T11:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/maven-metadata.xml.sha1",
+     "created": "2026-11-18T11:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-gone/maven-metadata.xml",
+     "created": "2026-11-18T11:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-gone/maven-metadata.xml.md5",
+     "created": "2026-11-18T11:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-gone/maven-metadata.xml.sha1",
+     "created": "2026-11-18T11:00:00.000Z"
+    }
+   ],
+   "documents": {
+    "com/example/demo-lib/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example</groupId>\n  <artifactId>demo-lib</artifactId>\n  <versioning>\n    <latest>1.0.0</latest>\n    <release>1.0.0</release>\n    <versions>\n      <version>1.0.0</version>\n    </versions>\n    <lastUpdated>20261118101530</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/demo-lib/maven-metadata.xml.md5": "0b21c2219614c41508dc5dca6d7aa670",
+    "com/example/demo-lib/maven-metadata.xml.sha1": "5d26c5725b89069279509455e129b2bb3957cf22"
+   },
+   "stale": [
+    "com/example/demo-gone/maven-metadata.xml",
+    "com/example/demo-gone/maven-metadata.xml.md5",
+    "com/example/demo-gone/maven-metadata.xml.sha1"
+   ]
+  },
+  {
+   "name": "the scope of one base version takes its version level only",
+   "scope": {
+    "group": "com.example",
+    "artifact": "demo-lib",
+    "version": "1.2.0-SNAPSHOT"
+   },
+   "files": [
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+     "created": "2026-11-18T10:15:30.123Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar.sha1",
+     "created": "2026-11-18T10:15:30.500Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+     "created": "2026-11-18T10:15:31.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.1.0/demo-lib-1.1.0.jar",
+     "created": "2026-11-18T11:15:30.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.1.0/demo-lib-1.1.0.pom",
+     "created": "2026-11-18T11:15:30.500Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.2.0-SNAPSHOT/demo-lib-1.2.0-20261118.121530-1.jar",
+     "created": "2026-11-18T12:15:30.900Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.2.0-SNAPSHOT/demo-lib-1.2.0-20261118.121530-1.pom",
+     "created": "2026-11-18T12:15:31.200Z"
+    },
+    {
+     "path": "com/example/demo-lib/maven-metadata.xml",
+     "created": "2026-11-18T09:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/maven-metadata.xml.sha256",
+     "created": "2026-11-18T09:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-other/1.0/demo-other-1.0.jar",
+     "created": "2026-11-18T10:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-stale/maven-metadata.xml",
+     "created": "2026-11-18T10:00:00.000Z"
+    }
+   ],
+   "documents": {
+    "com/example/demo-lib/1.2.0-SNAPSHOT/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata modelVersion=\"1.1.0\">\n  <groupId>com.example</groupId>\n  <artifactId>demo-lib</artifactId>\n  <version>1.2.0-SNAPSHOT</version>\n  <versioning>\n    <snapshot>\n      <timestamp>20261118.121530</timestamp>\n      <buildNumber>1</buildNumber>\n    </snapshot>\n    <lastUpdated>20261118121531</lastUpdated>\n    <snapshotVersions>\n      <snapshotVersion>\n        <extension>jar</extension>\n        <value>1.2.0-20261118.121530-1</value>\n        <updated>20261118121530</updated>\n      </snapshotVersion>\n      <snapshotVersion>\n        <extension>pom</extension>\n        <value>1.2.0-20261118.121530-1</value>\n        <updated>20261118121531</updated>\n      </snapshotVersion>\n    </snapshotVersions>\n  </versioning>\n</metadata>\n",
+    "com/example/demo-lib/1.2.0-SNAPSHOT/maven-metadata.xml.md5": "ca5b396af8533d03db8cdf55de409d37",
+    "com/example/demo-lib/1.2.0-SNAPSHOT/maven-metadata.xml.sha1": "6e075f8db9fe7a745d46e2be4e52d3129c7adfed"
+   },
+   "stale": []
+  },
+  {
+   "name": "the scope of one group takes the groups below it and leaves the rest",
+   "scope": {
+    "group": "com.example.plugins"
+   },
+   "files": [
+    {
+     "path": "com/example/plugins/demo-maven-plugin/0.9.0/demo-maven-plugin-0.9.0.pom",
+     "created": "2026-11-18T09:00:00.000Z",
+     "text": "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><artifactId>demo-maven-plugin</artifactId><packaging>jar</packaging></project>\n"
+    },
+    {
+     "path": "com/example/plugins/demo-maven-plugin/1.0.0/demo-maven-plugin-1.0.0.pom",
+     "created": "2026-11-18T10:00:00.000Z",
+     "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\n  <modelVersion>4.0.0</modelVersion>\n  <artifactId>demo-maven-plugin</artifactId>\n  <packaging>maven-plugin</packaging>\n  <name> Demo Maven Plugin </name>\n  <build><plugins><plugin><name>inner</name></plugin></plugins></build>\n</project>\n"
+    },
+    {
+     "path": "com/example/plugins/demo-maven-plugin/1.0.0/demo-maven-plugin-1.0.0.jar",
+     "created": "2026-11-18T10:00:01.000Z",
+     "base64": "UEsDBBQAAAAAAAAAcl1631ogFgAAABYAAAAUAAAATUVUQS1JTkYvTUFOSUZFU1QuTUZNYW5pZmVzdC1WZXJzaW9uOiAxLjAKUEsDBBQAAAAAAAAAcl07jSv6gQAAAIEAAAAZAAAATUVUQS1JTkYvbWF2ZW4vcGx1Z2luLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04Ij8+CjxwbHVnaW4+CiAgPG5hbWU+RGVtbyBNYXZlbiBQbHVnaW48L25hbWU+CiAgPGdvYWxQcmVmaXg+ZGVtby1nb2FsczwvZ29hbFByZWZpeD4KPC9wbHVnaW4+ClBLAQIUAxQAAAAAAAAAcl1631ogFgAAABYAAAAUAAAAAAAAAAAAAACAAQAAAABNRVRBLUlORi9NQU5JRkVTVC5NRlBLAQIUAxQAAAAAAAAAcl07jSv6gQAAAIEAAAAZAAAAAAAAAAAAAACAAUgAAABNRVRBLUlORi9tYXZlbi9wbHVnaW4ueG1sUEsFBgAAAAACAAIAiQAAAAABAAAAAA=="
+    },
+    {
+     "path": "com/example/plugins/maven-other-plugin/2.0/maven-other-plugin-2.0.pom",
+     "created": "2026-11-18T10:00:02.000Z",
+     "text": "<project><packaging>maven-plugin</packaging></project>\n"
+    },
+    {
+     "path": "com/example/plugins/maven-other-plugin/2.0/maven-other-plugin-2.0.jar",
+     "created": "2026-11-18T10:00:03.000Z",
+     "text": "no archive"
+    },
+    {
+     "path": "com/example/plugins/demo-lib/1.0/demo-lib-1.0.pom",
+     "created": "2026-11-18T10:00:04.000Z",
+     "text": "<project><packaging>jar</packaging><name>Demo Lib</name></project>\n"
+    },
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+     "created": "2026-11-18T10:15:30.123Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar.sha1",
+     "created": "2026-11-18T10:15:30.500Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.pom",
+     "created": "2026-11-18T10:15:31.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.1.0/demo-lib-1.1.0.jar",
+     "created": "2026-11-18T11:15:30.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.1.0/demo-lib-1.1.0.pom",
+     "created": "2026-11-18T11:15:30.500Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.2.0-SNAPSHOT/demo-lib-1.2.0-20261118.121530-1.jar",
+     "created": "2026-11-18T12:15:30.900Z"
+    },
+    {
+     "path": "com/example/demo-lib/1.2.0-SNAPSHOT/demo-lib-1.2.0-20261118.121530-1.pom",
+     "created": "2026-11-18T12:15:31.200Z"
+    },
+    {
+     "path": "com/example/demo-lib/maven-metadata.xml",
+     "created": "2026-11-18T09:00:00.000Z"
+    },
+    {
+     "path": "com/example/demo-lib/maven-metadata.xml.sha256",
+     "created": "2026-11-18T09:00:00.000Z"
+    }
+   ],
+   "documents": {
+    "com/example/plugins/demo-lib/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example.plugins</groupId>\n  <artifactId>demo-lib</artifactId>\n  <versioning>\n    <latest>1.0</latest>\n    <release>1.0</release>\n    <versions>\n      <version>1.0</version>\n    </versions>\n    <lastUpdated>20261118100004</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/plugins/demo-lib/maven-metadata.xml.md5": "cfef9a66ff8447959ce69eba08c3a874",
+    "com/example/plugins/demo-lib/maven-metadata.xml.sha1": "b05b78181349cb22aaa993e70d19459ae568c6ec",
+    "com/example/plugins/demo-maven-plugin/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example.plugins</groupId>\n  <artifactId>demo-maven-plugin</artifactId>\n  <versioning>\n    <latest>1.0.0</latest>\n    <release>1.0.0</release>\n    <versions>\n      <version>0.9.0</version>\n      <version>1.0.0</version>\n    </versions>\n    <lastUpdated>20261118100001</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/plugins/demo-maven-plugin/maven-metadata.xml.md5": "fa4ecacb1687203d8dbbe48936b82803",
+    "com/example/plugins/demo-maven-plugin/maven-metadata.xml.sha1": "40c5668865311007fedac532f70f2e3ce1ac4162",
+    "com/example/plugins/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <plugins>\n    <plugin>\n      <name>Demo Maven Plugin</name>\n      <prefix>demo-goals</prefix>\n      <artifactId>demo-maven-plugin</artifactId>\n    </plugin>\n    <plugin>\n      <prefix>other</prefix>\n      <artifactId>maven-other-plugin</artifactId>\n    </plugin>\n  </plugins>\n</metadata>\n",
+    "com/example/plugins/maven-metadata.xml.md5": "5392ae756e23c6126a8048447ada6858",
+    "com/example/plugins/maven-metadata.xml.sha1": "6b2c7508bae317969e2ed3974dfd99ce649d05c5",
+    "com/example/plugins/maven-other-plugin/maven-metadata.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<metadata>\n  <groupId>com.example.plugins</groupId>\n  <artifactId>maven-other-plugin</artifactId>\n  <versioning>\n    <latest>2.0</latest>\n    <release>2.0</release>\n    <versions>\n      <version>2.0</version>\n    </versions>\n    <lastUpdated>20261118100003</lastUpdated>\n  </versioning>\n</metadata>\n",
+    "com/example/plugins/maven-other-plugin/maven-metadata.xml.md5": "ec9cf68e624f1c50a7af468e325f0081",
+    "com/example/plugins/maven-other-plugin/maven-metadata.xml.sha1": "662a46737addb9e07e7524a2419fbb2ffa2c01bb"
+   },
+   "stale": []
+  }
+ ]
+}

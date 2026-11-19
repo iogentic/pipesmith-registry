@@ -1,0 +1,19 @@
+{
+ "format": "docker",
+ "note": "Rows of the table Coordinates of docs/plans/phase-1c-rest-read.md: a manifest gives the image as name and its tag or digest as version; a blob gives no component.",
+ "cases": [
+  {"row": "manifest", "path": "v2/demo/app/manifests/1.4.2",
+   "expect": {"group": "", "name": "demo/app", "version": "1.4.2", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "manifest", "path": "v2/library/busybox/manifests/latest",
+   "expect": {"group": "", "name": "library/busybox", "version": "latest", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "manifest", "path": "v2/demo/app/manifests/sha256:6c3c624b58dbbcd3c0dd82b4c53f04194d1247c6eebdaab7c610cf7d66709b3b",
+   "expect": {"group": "", "name": "demo/app", "version": "sha256:6c3c624b58dbbcd3c0dd82b4c53f04194d1247c6eebdaab7c610cf7d66709b3b", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "manifest", "path": "v2/demo/app/manifests/", "expect": null},
+  {"row": "manifest", "path": "v2/Demo/manifests/1.0", "expect": null},
+  {"row": "manifest", "path": "v2/demo/app/manifests/bad:tag", "expect": null},
+  {"row": "manifest", "path": "demo/app/manifests/1.0", "expect": null},
+  {"row": "manifest", "path": "v2/demo/app/tags/list", "expect": null},
+  {"row": "blob", "path": "v2/-/blobs/sha256:6c3c624b58dbbcd3c0dd82b4c53f04194d1247c6eebdaab7c610cf7d66709b3b", "expect": null},
+  {"row": "blob", "path": "v2/demo/app/blobs/sha256:6c3c624b58dbbcd3c0dd82b4c53f04194d1247c6eebdaab7c610cf7d66709b3b", "expect": null}
+ ]
+}

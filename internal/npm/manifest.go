@@ -34,7 +34,13 @@ var (
 // MaxPackageJSONBytes. The error is an exception package_manifest does not
 // catch (IndexError, OverflowError), as a *pyjson.Error.
 func PackageManifest(tarball []byte) (*pyjson.Object, error) {
-	manifest, err := packageManifest(tarball)
+	return manifestWithin(tarball, nil)
+}
+
+// manifestWithin is PackageManifest with the inflated bytes also counted
+// against budget, nil for none.
+func manifestWithin(tarball []byte, budget *inflateBudget) (*pyjson.Object, error) {
+	manifest, err := packageManifest(tarball, budget)
 	switch classOf(err) {
 	case "":
 		if err != nil {
@@ -50,8 +56,9 @@ func PackageManifest(tarball []byte) (*pyjson.Object, error) {
 	return nil, nil
 }
 
-func packageManifest(tarball []byte) (*pyjson.Object, error) {
+func packageManifest(tarball []byte, budget *inflateBudget) (*pyjson.Object, error) {
 	w := &walker{s: newStream(tarball), offset: new(big.Int), global: &paxMap{}}
+	w.s.budget = budget
 	var found *member
 	for {
 		m, err := w.next()
@@ -149,6 +156,8 @@ type walker struct {
 	s      *stream
 	offset *big.Int // TarFile.offset: where the next header starts
 	global *paxMap  // TarFile.pax_headers
+	// headerTotal is the data of extended headers and sparse maps read
+	headerTotal int64
 }
 
 func isHeaderError(err error) bool {
@@ -406,6 +415,12 @@ func (w *walker) readBlocks(n *big.Int) ([]byte, error) {
 	if n.Cmp(maxInt64) > 0 {
 		return nil, newError("OverflowError", "cannot fit 'int' into an index-sized integer")
 	}
+	if err := headerData(n); err != nil {
+		return nil, err
+	}
+	if err := w.spend(n.Int64()); err != nil {
+		return nil, err
+	}
 	return w.s.read(n.Int64())
 }
 
@@ -461,7 +476,13 @@ func slice(buf []byte, a, b int) []byte {
 
 func (w *walker) procSparse(m *member) (*member, error) {
 	structs := m.structs
-	for extended := m.extended; extended; {
+	for read, extended := 0, m.extended; extended; read += blockSize {
+		if read+blockSize > maxHeaderData {
+			return nil, overBound("the sparse map")
+		}
+		if err := w.spend(blockSize); err != nil {
+			return nil, err
+		}
 		buf, err := w.s.read(blockSize)
 		if err != nil {
 			return nil, err
@@ -648,8 +669,16 @@ func (w *walker) sparse10(next *member) error {
 	}
 	want := new(big.Int).Mul(fields, big.NewInt(2))
 	var numbers []*big.Int
+	read := len(buf)
 	for big.NewInt(int64(len(numbers))).Cmp(want) < 0 {
 		if !bytes.Contains(rest, []byte("\n")) {
+			if read+blockSize > maxHeaderData {
+				return overBound("the sparse map")
+			}
+			if err := w.spend(blockSize); err != nil {
+				return err
+			}
+			read += blockSize
 			more, err := w.s.read(blockSize)
 			if err != nil {
 				return err

@@ -1,0 +1,58 @@
+# The server of Pipesmith Registry. It runs current/ of the install root
+# /opt/pipesmith-registry, which update and rollback switch.
+[Unit]
+Description=Pipesmith Registry
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+WatchdogSec=30
+Restart=on-failure
+User=pipesmith-registry
+Group=pipesmith-registry
+Environment=PIPESMITH_REGISTRY_DATA=/var/lib/pipesmith-registry
+# Open answers get 300 s once the stop began; the stop may take longer.
+# drain_seconds of update.json names the same number.
+Environment=PIPESMITH_REGISTRY_DRAIN=300
+TimeoutStopSec=330
+EnvironmentFile=-/etc/pipesmith-registry/ldap.env
+ExecStart=/opt/pipesmith-registry/current/pipesmith-registry serve
+
+# The whole file system is read only for the process except the data
+# directory. Add one line per store directory the server serves:
+#   ReadOnlyPaths=<store directory>
+# A store below /home needs ProtectHome=read-only in place of yes.
+ProtectSystem=strict
+ReadWritePaths=/var/lib/pipesmith-registry
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateDevices=yes
+DevicePolicy=closed
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RemoveIPC=yes
+UMask=0027
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/iogentic/pipesmith-registry/internal/auth"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
@@ -14,13 +15,6 @@ const (
 	localSource = "default"
 	ldapSource  = "LDAP"
 )
-
-// realms are the realms this server signs subjects in with: local users
-// and LDAP. The token realms wait for phase 3.
-var realms = []realmXO{
-	{ID: "NexusAuthenticatingRealm", Name: "Local users"},
-	{ID: "LdapRealm", Name: "LDAP directories"},
-}
 
 type realmXO struct {
 	ID   string `json:"id"`
@@ -228,9 +222,15 @@ func Anonymous(env *Env) (Answer, error) {
 	return ok(env.snapshot().Anonymous)
 }
 
-// RealmsAvailable is GET /v1/security/realms/available.
+// RealmsAvailable is GET /v1/security/realms/available: the realms this
+// server builds (auth.Realms), the token realms and the default role
+// included.
 func RealmsAvailable(env *Env) (Answer, error) {
-	return ok(realms)
+	list := make([]realmXO, len(auth.Realms))
+	for i, r := range auth.Realms {
+		list[i] = realmXO{ID: r.ID, Name: r.Name}
+	}
+	return ok(list)
 }
 
 // RealmsActive is GET /v1/security/realms/active: the stored order, also

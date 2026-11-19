@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A file that holds markup a page would run. The viewer shows it as text. -->
+<page xmlns="http://example.com/demo">
+  <script>alert("script element")</script>
+  <img src="https://example.com/x.png" onerror="alert('onerror attribute')"/>
+  <iframe srcdoc="&lt;script&gt;alert(3)&lt;/script&gt;"></iframe>
+  <a href="javascript:alert(4)">link</a>
+  <style>body { display: none }</style>
+  <svg onload="alert(5)"><script>alert(6)</script></svg>
+</page>

@@ -122,6 +122,32 @@ func (f *fakeSecurity) SessionHandler() http.Handler {
 
 func (f *fakeSecurity) Snapshot() *model.Snapshot { return f.snap }
 
+// The token methods of the fake: every Docker repository asks for Basic, a
+// known Basic pair gets an invented token that signs nobody in, and no
+// token can be revoked. The routes of tokens run against auth.Service in
+// tokens_test.go.
+func (f *fakeSecurity) DockerAccess(string) model.DockerAccess { return model.DockerAccess{} }
+
+func (f *fakeSecurity) DockerToken(r *http.Request, _ string) (model.IssuedToken, error) {
+	user, password, ok := r.BasicAuth()
+	return f.issue(ok, user, password, "fake-docker-token", 300)
+}
+
+func (f *fakeSecurity) NpmLogin(_ *http.Request, user, password string) (model.IssuedToken, error) {
+	return f.issue(true, user, password, "fake-npm-token", 0)
+}
+
+func (f *fakeSecurity) issue(ok bool, user, password, text string, expires int) (model.IssuedToken, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if !ok || f.basic[user+":"+password] == nil {
+		return model.IssuedToken{}, model.ErrUnauthorized
+	}
+	return model.IssuedToken{Text: text, ExpiresIn: expires}, nil
+}
+
+func (f *fakeSecurity) RevokeToken(*model.Subject, string) error { return model.ErrNoToken }
+
 func (f *fakeSecurity) addBasic(pair string, s *model.Subject) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -968,10 +994,18 @@ func TestStaleCookieOnTheOpenClientPath(t *testing.T) {
 
 // anonymousService is auth.Service over the invented snapshot with
 // anonymous access on and the rights of nx-anonymous for the anonymous user.
+// demo-docker may be pulled anonymously: the realm of Docker tokens is
+// active and the repository forces no Basic sign in (decision N12).
 func anonymousService(t *testing.T) *auth.Service {
 	t.Helper()
 	snap := secureSnapshot()
 	snap.Anonymous.Enabled = true
+	snap.Realms = append(snap.Realms, auth.RealmDocker)
+	for i := range snap.Repositories {
+		if snap.Repositories[i].Name == "demo-docker" {
+			snap.Repositories[i].Attributes["docker"] = map[string]any{"forceBasicAuth": false}
+		}
+	}
 	snap.Users = append(snap.Users, model.User{ID: "anonymous", Status: "active", Source: auth.SourceLocal, Roles: []string{"demo-anonymous"}})
 	snap.Roles = append(snap.Roles, model.Role{ID: "demo-anonymous", Source: auth.SourceLocal, Name: "Anonymous",
 		Privileges: []string{"demo-anonymous-read"}})

@@ -27,6 +27,20 @@ type Repo struct {
 	WritePolicy        *string
 	RemoteURL          *string
 	HTTPPort           *int // docker.httpPort of the settings import
+	// Attributes are the stored attributes of the repository in the shape
+	// of the settings of the old product (storage, maven, docker and the
+	// others), from state.sqlite through WithAttributes; nil without them.
+	// Only this package reads them: write_settings.go for a write.
+	Attributes map[string]any
+	// Record is what the stored record of the repository says of its type
+	// and its state, through WithAttributes; nil without a record.
+	Record *Record
+}
+
+// Record is the type and the state of the stored record of a repository.
+type Record struct {
+	Type   string // hosted, proxy or group
+	Online bool
 }
 
 // Access maps a format to how the read path serves it.
@@ -215,7 +229,7 @@ func (row Row) Object() *pyjson.Object {
 		Set("version_policy", optional(row.VersionPolicy)).
 		Set("layout_policy", optional(row.LayoutPolicy)).
 		Set("write_policy", optional(row.WritePolicy)).
-		Set("remote_url", optional(row.RemoteURL))
+		Set("remote_url", optional(publicURLOf(row.RemoteURL)))
 }
 
 // RowsDocument is {"repositories": rows}, the document of `repos --json`.

@@ -1,0 +1,217 @@
+{
+ "generator": "written by hand from lab research/05-blobstore.md, section Encoding (read 2026-11-18); tools/propscheck checks every case against java.util.Properties of Temurin 21",
+ "properties": [
+  {
+   "name": "blob of a Docker layer: the colon of the digest",
+   "items": {
+    "@BlobStore.blob-name": "/v2/-/blobs/sha256:5d41402abc4b2a76b9719d911017c5925d41402abc4b2a76b9719d911017c592",
+    "@BlobStore.content-type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+    "@BlobStore.created-by": "demo-user",
+    "@BlobStore.created-by-ip": "192.0.2.10",
+    "@Bucket.repo-name": "demo-docker",
+    "creationTime": "1794179826603",
+    "sha1": "8843d7f92416211de9ebb963ff4ce28125932878",
+    "size": "191855"
+   },
+   "lines": [
+    "@BlobStore.blob-name=/v2/-/blobs/sha256\\:5d41402abc4b2a76b9719d911017c5925d41402abc4b2a76b9719d911017c592",
+    "@BlobStore.content-type=application/vnd.docker.image.rootfs.diff.tar.gzip",
+    "@BlobStore.created-by=demo-user",
+    "@BlobStore.created-by-ip=192.0.2.10",
+    "@Bucket.repo-name=demo-docker",
+    "creationTime=1794179826603",
+    "sha1=8843d7f92416211de9ebb963ff4ce28125932878",
+    "size=191855"
+   ]
+  },
+  {
+   "name": "blob with the four delete keys",
+   "items": {
+    "@BlobStore.blob-name": "/com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+    "@BlobStore.content-type": "application/java-archive",
+    "@BlobStore.created-by": "demo-user",
+    "@BlobStore.created-by-ip": "192.0.2.10",
+    "@Bucket.repo-name": "demo-releases",
+    "creationTime": "1766898448876",
+    "deleted": "true",
+    "deletedDateTime": "1775826877479",
+    "deletedReason": "Removing unused asset blob",
+    "sha1": "62cdb7020ff920e5aa642c3d4066950dd1f01f4d",
+    "size": "187",
+    "softDeletedLocation": "2026-04-10T13:14"
+   },
+   "lines": [
+    "@BlobStore.blob-name=/com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+    "@BlobStore.content-type=application/java-archive",
+    "@BlobStore.created-by=demo-user",
+    "@BlobStore.created-by-ip=192.0.2.10",
+    "@Bucket.repo-name=demo-releases",
+    "creationTime=1766898448876",
+    "deleted=true",
+    "deletedDateTime=1775826877479",
+    "deletedReason=Removing unused asset blob",
+    "sha1=62cdb7020ff920e5aa642c3d4066950dd1f01f4d",
+    "size=187",
+    "softDeletedLocation=2026-04-10T13\\:14"
+   ]
+  },
+  {
+   "name": "copy of the properties of a deleted blob",
+   "items": {
+    "@BlobStore.blob-name": "/docs/readme.txt",
+    "@BlobStore.content-type": "text/plain",
+    "@BlobStore.created-by": "demo-user",
+    "@Bucket.repo-name": "demo-raw",
+    "creationTime": "1700000000000",
+    "originalLocation": "2025-12-28T05:07",
+    "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+    "size": "0"
+   },
+   "lines": [
+    "@BlobStore.blob-name=/docs/readme.txt",
+    "@BlobStore.content-type=text/plain",
+    "@BlobStore.created-by=demo-user",
+    "@Bucket.repo-name=demo-raw",
+    "creationTime=1700000000000",
+    "originalLocation=2025-12-28T05\\:07",
+    "sha1=da39a3ee5e6b4b0d3255bfef95601890afd80709",
+    "size=0"
+   ]
+  },
+  {
+   "name": "escapes in keys and values: backslash, equals, hash, bang, colon, spaces, tab, line ends",
+   "items": {
+    "a=b": "x=y",
+    "hash#key": "#value",
+    "bang!key": "value!",
+    "colon:key": "C:\\dir\\file",
+    "with space": "inner space",
+    " leading": " leading value ",
+    "tab\tkey": "tab\tvalue",
+    "line\nbreak": "cr\rlf\r\nff\f",
+    "empty": "",
+    "": "empty key",
+    "back\\slash": "end\\"
+   },
+   "lines": [
+    "=empty key",
+    "\\ leading=\\ leading value ",
+    "a\\=b=x\\=y",
+    "back\\\\slash=end\\\\",
+    "bang\\!key=value\\!",
+    "colon\\:key=C\\:\\\\dir\\\\file",
+    "empty=",
+    "hash\\#key=\\#value",
+    "line\\nbreak=cr\\rlf\\r\\nff\\f",
+    "tab\\tkey=tab\\tvalue",
+    "with\\ space=inner space"
+   ]
+  },
+  {
+   "name": "characters outside ASCII and outside the BMP; keys in the order of UTF-16 code units",
+   "items": {
+    "name": "Gr\u00fc\u00dfe/na\u00efve.txt",
+    "schl\u00fcssel": "x",
+    "control": "\u0001\u007f\u00a0\ufffd",
+    "outside": "\ud800\udf48 and \ud834\udd1e",
+    "\ue000": "private",
+    "\ud800\udf48": "key outside the BMP",
+    "Alpha": "1",
+    "Zeta": "2",
+    "alpha": "3"
+   },
+   "lines": [
+    "Alpha=1",
+    "Zeta=2",
+    "alpha=3",
+    "control=\\u0001\\u007F\\u00A0\\uFFFD",
+    "name=Gr\\u00FC\\u00DFe/na\\u00EFve.txt",
+    "outside=\\uD800\\uDF48 and \\uD834\\uDD1E",
+    "schl\\u00FCssel=x",
+    "\\uD800\\uDF48=key outside the BMP",
+    "\\uE000=private"
+   ]
+  },
+  {
+   "name": "metadata.properties of a new store",
+   "items": {
+    "type": "file/1"
+   },
+   "lines": [
+    "type=file/1"
+   ]
+  }
+ ],
+ "writer": {
+  "comment": "three blobs at a fixed clock and fixed ids; the tree was computed from the rules of section Layout of the phase 4 plan by a separate script, not by the writer",
+  "now": "2026-11-18T10:15:30.123Z",
+  "ids": [
+   "00000000-0000-4000-8000-000000000001",
+   "00000000-0000-4000-8000-000000000002",
+   "00000000-0000-4000-8000-000000000003"
+  ],
+  "blobs": [
+   {
+    "repo": "demo-raw",
+    "path": "docs/readme.txt",
+    "content": "hello\n",
+    "content_type": "text/plain",
+    "created_by": "demo-user",
+    "created_by_ip": "192.0.2.10"
+   },
+   {
+    "repo": "demo-docker",
+    "path": "v2/-/blobs/sha256:3997bfa39738f279d788e49d0cc743d02a512c8855f798b3ee1c0daf589a6b9a",
+    "content": "layer bytes",
+    "content_type": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+    "created_by": "demo-user",
+    "created_by_ip": ""
+   },
+   {
+    "repo": "demo-releases",
+    "path": "com/example/demo-lib/1.0.0/demo-lib-1.0.0.jar",
+    "content": "PK\u0003\u0004jar",
+    "content_type": "application/java-archive",
+    "created_by": "demo-user",
+    "created_by_ip": "2001:db8::1"
+   }
+  ],
+  "tree": [
+   {
+    "path": "content/2026/11/18/10/15/00000000-0000-4000-8000-000000000001.bytes",
+    "size": 6,
+    "sha256": "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"
+   },
+   {
+    "path": "content/2026/11/18/10/15/00000000-0000-4000-8000-000000000001.properties",
+    "size": 308,
+    "sha256": "316b303b024fccde41c19c4f122a537fbcd8c822221f5711fb5fee0f85b2219e"
+   },
+   {
+    "path": "content/2026/11/18/10/15/00000000-0000-4000-8000-000000000002.bytes",
+    "size": 11,
+    "sha256": "3997bfa39738f279d788e49d0cc743d02a512c8855f798b3ee1c0daf589a6b9a"
+   },
+   {
+    "path": "content/2026/11/18/10/15/00000000-0000-4000-8000-000000000002.properties",
+    "size": 383,
+    "sha256": "9f08df478f713823ce9451b5b9686e61c2201f4e2c126c06993ac9f454cf7ff4"
+   },
+   {
+    "path": "content/2026/11/18/10/15/00000000-0000-4000-8000-000000000003.bytes",
+    "size": 7,
+    "sha256": "773532d2bc1a7ae88f64aa2a7bcf97312c37d3de4fe216c3e93d891a45c11cf3"
+   },
+   {
+    "path": "content/2026/11/18/10/15/00000000-0000-4000-8000-000000000003.properties",
+    "size": 361,
+    "sha256": "b7ee09eb8274215b07f7ad3616c160c69116a2f2184b72ab69228db77cea92ab"
+   },
+   {
+    "path": "reconciliation/2026-11-18",
+    "size": 186,
+    "sha256": "c6e131708f0b6497ec11a6affded7addc4414a1821c537130dada4721f6dfdcc"
+   }
+  ]
+ }
+}

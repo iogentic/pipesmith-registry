@@ -176,6 +176,28 @@ export const api = {
 
   browse: (repository, path, limit, offset) => get(`/api/browse/${seg(repository)}`, { path, limit, offset }),
   asset: (repository, path) => get(`/api/asset/${seg(repository)}`, { path }),
+  exportInfo: (repository, path, platform) => get(`/api/export/${seg(repository)}`, { path, platform, dry: 1 }),
+  exportUrl: (repository, path, platform) => `/api/export/${seg(repository)}${query({ path, platform })}`,
+  // The bytes of a download address for the viewer: last is the last byte to read from 0, or null for
+  // the whole file. Answers { status, bytes, total } with total from Content-Range; 416 is an empty file.
+  file: async (url, last = null) => {
+    const headers = last === null ? {} : { Range: `bytes=0-${last}` };
+    let response;
+    try {
+      response = await fetch(url, { headers, credentials: "same-origin", cache: "no-store" });
+    } catch (e) {
+      throw new ApiError(0, "The server cannot be reached.", null, url);
+    }
+    if (response.status === 416) return { status: 416, bytes: new Uint8Array(0), total: 0 };
+    if (!response.ok) {
+      const error = new ApiError(response.status, STATUS_TEXT[response.status], null, url);
+      if (response.status === 401) emit("unauthorized", error);
+      throw error;
+    }
+    const range = /\/(\d+)$/.exec(response.headers.get("Content-Range") || "");
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return { status: response.status, bytes, total: range ? Number(range[1]) : response.status === 200 ? bytes.length : null };
+  },
   assets: {
     get: (id) => get(`${REST}/assets/${seg(id)}`),
     remove: (id) => del(`${REST}/assets/${seg(id)}`)

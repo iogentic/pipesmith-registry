@@ -113,10 +113,10 @@ func (t *trustedHosts) clientAddress(forwardedFor string) (string, string) {
 }
 
 // forwarded is ProxyHeadersMiddleware for one request from peer host and
-// port: the scheme the application sees and the client of the access line,
-// in UTF-8.
-func (t *trustedHosts) forwarded(peerHost, peerPort string, h http.Header) (string, string) {
-	scheme, client := "http", peerHost+":"+peerPort
+// port that came with the scheme base: the scheme the application sees and
+// the client of the access line, in UTF-8.
+func (t *trustedHosts) forwarded(base, peerHost, peerPort string, h http.Header) (string, string) {
+	scheme, client := base, peerHost+":"+peerPort
 	if !t.trusts(peerHost) {
 		return scheme, client
 	}

@@ -50,7 +50,7 @@ func TestForwardedVectors(t *testing.T) {
 			}
 			h.Add(kv[0], string(value))
 		}
-		scheme, client := newTrustedHosts(c.Trusted).forwarded(c.Peer, "50123", h)
+		scheme, client := newTrustedHosts(c.Trusted).forwarded("http", c.Peer, "50123", h)
 		if scheme != c.Scheme || client != c.Access {
 			t.Errorf("trusted %q, peer %s, headers %q: scheme %q client %q, want %q %q", c.Trusted, c.Peer, c.Headers,
 				scheme, client, c.Scheme, c.Access)
@@ -67,7 +67,7 @@ func TestForwardedVectors(t *testing.T) {
 	}
 }
 
-func npmProxyApp(t *testing.T) *app {
+func npmProxyApp(t *testing.T, edits ...func(*appOptions)) *app {
 	t.Helper()
 	base := t.TempDir()
 	document := []byte(`{"name": "demo-lib", "versions": {"1.0.0": {"name": "demo-lib", "version": "1.0.0"}}}`)
@@ -75,8 +75,11 @@ func npmProxyApp(t *testing.T) *app {
 		spec("demo-npm", "demo-lib", document, "application/json"),
 		spec("demo-npm", "demo-lib/-/demo-lib-1.0.0.tgz", tarballOf(t, "demo-lib", "1.0.0"), ""),
 	}
-	return newApp(t, []config.StoreConfig{blobStore(t, base, "s1", blobs...)},
-		appOptions{defs: []*pyjson.Object{def("demo-npm", "npm", "hosted")}})
+	opts := appOptions{defs: []*pyjson.Object{def("demo-npm", "npm", "hosted")}}
+	for _, edit := range edits {
+		edit(&opts)
+	}
+	return newApp(t, []config.StoreConfig{blobStore(t, base, "s1", blobs...)}, opts)
 }
 
 // TestForwardedProtoSetsTheScheme: from 127.0.0.1 the Python server takes

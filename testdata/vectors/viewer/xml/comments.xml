@@ -1,0 +1,8 @@
+<root>
+  <!-- one line -->
+  <!--
+    a comment over
+    three lines -->
+  <item>text <!-- inside --> more</item>
+  <!-- holds <tag> and &amp; as text -->
+</root>

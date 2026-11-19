@@ -12,10 +12,12 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/auth"
+	"github.com/iogentic/pipesmith-registry/internal/ldapauth"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
@@ -155,12 +157,51 @@ func (c *clock) Add(d time.Duration) {
 
 // directory is a fake LDAP connection with invented people.
 type directory struct {
-	mu     sync.Mutex
-	calls  int
-	people map[string]string
-	groups []string
-	err    error
-	noID   bool // accept every pair and answer a user without an id
+	mu      sync.Mutex
+	calls   int
+	lookups int
+	people  map[string]string
+	groups  []string
+	err     error
+	noID    bool // accept every pair and answer a user without an id
+}
+
+// Lookup finds a person by name, as the search under the service bind does.
+func (d *directory) Lookup(_ context.Context, username string) (model.User, []string, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.lookups++
+	if d.err != nil {
+		return model.User{}, nil, d.err
+	}
+	if _, ok := d.people[username]; !ok {
+		return model.User{}, nil, fmt.Errorf("demo directory: %w", auth.ErrNoUser)
+	}
+	return model.User{ID: username, FirstName: "Lena", LastName: "Directory", Email: username + "@example.com",
+		Source: "LDAP", Status: "active"}, d.groups, nil
+}
+
+func (d *directory) lookupCount() int {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.lookups
+}
+
+// set changes the person of a name: a password adds it, "" removes it.
+func (d *directory) set(name, password string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if password == "" {
+		delete(d.people, name)
+		return
+	}
+	d.people[name] = password
+}
+
+func (d *directory) fail(err error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.err = err
 }
 
 func (d *directory) Login(_ context.Context, username, password string) (model.User, []string, error) {
@@ -191,6 +232,85 @@ const ldapPassword = "demo-ldap-pass-1"
 func ldapDirectory() *directory {
 	return &directory{people: map[string]string{"demo-ldap-person": ldapPassword},
 		groups: []string{"demo-ldap-group", "demo-unknown-group"}}
+}
+
+// connection is the fake directory behind the places of one LDAP connection
+// of package ldapauth: MaxChecksInFlight sign ins hold a place at a time, and
+// a sign in beyond them waits for one at most limit and while its context
+// lasts, then gets ErrBusy and asks nothing. While the connection stalls, a
+// sign in that gets a place keeps it until the test lets the stall go, as
+// against a directory that hangs, and the directory answers after that.
+type connection struct {
+	*directory
+	places  chan struct{}
+	limit   time.Duration
+	waiting atomic.Int64 // the sign ins that wait for a place now
+	stalled atomic.Int64 // the sign ins that keep a place in a stall now
+	stallMu sync.Mutex
+	stall   chan struct{} // nil while the connection does not stall
+}
+
+func newConnection(limit time.Duration) *connection {
+	return &connection{directory: ldapDirectory(), places: make(chan struct{}, ldapauth.MaxChecksInFlight), limit: limit}
+}
+
+func (c *connection) Login(ctx context.Context, username, password string) (model.User, []string, error) {
+	select {
+	case c.places <- struct{}{}:
+	default:
+		if err := c.wait(ctx); err != nil {
+			return model.User{}, nil, err
+		}
+	}
+	defer func() { <-c.places }()
+	c.stallMu.Lock()
+	stall := c.stall
+	c.stallMu.Unlock()
+	if stall != nil {
+		c.stalled.Add(1)
+		defer c.stalled.Add(-1)
+		select {
+		case <-stall:
+		case <-ctx.Done():
+			return model.User{}, nil, fmt.Errorf("demo connection: %w: user bind: %w", auth.ErrUnreachable, ctx.Err())
+		}
+	}
+	return c.directory.Login(ctx, username, password)
+}
+
+// wait waits for a place as package ldapauth does.
+func (c *connection) wait(ctx context.Context) error {
+	c.waiting.Add(1)
+	defer c.waiting.Add(-1)
+	limit := time.NewTimer(c.limit)
+	defer limit.Stop()
+	select {
+	case c.places <- struct{}{}:
+		return nil
+	case <-limit.C:
+		return fmt.Errorf("demo connection: %w: no place came free within %v", auth.ErrBusy, c.limit)
+	case <-ctx.Done():
+		return fmt.Errorf("demo connection: %w: the request ended while it waited for a place: %w", auth.ErrBusy, ctx.Err())
+	}
+}
+
+// stallSignIns makes every sign in that gets a place from now on keep it
+// until letGo.
+func (c *connection) stallSignIns() {
+	c.stallMu.Lock()
+	defer c.stallMu.Unlock()
+	c.stall = make(chan struct{})
+}
+
+// letGo ends the stall: the sign ins that keep a place get the answer of the
+// directory.
+func (c *connection) letGo() {
+	c.stallMu.Lock()
+	defer c.stallMu.Unlock()
+	if c.stall != nil {
+		close(c.stall)
+		c.stall = nil
+	}
 }
 
 // env is a service with a fake clock, a log buffer and its handler.

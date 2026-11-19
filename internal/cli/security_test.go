@@ -19,6 +19,7 @@ import (
 	"github.com/iogentic/pipesmith-registry/internal/auth"
 	"github.com/iogentic/pipesmith-registry/internal/ldapauth"
 	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/state"
 )
 
 // The LDAP connection of the fixture export and the variable of its bind
@@ -54,7 +55,7 @@ func basicRequest(user, pass string) *http.Request {
 func TestSecurityOffWithoutState(t *testing.T) {
 	dir := dataDir(t)
 	var log bytes.Buffer
-	sec, err := buildSecurity(dir, nil, logTo(&log))
+	sec, err := buildSecurity(dir, nil, nil, logTo(&log))
 	if err != nil || sec != nil {
 		t.Fatalf("%v %v", sec, err)
 	}
@@ -66,7 +67,7 @@ func TestSecurityOffWithoutState(t *testing.T) {
 func TestSecurityFromFixtureState(t *testing.T) {
 	dir := importedFixture(t)
 	var log bytes.Buffer
-	sec, err := buildSecurity(dir, nil, logTo(&log))
+	sec, err := buildSecurity(dir, nil, nil, logTo(&log))
 	if err != nil || sec == nil {
 		t.Fatalf("%v %v", sec, err)
 	}
@@ -97,7 +98,7 @@ func TestSecurityLDAPPasswordFromEnvironment(t *testing.T) {
 	dir := importedFixture(t)
 	t.Setenv(ldapauth.PasswordVariable(fixtureLDAPID), fixtureLDAPPass)
 	var log bytes.Buffer
-	sec, err := buildSecurity(dir, nil, logTo(&log))
+	sec, err := buildSecurity(dir, nil, nil, logTo(&log))
 	if err != nil || sec == nil {
 		t.Fatalf("%v %v", sec, err)
 	}
@@ -123,7 +124,7 @@ func TestSecurityLDAPPasswordAsked(t *testing.T) {
 		return fixtureLDAPPass, nil
 	}
 	var log bytes.Buffer
-	sec, err := buildSecurity(dir, ask, logTo(&log))
+	sec, err := buildSecurity(dir, nil, ask, logTo(&log))
 	if err != nil || sec == nil {
 		t.Fatalf("%v %v", sec, err)
 	}
@@ -136,13 +137,13 @@ func TestSecurityLDAPPasswordAsked(t *testing.T) {
 	// A value in the environment is taken without asking.
 	t.Setenv(ldapauth.PasswordVariable(fixtureLDAPID), fixtureLDAPPass)
 	asked = nil
-	if _, err := buildSecurity(dir, ask, logTo(&log)); err != nil || len(asked) != 0 {
+	if _, err := buildSecurity(dir, nil, ask, logTo(&log)); err != nil || len(asked) != 0 {
 		t.Fatalf("%v asked %q", err, asked)
 	}
 	// A failed prompt stops the start.
 	t.Setenv(ldapauth.PasswordVariable(fixtureLDAPID), "")
 	failing := func(string) (string, error) { return "", errors.New("no terminal") }
-	if _, err := buildSecurity(dir, failing, logTo(&log)); err == nil || !strings.Contains(err.Error(), "no terminal") {
+	if _, err := buildSecurity(dir, nil, failing, logTo(&log)); err == nil || !strings.Contains(err.Error(), "no terminal") {
 		t.Fatalf("%v", err)
 	}
 }
@@ -153,6 +154,30 @@ func (f fakeLogin) Login(context.Context, string, string) (model.User, []string,
 	return model.User{}, nil, f.err
 }
 
+func (f fakeLogin) Lookup(context.Context, string) (model.User, []string, error) {
+	return model.User{}, nil, f.err
+}
+
+// The lookup of the user of a token tells a name the directory does not
+// hold from a directory that did not answer (review B1).
+func TestDirectoryLookupErrorsMapped(t *testing.T) {
+	for _, c := range []struct {
+		in   error
+		want error
+	}{
+		{ldapauth.ErrNoEntry, auth.ErrNoUser},
+		{fmt.Errorf("search: %w", ldapauth.ErrUnavailable), auth.ErrUnreachable},
+	} {
+		_, _, err := directory{fakeLogin{c.in}}.Lookup(context.Background(), "someone")
+		if !errors.Is(err, c.want) {
+			t.Errorf("%v gives %v, want %v", c.in, err, c.want)
+		}
+	}
+	if _, _, err := (directory{fakeLogin{nil}}).Lookup(context.Background(), "someone"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDirectoryErrorsMapped(t *testing.T) {
 	for _, c := range []struct {
 		in   error
@@ -160,6 +185,7 @@ func TestDirectoryErrorsMapped(t *testing.T) {
 	}{
 		{ldapauth.ErrInvalidCredentials, auth.ErrWrongPair},
 		{fmt.Errorf("bind: %w", ldapauth.ErrUnavailable), auth.ErrUnreachable},
+		{fmt.Errorf("places: %w", ldapauth.ErrBusy), auth.ErrBusy},
 		{errors.Join(fmt.Errorf("one: %w", ldapauth.ErrUnavailable), fmt.Errorf("two: %w", ldapauth.ErrUnavailable)), auth.ErrUnreachable},
 	} {
 		_, _, err := directory{fakeLogin{c.in}}.Login(context.Background(), "someone", "pw")
@@ -185,11 +211,25 @@ func TestFieldHandlerKeepsValues(t *testing.T) {
 func serveFixture(t *testing.T) (string, func() []string) {
 	t.Helper()
 	importedFixture(t)
+	return serveData(t)
+}
+
+// serveData starts serve with more arguments on the data directory the test
+// prepared, as serveFixture does.
+func serveData(t *testing.T, args ...string) (string, func() []string) {
+	t.Helper()
+	return serveWith(t, http.DefaultClient, "http", args...)
+}
+
+// serveWith is serveData for a server that answers with the scheme to the
+// client, as a TLS listener does.
+func serveWith(t *testing.T, client *http.Client, scheme string, args ...string) (string, func() []string) {
+	t.Helper()
 	port := freePort(t)
 	r, w, _ := os.Pipe()
 	done := make(chan int, 1)
 	go func() {
-		done <- Main([]string{"serve", "--port", fmt.Sprint(port)}, os.Stdout, w)
+		done <- Main(append([]string{"serve", "--port", fmt.Sprint(port)}, args...), os.Stdout, w)
 		w.Close()
 	}()
 	lines := make(chan string, 1000)
@@ -200,10 +240,10 @@ func serveFixture(t *testing.T) (string, func() []string) {
 		}
 		close(lines)
 	}()
-	base := fmt.Sprintf("http://127.0.0.1:%d", port)
+	base := fmt.Sprintf("%s://127.0.0.1:%d", scheme, port)
 	deadline := time.Now().Add(15 * time.Second)
 	for {
-		resp, err := http.Get(base + "/api/health")
+		resp, err := client.Get(base + "/api/health")
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == 200 {
@@ -237,6 +277,11 @@ func serveFixture(t *testing.T) (string, func() []string) {
 
 func call(t *testing.T, method, url string, body io.Reader, header map[string]string) (*http.Response, []byte) {
 	t.Helper()
+	return callWith(t, http.DefaultClient, method, url, body, header)
+}
+
+func callWith(t *testing.T, client *http.Client, method, url string, body io.Reader, header map[string]string) (*http.Response, []byte) {
+	t.Helper()
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		t.Fatal(err)
@@ -244,7 +289,7 @@ func call(t *testing.T, method, url string, body io.Reader, header map[string]st
 	for k, v := range header {
 		req.Header.Set(k, v)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,4 +389,93 @@ func TestServeWithFixtureState(t *testing.T) {
 func basicValue(user, pass string) string {
 	r := basicRequest(user, pass)
 	return strings.TrimPrefix(r.Header.Get("Authorization"), "Basic ")
+}
+
+// A change that another process writes into state.sqlite reaches a running
+// serve without a restart, within about one auth.ReloadInterval.
+func TestServeFollowsTheStateWithoutARestart(t *testing.T) {
+	dir := importedFixture(t)
+	base, stop := serveData(t)
+	url := base + "/service/rest/v1/repositories"
+	viewer := map[string]string{"Authorization": "Basic " + basicValue("viewer", "example-viewer-1")}
+	admin := map[string]string{"Authorization": "Basic " + basicValue("admin", "example-admin-1")}
+	if resp, _ := call(t, "GET", url, nil, viewer); resp.StatusCode != 200 {
+		t.Fatalf("viewer before the change: %d", resp.StatusCode)
+	}
+	st, err := state.Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snap, err := st.Load()
+	if err == nil {
+		for i := range snap.Users {
+			if snap.Users[i].ID == "viewer" {
+				snap.Users[i].Status = "disabled"
+			}
+		}
+		err = st.Write([]state.Kind{state.KindUsers}, snap)
+	}
+	if cerr := st.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	written := time.Now()
+	for {
+		resp, _ := call(t, "GET", url, nil, viewer)
+		if resp.StatusCode == 401 {
+			break
+		}
+		if time.Since(written) > 5*auth.ReloadInterval {
+			t.Fatalf("viewer still %d %s after the change", resp.StatusCode, time.Since(written))
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if resp, _ := call(t, "GET", url, nil, admin); resp.StatusCode != 200 {
+		t.Fatalf("admin after the change: %d", resp.StatusCode)
+	}
+	log := strings.Join(stop(), "\n")
+	if !strings.Contains(log, "identity state loaded again") || strings.Contains(log, "example-viewer-1") {
+		t.Fatalf("log %q", log)
+	}
+}
+
+// A reload builds the LDAP connections of changed rows with the bind
+// password of their variable, else the one asked at start; it asks nobody.
+func TestReloadDirectoriesKeepTheAskedPassword(t *testing.T) {
+	dir := importedFixture(t)
+	asked := 0
+	ask := func(string) (string, error) {
+		asked++
+		return fixtureLDAPPass, nil
+	}
+	var log bytes.Buffer
+	st, err := state.Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	snap, err := st.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	builds := newLDAPBuilds(dir, logTo(&log))
+	dirs, err := builds.build(snap.LDAP, ask)
+	if err != nil || len(dirs) != 1 || asked != 1 {
+		t.Fatalf("at start: %d connections, asked %d, %v", len(dirs), asked, err)
+	}
+	again := builds.directories(snap.LDAP)
+	if len(again) != 1 || asked != 1 {
+		t.Fatalf("reload: %d connections, asked %d", len(again), asked)
+	}
+	other := append([]model.LDAPServer(nil), snap.LDAP...)
+	other[0].ID = "6f1c2a52-0000-4000-8000-000000000002"
+	t.Setenv(ldapauth.PasswordVariable(other[0].ID), "")
+	if none := builds.directories(other); len(none) != 0 || asked != 1 {
+		t.Fatalf("a new connection without a password: %d connections, asked %d", len(none), asked)
+	}
+	if strings.Contains(log.String(), fixtureLDAPPass) {
+		t.Fatal("the bind password is in the log")
+	}
 }

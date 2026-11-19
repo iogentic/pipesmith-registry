@@ -15,10 +15,15 @@ import (
 	"sync/atomic"
 )
 
-// Limits of a stored hash and a password (decision N22).
+// Limits of a stored hash and a password (decision N22). Each block of a
+// PBKDF2 key costs the full round count, so the key length has a bound as
+// the rounds have one: 512 bits is twice the longest digest of the two PRFs,
+// holds the 128 and 256 bit keys of the password vectors and costs at most
+// 4 blocks per round.
 const (
 	MaxPasswordBytes = 1024
 	MaxIterations    = 10_000_000
+	MaxKeyBits       = 512
 )
 
 // hashRuns counts the digests VerifyPassword computed. Tests read it to see
@@ -43,8 +48,9 @@ var pbkdf2Digests = map[string]func() hash.Hash{
 // VerifyPassword reports whether password matches the stored form, one of
 // the forms of the old product: Shiro 1 modular crypt, PBKDF2 in the PHC
 // form, or unsalted hex SHA-1 or MD5. The digests are compared in constant
-// time. An unknown form, a password longer than MaxPasswordBytes and a
-// stored form with more than MaxIterations rounds give false without a hash.
+// time. An unknown form, a password longer than MaxPasswordBytes, a stored
+// form with more than MaxIterations rounds and a PBKDF2 key longer than
+// MaxKeyBits give false without a hash.
 func VerifyPassword(password, stored string) bool {
 	if len(password) > MaxPasswordBytes {
 		return false
@@ -113,7 +119,7 @@ func verifyPBKDF2(password, stored string) bool {
 	}
 	rounds, ok := iterations(attributes["key_iteration"])
 	bits, err := strconv.Atoi(attributes["key_len"])
-	if !ok || err != nil || bits <= 0 || bits%8 != 0 {
+	if !ok || err != nil || bits <= 0 || bits%8 != 0 || bits > MaxKeyBits {
 		return false
 	}
 	salt, err1 := base64.StdEncoding.DecodeString(fields[3])

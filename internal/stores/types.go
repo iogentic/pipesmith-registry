@@ -10,6 +10,10 @@ type Entry struct {
 	SHA1, ContentType *string // nil where the Python server has None
 	CreatedMS         int64
 	Location          string // the bytes file, relative to the store root
+	// Uploader and UploaderIP are @BlobStore.created-by and created-by-ip of
+	// a file blob store, nil where the properties hold none and for a
+	// directory store. The index ignores them.
+	Uploader, UploaderIP *string
 }
 
 // ScanCounts counts what a walk saw, by kind.

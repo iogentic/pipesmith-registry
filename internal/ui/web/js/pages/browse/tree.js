@@ -15,6 +15,8 @@ import { copyButton } from "../repositories/list.js";
 
 const SERVED = { maven: "Maven repository", npm: "npm registry", docker: "Docker registry", files: "Plain files" };
 import { mayUpload, treeHref } from "./common.js";
+import { showsView, viewHref } from "../../viewer/kinds.js";
+import { exportsFolders, mayExport, openExport } from "./export-dialog.js";
 
 const PAGE = 200;
 
@@ -77,6 +79,8 @@ export async function render(ctx) {
   const actions = [];
   if (mayUpload(ctx, repo)) actions.push(linkButton("Upload", `#/upload/${encodeURIComponent(name)}`, "primary"));
   if (ctx.can("nexus:search:read")) actions.push(linkButton("Search here", `#/search?repository=${encodeURIComponent(name)}`));
+  actions.push(linkButton("Open in viewer", viewHref(name, "")));
+  if (exportsFolders(repo) && mayExport(ctx, repo)) actions.push(button("Export", { onClick: () => openExport({ repository: name, path: "" }) }));
   const kind = `${formatName(repo.format)} ${typeName(repo.type).toLowerCase()} repository`;
   ctx.main.append(
     pageHead({
@@ -282,6 +286,8 @@ export async function render(ctx) {
       h("div", { class: "actions detail-actions" }, copyButton(node.path, "Copy path")),
       h("section", { class: "detail-section" }, h("h3", { text: "Folder" }), facts([["Entries", node.more ? `${number(entries)} loaded, more in the tree` : number(entries)]]))
     ];
+    parts[1].append(linkButton("Open in viewer", viewHref(name, node.path), "small"));
+    if (exportsFolders(repo) && mayExport(ctx, repo)) parts[1].append(button("Export", { small: true, onClick: () => openExport({ repository: name, path: node.path }) }));
     replace(detail, h("div", { class: "folder-detail" }, parts));
   }
 
@@ -315,6 +321,8 @@ export async function render(ctx) {
     const member = info.member && info.member !== name ? info.member : null;
     const actions = [];
     if (info.download_url) actions.push(h("a", { class: "btn small", href: info.download_url, download: fileName, text: "Download" }));
+    if (showsView({ ...info, name: fileName })) actions.push(linkButton("View", viewHref(name, info.path || node.path), "small"));
+    if (info.docker && info.docker.kind === "manifest" && mayExport(ctx, repo)) actions.push(button("Export", { small: true, onClick: () => openExport({ repository: name, path: info.path || node.path, title: info.docker.image ? `${info.docker.image}${info.docker.tag ? ":" + info.docker.tag : "@" + info.docker.digest}` : fileName }) }));
     actions.push(copyButton(info.path || node.path, "Copy path"));
     if (info.asset_id && ctx.can(`nexus:repository-view:${repo.format}:${member || name}:delete`)) {
       actions.push(button("Delete", { kind: "danger", small: true, onClick: () => remove(node, info, fileName) }));

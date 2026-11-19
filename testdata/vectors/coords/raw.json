@@ -1,0 +1,15 @@
+{
+ "format": "raw",
+ "note": "Row raw of the table Coordinates of docs/plans/phase-1c-rest-read.md: the group is the directory with a leading slash, the name the path, no version. A path that is empty or starts or ends with a slash names no asset.",
+ "cases": [
+  {"row": "any path", "path": "docs/readme.txt",
+   "expect": {"group": "/docs", "name": "docs/readme.txt", "version": "", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "any path", "path": "readme.txt",
+   "expect": {"group": "/", "name": "readme.txt", "version": "", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "any path", "path": "a/b/c/file-1.0.bin",
+   "expect": {"group": "/a/b/c", "name": "a/b/c/file-1.0.bin", "version": "", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "any path", "path": "", "expect": null},
+  {"row": "any path", "path": "/docs/readme.txt", "expect": null},
+  {"row": "any path", "path": "docs/", "expect": null}
+ ]
+}

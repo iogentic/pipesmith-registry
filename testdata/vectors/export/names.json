@@ -1,0 +1,82 @@
+{
+  "comment": "Names of the export (docs/plans/browse-tools.md, section Export Contract, calls B20 and B26). Each refused entry name stands beside an accepted one.",
+  "archive_names": [
+    {"repository": "demo-raw", "folder": "docs", "want": "demo-raw-docs.zip"},
+    {"repository": "demo-raw", "folder": "", "want": "demo-raw-root.zip"},
+    {"repository": "demo-maven", "folder": "com/example/demo-lib", "want": "demo-maven-demo-lib.zip"},
+    {"repository": "demo raw", "folder": "a b/c d", "want": "demo_raw-c_d.zip"},
+    {"repository": "demo-raw", "folder": "x/\"quoted\";name", "want": "demo-raw-_quoted__name.zip"},
+    {"repository": "demo-raw", "folder": "x/caf\u00e9", "want": "demo-raw-caf_.zip"},
+    {"repository": "demo-raw", "folder": "x/v1.2_rc", "want": "demo-raw-v1.2_rc.zip"}
+  ],
+  "image_names": [
+    {"image": "demo/app", "reference": "1.0", "want": "demo_app-1.0.tar"},
+    {"image": "app", "reference": "latest", "want": "app-latest.tar"},
+    {"image": "demo/tools/cli", "reference": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "want": "demo_tools_cli-0123456789ab.tar"},
+    {"image": "demo/app", "reference": "v1+build", "want": "demo_app-v1_build.tar"}
+  ],
+  "entries": [
+    {"name": "docs/readme.txt", "ok": true},
+    {"name": "readme.txt", "ok": true},
+    {"name": "a/../b", "ok": false},
+    {"name": "a/..b/c", "ok": true},
+    {"name": "..", "ok": false},
+    {"name": "..x", "ok": true},
+    {"name": "./a", "ok": false},
+    {"name": ".a", "ok": true},
+    {"name": "/etc/passwd", "ok": false},
+    {"name": "etc/passwd", "ok": true},
+    {"name": "a//b", "ok": false},
+    {"name": "a/b", "ok": true},
+    {"name": "a/", "ok": false},
+    {"name": "", "ok": false},
+    {"name": "a\\b", "ok": false},
+    {"name": "a/b c", "ok": true},
+    {"name": "C:/windows", "ok": false},
+    {"name": "C:", "ok": false},
+    {"name": "a/C:", "ok": true},
+    {"name": "a\u0000b", "ok": false},
+    {"name": "a\nb", "ok": false},
+    {"name": "a\tb", "ok": false},
+    {"name": "a\u001fb", "ok": false},
+    {"name": "a\u007fb", "ok": false},
+    {"name": "a~b", "ok": true},
+    {"name": "a\u0085b", "ok": false},
+    {"name": "caf\u00e9/x", "ok": true}
+  ],
+  "invalid_utf8_entries": ["61ff62", "c0af"],
+  "npm_entries": [
+    {"path": "widget/-/widget-1.2.3.tgz", "want": "widget/widget-1.2.3.tgz"},
+    {"path": "@demo/util/-/util-2.0.0.tgz", "want": "@demo/util/util-2.0.0.tgz"},
+    {"path": "widget", "want": null},
+    {"path": "widget/-/widget-1.2.3.tgz.sha1", "want": null},
+    {"path": "@demo/util", "want": null},
+    {"path": "widget/other/-/x-1.tgz", "want": null},
+    {"path": "-/all", "want": null}
+  ],
+  "stored": [
+    {"name": "a/lib.jar", "stored": true},
+    {"name": "a/LIB.JAR", "stored": true},
+    {"name": "a/lib.pom", "stored": false},
+    {"name": "a/lib.jar.sha1", "stored": false},
+    {"name": "x.tgz", "stored": true},
+    {"name": "x.tar.gz", "stored": true},
+    {"name": "x.tar", "stored": false},
+    {"name": "x.zst", "stored": true},
+    {"name": "x.woff2", "stored": true},
+    {"name": "x.whl", "stored": true},
+    {"name": "jar", "stored": false},
+    {"name": "x.jpeg", "stored": true},
+    {"name": "x.svg", "stored": false}
+  ],
+  "limits": [
+    {"max_files": 3, "max_bytes": 30, "sizes": [10, 10, 10], "error": null},
+    {"max_files": 3, "max_bytes": 30, "sizes": [10, 10, 10, 0], "error": {"files": 4, "bytes": 30, "complete": true}},
+    {"max_files": 3, "max_bytes": 30, "sizes": [10, 10, 11], "error": {"files": 3, "bytes": 31, "complete": true}},
+    {"max_files": 3, "max_bytes": 30, "sizes": [10, 10, 11, 5, 5], "error": {"files": 3, "bytes": 31, "complete": false}},
+    {"max_files": 2, "max_bytes": 100, "sizes": [1, 1, 1, 1], "error": {"files": 3, "bytes": 3, "complete": false}},
+    {"max_files": 0, "max_bytes": 0, "sizes": [], "error": null},
+    {"max_files": 1, "max_bytes": 0, "sizes": [0], "error": null},
+    {"max_files": 1, "max_bytes": 0, "sizes": [1], "error": {"files": 1, "bytes": 1, "complete": true}}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+ "family": "answers",
+ "note": "The rows of section Answers of docs/plans/phase-6-administration.md, each with its status and the form of its body, and one row that the contract adds. Every code of internal/admin maps to a row of this file. The rows 401 and 429 are answered by internal/auth and have no code here.",
+ "rows": [
+  {"row": "a field fails validation", "status": 400, "form": "fields"},
+  {"row": "no subject", "status": 401, "form": "challenge"},
+  {"row": "the subject lacks the right, or the request token is missing or wrong", "status": 403, "form": "message"},
+  {"row": "the object does not exist and the subject may see that", "status": 404, "form": "message"},
+  {"row": "a name exists, a store, policy or rule is in use, a task is not running, the rules A6 and A10", "status": 409, "form": "message"},
+  {"row": "sign in is slowed down", "status": 429, "form": "empty"},
+  {"row": "the function is outside the 20 areas or not built yet", "status": 501, "form": "message-area"},
+  {"row": "the server is read only or not ready", "status": 503, "form": "message"},
+  {"row": "the task is disabled", "status": 405, "form": "message",
+   "note": "Not a row of section Answers: the contract adds it. Its request list answers 405 for POST /service/rest/v1/tasks/{id}/run of a disabled task and states no body; section Errors of the contract shows a message for any other status."}
+ ]
+}

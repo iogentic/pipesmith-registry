@@ -5,4 +5,10 @@ This product is licensed under the Apache License, Version 2.0.
 See the LICENSE file for the full text.
 
 The binary includes third party Go modules. Each keeps its own licence;
-go.mod lists them with their versions.
+go.mod lists them with their versions. The number of modules each binary of
+tools/go.sh build links, counted as the dep lines of go version -m on
+2026-11-19:
+
+  darwin/arm64  15
+  linux/amd64  13
+  linux/arm64  13

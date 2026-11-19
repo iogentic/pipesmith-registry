@@ -1,0 +1,1248 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipesmith Registry Manual</title>
+<meta name="description" content="Manual of Pipesmith Registry, a server for the file blob stores of an existing artifact repository install.">
+<link rel="icon" type="image/png" href="assets/favicon-32.png">
+<link rel="stylesheet" href="manual.css">
+<script src="manual.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <img src="assets/logo.png" alt="Pipesmith Registry logo">
+  <span class="name">Pipesmith Registry</span>
+  <span class="version">Manual for 0.1.3</span>
+  <span class="spacer"></span>
+  <a class="top-link registry-only" href="../">Registry</a>
+  <a class="top-link" href="pdf/pipesmith-registry-manual.pdf" download>PDF</a>
+  <a class="top-link" href="api.html">API</a>
+  <button class="theme" type="button" id="theme-toggle" aria-label="Switch between light and dark theme">Light theme</button>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Chapters">
+  <p class="part">Start</p>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#first-run">First Run</a></li>
+    <li><a href="#take-over">Take Over</a></li>
+  </ol>
+  <p class="part">Run</p>
+  <ol>
+    <li><a href="#install">Install</a></li>
+    <li><a href="#sign-in">Sign In</a></li>
+    <li><a href="#writes">Writes</a></li>
+    <li><a href="#service">Service</a></li>
+    <li><a href="#network">Network</a></li>
+    <li><a href="#container">Container</a></li>
+    <li><a href="#upgrade">Upgrade</a></li>
+    <li><a href="#update">Update</a></li>
+  </ol>
+  <p class="part">Use</p>
+  <ol>
+    <li><a href="#maven">Maven</a></li>
+    <li><a href="#npm">npm</a></li>
+    <li><a href="#docker">Docker</a></li>
+    <li><a href="#tokens">Tokens</a></li>
+    <li><a href="#raw-files">Raw Files</a></li>
+    <li><a href="#browse">Browse</a></li>
+    <li><a href="#search">Search</a></li>
+    <li><a href="#api">API</a></li>
+  </ol>
+  <p class="part">Reference</p>
+  <ol>
+    <li><a href="#commands">Commands</a></li>
+    <li><a href="#files">Files</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#limits">Limits</a></li>
+  </ol>
+</nav>
+
+<main>
+<h1>Pipesmith Registry Manual</h1>
+<p class="lead">Version 0.1.3. Pipesmith Registry serves the file blob stores of an existing artifact repository install from one static binary. It reads those stores and never writes to them. Uploads are off until you turn them on, and then go into a store of their own in the data directory.</p>
+
+<table class="tasks">
+  <thead><tr><th>You want to</th><th>Read</th></tr></thead>
+  <tbody>
+    <tr><td>Try the server on one machine in a few minutes</td><td><a href="#first-run">First Run</a></td></tr>
+    <tr><td>Migrate from an existing install: put the server beside it and serve its files</td><td><a href="#take-over">Take Over</a></td></tr>
+    <tr><td>Get the binary or the image onto a machine</td><td><a href="#install">Install</a></td></tr>
+    <tr><td>Let people sign in with their old passwords or through LDAP</td><td><a href="#sign-in">Sign In</a></td></tr>
+    <tr><td>Run it as a service, on a network address or in a container</td><td><a href="#service">Service</a>, <a href="#network">Network</a>, <a href="#container">Container</a></td></tr>
+    <tr><td>Update to a new version and go back</td><td><a href="#update">Update</a></td></tr>
+    <tr><td>Point Maven, npm or Docker at it</td><td><a href="#maven">Maven</a>, <a href="#npm">npm</a>, <a href="#docker">Docker</a></td></tr>
+    <tr><td>Deploy, publish or push to it</td><td><a href="#writes">Writes</a></td></tr>
+    <tr><td>Let npm and Docker sign in with a token</td><td><a href="#tokens">Tokens</a></td></tr>
+    <tr><td>Serve over TLS or behind a proxy</td><td><a href="#network">Network</a></td></tr>
+    <tr><td>Find a file in the browser</td><td><a href="#browse">Browse</a>, <a href="#search">Search</a></td></tr>
+    <tr><td>Call the server from a script</td><td><a href="#api">API</a></td></tr>
+    <tr><td>Find the cause of an error message</td><td><a href="#troubleshooting">Troubleshooting</a></td></tr>
+    <tr><td>Look up a command, a file or a limit</td><td><a href="#commands">Commands</a>, <a href="#files">Files</a>, <a href="#limits">Limits</a></td></tr>
+  </tbody>
+</table>
+
+<section id="overview">
+<h2>Overview</h2>
+<p>An existing artifact repository install keeps its files in file blob stores on disk. Pipesmith Registry reads those stores in place, in the layout the install already uses, and never writes to them. It keeps its own state in a separate data directory.</p>
+<p><code>scan</code> walks a store and writes one row per live file into an SQLite index, <code>index.sqlite</code>. The same scan writes the rows into <code>catalog.sqlite</code> beside it, which nothing in this version reads yet. <code>serve</code> answers requests from the index and reads the bytes from the store. Files that the old service adds to a store appear after the next scan. Files written through this server appear at once.</p>
+<figure>
+  <div class="figure-frame"><img class="light-only" src="assets/architecture-light.svg" width="1360" height="806" alt="Architecture of Pipesmith Registry: Maven, npm and Docker clients and a browser send requests through the listeners, the Host gate and sign in of one binary to the interface, the REST API and the read path, which read the file blob stores in place and use an SQLite index in the data directory."><img class="dark-only" src="assets/architecture-dark.svg" width="1360" height="806" alt="Architecture of Pipesmith Registry: Maven, npm and Docker clients and a browser send requests through the listeners, the Host gate and sign in of one binary to the interface, the REST API and the read path, which read the file blob stores in place and use an SQLite index in the data directory."></div>
+  <figcaption>Requests pass the listeners, the Host gate and sign in. The read path reads the blob stores; the data directory holds the configuration, the imported state and the index.</figcaption>
+</figure>
+<h3>Formats</h3>
+<table>
+  <thead><tr><th>Format</th><th>What this version serves</th></tr></thead>
+  <tbody>
+    <tr><td>Maven</td><td>Files under <code>/repository/&lt;name&gt;/</code>. A group repository answers from its members in their order and merges <code>maven-metadata.xml</code> across them.</td></tr>
+    <tr><td>npm</td><td>Package documents and tarballs. Tarball URLs in a document point at this server. Group repositories merge the documents of their members.</td></tr>
+    <tr><td>Docker</td><td>The registry API for pulls (manifests, blobs, tags), and with writes on for pushes, under <code>/v2/</code> on one port per Docker repository, and under <code>/repository/&lt;name&gt;/v2/</code> on the main port.</td></tr>
+    <tr><td>Other formats</td><td>PyPI, raw and every other format: the stored files by their path. With writes on, raw takes <code>PUT</code> and <code>DELETE</code> by path. There is no other format logic for them in this version.</td></tr>
+  </tbody>
+</table>
+<h3 id="read-only">Writes Off</h3>
+<p>Writes are off by default. Then a write to <code>/repository/</code> (a deploy, <code>npm publish</code>, a Docker push) answers <code>401</code> without credentials. With credentials and the read permission of the repository it answers <code>405</code>. The REST API refuses the operations it lists as not served with <code>501</code> and the area they belong to, after sign in. Other writes answer <code>405</code> or <code>404</code>. With writes on, hosted repositories of Maven, npm, Docker and raw take writes (<a href="#writes">Writes</a>). The chapter <a href="#api">API</a> lists the answers of each route. The interface marks the screens this version does not serve with "Not in preview".</p>
+</section>
+
+<section id="first-run">
+<h2>First Run</h2>
+<p>A first run needs one machine, the binary and a folder of files. It shows the scan, the server answering a file and the pages in the browser, without an existing install and without sign in.</p>
+<p>The commands call the binary as <code>pipesmith-registry</code>: download the file of your platform as <a href="#verify">Verify</a> shows, give it that name, make it executable and put its folder on <code>PATH</code>. No command of a first run needs root. The paths below belong to an invented user <code>dev</code>.</p>
+<p>Set the data directory once in the shell that runs the commands. The commands create it when it is missing.</p>
+<pre><code>export PIPESMITH_REGISTRY_DATA=/home/dev/pipesmith-data</code></pre>
+<p>A store of kind <code>directory</code> reads a plain tree. Each folder directly below its root is one repository with the name of the folder, and the files below it keep their paths. Files directly in the root and folders whose name starts with <code>.</code> are skipped. This folder holds two repositories with three files:</p>
+<pre><code>/home/dev/files/demo-raw/manuals/release-notes-2.4.txt
+/home/dev/files/demo-raw/manuals/setup-2.4.txt
+/home/dev/files/demo-tools/install.sh</code></pre>
+<p>Attach the folder, scan it and list the repositories:</p>
+<pre><code>pipesmith-registry store add files --kind directory --root /home/dev/files
+added store files (directory, /home/dev/files)
+next: scan files
+
+pipesmith-registry scan
+scan files: live=3 deleted=0 copies=0 no_bytes=0 unparsable=0 seconds=0.01
+
+pipesmith-registry repos
+NAME        FORMAT   TYPE    ACCESS  PORT  FILES  SIZE  NEWEST            NOTE
+demo-raw    unknown  hosted  files      -      2  34 B  2026-11-19 04:10  no definition
+demo-tools  unknown  hosted  files      -      1  23 B  2026-11-19 04:10  no definition</code></pre>
+<p>The last line of the scan counts the three files as <code>live</code>. Without an import a repository has no definition. <code>repos</code> lists it as <code>hosted</code>, with the format the scan read from its paths, here <code>unknown</code>.</p>
+<p>Start the server. It listens on <code>127.0.0.1</code> and the main port 8793. Without <code>state.sqlite</code> the log has no line about sign in:</p>
+<pre><code>pipesmith-registry serve
+2026-11-19 05:11:03,481 INFO pipesmith_registry.listeners: listening on 127.0.0.1 port 8793</code></pre>
+<p>In a second shell, download one file by its repository and path:</p>
+<pre><code>curl -s -O http://localhost:8793/repository/demo-raw/manuals/setup-2.4.txt
+cat setup-2.4.txt
+Setup guide 2.4</code></pre>
+<p>The log of the server shows the request:</p>
+<pre><code>INFO:     127.0.0.1:50214 - "GET /repository/demo-raw/manuals/setup-2.4.txt HTTP/1.1" 200 OK</code></pre>
+<p>Open <code>http://localhost:8793/</code> in a browser. Without <code>state.sqlite</code> it shows a page without sign in. The page counts stores, repositories, files and their size, lists the attached stores and the repositories, and opens the files of a repository in a browser panel. This manual stands at <code>http://localhost:8793/manual/</code>, the API page at <code>http://localhost:8793/manual/api.html</code>. Ctrl+C stops the server.</p>
+<p>A first run shows no sign in, no interface and no Docker ports. <a href="#take-over">Take Over</a> sets them up from an existing install.</p>
+</section>
+
+<section id="take-over">
+<a id="stores"></a>
+<h2>Take Over</h2>
+<p>Taking over puts Pipesmith Registry beside a running install. At the end a second server answers the same repository paths from the same files. The old service keeps running and keeps writing, and no step changes its stores or its database.</p>
+<p>You need a shell on the host, read access to the blob store directories, and a copy of the database file of the old install. The export of that copy needs a machine with Docker and a checkout of this repository, and the Java image that <code>tools/h2export.sh</code> names must be on that machine. Without the database copy the server still serves files, but nobody signs in: a settings file gives it the repositories and no users.</p>
+<div class="note"><p>Two things decide which clients can move. Maven, npm and Docker clients sign in with Basic credentials of local users and of LDAP users (<a href="#sign-in">Sign In</a>). Builds that deploy need writing turned on (<a href="#writes">Writes</a>); until then they keep using the old service.</p></div>
+<p>The migration needs no downtime: the old service keeps taking uploads, and the next scan shows them here. Each step below writes into the data directory only.</p>
+<table>
+  <thead><tr><th>Step</th><th>Command</th><th>Writes</th></tr></thead>
+  <tbody>
+    <tr><td><a href="#attach">Attach</a></td><td><code>store add</code></td><td><code>config.json</code></td></tr>
+    <tr><td><a href="#import">Import</a></td><td><code>tools/h2export.sh</code>, then <code>import</code></td><td>an export folder, then <code>state.sqlite</code> and <code>repositories.json</code></td></tr>
+    <tr><td><a href="#docker-ports">Docker Ports</a></td><td><code>config --docker-ports</code>, <code>repos port</code></td><td><code>config.json</code></td></tr>
+    <tr><td><a href="#scan">Scan</a></td><td><code>scan</code></td><td><code>index.sqlite</code>, <code>catalog.sqlite</code></td></tr>
+    <tr><td><a href="#start">Start</a></td><td><code>serve</code></td><td><code>index.sqlite</code>, only when it is missing</td></tr>
+    <tr><td><a href="#compare">Compare</a></td><td><code>repos</code>, <code>store list</code>, <code>docker-check</code>, <code>curl</code></td><td>nothing</td></tr>
+  </tbody>
+</table>
+<figure>
+  <div class="figure-frame"><img class="light-only" src="assets/take-over-light.svg" width="1360" height="725" alt="Take over: the blob stores and a copy of the database file of the existing install are read by store add, tools/h2export.sh with import, and scan. These write config.json, state.sqlite, repositories.json, index.sqlite and catalog.sqlite into the data directory. serve reads the data directory and the blob stores. No command writes to the existing install."><img class="dark-only" src="assets/take-over-dark.svg" width="1360" height="725" alt="Take over: the blob stores and a copy of the database file of the existing install are read by store add, tools/h2export.sh with import, and scan. These write config.json, state.sqlite, repositories.json, index.sqlite and catalog.sqlite into the data directory. serve reads the data directory and the blob stores. No command writes to the existing install."></div>
+  <figcaption>Solid arrows read, dashed arrows write. Every write ends in the data directory.</figcaption>
+</figure>
+<p>Run every command of this chapter as the service user, with <code>PIPESMITH_REGISTRY_DATA</code> set. Without the variable the binary uses the folder <code>data</code> in the parent of the folder that holds the binary. For the binary of <a href="#install">Install</a>, <code>/opt/pipesmith-registry/pipesmith-registry</code>, that is <code>/opt/data</code>. The commands write their files with mode <code>0600</code>, so a file written by another user cannot be read by the service later.</p>
+<pre><code>sudo -u pipesmith-registry -s
+export PIPESMITH_REGISTRY_DATA=/var/lib/pipesmith-registry
+export PATH=/opt/pipesmith-registry:$PATH</code></pre>
+
+<h3 id="attach">Attach</h3>
+<p><code>store add</code> knows two kinds. One reads a file blob store in the layout of the existing install: its <code>content/</code> folder holds a <code>.properties</code> file and a <code>.bytes</code> file per blob. <code>pipesmith-registry store add --help</code> prints the name of that kind. The other kind, <code>directory</code>, serves a plain tree with one folder per repository. Attach each blob store of the existing install once:</p>
+<pre><code>pipesmith-registry store add default --kind &lt;blob store kind&gt; --root /srv/blobs/default</code></pre>
+<pre><code>added store default (&lt;blob store kind&gt;, /srv/blobs/default)
+next: scan default</code></pre>
+<p>Give each store the name the existing install uses for it. The blob store screen joins the imported definition and the attached store by that name. A definition without an attached store of the same name shows as unavailable there.</p>
+<p><code>store add</code> checks that the name starts with a letter or digit and holds only letters, digits, <code>.</code>, <code>_</code> and <code>-</code>. It checks that no store of that name is attached and that the root exists as a directory. For a blob store the root needs a <code>content/</code> folder:</p>
+<pre><code>error: /srv/blobs has no content/ directory, so it is not a file blob store
+error: a store named default is attached already</code></pre>
+<p><code>store add</code> reads nothing else and writes only <code>config.json</code>. The option <code>--repos</code> limits a directory store to the named folders. The option <code>--manifest &lt;path&gt;</code> gives a directory store the SHA-1, content type and creation time of its files. It reads a file or a directory of <code>part-*.tsv</code> files, plain or compressed as <code>.gz</code> or <code>.zst</code>. A <code>.zst</code> file needs the program <code>zstd</code> in an absolute entry of <code>PATH</code>; one that <code>PATH</code> finds only through a relative or empty entry is refused. Both options are refused for a blob store.</p>
+<p>Without this step, the scan has nothing to read and stops with <code>error: no stores attached; add one with: store add &lt;name&gt; --kind &lt;kind&gt; --root &lt;path&gt;</code>.</p>
+
+<h3 id="import">Import</h3>
+<a id="users"></a>
+<p>Users, roles, privileges, LDAP connections, realms, the anonymous setting, blob store definitions and repositories come from an export of the old database. The script <code>tools/h2export.sh</code> in a checkout of this repository makes that export from a copy of the database file. It runs the export program in a Java container and never pulls the image itself. When the image is missing, it stops and names the command that pulls it:</p>
+<pre><code>tools/h2export.sh: the image maven:3.9-eclipse-temurin-21@sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320 is not on this machine; check df -h first (8 GiB free at least), then: docker pull maven:3.9-eclipse-temurin-21@sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320</code></pre>
+<p>The script also uses <code>python3</code>, <code>curl</code> and <code>shasum</code>. At its first run it fetches the database driver from Maven Central into a cache of the checkout, and it checks the checksum of the driver at every run. Run it on a copy, never on the database the old service has open:</p>
+<pre><code>tools/h2export.sh export --database-copy /backup/db-copy.mv.db \
+  --out work/export --set all --with-password-hashes
+pipesmith-registry import work/export</code></pre>
+<p>The copy must end in <code>.mv.db</code>. The output folder must lie below <code>work/</code> or <code>.tmp/</code> of the checkout and must not exist or be empty. The script gives it mode <code>0700</code> and its files <code>0600</code>. <code>--set</code> takes <code>content</code> (blob stores and repositories), <code>identity</code> (users and everything about sign in) or <code>all</code>; without it the script exports <code>content</code>. Without <code>--with-password-hashes</code> the import still runs, but no local user can sign in. The script needs <code>DOCKER_CONFIG</code> set to a Docker configuration that asks for no credentials.</p>
+<p>The export does not have to run on the host. Any machine with Docker, the checkout and the database copy can make it. Then carry the export folder to the host and give its path to <code>import</code>. With <code>--with-password-hashes</code> the folder holds the password hashes of the local users, so copy and store it with the same care as the database copy.</p>
+<p><code>import</code> checks the whole export against its manifest before it writes anything. A refused export writes nothing. Then it replaces, in <code>state.sqlite</code>, only the kinds of records the export holds, and writes <code>repositories.json</code> when the export holds repositories. An export with <code>--set identity</code> leaves the repositories alone. An export of the set <code>content</code> and one of the set <code>identity</code>, imported one after the other, printed:</p>
+<pre><code>imported set content from /srv/export-content
+blob stores 4, repositories 6
+replaced in /var/lib/pipesmith-registry/state.sqlite: blob_stores, repositories
+wrote /var/lib/pipesmith-registry/repositories.json
+note: the credentials of 2 repositories were removed; enter them again: demo-maven-proxy, demo-npm-proxy
+
+imported set identity from /srv/export-identity
+users 4 (4 with a password hash), role mappings 1, roles 5, privileges 6, LDAP servers 1, realms 4, anonymous access off
+replaced in /var/lib/pipesmith-registry/state.sqlite: users, roles, privileges, ldap, realms, anonymous
+note: LDAP bind passwords are never imported; give them at the start of serve</code></pre>
+<p>The import never takes over LDAP bind passwords or the credentials of proxy repositories. It does not read the stores, does not write <code>config.json</code> and does not attach a store. A second <code>import</code> of the same export replaces the same kinds again and writes <code>repositories.json</code> anew. A Docker port set with <code>repos port</code> stays, because it lives in <code>config.json</code>.</p>
+<p>Without a database copy, a settings file gives the server its repositories. The settings file is the JSON list that <code>GET /service/rest/v1/repositorySettings</code> of the existing install returns. <code>import-settings &lt;file&gt;</code> writes <code>repositories.json</code> only. The server then has no sign in at all, and <code>serve</code> binds to local addresses only. <code>import-state --settings &lt;file&gt;</code> also writes the repositories into <code>state.sqlite</code>. Then sign in is on, but there are no users, so every protected route answers <code>401</code>, and <code>serve</code> binds to local addresses only. The start log says so:</p>
+<pre><code>2026-11-19 13:59:22,635 INFO pipesmith_registry.security: security on: 0 local users, 0 of 0 LDAP connections, anonymous access off
+2026-11-19 13:59:22,635 WARNING pipesmith_registry.security: nobody can sign in: add the first user with: pipesmith-registry user add &lt;name&gt; --roles &lt;admin role&gt;</code></pre>
+<p>After <code>import-state</code> the realm of local users is not active, so a user added with <code>user add</code> cannot sign in yet. <code>user add</code> prints the <code>realms set</code> command that turns the realm on (<a href="#token-realms">Realms</a>).</p>
+<p>Without this step, <code>serve</code> still serves the scanned files, with no sign in and on a local address only. <code>repos</code> then shows each repository with the format the scan read from its paths and the note <code>no definition</code>, and groups do not exist.</p>
+
+<h3 id="docker-ports">Docker Ports</h3>
+<a id="ports"></a>
+<p>Each Docker repository with a port gets a listener of its own. The imported definitions carry the ports of the old service, and next to a running old service those ports are taken. <code>serve</code> opens every listener before it answers anything. If one port is taken, none of them stays open and <code>serve</code> stops:</p>
+<pre><code>error: [Errno 48] cannot listen on 127.0.0.1 port 14512: Address already in use</code></pre>
+<p>The number after <code>Errno</code> depends on the platform. List the Docker listeners of the next start, then give each Docker repository a free port:</p>
+<pre><code>pipesmith-registry config --docker-ports
+14511 demo-docker
+pipesmith-registry repos port demo-docker 14512
+Docker port of demo-docker set to 14512 in /var/lib/pipesmith-registry/config.json
+the change takes effect at the next start of the server</code></pre>
+<p><code>repos port</code> writes the port into <code>config.json</code>, where it wins over the port of the definition. It refuses a port that <code>serve</code> would refuse and ends the message with <code>nothing changed</code>. That is a port outside 1024 to 65535, the main port, the reserved port 8791, or a port of another repository. It does not test whether the port is free. It needs the repository from an import or a scan, so run it after the import.</p>
+<pre><code>error: Docker port 8791 of demo-docker is reserved on this machine; nothing changed</code></pre>
+<p><code>repos port &lt;name&gt; none</code> removes the entry of <code>config.json</code> only. A repository whose definition has a port then gets that port again, so this command cannot leave such a repository without a listener:</p>
+<pre><code>removed the Docker port of demo-docker from /var/lib/pipesmith-registry/config.json; the port of the definition applies: 14511
+the change takes effect at the next start of the server</code></pre>
+
+<h3 id="scan">Scan</h3>
+<p>A scan reads every <code>.properties</code> file below <code>content/</code> of the store and the size of each <code>.bytes</code> file. It skips <code>content/tmp</code> and <code>content/directpath</code>. Its time grows with the number of files. Run it at low priority when the old service serves from the same disk:</p>
+<pre><code>nice -n 19 ionice -c3 pipesmith-registry scan default</code></pre>
+<p>The last line of each store gives the counts and the seconds:</p>
+<pre><code>scan default: live=17 deleted=0 copies=0 no_bytes=0 unparsable=0 seconds=0.13</code></pre>
+<p><code>live</code> counts the files the server serves. <code>deleted</code> counts blobs marked deleted, <code>copies</code> blobs with an original location, <code>no_bytes</code> properties without a <code>.bytes</code> file. <code>unparsable</code> counts properties that are unreadable, larger than 1 MiB or not parsable. <code>scan</code> without a name scans every attached store, then the write store when it exists (<a href="#write-store">Write Store</a>). A store that fails prints <code>error: scan &lt;name&gt; failed, the index keeps its previous rows: ...</code>, the scan goes on with the next store and exits with code 1.</p>
+<p>A second scan replaces the rows of that store with what the store holds now. A running server takes the new rows over at its next request. A store whose root or <code>content/</code> looks empty while the index holds rows of it is refused, and the rows stay. The message asks you to check the mount or detach the store with <code>store remove</code>.</p>
+<p>Without this step, the server starts with empty repositories, and <code>docker-check</code> stops with <code>error: no index yet; attach a store and run: scan</code>.</p>
+
+<h3 id="start">Start</h3>
+<p><code>serve</code> makes these checks before it binds anything, and stops at the first that fails:</p>
+<ol>
+  <li><code>config.json</code> and the port it holds.</li>
+  <li>The syntax of <code>--server-names</code>.</li>
+  <li>A bind address other than a local one, which needs someone in <code>state.sqlite</code> who can sign in, and server names (see <a href="#network">Network</a>).</li>
+  <li>The port range and the reserved port 8791.</li>
+  <li>The TLS certificate and key, when TLS is on (see <a href="#tls">TLS</a>).</li>
+  <li><code>state.sqlite</code>, migrated first when an earlier version wrote it (see <a href="#upgrade">Upgrade</a>), and the LDAP connections.</li>
+  <li>With writes on, that <code>state.sqlite</code> exists (see <a href="#writes">Writes</a>).</li>
+  <li>The Docker ports.</li>
+</ol>
+<p>Then it opens every listener.</p>
+<pre><code>pipesmith-registry serve</code></pre>
+<p>The main port is 8793 unless something else sets it (see <a href="#ports-list">Ports</a>). The first lines of the log say how sign in started and which ports listen; <a href="#start-log">Start Log</a> shows them. Without a scan the server starts anyway: it creates an empty <code>index.sqlite</code>, every repository is empty, and no line warns about it. Without <code>state.sqlite</code> there is no sign in, no line about security, and only a local bind.</p>
+
+<h3 id="compare">Compare</h3>
+<p>Both servers now answer the same repository paths. Compare the lists first, then a file:</p>
+<pre><code>pipesmith-registry repos
+NAME               FORMAT  TYPE    ACCESS   PORT  FILES    SIZE  NEWEST            NOTE
+demo-docker        docker  hosted  docker  14512      5  2.3 kB  2023-11-14 22:13
+demo-maven-group   maven2  group   maven       -      0     0 B  -                 members: demo-maven-proxy, demo-maven-hosted
+demo-maven-hosted  maven2  hosted  maven       -     12  2.1 kB  2026-10-05 14:13
+demo-maven-proxy   maven2  proxy   maven       -      0     0 B  -
+demo-npm-proxy     npm     proxy   npm         -      0     0 B  -
+demo-raw           raw     hosted  files       -      0     0 B  -
+
+pipesmith-registry store list
+NAME     KIND                 FILES    SIZE  ROOT
+default  &lt;blob store kind&gt;     17  4.4 kB  /srv/blobs/default
+
+pipesmith-registry docker-check demo-docker
+demo-docker: 2 manifests read, 0 incomplete, 0 missing, 0 unreadable</code></pre>
+<p>A repository with 0 files lives in a store that is not attached yet, or it is a group: a group counts only its own rows. <code>docker-check</code> reads every stored manifest of a Docker repository and names each blob or manifest it refers to that the index does not hold. Then fetch one file from each server and compare the bytes. <code>&lt;old port&gt;</code> is the port of the old service:</p>
+<pre><code>curl -s -u viewer -o old.jar http://localhost:&lt;old port&gt;/repository/demo-maven-hosted/com/example/billing/invoice-core/1.2.0/invoice-core-1.2.0.jar
+curl -s -u viewer -o new.jar http://localhost:8793/repository/demo-maven-hosted/com/example/billing/invoice-core/1.2.0/invoice-core-1.2.0.jar
+cmp old.jar new.jar</code></pre>
+<p><code>config --check</code> prints one line per problem of the configuration and nothing when there is none.</p>
+</section>
+
+<section id="install">
+<h2>Install</h2>
+<p>An install puts the binary at <code>/opt/pipesmith-registry/pipesmith-registry</code> and creates a service user with the data directory <code>/var/lib/pipesmith-registry</code>. You need the release files of this version and root on the host. Each release on <a href="https://github.com/iogentic/pipesmith-registry/releases">GitHub</a> holds these files:</p>
+<table>
+  <thead><tr><th>File</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td><code>pipesmith-registry-linux-amd64</code>, <code>-linux-arm64</code>, <code>-darwin-arm64</code></td><td>The binary for each platform, built with <code>CGO_ENABLED=0</code>. It needs no shared library and no runtime.</td></tr>
+    <tr><td><code>SHA256SUMS</code></td><td>The SHA-256 of the three binaries, the two SBOM files, <code>image.tar</code>, and of the manual PDF where the release holds it.</td></tr>
+    <tr><td><code>sbom.spdx.json</code>, <code>sbom.cdx.json</code></td><td>The software bill of materials of the source tree, in SPDX and CycloneDX.</td></tr>
+    <tr><td><code>image.tar</code></td><td>The container image, as <code>docker save</code> writes it.</td></tr>
+    <tr><td><code>pipesmith-registry-manual.pdf</code></td><td>This manual as a PDF. Releases up to 0.1.2 do not hold it.</td></tr>
+  </tbody>
+</table>
+<p>The release script can sign <code>SHA256SUMS</code>. A signed release also holds <code>SHA256SUMS.sigstore.json</code> and <code>cosign.pub</code>, and <code>SHA256SUMS</code> does not list them. The release notes name the files of each release.</p>
+<h3 id="verify">Verify</h3>
+<p>Put the number of the release in place of <code>&lt;version&gt;</code>:</p>
+<pre><code>VERSION=&lt;version&gt;
+BASE=https://github.com/iogentic/pipesmith-registry/releases/download/v$VERSION
+curl -fLO "$BASE/pipesmith-registry-linux-amd64"
+curl -fLO "$BASE/SHA256SUMS"
+sha256sum --check --ignore-missing SHA256SUMS</code></pre>
+<p>On macOS the checksum command is <code>shasum -a 256 --check --ignore-missing SHA256SUMS</code>. The checksum shows that the download is complete; it does not show who built it.</p>
+<h3>Place</h3>
+<div class="note"><p>The released binary for linux-amd64 runs on a Linux host since version 0.1.1. The commands of this section have not been run as they stand here.</p></div>
+<pre><code>sudo install -d -m 0755 /opt/pipesmith-registry
+sudo install -m 0755 pipesmith-registry-linux-amd64 /opt/pipesmith-registry/pipesmith-registry
+sudo useradd --system --home-dir /var/lib/pipesmith-registry --shell /usr/sbin/nologin pipesmith-registry
+sudo install -d -m 0700 -o pipesmith-registry /var/lib/pipesmith-registry</code></pre>
+<p>Without <code>PIPESMITH_REGISTRY_DATA</code> this binary would use <code>/opt/data</code>, the folder <code>data</code> beside <code>/opt/pipesmith-registry</code>. Set the variable to <code>/var/lib/pipesmith-registry</code> wherever the binary runs: in the shell of <a href="#take-over">Take Over</a> and in the unit of <a href="#service">Service</a>.</p>
+<p>The service user needs read access to the blob store directories, usually through a group, and write access to its data directory only. Check the read access as that user before the first scan:</p>
+<pre><code>sudo -u pipesmith-registry ls /srv/blobs/default/content</code></pre>
+<p>Check the binary with <code>/opt/pipesmith-registry/pipesmith-registry version</code>. It prints <code>pipesmith-registry</code> and the version.</p>
+<h3 id="update-layout">Update Layout</h3>
+<p><code>update</code> and <code>rollback</code> (<a href="#update">Update</a>) work on an install root in this layout. An install with the single binary of the section Place works as before. Only these two commands need the layout.</p>
+<pre><code>/opt/pipesmith-registry/
+  update.json
+  trusted.pub
+  releases/&lt;version&gt;/pipesmith-registry
+  current  -&gt; releases/&lt;version&gt;
+  previous -&gt; releases/&lt;version&gt;</code></pre>
+<p><code>current</code> and <code>previous</code> are symbolic links with the relative target <code>releases/&lt;version&gt;</code>. <code>&lt;version&gt;</code> is the number that <code>pipesmith-registry version</code> prints, such as <code>0.1.3</code>. <code>previous</code> appears with the first update. The install root and <code>releases/</code> must belong to the user who runs <code>update</code>. <code>update.json</code>, the key and the folder of the key must belong to that user or to root. Neither group nor others may write any of them.</p>
+<div class="note"><p>These commands ran in an Ubuntu 24.04 container with systemd and on a scratch install root on macOS. The change to the unit in step 4 has not been made on a host.</p></div>
+<p>An install made by Place moves into the layout in four steps. Verify the binary of this version first, as <a href="#verify">Verify</a> shows. A binary of 0.1.2 has no <code>update</code> command, so the first release in the layout is this version.</p>
+<ol>
+  <li>Make the folders, put the binary in place and point <code>current</code> at it:
+<pre><code>sudo install -d -m 0755 /opt/pipesmith-registry/releases /opt/pipesmith-registry/releases/&lt;version&gt;
+sudo install -m 0755 pipesmith-registry-linux-amd64 /opt/pipesmith-registry/releases/&lt;version&gt;/pipesmith-registry
+sudo ln -s releases/&lt;version&gt; /opt/pipesmith-registry/current</code></pre></li>
+  <li>Put the public key you trust at <code>/opt/pipesmith-registry/trusted.pub</code>, mode <code>0644</code>. It is an ECDSA key on P-256 in one PEM block <code>PUBLIC KEY</code>. <code>update</code> reads the key from this file only. It refuses a key that lies in or below the release directory it checks, so it never takes the <code>cosign.pub</code> that comes with a release. The project does not yet publish the key in a second place. You decide which copy you trust.</li>
+  <li>Write <code>/opt/pipesmith-registry/update.json</code>, mode <code>0644</code>. <code>data_dir</code> is required: a switch and a <code>rollback</code> never take the data directory from the environment. A relative <code>trusted_key</code> lies below the install root.
+<pre><code>{
+  "trusted_key": "trusted.pub",
+  "data_dir": "/var/lib/pipesmith-registry"
+}</code></pre></li>
+  <li>Point <code>ExecStart</code> of the unit of <a href="#service">Service</a> at the link, restart the unit, and remove the old binary:
+<pre><code>ExecStart=/opt/pipesmith-registry/current/pipesmith-registry serve --port 8793
+
+sudo systemctl daemon-reload
+sudo systemctl restart pipesmith-registry
+sudo rm /opt/pipesmith-registry/pipesmith-registry</code></pre></li>
+</ol>
+<p>Every command of this manual then calls <code>/opt/pipesmith-registry/current/pipesmith-registry</code>. Keep <code>PIPESMITH_REGISTRY_DATA</code> set: without it a binary below <code>releases/&lt;version&gt;/</code> uses <code>/opt/pipesmith-registry/releases/data</code>.</p>
+<p>Check the layout with a release directory that does not exist. <code>update</code> checks the owner, the modes, the key, <code>data_dir</code> and <code>current</code>, stops at the missing <code>SHA256SUMS</code> and changes nothing:</p>
+<pre><code>sudo /opt/pipesmith-registry/current/pipesmith-registry update /tmp/no-release
+owner: uid of /opt/pipesmith-registry, lock taken
+current: releases/&lt;version&gt;
+error: SHA256SUMS missing: open /tmp/no-release: no such file or directory</code></pre>
+<p>On an install without this layout, the same command stops with <code>error: update configuration: cannot read /opt/pipesmith-registry/update.json</code> and the cause.</p>
+<h3>Image</h3>
+<p><code>docker load -i image.tar</code> loads the image and prints its tag. The release script gives it a build tag of the form <code>pipesmith-registry-release:&lt;process&gt;-&lt;time&gt;</code>. The release notes name the published image addresses. <a href="#container">Container</a> describes how to run it.</p>
+<h3>Source</h3>
+<p>The build runs in the Go container that <code>tools/go.sh</code> pins by digest. Docker must run, and <code>DOCKER_CONFIG</code> must name a configuration that asks for no credentials.</p>
+<pre><code>mkdir -p work/docker-quiet &amp;&amp; printf '{}\n' &gt; work/docker-quiet/config.json
+export DOCKER_CONFIG="$PWD/work/docker-quiet"
+tools/go.sh check
+tools/go.sh build</code></pre>
+<p><code>check</code> runs gofmt, <code>go vet</code> and the tests with the race detector. <code>build</code> writes the three binaries to <code>bin/</code>, with the content of <code>VERSION</code> as their version.</p>
+</section>
+
+<section id="sign-in">
+<h2>Sign In</h2>
+<p>After an import the imported users sign in with their old passwords, and LDAP users sign in once their connection can be built. You need <code>state.sqlite</code> from <a href="#import">Import</a>, made with <code>--with-password-hashes</code>. Without <code>state.sqlite</code> the server has no sign in: everybody who reaches it reads everything, and <code>serve</code> binds only to <code>127.0.0.1</code>, <code>localhost</code> or <code>::1</code>.</p>
+<p>With <code>state.sqlite</code> sign in is on. Every route checks the caller, except <span class="public-routes"><code>/</code>, <code>/api/health</code>, <code>/api/status</code>, <code>/api/openapi.json</code>, <code>/service/rest/v1/status</code>, <code>/service/rest/v1/status/writable</code>, <code>/api/session</code></span>, the files of the interface and the manual at <code>/manual/</code>. <span class="public-routes">The token routes <code>PUT /repository/&lt;repository&gt;/-/user/org.couchdb.user:&lt;user&gt;</code>, <code>GET /repository/&lt;repository&gt;/-/whoami</code>, <code>DELETE /repository/&lt;repository&gt;/-/user/token/&lt;token&gt;</code> and <code>GET /repository/&lt;name&gt;/v2/token</code></span> pass without a sign in and check the credentials they are given (<a href="#tokens">Tokens</a>).</p>
+<h3>Local Users</h3>
+<p>A local user signs in when the user is active, the import carried a password hash, and the realm of local users is in the stored realm order. This version reads three stored forms: Shiro 1 hashes (SHA-512, SHA-384, SHA-256, SHA-1 or MD5), PBKDF2 (with HMAC SHA-1 or SHA-256), and unsalted hex SHA-1 or MD5. User ids match case sensitively. The interface and Basic credentials try the active realms in their stored order. Local users, the LDAP connections in their order, and user tokens as password (<a href="#tokens">Tokens</a>) each have a realm.</p>
+<p><code>pipesmith-registry state show</code> prints the imported records as JSON, without password hashes. Addresses in the repository attributes and the blob store paths appear without user and password.</p>
+<h3 id="ldap">LDAP</h3>
+<p>An LDAP connection comes from the import. It works when the LDAP realm is in the stored realm order and the connection can be built at start. A connection with the simple scheme needs its bind password. <code>serve</code> takes it from <code>PIPESMITH_REGISTRY_LDAP_PASSWORD_&lt;ID&gt;</code>, else from the file that <code>ldap password &lt;connection&gt;</code> writes below <code>secrets/</code> of the data directory, else from the terminal with <code>serve --ask-ldap-password</code>. <code>&lt;ID&gt;</code> is the id of the connection in upper case, with every character other than an ASCII letter or digit as <code>_</code>. The id is the field <code>id</code> of <code>ldapServers</code> in <code>state show</code>, and the warning at start names the whole variable. An empty variable counts as unset.</p>
+<p><code>--ask-ldap-password</code> needs a terminal on standard input. It asks only for simple connections whose variable is not set, with the prompt <code>bind password of LDAP connection &lt;name&gt;: </code>. A connection with the scheme none needs no password. The schemes Digest-MD5 and CRAM-MD5 are refused (<code>the scheme ... is not built in this version</code>).</p>
+<p>A connection that cannot be built is <b>left out</b>: the server does not use it, writes a warning that names the reason, and the local users still sign in. Reasons are a missing bind password, a refused scheme or a protocol other than <code>ldap</code> or <code>ldaps</code>. A missing host or search base, a bad port and a bad DN, filter or group setting leave a connection out as well. A connection with protocol <code>ldap</code> and the simple scheme gets a warning at start, because it sends the bind password in clear. <code>ldaps</code> checks the certificate of the directory against the system roots, with TLS 1.2 at least, and has no option to skip that check.</p>
+<h3 id="basic">Basic Authentication</h3>
+<p>Maven, npm and Docker send Basic credentials. The server checks them against the same realms in the same order as a sign in of the interface, so LDAP users sign in with their LDAP password. It keeps a successful check for 300 seconds, at most 10,000 of them, and answers the same user name and password from memory in that time. An entry holds no password and no hash: its key is an HMAC-SHA-256 under a random value of the process. Each change of <code>state.sqlite</code> and each restart empties the cache.</p>
+<h3>Anonymous Access</h3>
+<p>The anonymous setting comes from the import, or from <code>anonymous on</code> and <code>anonymous off</code> (<a href="#commands">Commands</a>). When it is on, a caller without credentials reads with the permissions of the anonymous user. That covers the files below <code>/repository/</code>, the listings below <code>/service/rest/repository/browse/</code>, and the Docker paths of a repository that sends a Bearer challenge (<a href="#docker-login">Docker Login</a>). Every other protected route answers <code>401</code> without credentials, also with anonymous access on.</p>
+<h3 id="throttle">Throttle</h3>
+<p>Failed sign ins count per pair of lower case user name and client address. After 5 failures the pair waits 2 seconds, and each further failure doubles the wait, up to 15 minutes. A success clears the pair, and a pair is forgotten 15 minutes after its last failure. A pair that waits gets <code>429</code> with <code>Retry-After</code>. There is no limit per address alone, because behind a tunnel every user comes from <code>127.0.0.1</code>. Behind a proxy of <code>trusted_proxies</code> the client address comes from <code>X-Forwarded-For</code> (<a href="#reverse-proxy">Reverse Proxy</a>). A pair also counts its sign ins in flight. When they and its failures add up to 5, a further request with Basic credentials waits up to 2 seconds for a place and then gets <code>429</code> with <code>Retry-After: 2</code>. A sign in of the interface and <code>npm login</code> get that <code>429</code> at once.</p>
+<h3 id="sessions">Sessions</h3>
+<p>The interface signs in with <code>POST /api/session</code> and then sends the cookie <code>pipesmith_session</code>. A session ends after 30 minutes without a request and after 12 hours at most. A user has at most 20 sessions; a new one ends the oldest. Sessions live in memory, so a restart signs everybody out. The cookie is <code>HttpOnly</code> and <code>SameSite=Strict</code>. It gets <code>Secure</code> on a TLS connection, and behind a proxy of <code>trusted_proxies</code> that sends <code>X-Forwarded-Proto: https</code>.</p>
+<h3 id="start-log">Start Log</h3>
+<p>The log goes to standard error. Every line of it carries date, time, level and logger. The start of a server with four imported users and an LDAP connection without its password printed:</p>
+<pre><code>2026-11-19 13:52:28,818 WARNING pipesmith_registry.security: LDAP connection demo-directory left out: ldapauth: connection setting refused: connection "demo-directory": the simple scheme needs a bind password: set PIPESMITH_REGISTRY_LDAP_PASSWORD_6F1C2A52_0000_4000_8000_000000000001 or enter it at start; or write it with: pipesmith-registry ldap password demo-directory
+2026-11-19 13:52:28,819 WARNING pipesmith_registry.security: stored privileges that grant nothing: type=repository-content-selector count=1
+2026-11-19 13:52:28,819 INFO pipesmith_registry.security: security on: 4 local users, 0 of 1 LDAP connections, anonymous access off
+2026-11-19 13:52:28,858 INFO pipesmith_registry.listeners: listening on 127.0.0.1 port 8793
+2026-11-19 13:52:28,858 INFO pipesmith_registry.listeners: Docker repository demo-docker listening on 127.0.0.1 port 14512</code></pre>
+<p>The line <code>security on</code> counts the local users, the LDAP connections in use against the imported ones, and the anonymous setting. Without <code>state.sqlite</code> it is missing. Each request then writes one access line, for example <code>INFO:     127.0.0.1:63027 - "GET /repository/demo-maven-hosted/com/example/billing/invoice-core/1.2.0/invoice-core-1.2.0.pom HTTP/1.1" 200 OK</code>.</p>
+</section>
+
+<section id="writes">
+<h2>Writes</h2>
+<p>With writes on, clients deploy, publish, push and upload to the hosted repositories of this server. The files go into the write store in the data directory (<a href="#write-store">Write Store</a>). You need <code>state.sqlite</code> with the users who may write (<a href="#import">Import</a>) and free space on the disk of the data directory. Hosted repositories of Maven, npm, Docker and raw take writes. <a href="#deploy">Deploy</a>, <a href="#publish">Publish</a>, <a href="#push">Push</a> and <a href="#upload">Upload</a> show one request for each. The REST API takes uploads and deletes as well; <a href="#api">API</a> marks those operations "needs state.sqlite and writes".</p>
+<h3 id="turn-on">Turn On</h3>
+<p>Three settings turn writes on. <code>serve</code> takes the first one that is set:</p>
+<table>
+  <thead><tr><th>Order</th><th>Setting</th><th>Values</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>serve --writes</code></td><td>On. The option cannot turn writes off.</td></tr>
+    <tr><td>2</td><td><code>PIPESMITH_REGISTRY_WRITES</code></td><td><code>1</code>, <code>true</code>, <code>on</code> or <code>yes</code> for on, <code>0</code>, <code>false</code>, <code>off</code> or <code>no</code> for off, in any case. Unset or empty leaves it to <code>config.json</code>.</td></tr>
+    <tr><td>3</td><td><code>"writes": true</code> in <code>config.json</code></td><td><code>true</code> or <code>false</code>. Off when the key is missing.</td></tr>
+  </tbody>
+</table>
+<pre><code>pipesmith-registry serve --writes</code></pre>
+<p>After the <code>listening on</code> lines the log names the write store. With writes off, the log has no line about writes.</p>
+<pre><code>2026-11-19 13:52:28,858 INFO pipesmith_registry.server: writes on: new blobs go into store local-write at /var/lib/pipesmith-registry/stores/local-write</code></pre>
+<p>With writes on, <code>serve</code> stops with exit code 1 in these cases. It makes the first two checks before any listener opens, and the last two after the listeners are open and before the first request.</p>
+<table>
+  <thead><tr><th>Case</th><th>Message</th></tr></thead>
+  <tbody>
+    <tr><td>The data directory holds no <code>state.sqlite</code></td><td><code>error: writes need state.sqlite with the users who may write; import them first (import), then start with writes on</code></td></tr>
+    <tr><td>The variable holds another word</td><td><code>error: PIPESMITH_REGISTRY_WRITES is neither on nor off: 'maybe'</code></td></tr>
+    <tr><td><code>config.json</code> attaches a store named <code>local-write</code></td><td><code>error: store local-write of /var/lib/pipesmith-registry/config.json has the name of the write store of this server; remove it before writes are switched on</code></td></tr>
+    <tr><td>Another process holds the write store: <code>maven rebuild-metadata</code>, or a second <code>serve</code> with writes on that listens on other ports</td><td><code>error: store local-write has another writer: /var/lib/pipesmith-registry/stores/local-write/content/tmp is locked</code></td></tr>
+  </tbody>
+</table>
+<p>Check that the write store takes writes. The route needs no sign in:</p>
+<pre><code>curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8793/service/rest/v1/status/writable
+200</code></pre>
+<p>It answers <code>503</code> with writes off, and also with writes on while the write store cannot take a write, for example when one of its folders cannot be written.</p>
+<h3 id="write-store">Write Store</h3>
+<p>Every write goes into <code>stores/local-write</code> of the data directory, in the layout of a file blob store. The server never writes to the stores of the existing install. <code>serve</code> creates the folder at its first start with writes on:</p>
+<table>
+  <thead><tr><th>Path below <code>stores/local-write</code></th><th>Holds</th></tr></thead>
+  <tbody>
+    <tr><td><code>metadata.properties</code></td><td><code>type=file/1</code></td></tr>
+    <tr><td><code>content/&lt;yyyy&gt;/&lt;MM&gt;/&lt;dd&gt;/&lt;HH&gt;/&lt;mm&gt;/</code></td><td>One <code>.bytes</code> and one <code>.properties</code> file per blob, in the folder of the minute in UTC. The properties name the path, the repository, the user and the client address.</td></tr>
+    <tr><td><code>content/tmp/</code></td><td>Uploads in progress and the lock of the writer</td></tr>
+    <tr><td><code>reconciliation/&lt;yyyy-MM-dd&gt;</code></td><td>The blobs written on that day</td></tr>
+  </tbody>
+</table>
+<p>Folders get mode <code>0750</code>, files <code>0600</code>. The index row of a written file is in place before the client gets its answer, so the server serves the file at once. A delete marks the blob deleted in its <code>.properties</code> file and removes no file. A delete answers <code>409</code> when a store of the existing install holds the file.</p>
+<p>A start with writes off attaches an existing write store read only, so files written earlier are still served. <code>scan</code> scans the write store after the attached stores, and <code>scan local-write</code> scans it alone. <code>store list</code> does not list it.</p>
+<pre><code>scan local-write: live=4 deleted=2 copies=0 no_bytes=0 unparsable=0 seconds=0.03</code></pre>
+<h3 id="write-permissions">Permissions</h3>
+<p>A write needs the view permission of the repository with one action. <code>DELETE</code> needs <code>delete</code>. <code>PUT</code>, <code>POST</code> and <code>PATCH</code> need <code>add</code> for a path the repository does not hold and <code>edit</code> for one it holds. Some npm and Docker requests change a stored path other than the one they name. They need the action of that path. Reads need <code>read</code>, as with writes off.</p>
+<p>While writes are on, a write without credentials answers <code>401</code> with the challenge, even when anonymous access is on. A user without the action gets <code>403</code>:</p>
+<pre><code>curl -s -u viewer -T setup-2.5.txt http://localhost:8793/repository/demo-raw/manuals/setup-2.6.txt
+requested access to the resource is denied</code></pre>
+<p>A write with the session cookie of the interface needs the request token in <code>X-Pipesmith-Csrf</code>. Basic credentials and tokens need none. A write that a browser page of another origin sends answers <code>403</code> with <code>a write that a page of another origin sends is refused</code>. The server compares the <code>Origin</code> header with its own scheme and <code>Host</code>, and reads <code>Sec-Fetch-Site</code>.</p>
+<h3 id="refusals">Refusals</h3>
+<p>Each hosted repository keeps the policies of the existing install, from the import. The write policy <code>ALLOW</code> takes every write. <code>ALLOW_ONCE</code> takes a path once. The exceptions are <code>maven-metadata.xml</code> with its checksum files, and the Docker tag <code>latest</code> in a repository whose attribute <code>storage.latestPolicy</code> is <code>true</code>. <code>DENY</code>, an empty or an unknown policy refuses every write. No command changes a policy. Below <code>/repository/</code> a refusal is plain text. On npm paths it is <code>{"error":"..."}</code>, and on Docker paths it is the error form of the Docker registry API.</p>
+<table class="trouble">
+  <thead><tr><th>Status</th><th>Message</th><th>Cause</th></tr></thead>
+  <tbody>
+    <tr><td><code>401</code></td><td><code>Authentication required</code></td><td>No credentials, or wrong ones.</td></tr>
+    <tr><td><code>403</code></td><td><code>requested access to the resource is denied</code></td><td>The user lacks <code>add</code>, <code>edit</code> or <code>delete</code> on the repository.</td></tr>
+    <tr><td><code>405</code></td><td><code>Method not allowed: this server is read only</code></td><td>Writes are off, or the repository is a group, a proxy, offline or of another format than Maven, npm, Docker and raw.</td></tr>
+    <tr><td><code>400</code></td><td><code>the repository does not allow updating assets</code></td><td><code>ALLOW_ONCE</code>, and the path exists: a redeploy, a second publish of a version, a tag pushed again with other bytes.</td></tr>
+    <tr><td><code>400</code></td><td><code>the repository is read only</code></td><td>The write policy is <code>DENY</code>, empty or unknown. A Docker path answers <code>405</code> with this message.</td></tr>
+    <tr><td><code>400</code></td><td><code>the repository takes release versions only, not 1.4.0-SNAPSHOT</code></td><td>The Maven version policy <code>RELEASE</code>. <code>SNAPSHOT</code> refuses releases the same way.</td></tr>
+    <tr><td><code>400</code></td><td><code>notes.txt is not a path of the Maven repository layout</code></td><td>The Maven layout policy <code>STRICT</code>.</td></tr>
+    <tr><td><code>400</code></td><td><code>the content of invoice-core-1.3.1.jar does not match its extension</code></td><td>The strict content type validation of the repository.</td></tr>
+    <tr><td><code>409</code></td><td><code>&lt;path&gt; of repository &lt;name&gt; lies in store &lt;store&gt;, which is read only</code></td><td>A delete of a file of the existing install.</td></tr>
+    <tr><td><code>413</code></td><td><code>the body is larger than the limit of &lt;n&gt; bytes of repository &lt;name&gt;</code></td><td>The body is over the limit of the repository, 10 GiB unless the repository sets another.</td></tr>
+    <tr><td><code>503</code></td><td><code>the index is busy, a scan may hold it; nothing is stored, send the write again</code></td><td>A scan holds the index. The answer carries <code>Retry-After: 10</code>.</td></tr>
+    <tr><td><code>507</code></td><td><code>store local-write has &lt;n&gt; bytes free; the write needs &lt;m&gt; with the free space it must leave</code></td><td>The disk would keep less than 2 GiB free after the write, unless the repository sets another floor.</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="service">
+<h2>Service</h2>
+<p>As a service, systemd starts the server at boot, restarts it after a failure and keeps its log in the journal. You need the binary and the data directory of <a href="#install">Install</a>, and a data directory filled by <a href="#take-over">Take Over</a>.</p>
+<p><code>serve</code> speaks the notify protocol of systemd. It sends <code>READY=1</code> once every listener is open, <code>WATCHDOG=1</code> at half of <code>WatchdogSec</code>, and <code>STOPPING=1</code> when it stops. SIGTERM and SIGINT stop it. Open requests get the seconds of <code>PIPESMITH_REGISTRY_DRAIN</code>, 1 to 3600, and 5 when it is unset. Then a running scan gets up to 10 seconds to stop, so a stop with the default can take about 15 seconds. The log goes to standard error, so the journal keeps it.</p>
+<div class="note"><p>This unit file has not run on a Linux host yet. The binary runs there under systemd as a transient unit started with <code>systemd-run</code>, with the file system read only apart from the data directory and a service user of its own. The notify protocol is covered by tests on a Unix socket.</p></div>
+<p>Save the unit as <code>/etc/systemd/system/pipesmith-registry.service</code>:</p>
+<pre><code>[Unit]
+Description=Pipesmith Registry
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+WatchdogSec=30
+User=pipesmith-registry
+Environment=PIPESMITH_REGISTRY_DATA=/var/lib/pipesmith-registry
+EnvironmentFile=-/etc/pipesmith-registry/ldap.env
+ExecStart=/opt/pipesmith-registry/pipesmith-registry serve --port 8793
+ReadOnlyPaths=/srv/blobs
+ReadWritePaths=/var/lib/pipesmith-registry
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+<p><code>/etc/pipesmith-registry/ldap.env</code> holds one line per LDAP connection, <code>PIPESMITH_REGISTRY_LDAP_PASSWORD_&lt;ID&gt;=...</code>, owned by root with mode <code>0600</code>. <code>ldap password &lt;connection&gt;</code> writes a bind password into the data directory instead, and the variable wins over that file. <code>serve</code> sends nothing to systemd when <code>NOTIFY_SOCKET</code> is not set. A failed message to systemd is a warning in the log and does not stop the server.</p>
+<pre><code>sudo systemctl daemon-reload
+sudo systemctl enable --now pipesmith-registry</code></pre>
+<p>Check the service with:</p>
+<pre><code>systemctl status pipesmith-registry
+curl -s http://localhost:8793/api/health</code></pre>
+<p><code>/api/health</code> answers <code>{"status":"ok"}</code>.</p>
+<h3 id="fresh-content">Fresh Content</h3>
+<p>While the old service keeps writing to its stores, the index shows the state of the last scan. Run <code>scan &lt;name&gt;</code> again, from a timer or by hand, as the service user with the data directory set. On a local file system the server answers from the last finished scan while a scan runs. A user with every permission can also start a scan through the server with <code>POST /api/scan</code>:</p>
+<pre><code>curl -s -u admin -X POST -H 'X-Artifact-Repository: 1' \
+  -H 'Content-Type: application/json' \
+  -d '{"store": "default"}' http://localhost:8793/api/scan</code></pre>
+<p>It answers <code>202</code> with the state of the scan, <code>409</code> while a scan runs, <code>404</code> for a store that is not attached, and <code>413</code> for a body over 64 KiB. The request needs the header <code>X-Artifact-Repository: 1</code> and a <code>Host</code> header with the main port, such as <code>localhost:8793</code>. An <code>Origin</code> header, when sent, must be <code>http://</code> plus such a host. <code>GET /api/status</code> shows the running scan and the result of the last one.</p>
+</section>
+
+<section id="network">
+<h2>Network</h2>
+<p>Clients on other machines reach the server by name once it binds to a network address. You need a user in <code>state.sqlite</code> who can sign in, and the names under which clients reach the server. By default <code>serve</code> binds to <code>127.0.0.1</code>.</p>
+<pre><code>pipesmith-registry serve --bind 0.0.0.0 --port 8793 \
+  --server-names registry.example.com,10.0.0.12</code></pre>
+<div class="note"><p>A bind to a network address runs on a Linux host since version 0.1.1, on the main port and on one port per Docker repository, over plain HTTP. Its refusals and the Host gate are covered by tests.</p></div>
+<p>An address other than <code>127.0.0.1</code>, <code>localhost</code> or <code>::1</code> needs someone in <code>state.sqlite</code> who can sign in. That is an active local user with a password while the realm of local users is active, or an LDAP connection while the LDAP realm is active. Otherwise <code>serve</code> stops:</p>
+<pre><code>error: bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed until users are imported (import) or added (user add), or an LDAP connection is imported, with its realm active (realms set), then with --server-names NAME[,NAME]</code></pre>
+<p>With such a user and without names it stops with:</p>
+<pre><code>error: bind address '0.0.0.0' is not local; name this server with --server-names NAME[,NAME]</code></pre>
+<p>Names are DNS names or IP addresses, separated by commas, an IPv6 address with or without brackets. The server stores them in lower case and refuses anything else with <code>host name '...' is not a DNS name or an IP address</code>. An address with a <code>:</code> binds IPv6 only. The Docker listeners bind the same address as the main port. <code>config.json</code> may hold a local bind only, so a network bind is always a flag of <code>serve</code>.</p>
+<h3 id="host-gate">Host Gate</h3>
+<p>Every request whose <code>Host</code> header does not name <code>localhost</code>, <code>127.0.0.1</code>, <code>[::1]</code> or one of the server names gets <code>403</code> with the text <code>Forbidden: the Host header does not name this server</code>. The port in the header does not count. The names also apply to a local bind.</p>
+<h3 id="tls">TLS</h3>
+<p>With TLS on, every listener speaks HTTPS: the main port and the port of every Docker repository. You need a certificate and its private key as PEM files that the service user can read. Give both to <code>serve</code>, or set <code>tls_cert</code> and <code>tls_key</code> in <code>config.json</code>; an option wins over its key.</p>
+<pre><code>pipesmith-registry serve --bind 0.0.0.0 --port 8793 \
+  --server-names registry.example.com \
+  --tls-cert /etc/pipesmith-registry/tls/cert.pem \
+  --tls-key /etc/pipesmith-registry/tls/key.pem</code></pre>
+<p>The listeners take TLS 1.2 or newer and HTTP/1.1 only, with one certificate for all of them. <code>serve</code> reads both files once at start, so a renewed certificate takes effect at the next start. The log names the certificate before the <code>listening on</code> lines:</p>
+<pre><code>2026-11-19 13:55:09,188 INFO pipesmith_registry.listeners: TLS on every listener with the certificate /etc/pipesmith-registry/tls/cert.pem
+2026-11-19 13:55:09,195 INFO pipesmith_registry.listeners: listening on 0.0.0.0 port 8793
+2026-11-19 13:55:09,195 INFO pipesmith_registry.listeners: Docker repository demo-docker listening on 0.0.0.0 port 14512</code></pre>
+<p>Check it with the certificate that signed the server certificate. In this example that is the server certificate itself:</p>
+<pre><code>curl -s --cacert /etc/pipesmith-registry/tls/cert.pem https://registry.example.com:8793/api/health
+{"status":"ok"}</code></pre>
+<p>Over TLS the session cookie gets <code>Secure</code>. The addresses the server builds start with <code>https://</code>: npm tarball addresses, the <code>url</code> fields of the REST API and the realm of a Docker challenge. A plain HTTP request to a TLS port gets no answer, and <code>curl</code> reports <code>Empty reply from server</code>.</p>
+<p><code>serve</code> stops with exit code 1 when only one of the two files is given, or when it cannot read them as a pair:</p>
+<pre><code>error: TLS needs a certificate and a key: give --tls-cert and --tls-key, or tls_cert and tls_key in config.json
+error: TLS certificate /etc/pipesmith-registry/tls/cert.pem with key /etc/pipesmith-registry/tls/key.pem: open /etc/pipesmith-registry/tls/key.pem: no such file or directory</code></pre>
+<p>A network bind without TLS writes a warning at every start:</p>
+<pre><code>2026-11-19 13:55:18,362 WARNING pipesmith_registry.security: bind address 0.0.0.0 is not local and TLS is off: Basic credentials and session cookies cross the network in clear text; give --tls-cert and --tls-key, or bind to loopback behind a reverse proxy on this host that ends TLS</code></pre>
+<h3>Plain HTTP</h3>
+<p>Without TLS, passwords travel in clear between client and server. TLS on the server keeps them off the network (<a href="#tls">TLS</a>). Without it, an SSH tunnel or a reverse proxy does:</p>
+<ul>
+  <li>An SSH tunnel from each workstation: <code>ssh -N -L 8793:localhost:8793 user@registry.example.com</code>, plus one more <code>-L</code> per Docker port. Then the server is <code>localhost</code> for browser and clients.</li>
+  <li>A reverse proxy on the same host that ends TLS and forwards to <code>127.0.0.1</code> (<a href="#reverse-proxy">Reverse Proxy</a>). Add the public name to <code>--server-names</code>, because the proxy passes the <code>Host</code> header on.</li>
+</ul>
+<h3 id="reverse-proxy">Reverse Proxy</h3>
+<a id="tls-proxy"></a>
+<div class="note"><p>The server has not run behind a TLS proxy on a host yet.</p></div>
+<p>Behind a reverse proxy every request comes from the address of the proxy. Two settings decide which forwarded headers count, and from which peers:</p>
+<table>
+  <thead><tr><th>Setting</th><th><code>trusted_proxies</code></th><th><code>FORWARDED_ALLOW_IPS</code></th></tr></thead>
+  <tbody>
+    <tr><td>Set in</td><td><code>config.json</code>, a list of strings</td><td>the environment, comma separated, read once at start</td></tr>
+    <tr><td>Default</td><td>empty: no peer, not even loopback</td><td><code>127.0.0.1,::1</code></td></tr>
+    <tr><td>An entry</td><td>an IP address or a network such as <code>10.0.0.0/24</code>; names and <code>*</code> are refused</td><td>an IP address or a network; <code>*</code> trusts every peer, an empty value none</td></tr>
+    <tr><td>Decides</td><td>the client address of the sign in throttle, and with <code>X-Forwarded-Proto: https</code> the <code>Secure</code> of the session cookie and <code>https</code> in the addresses the server builds</td><td>the client of the access log and the scheme of the addresses the server builds</td></tr>
+  </tbody>
+</table>
+<p>No command and no option sets <code>trusted_proxies</code>. Add it to <code>config.json</code> of the data directory as the service user, then start the server again. The log names the proxies:</p>
+<pre><code>"trusted_proxies": ["127.0.0.1", "::1"]
+
+2026-11-19 13:58:42,872 INFO pipesmith_registry.security: forwarded headers count from the trusted proxies 127.0.0.1, ::1</code></pre>
+<p><code>serve</code> stops at an entry that is not an address or a network, and <code>config --check</code> prints the same text without <code>error:</code>:</p>
+<pre><code>error: /var/lib/pipesmith-registry/config.json: trusted_proxies: 'proxy.example.com' is not an IP address or a network in CIDR form</code></pre>
+<p>From a trusted proxy the server reads <code>X-Forwarded-For</code> from the right: the first entry that is not a trusted proxy is the client. When it meets an entry that is not a bare IP address, or every entry is a trusted proxy, the server uses the address of the connection. <code>Forwarded</code>, <code>X-Forwarded-Host</code> and <code>X-Real-Ip</code> decide nothing. The Host gate reads the <code>Host</code> header that the proxy passes on, so the public name belongs in <code>--server-names</code>.</p>
+<p>With <code>state.sqlite</code>, a request with forwarded headers from a peer that is no trusted proxy writes a warning, at most once per peer in 10 minutes:</p>
+<pre><code>2026-11-19 13:58:42,678 WARNING pipesmith_registry.security: forwarded headers from 127.0.0.1, which is no trusted proxy: the sign in limits and the session cookie take the address of the connection. If 127.0.0.1 is a reverse proxy, list it in trusted_proxies of config.json</code></pre>
+<p><code>POST /api/scan</code> through a proxy on port 443 fails its <code>Host</code> check, which wants the main port. An <code>https://</code> origin fails as well. Start scans on the host with <code>scan</code>.</p>
+
+</section>
+
+<section id="container">
+<h2>Container</h2>
+<p>The server runs in a container with its data on a Docker volume and the stores mounted read only. You need the image of <a href="#install">Install</a> or a published address of the release notes, an export for the import, and the blob store directories on the Docker host.</p>
+<p>The image holds the binary at <code>/usr/local/bin/pipesmith-registry</code> on a distroless static base without a shell. It runs as user <code>65532</code>, sets <code>PIPESMITH_REGISTRY_DATA=/data</code>, and creates <code>/data</code> owned by that user, so a new named volume on <code>/data</code> is writable. Its entry point is the binary, and its default command is <code>serve</code>. It declares no port and no volume. The image has not been run against a blob store yet.</p>
+<pre><code>IMAGE=iogentic/pipesmith-registry:&lt;version&gt;
+docker volume create pipesmith-data
+docker run --rm -v pipesmith-data:/data \
+  -v /srv/blobs/default:/stores/default:ro "$IMAGE" \
+  store add default --kind &lt;blob store kind&gt; --root /stores/default
+docker run --rm -v pipesmith-data:/data \
+  -v "$PWD/export:/import:ro" "$IMAGE" import /import
+docker run --rm -v pipesmith-data:/data \
+  -v /srv/blobs/default:/stores/default:ro "$IMAGE" scan
+docker run -d --name pipesmith-registry \
+  -p 127.0.0.1:8081:8081 -p 127.0.0.1:14512:14512 \
+  -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" \
+  serve --port 8081 --bind 0.0.0.0 --server-names localhost</code></pre>
+<p><code>serve</code> without options binds to <code>127.0.0.1</code> inside the container, which cannot be reached from outside. The bind address <code>0.0.0.0</code>, which <code>-p</code> needs, works only when <code>state.sqlite</code> on the volume holds a user who can sign in, and with <code>--server-names</code>. Publish each Docker port with one more <code>-p</code>; <code>docker run ... config --docker-ports</code> lists them. The root of the store inside the container is <code>/stores/default</code>, so the mounts of every run must be the same.</p>
+<p>On a Docker volume, <code>serve</code> answers from the last finished scan while a <code>docker run ... scan</code> runs beside it. A data directory on a Docker Desktop share from macOS or Windows, on NFS, SMB or FUSE loses index writes when two processes use it at once. Measured: a scan and a server that started and stopped during it left the index without the tables of the scan. On Linux <code>scan</code> and <code>serve</code> print a warning on such a file system. <code>&lt;kind&gt;</code> is <code>fakeowner</code> for a Docker Desktop share, or <code>fuse</code>, <code>nfs</code>, <code>smb</code>, <code>smb2</code>, <code>cifs</code>:</p>
+<pre><code>warning: the data directory &lt;dir&gt; lies on a &lt;kind&gt; file system; two processes that use the index there at the same time can lose its writes. Run one process on it and start scans through the server (POST /api/scan), or put the data directory on a local Linux file system such as a Docker volume.</code></pre>
+<p>Check the container with <code>docker logs pipesmith-registry</code> and <code>curl -s http://localhost:8081/api/health</code>.</p>
+</section>
+
+<section id="upgrade">
+<h2>Upgrade</h2>
+<p>A new binary serves the data directory of the version before it. You need the release files of the new version.</p>
+<p>An install of an earlier version becomes this version with the new binary: verify the download, stop the service, replace the binary, start it again. In a container, run the image of the new version on the same <code>/data</code> volume. This version uses <code>config.json</code>, <code>repositories.json</code> and <code>index.sqlite</code> of the versions before it as they are, and migrates <code>state.sqlite</code> (<a href="#state-schema">State Schema</a>). An install in the layout of <a href="#update-layout">Update Layout</a> moves to a newer version with <code>update</code> and back with <code>rollback</code> (<a href="#update">Update</a>).</p>
+<p>A data directory of an earlier version has no <code>catalog.sqlite</code>. The first scan after the upgrade creates it with mode <code>0600</code>. While a scan runs it also writes a staging folder <code>catalog.sqlite.fill-&lt;random&gt;</code> beside it and removes it at the end. Until that scan the server answers as before.</p>
+<p>When the import of 0.1.1 stopped at an LDAP row or a blob store, run <code>import</code> on the export again before the start. Do the same when <code>config --docker-ports</code> does not list a Docker repository that has a port in the old service. After that import <code>serve</code> opens a listener on that port as well. It stops with <code>Address already in use</code> while the old service on the same host holds the port. Move the port before the start with <code>repos port &lt;name&gt; &lt;port&gt;</code>, as <a href="#docker-ports">Docker Ports</a> shows.</p>
+<h3 id="state-schema">State Schema</h3>
+<p>This version keeps <code>state.sqlite</code> in schema 2, with a table of tokens. Releases up to 0.1.2 write schema 1. The first command of this version that opens a file of schema 1 migrates it. <code>serve</code> and <code>state show</code> are such commands. Before the first step it writes a copy of the old file beside it, <code>state.sqlite.v1</code>, mode <code>0600</code>. Do not run a command of this version on the data directory of a running earlier server.</p>
+<pre><code>pipesmith-registry state show
+{
+  "schema": 2,
+  "path": "/var/lib/pipesmith-registry/state.sqlite",
+  ...</code></pre>
+<p>The command never replaces a copy that exists. When <code>state.sqlite.v1</code> is still there at a later migration, it stops:</p>
+<pre><code>error: the copy /var/lib/pipesmith-registry/state.sqlite.v1 exists, from an earlier migration of /var/lib/pipesmith-registry/state.sqlite or from another process that migrates it now; move the copy away while no other process uses the file, then start again</code></pre>
+<p>An earlier binary refuses a file of schema 2 with <code>&lt;file&gt; has schema 2, this binary knows schema 1</code>. To go back to it:</p>
+<ol>
+  <li>Stop the server of this version.</li>
+  <li>Move <code>state.sqlite</code>, <code>state.sqlite-wal</code> and <code>state.sqlite-shm</code> out of the data directory.</li>
+  <li>Rename <code>state.sqlite.v1</code> to <code>state.sqlite</code>.</li>
+  <li>Put the earlier binary back and start it.</li>
+</ol>
+<p>Users, roles, realms and tokens changed after the upgrade are then lost. The copy is the file of the earlier version as it was, so the earlier binary opens it without a migration.</p>
+<h3>Back Out</h3>
+<p>The blob stores are only read, so removing Pipesmith Registry leaves the existing install as it was. With writes on, the data directory holds the files clients wrote to this server, in <code>stores/local-write</code>. Copy that folder before you remove the data directory:</p>
+<pre><code>sudo systemctl disable --now pipesmith-registry
+sudo rm -rf /opt/pipesmith-registry /var/lib/pipesmith-registry /etc/pipesmith-registry</code></pre>
+<p>When the timer of <a href="#update-timer">Timer</a> was enabled, stop it first with <code>sudo systemctl disable --now pipesmith-registry-update.timer</code>.</p>
+</section>
+
+<section id="update">
+<h2>Update</h2>
+<p>An update installs a signed release of a newer version next to the running one, points <code>current</code> at it, restarts the unit and keeps the previous release for <code>rollback</code>. You need the install root of <a href="#update-layout">Update Layout</a>, the unit of <a href="#service">Service</a> under systemd, and a shell as the owner of the install root. For <code>/opt/pipesmith-registry</code> the owner is root.</p>
+<div class="note"><p><code>update</code> and <code>rollback</code> have run in an Ubuntu 24.04 container with systemd and without network. The fetch stage has run only against a local stub of the package registry. The health wait over TLS has run in Go tests only. No update has run on a host.</p></div>
+<h3 id="release-directory">Release Directory</h3>
+<p>Download the binary of the platform, <code>SHA256SUMS</code> and <code>SHA256SUMS.sigstore.json</code> into an empty folder, as <a href="#verify">Verify</a> shows, and give the folder to <code>update</code>:</p>
+<pre><code>sudo /opt/pipesmith-registry/current/pipesmith-registry update /tmp/release</code></pre>
+<p><code>update</code> prints one line per finished step, with the name of the step first, such as <code>checked:</code>, <code>installed:</code>, <code>switched:</code>, <code>restarted:</code> and <code>healthy:</code>. A refusal prints <code>error: &lt;text&gt;</code> and exits with 1.</p>
+<p>The published <code>SHA256SUMS</code> of 0.1.2 lists three names twice. <code>update</code> refuses a name that is listed twice, so it cannot install 0.1.2.</p>
+<h3 id="update-checks">Checks</h3>
+<p><code>update</code> checks in this order before it switches the links:</p>
+<ol>
+  <li>The owner and the modes of the install root, <code>releases/</code>, <code>update.json</code> and the key. Then it takes a lock on the install root.</li>
+  <li><code>data_dir</code> of <code>update.json</code> and the link <code>current</code>.</li>
+  <li>The signature in <code>SHA256SUMS.sigstore.json</code> over <code>SHA256SUMS</code>, with the key of <code>trusted_key</code>.</li>
+  <li>The SHA-256 of <code>pipesmith-registry-&lt;os&gt;-&lt;arch&gt;</code> of this machine against its line in <code>SHA256SUMS</code>.</li>
+  <li>The answer of the new binary to <code>version</code>, run once without a shell and with an empty environment. It must be higher than the version of <code>current</code>; <code>--allow-downgrade</code> lifts this rule.</li>
+  <li>The answer of the new binary to <code>schema</code> against <code>state.sqlite</code> and <code>catalog.sqlite</code> of <code>data_dir</code>. A data file with a newer schema than the release writes is refused.</li>
+  <li>Free space for the copies of the files that migrate: the size of <code>state.sqlite</code> and twice the size of <code>catalog.sqlite</code>. A copy <code>&lt;file&gt;.v&lt;n&gt;</code> or <code>&lt;file&gt;.failed</code> left from an earlier run is refused.</li>
+</ol>
+<p>From step 5 on it works on a copy of the binary in a folder <code>releases/.staging-&lt;random&gt;</code>, which it removes afterwards. When every check has passed, it writes <code>releases/&lt;version&gt;/</code> with the binary, <code>SHA256SUMS</code> and <code>SHA256SUMS.sigstore.json</code>.</p>
+<h3 id="update-restart">Restart</h3>
+<p><code>update</code> points <code>previous</code> at the running release and <code>current</code> at the new one. For each link it renames a new link into place. It runs <code>systemctl restart</code> on the unit <code>pipesmith-registry.service</code>, or on <code>unit</code> of <code>update.json</code>. The restart may take <code>drain_seconds</code> of <code>update.json</code> plus 120 seconds, and 3720 seconds without that key. Give <code>drain_seconds</code> the value of <code>PIPESMITH_REGISTRY_DRAIN</code> of the unit.</p>
+<p>Then it asks the new version every 500 milliseconds, for 30 seconds: <code>GET /api/health</code> must answer <code>{"status":"ok"}</code>, and <code>GET /api/status</code> must name the new version. It sends these requests to the bind address of <code>config.json</code> of <code>data_dir</code>, <code>127.0.0.1</code> by default. The port is <code>PIPESMITH_REGISTRY_PORT</code> of its own environment when that is set, else the port of <code>config.json</code>, else 8793. It does not see <code>serve --port</code>. A unit that listens elsewhere needs <code>health_address</code> (<code>host:port</code>) in <code>update.json</code>. When <code>config.json</code> names <code>tls_cert</code> and <code>tls_key</code>, the wait speaks TLS and accepts only that certificate.</p>
+<p>Check the result:</p>
+<pre><code>readlink /opt/pipesmith-registry/current
+curl -s http://localhost:8793/api/status</code></pre>
+<p><code>current</code> names <code>releases/&lt;version&gt;</code>, and <code>/api/status</code> names that version.</p>
+<h3 id="way-back">Way Back</h3>
+<p>When the restart or the health wait fails, <code>update</code> points both links back, restarts the previous release and waits for it again. It removes the release folder it made in this run and exits with 1. The message says <code>went back to releases/&lt;old&gt;, which answers again</code>, or <code>which does not answer either</code> with the cause.</p>
+<p>When the new release migrated a data file, <code>update</code> first stops the unit. It keeps the migrated file as <code>&lt;file&gt;.failed</code>, renames the copy <code>&lt;file&gt;.v&lt;n&gt;</code> back to <code>&lt;file&gt;</code> and starts the previous release. A file that the new release removed comes back from its copy. Without a copy the message says <code>&lt;file&gt; is gone</code>, and the previous release starts without it. Changes made after the restart are lost.</p>
+<p>A file that was migrated without a copy stays as it is, as after <code>--no-catalog-backup</code>. Then the unit stays stopped and the release folder stays. The message says <code>then the way back stopped</code> and the reason.</p>
+<h3 id="rollback">Rollback</h3>
+<pre><code>sudo /opt/pipesmith-registry/current/pipesmith-registry rollback</code></pre>
+<p><code>rollback</code> points <code>current</code> at the release of <code>previous</code> and <code>previous</code> at the release that ran, restarts the unit and waits for its health as <code>update</code> does. When the restart or the health wait fails, it points the links back in the same way. A second <code>rollback</code> returns to the first release. It changes no data file, puts no copy back and checks no signature. It refuses before any change when a data file has a newer schema than the previous release writes, and its message names the copy if one exists. Putting that copy back by hand loses every change made since the update.</p>
+<h3 id="fetch-stage">Fetch Stage</h3>
+<p><code>update --fetch</code> downloads a release from the generic package registry of a Forgejo server into <code>releases/&lt;version&gt;/</code> and checks it. It restarts nothing. <code>update --switch &lt;version&gt;</code> then installs that folder as a release directory. <code>update.json</code> names the server and the owner of the package:</p>
+<pre><code>"channel": {
+  "server": "https://registry.example.com",
+  "owner": "demo",
+  "token_file": "forge"
+}</code></pre>
+<p><code>server</code> needs <code>https</code>. Plain <code>http</code> is allowed only to a loopback address. <code>token_file</code> is optional: a file name below <code>secrets/</code> of <code>data_dir</code>, which neither group nor others may read. Without <code>--version</code> the stage takes the highest version above the running one whose <code>cosign.pub</code> answers <code>200</code>. It checks the signature, the SHA-256 of the binary, the bill of materials <code>sbom.cdx.json</code> and the answer of the binary to <code>version</code>. A failed step removes <code>releases/&lt;version&gt;.partial/</code>.</p>
+<p>The health wait asks the registry itself. The fetch stage is the only part that asks another host, and nothing is sent unless an operator runs <code>update --fetch</code> or turns the timer on. All requests are <code>GET</code> to <code>server</code>: the version list <code>/api/v1/packages/&lt;owner&gt;?limit=50&amp;page=&lt;n&gt;&amp;q=pipesmith-registry&amp;type=generic</code>, then <code>cosign.pub</code>, <code>SHA256SUMS</code>, <code>SHA256SUMS.sigstore.json</code>, the binary and <code>sbom.cdx.json</code> below <code>/api/packages/&lt;owner&gt;/generic/pipesmith-registry/v&lt;version&gt;/</code>. No request names the running version, the host or a repository. The token goes in <code>Authorization</code> to <code>server</code> only. The client uses no proxy and follows at most 3 redirects, each to the same scheme, host and port.</p>
+<h3 id="update-timer">Timer</h3>
+<p>The folder <code>release/</code> of the source repository holds <code>pipesmith-registry.service</code>, <code>pipesmith-registry-update.service</code> and <code>pipesmith-registry-update.timer</code>. A release does not carry them, and no command installs or enables them. The timer runs <code>update --fetch --scheduled</code> once a day as root, within a random delay of up to one hour. It switches to the fetched version only when <code>scheduled_switch</code> of <code>update.json</code> is <code>true</code>; without that key it only fetches. Copy the three files from the source repository to <code>/etc/systemd/system/</code>, then:</p>
+<pre><code>sudo systemctl daemon-reload
+sudo systemctl enable --now pipesmith-registry-update.timer</code></pre>
+<p><code>update</code> and <code>rollback</code> restart a systemd unit, so they do not apply to <a href="#container">Container</a>.</p>
+</section>
+
+<section id="maven">
+<a id="clients"></a>
+<h2>Maven</h2>
+<p>Maven resolves its dependencies through a group repository of this server. You need a local or LDAP user with the read permission of the repositories. The examples use an SSH tunnel, so the server is <code>localhost:8793</code>.</p>
+<div class="note"><p>The script <code>tests/clients/run_clients.py</code> of this repository runs Maven, Gradle, npm, crane and skopeo against a server, each in a container. For its reads that server has repositories from a settings file and no <code>state.sqlite</code>, so no client signs in. For its writes a second server runs with writes on and sign in on. Maven deploys with Basic credentials. npm publishes with the token of <code>npm login</code>. crane, skopeo and the Docker engine push after <code>crane auth login</code>, <code>skopeo login</code> and <code>docker login</code>. The settings in this chapter and in npm, Docker and Tokens have not been run as shown.</p></div>
+<p>In <code>~/.m2/settings.xml</code>, a mirror on a Maven group and a server entry with the same id:</p>
+<pre><code>&lt;settings&gt;
+  &lt;mirrors&gt;
+    &lt;mirror&gt;
+      &lt;id&gt;pipesmith&lt;/id&gt;
+      &lt;mirrorOf&gt;*&lt;/mirrorOf&gt;
+      &lt;url&gt;http://localhost:8793/repository/demo-maven-group/&lt;/url&gt;
+    &lt;/mirror&gt;
+  &lt;/mirrors&gt;
+  &lt;servers&gt;
+    &lt;server&gt;
+      &lt;id&gt;pipesmith&lt;/id&gt;
+      &lt;username&gt;viewer&lt;/username&gt;
+      &lt;password&gt;${env.REGISTRY_PASSWORD}&lt;/password&gt;
+    &lt;/server&gt;
+  &lt;/servers&gt;
+&lt;/settings&gt;</code></pre>
+<p>A group answers from its members, groups inside it included, in their order and each member once. A file comes from the first member that holds it. <code>maven-metadata.xml</code> and its checksums are merged from every member that has one: the versions of all members, the newest <code>latest</code> and <code>release</code>, the greatest <code>lastUpdated</code>. A <code>.sha1</code> file that no member stores is answered from the SHA-1 of the indexed file. A member document over 16 MiB is skipped. A member document also counts as not well formed when its entities expand past 8 MiB or its elements nest deeper than 1,102. The same holds for more than 200,000 elements or 200,000 attributes. The group merges the other members, and with no document left the path answers <code>404</code>. Check one file with:</p>
+<pre><code>curl -sI -u viewer http://localhost:8793/repository/demo-maven-hosted/com/example/billing/invoice-core/1.2.0/invoice-core-1.2.0.jar
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Content-Length: 201
+Content-Type: application/java-archive
+Etag: "7959e4804e01a1b5dd21413e0304dfdd5be91574"
+Last-Modified: Mon, 05 Oct 2026 14:13:20 GMT</code></pre>
+<p>With writes off a deploy answers <code>401</code> without credentials. With the credentials of a user who may read the repository it answers <code>405</code>:</p>
+<pre><code>HTTP/1.1 405 Method Not Allowed
+Allow: GET, HEAD
+Content-Type: text/plain; charset=utf-8
+
+Method not allowed: this server is read only</code></pre>
+<h3 id="deploy">Deploy</h3>
+<p>With writes on, <code>mvn deploy</code> stores the files of a build in a hosted maven2 repository. You need a user with <code>add</code> on it, and <code>edit</code> to write a path again. Add this to <code>pom.xml</code>. The credentials come from the server entry <code>pipesmith</code> of <code>settings.xml</code>:</p>
+<pre><code>&lt;distributionManagement&gt;
+  &lt;repository&gt;
+    &lt;id&gt;pipesmith&lt;/id&gt;
+    &lt;url&gt;http://localhost:8793/repository/demo-maven-hosted/&lt;/url&gt;
+  &lt;/repository&gt;
+&lt;/distributionManagement&gt;</code></pre>
+<p>A deploy is one <code>PUT</code> per file, checksum files and <code>maven-metadata.xml</code> included, and each answers <code>201</code>. The server stores every file as the client sends it and writes no <code>maven-metadata.xml</code> itself. A checksum file that does not match its file is stored, and the log gets a warning. The same with <code>curl</code>:</p>
+<pre><code>curl -s -u admin -T invoice-core-1.3.0.jar -o /dev/null -w '%{http_code}\n' \
+  http://localhost:8793/repository/demo-maven-hosted/com/example/billing/invoice-core/1.3.0/invoice-core-1.3.0.jar
+201</code></pre>
+<p><code>demo-maven-hosted</code> has the write policy <code>ALLOW_ONCE</code> and the version policy <code>RELEASE</code>, so a second deploy of the jar and a snapshot are refused:</p>
+<pre><code>HTTP/1.1 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+
+the repository does not allow updating assets
+
+HTTP/1.1 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+
+the repository takes release versions only, not 1.4.0-SNAPSHOT</code></pre>
+<p>A body may be up to 10 GiB unless the repository sets another limit. <a href="#refusals">Refusals</a> lists the other answers. <code>maven rebuild-metadata &lt;repository&gt;</code> writes <code>maven-metadata.xml</code> and its checksum files again from the files the repository holds; it refuses to run beside a <code>serve</code> with writes on.</p>
+</section>
+
+<section id="npm">
+<h2>npm</h2>
+<p>npm installs packages through an npm repository or group of this server. You need a local or LDAP user with the read permission of the repository.</p>
+<p>In <code>.npmrc</code>, the registry and the Basic credentials as base64 of <code>user:password</code>:</p>
+<pre><code>registry=http://localhost:8793/repository/demo-npm-proxy/
+//localhost:8793/repository/demo-npm-proxy/:_auth=${REGISTRY_AUTH}</code></pre>
+<p>The server also takes an npm token as <code>Authorization: Bearer</code>, and <code>npm login</code> gets one (<a href="#npm-login">npm Login</a>). <code>GET /repository/&lt;repository&gt;/-/ping</code> answers <code>200</code> with <code>{}</code>.</p>
+<p>The server builds each package document from the stored documents and tarballs. A version is listed only when its tarball is stored. The tarball addresses point at this server, with the <code>Host</code> header of the request and the scheme a trusted proxy sends (see <a href="#network">Network</a>). A group merges <code>versions</code>, <code>dist-tags</code> and <code>time</code> of its npm members, and the first member wins a version. A document may be 16 MiB, a tarball 64 MiB, all tarballs of one package 256 MiB. Inside one tarball the data of one extended header or sparse map may be 1 MiB, and the data of all of them 4 MiB. One tarball inflates to 1 GiB at most, rereads included. The tarballs of one package document may inflate to 4 GiB in all. A tarball over one of these bounds adds no version to the document.</p>
+<pre><code>curl -s -u viewer http://localhost:8793/repository/demo-npm-proxy/@example%2fdate-format
+{"dist-tags": {"latest": "1.1.0"}, "versions": {"1.0.0": {"name": "@example/date-format", "version": "1.0.0", ...
+  "dist": {"tarball": "http://localhost:8793/repository/demo-npm-proxy/@example/date-format/-/date-format-1.0.0.tgz", ...</code></pre>
+<p>With writes off <code>npm publish</code> answers <code>405</code> with <code>Method not allowed: this server is read only</code>.</p>
+<h3 id="publish">Publish</h3>
+<p>With writes on, <code>npm publish</code> stores a package version in a hosted npm repository, here <code>demo-npm-hosted</code>. You need a user with <code>add</code> on it, and with <code>edit</code> for a further version of a package that exists. The script <code>tests/clients/run_clients.py</code> publishes with npm after <code>npm login</code>. The command as shown here has not been run:</p>
+<pre><code>npm publish --registry http://localhost:8793/repository/demo-npm-hosted/</code></pre>
+<p>The server takes the publish document with <code>PUT /repository/&lt;repository&gt;/&lt;package&gt;</code>. A document sent with <code>curl</code> got:</p>
+<pre><code>HTTP/1.1 201 Created
+Content-Type: application/json
+
+{"ok":true,"id":"invoice-ui","rev":"1-879462004d2223b450142cf1260193e7"}</code></pre>
+<p>A publish carries exactly one version and one tarball. The server stores the tarball and the package document, and a package without the tag <code>latest</code> gets it for the published version. Under <code>ALLOW_ONCE</code> a second publish of the version gets <code>400</code> with <code>{"error":"the repository does not allow updating assets"}</code>. The document may be up to 16 MiB without its tarball. The tarball may be up to the limit of the repository, 10 GiB unless the repository sets another. The tags of a package:</p>
+<pre><code>curl -s -u viewer http://localhost:8793/repository/demo-npm-hosted/-/package/invoice-ui/dist-tags
+{"latest": "1.0.0"}</code></pre>
+</section>
+
+<section id="docker">
+<h2>Docker</h2>
+<p>Docker pulls images from this server by the port of a Docker repository. You need a local or LDAP user with the read permission of the Docker repository and its port from <a href="#docker-ports">Docker Ports</a>.</p>
+<p>Each Docker repository answers on its own port under <code>/v2/</code>, and on the main port under <code>/repository/&lt;name&gt;/v2/</code>. A Docker port answers the registry API only; any other path there answers <code>404</code>. Through a tunnel, forward that port too:</p>
+<pre><code>ssh -N -L 8793:localhost:8793 -L 14512:localhost:14512 user@registry.example.com
+docker login localhost:14512
+docker pull localhost:14512/team/web:1.4.2</code></pre>
+<p>Docker treats registries on <code>127.0.0.0/8</code> as insecure and so accepts plain HTTP there. Any other name needs an entry in <code>insecure-registries</code> of the Docker daemon. The server sends a Basic challenge, or a Bearer challenge that names its token route (<a href="#docker-login">Docker Login</a>). With anonymous access off a Docker port wants credentials for every path, <code>/v2/</code> included.</p>
+<table>
+  <thead><tr><th>Path below <code>/v2/</code></th><th>Answer</th></tr></thead>
+  <tbody>
+    <tr><td><code>/v2/</code></td><td><code>200</code> with <code>{}</code></td></tr>
+    <tr><td><code>&lt;name&gt;/manifests/&lt;tag or digest&gt;</code></td><td>The stored manifest, with <code>Docker-Content-Digest</code>. Members of a group are tried in order. A manifest over 4 MiB is skipped.</td></tr>
+    <tr><td><code>&lt;name&gt;/blobs/&lt;digest&gt;</code></td><td>The stored blob. Blobs are shared by every image name of the repository.</td></tr>
+    <tr><td><code>&lt;name&gt;/tags/list</code></td><td>The tags of all members, sorted, with <code>?n=</code> and <code>?last=</code> for pages and a <code>Link</code> header to the next page</td></tr>
+    <tr><td>any other path, <code>_catalog</code> included</td><td><code>404</code> with the code <code>UNSUPPORTED</code></td></tr>
+    <tr><td><code>&lt;name&gt;/blobs/uploads/</code> and the other paths of a push</td><td>With writes on see <a href="#push">Push</a>; with writes off <code>405</code></td></tr>
+  </tbody>
+</table>
+<p>Every answer carries <code>Docker-Distribution-API-Version: registry/2.0</code>. Errors use the registry form:</p>
+<pre><code>curl -s -u viewer http://localhost:14512/v2/team/web/tags/list
+{"name": "team/web", "tags": ["1.4.2"]}
+curl -s http://localhost:14512/v2/
+{"errors": [{"code": "UNAUTHORIZED", "message": "authentication required"}]}</code></pre>
+<p><code>pipesmith-registry docker-check &lt;name&gt;</code> reads every stored manifest of a Docker repository and lists each blob or manifest it names that the index does not hold, as <code>&lt;name&gt;:&lt;tag&gt; missing &lt;digest&gt;</code>. Its last line counts the manifests read, incomplete, missing and unreadable. It exits with code 1 when one is missing or unreadable.</p>
+<p>With writes off a push answers <code>405</code> with <code>{"errors": [{"code": "UNSUPPORTED", "message": "this registry is read only: push and delete are refused"}]}</code>.</p>
+<h3 id="push">Push</h3>
+<p>With writes on, <code>docker push</code> stores an image in a hosted Docker repository. You need a user with <code>add</code> on the repository, <code>edit</code> to push a tag that exists, and the Docker port of the repository. The script <code>tests/clients/run_clients.py</code> pushes with the Docker engine after <code>docker login</code>. The commands as shown here have not been run:</p>
+<pre><code>docker tag team/web:1.4.3 localhost:14513/team/web:1.4.3
+docker push localhost:14513/team/web:1.4.3</code></pre>
+<p>The server answers the push calls of the registry API: an upload of each blob, then the manifest. A push of an OCI image with <code>curl</code> got <code>201</code> for both blobs and for the manifest. The tag list then shows the tag:</p>
+<pre><code>curl -s -u viewer http://localhost:14513/v2/team/web/tags/list
+{"name": "team/web", "tags": ["1.4.3"]}</code></pre>
+<p>The server takes Docker schema 2 and OCI manifests up to 4 MiB. Every blob a manifest names must be in the repository first, else the push gets <code>400</code> with <code>MANIFEST_BLOB_UNKNOWN</code>. Upload sessions live in the memory of the process: 256 at once, 64 per user. A session ends after one hour without a request. Under <code>ALLOW_ONCE</code> a tag pushed again with other bytes is refused:</p>
+<pre><code>HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{"errors": [{"code": "DENIED", "message": "the repository does not allow updating assets"}]}</code></pre>
+</section>
+
+<section id="tokens">
+<h2>Tokens</h2>
+<p>A token lets npm and Docker clients and scripts sign in without sending a password with every request. You need <code>state.sqlite</code>. The active realms must include the realm of the token kind and the realm of the user.</p>
+<div class="note"><p>The token routes were run with <code>curl</code>. The script <code>tests/clients/run_clients.py</code> signs in through them with <code>npm login</code>, <code>crane auth login</code>, <code>skopeo login</code> and <code>docker login</code>.</p></div>
+<table>
+  <thead><tr><th>Kind</th><th>Made by</th><th>Lives</th></tr></thead>
+  <tbody>
+    <tr><td>npm token</td><td><code>npm login</code>, <code>token issue --kind npm</code></td><td>until revoked</td></tr>
+    <tr><td>user token</td><td><code>token issue --kind user</code></td><td>until revoked</td></tr>
+    <tr><td>Docker token</td><td>the token route of a Docker repository (<a href="#docker-login">Docker Login</a>)</td><td>300 seconds</td></tr>
+  </tbody>
+</table>
+<p>The realms are <code>NpmToken</code>, <code>User-Token-Realm</code> and <code>DockerToken</code>, in the order of the table. <code>state.sqlite</code> keeps the SHA-256 of the secret part of npm and user tokens. Docker tokens live in the memory of the process, 10,000 at most.</p>
+<p>A user holds at most 20 npm tokens and 20 user tokens, and a new one revokes the oldest. Every route takes a token as <code>Authorization: Bearer &lt;token&gt;</code>. A user token is also a Basic password for its own user name. An npm token and a Docker token are not.</p>
+<p>This server does not take over tokens of the old service. A token in the format of the old service answers <code>401</code> with <code>this token comes from the server this one replaces and is not accepted: this server issues tokens new, sign in again</code>.</p>
+<h3 id="token-realms">Realms</h3>
+<p><code>realms set</code> takes the whole order of the active realms. This manual writes the ids of the realms of local users and of local authorization as <code>&lt;local users realm&gt;</code> and <code>&lt;local authorization realm&gt;</code>. <code>realms list</code> prints them in the column <code>REALM</code>. A running <code>serve</code> takes the change within about a second and writes a line to its log:</p>
+<pre><code>pipesmith-registry realms set &lt;local users realm&gt;,&lt;local authorization realm&gt;,LdapRealm,DockerToken,NpmToken,User-Token-Realm
+active realms: &lt;local users realm&gt;, &lt;local authorization realm&gt;, LdapRealm, DockerToken, NpmToken, User-Token-Realm
+
+2026-11-19 13:54:43,500 INFO pipesmith_registry.security: identity state loaded again: generation=3</code></pre>
+<p><code>realms list</code> prints the active realms in their order, then the others. After the command above it printed:</p>
+<pre><code>pipesmith-registry realms list
+ACTIVE  REALM                        WHAT
+1       &lt;local users realm&gt;          Local users
+2       &lt;local authorization realm&gt;  Local authorization
+3       LdapRealm                    LDAP directories
+4       DockerToken                  Docker bearer tokens
+5       NpmToken                     npm tokens
+6       User-Token-Realm             User tokens
+-       DefaultRole                  Default role</code></pre>
+<h3 id="npm-login">npm Login</h3>
+<p>The server answers <code>npm login</code> at <code>PUT /repository/&lt;repository&gt;/-/user/org.couchdb.user:&lt;user&gt;</code>, with name and password in a JSON body. It checks the pair like a Basic sign in, including the sign in throttle, and answers <code>201</code> with a new npm token. The same request with <code>curl</code>:</p>
+<pre><code>curl -s -X PUT -H 'Content-Type: application/json' \
+  -d '{"name":"admin","password":"..."}' \
+  http://localhost:8793/repository/demo-npm-hosted/-/user/org.couchdb.user:admin
+{"ok":true,"id":"org.couchdb.user:admin","token":"NpmToken.&lt;11 characters&gt;.&lt;43 characters&gt;"}</code></pre>
+<p>In <code>.npmrc</code> a token goes into <code>_authToken</code>. npm has not been run with this setting:</p>
+<pre><code>registry=http://localhost:8793/repository/demo-npm-hosted/
+//localhost:8793/repository/demo-npm-hosted/:_authToken=${NPM_TOKEN}</code></pre>
+<p><code>-/whoami</code> names the user of the token, and <code>DELETE</code> of <code>-/user/token/&lt;token&gt;</code> revokes it:</p>
+<pre><code>curl -s -H "Authorization: Bearer $NPM_TOKEN" http://localhost:8793/repository/demo-npm-hosted/-/whoami
+{"username":"admin"}
+curl -s -X DELETE -H "Authorization: Bearer $NPM_TOKEN" \
+  http://localhost:8793/repository/demo-npm-hosted/-/user/token/$NPM_TOKEN
+{"ok":true}</code></pre>
+<table>
+  <thead><tr><th>Status</th><th>Body</th><th>Cause</th></tr></thead>
+  <tbody>
+    <tr><td><code>400</code></td><td><code>{"ok":false,"error":"the body must be a JSON object with name and password"}</code></td><td>The body is not a JSON object with both fields.</td></tr>
+    <tr><td><code>400</code></td><td><code>{"ok":false,"error":"the name of the body is not the name of the path"}</code></td><td>Path and body name two users.</td></tr>
+    <tr><td><code>401</code></td><td><code>{"ok":false,"error":"wrong user name or password"}</code></td><td>A wrong pair.</td></tr>
+    <tr><td><code>403</code></td><td><code>{"ok":false,"error":"npm tokens are off: the realm NpmToken is not in the active realms"}</code></td><td>The realm <code>NpmToken</code> is off.</td></tr>
+  </tbody>
+</table>
+<h3 id="docker-login">Docker Login</h3>
+<p>A Docker repository answers a request without valid credentials with a Bearer challenge when the realm <code>DockerToken</code> is active and the attribute <code>docker.forceBasicAuth</code> of the repository is <code>false</code>. Otherwise the challenge is Basic. On a Docker port the challenge names <code>/v2/token</code> of that port. On the main port it names <code>/repository/&lt;name&gt;/v2/token</code>:</p>
+<pre><code>curl -s -D - -o /dev/null http://localhost:14513/v2/
+HTTP/1.1 401 Unauthorized
+Www-Authenticate: Bearer realm="http://localhost:14513/v2/token",service="Pipesmith Registry"</code></pre>
+<p>The token route takes Basic credentials and answers a Docker token with <code>Cache-Control: no-store</code>. Without credentials it answers a token of the anonymous user when the repository allows an anonymous pull. It reads no <code>scope</code> and no <code>service</code>; the server checks the rights of the user at every request.</p>
+<pre><code>curl -s -u admin http://localhost:14513/v2/token
+{"token":"DockerToken.&lt;11 characters&gt;.&lt;43 characters&gt;","access_token":"DockerToken.&lt;11 characters&gt;.&lt;43 characters&gt;","expires_in":300,"issued_at":"2026-11-19T12:54:20Z"}</code></pre>
+<p>A Docker token lives 300 seconds in memory, so a restart ends all Docker tokens. It cannot be listed or revoked.</p>
+<h3 id="token-commands">Token Commands</h3>
+<p>Run the <code>token</code> commands as the service user, with the data directory set. <code>token issue</code> prints the token alone on standard output, once, and names it on standard error:</p>
+<pre><code>pipesmith-registry token issue viewer --kind user
+UserToken.&lt;11 characters&gt;.&lt;43 characters&gt;
+issued a user token for user viewer (default), id pNzLLqSH4nY; it is shown once, above
+
+pipesmith-registry token list viewer
+ID           KIND  ISSUED            LAST USED
+pNzLLqSH4nY  user  2026-11-19 12:54  2026-11-19 12:54
+
+pipesmith-registry token revoke pNzLLqSH4nY
+revoked the user token pNzLLqSH4nY of user viewer</code></pre>
+<p>The id is the part between the two dots of the token. <code>token revoke</code> refuses a whole token, because the token is a secret. <code>token list</code> prints its times in UTC. For a user of an LDAP connection add <code>--source LDAP</code>. A revoked token answers <code>401</code> at its next use.</p>
+</section>
+
+<section id="raw-files">
+<h2>Raw Files</h2>
+<p>Every stored file can be downloaded by its path. You need a user with the read permission of the repository. Files of PyPI, raw and every other format besides Maven, npm and Docker are plain downloads:</p>
+<pre><code>curl -u viewer -O http://localhost:8793/repository/demo-raw/manuals/setup-2.4.pdf</code></pre>
+<p>A directory URL ends with <code>/</code> and answers an HTML listing of at most 10,000 entries. The link "Next page" at the end adds <code>?offset=</code> for the next entries. A directory path without the slash answers <code>302</code> to the form with the slash. The same listing stands below <code>/service/rest/repository/browse/&lt;name&gt;/</code>.</p>
+<p>A file answer carries <code>ETag</code>, <code>Last-Modified</code> and <code>Accept-Ranges: bytes</code>. <code>If-None-Match</code> and <code>If-Modified-Since</code> give <code>304</code>. One range in a <code>Range</code> header gives <code>206</code>; several ranges give the whole file with <code>200</code>; a start past the end gives <code>416</code>.</p>
+<pre><code>curl -s -u viewer -H 'Range: bytes=0-9' -D - -o /dev/null http://localhost:8793/repository/demo-maven-hosted/com/example/billing/invoice-core/1.2.0/invoice-core-1.2.0.jar
+HTTP/1.1 206 Partial Content
+Accept-Ranges: bytes
+Content-Length: 10</code></pre>
+<h3 id="upload">Upload</h3>
+<p>With writes on, a <code>PUT</code> stores a file in a hosted raw repository under the path it names, and a <code>DELETE</code> removes it from the repository. You need a user with <code>add</code>, and <code>delete</code> to remove it:</p>
+<pre><code>curl -s -u admin -T setup-2.5.txt -D - http://localhost:8793/repository/demo-raw/manuals/setup-2.5.txt
+HTTP/1.1 201 Created
+Content-Length: 0
+
+curl -s -u admin -X DELETE -D - http://localhost:8793/repository/demo-raw/manuals/setup-2.5.txt
+HTTP/1.1 204 No Content</code></pre>
+<p>A <code>GET</code> serves the new file at once, and after the delete it answers <code>404</code>. A <code>DELETE</code> of a path that no store holds answers <code>404</code>. A <code>DELETE</code> of a file of the existing install answers <code>409</code>. Another method answers <code>405</code> with <code>Allow: GET, HEAD, PUT, DELETE</code>. <a href="#refusals">Refusals</a> lists the other answers.</p>
+</section>
+
+<section id="browse">
+<a id="interface"></a>
+<h2>Browse</h2>
+<p>The interface shows the repositories, their folders and the detail of each file. You need <code>state.sqlite</code> and a user. The interface is embedded in the binary and served at <code>/</code>, only with <code>state.sqlite</code>. Without it <code>/</code> answers a smaller page without sign in, which reads the same status, repository, folder and file routes. The interface follows the system theme until the user picks light or dark. With writes off every change it offers is refused by the server.</p>
+<figure><img class="dark-only" src="assets/screens/sign-in-dark.png" alt="Sign in screen with user name and password fields, dark theme"><img class="light-only" src="assets/screens/sign-in-light.png" alt="Sign in screen with user name and password fields, light theme"><figcaption>Sign in</figcaption></figure>
+<p>The navigation shows each screen a user may open. A user without the security permissions does not see the Security section; a user with view permissions only sees Overview, Search and Browse.</p>
+<table>
+  <thead><tr><th>Section</th><th>Screens</th></tr></thead>
+  <tbody>
+    <tr><td>Browse</td><td>Overview, Search, Browse with the tree of a repository and the detail of a file, the viewer, Upload</td></tr>
+    <tr><td>Repository</td><td>Repositories with groups and their members, Blob stores, Cleanup policies, Routing rules</td></tr>
+    <tr><td>Security</td><td>Users, Roles, Privileges, LDAP, Realms, Anonymous access</td></tr>
+    <tr><td>System</td><td>Tasks, Capabilities, Node, Metrics</td></tr>
+    <tr><td>Support</td><td>Status, System information, Logging, Log files</td></tr>
+  </tbody>
+</table>
+<p>With writes off the navigation marks the screens this version does not serve with "Not in preview": Upload, Cleanup policies, Routing rules, Tasks, Capabilities, Node, Metrics, System information, Logging and Log files. The interface reads that list after sign in from <code>GET /api/areas</code>. A request that the server refuses with <code>501</code> shows "Not in this preview".</p>
+<figure><img class="dark-only" src="assets/screens/overview-dark.png" alt="Overview with cards for repositories, formats, files served, index scan, health checks and blob stores, dark theme"><img class="light-only" src="assets/screens/overview-light.png" alt="Overview with cards for repositories, formats, files served, index scan, health checks and blob stores, light theme"><figcaption>Overview</figcaption></figure>
+<p>Overview counts the repositories the user can see, their formats, the files served and the blob stores, and shows the state of the index scan and the health checks.</p>
+<figure><img class="dark-only" src="assets/screens/repositories-dark.png" alt="Repositories with type, format, blob store, state and address of each, dark theme"><img class="light-only" src="assets/screens/repositories-light.png" alt="Repositories with type, format, blob store, state and address of each, light theme"><figcaption>Repositories</figcaption></figure>
+<p>Repositories, in the section Repository, lists each repository with type, format, blob store, state and address, with a button that copies the address. Browse lists the repositories with type, format, files, size and newest file; a group shows "In members" for its counts. A repository opens as a tree with 200 entries per folder and a button for more. A file opens its detail.</p>
+<figure><img class="dark-only" src="assets/screens/browse-dark.png" alt="Tree of a Maven repository with the detail of a jar file: size, content type, created, blob store, SHA-1 and Maven coordinates, dark theme"><img class="light-only" src="assets/screens/browse-light.png" alt="Tree of a Maven repository with the detail of a jar file: size, content type, created, blob store, SHA-1 and Maven coordinates, light theme"><figcaption>Browse with a file detail</figcaption></figure>
+<p>The file detail shows size, content type, creation time, the member that holds the file in a group, the blob store and how the file is served. Of the checksums it shows SHA-1, the only one the index holds. Maven files get group, artifact, version, classifier and extension. npm files get package, version, registry and an install command. Docker files get image, tag, digest and port. A manifest gets a pull command only when its repository has an open Docker port. Upload time, uploader and last download show "Not recorded".</p>
+<figure><img class="dark-only" src="assets/screens/users-dark.png" alt="Users with name, mail, state and roles, dark theme"><img class="light-only" src="assets/screens/users-light.png" alt="Users with name, mail, state and roles, light theme"><figcaption>Users</figcaption></figure>
+<p>On a wide window the top bar holds the links "Documentation" and "API". They open this manual and the API page in a new tab. The user menu holds both at every width, above About; on a narrow window the top bar hides them. The sign in screen links "Documentation" below its form, before any sign in. The About entry shows the version, the licence and the author.</p>
+<p>The server answers this manual at <code>/manual/</code> and the OpenAPI document at <code>/api/openapi.json</code> without a sign in, with and without <code>state.sqlite</code>. Neither holds any data of the install.</p>
+<p>The screenshots show invented data.</p>
+<h3 id="viewer">Viewer</h3>
+<figure><img class="dark-only" src="assets/screens/viewer-dark.png" alt="Viewer with the tree of a Maven repository and the source of a pom file, with the tools to find, go to a line, fold, wrap and copy, dark theme"><img class="light-only" src="assets/screens/viewer-light.png" alt="Viewer with the tree of a Maven repository and the source of a pom file, with the tools to find, go to a line, fold, wrap and copy, light theme"><figcaption>Viewer with a pom file</figcaption></figure>
+<p>The viewer shows a text file of a repository in the browser. The button <b>Open in viewer</b> is in the head of a repository and in the detail of a folder. The button <b>View</b> is in the detail of a file whose ending the viewer knows, such as <code>xml</code>, <code>pom</code>, <code>json</code>, <code>yaml</code>, <code>properties</code> or <code>md</code>, or whose content type names text.</p>
+<p>The viewer reads the file through its download address with <code>GET</code>, so the user needs the read permission of the repository. The viewer changes nothing. It shows at most the first 2 MiB and the first 1,000,000 lines, with the notice "First part only" or "First lines only". A file with a NUL byte in its first 8 KiB shows the card "Binary file", and a refused file shows "The file could not be loaded". In the text you can search, go to a line, fold blocks and copy. Lines wrap in files of up to 5,000 lines.</p>
+<h3 id="export">Export</h3>
+<figure><img class="dark-only" src="assets/screens/export-dark.png" alt="Export dialog for the folder com/example/billing with files, size, form, archive name and the unzip command for local use, dark theme"><img class="light-only" src="assets/screens/export-light.png" alt="Export dialog for the folder com/example/billing with files, size, form, archive name and the unzip command for local use, light theme"><figcaption>Export of a folder</figcaption></figure>
+<p>An export sends the files of a folder, or one Docker image, to the browser as one archive. The button <b>Export</b> is in the head of a repository and in the detail of a folder, and in a Docker repository in the detail of a manifest. The button shows for a user with the read permission of the repository. The dialog asks the server first and shows the files, the size, the form and the name of the archive, then offers the download. For a group the dialog shows "about" before the counts, because the archive holds each path once.</p>
+<p>The format of the repository decides the form:</p>
+<table>
+  <thead><tr><th>Form</th><th>Archive holds</th><th>Use</th></tr></thead>
+  <tbody>
+    <tr><td><code>maven</code> (Maven)</td><td>A zip of the files below the folder, by their path from the root of the repository</td><td><code>unzip &lt;name&gt; -d &lt;folder&gt;</code>, then the folder as a repository with the address <code>file:///&lt;path&gt;/&lt;folder&gt;</code></td></tr>
+    <tr><td><code>npm</code> (npm)</td><td>A zip of the package tarballs below the folder, as <code>&lt;package&gt;/&lt;file&gt;.tgz</code></td><td><code>unzip &lt;name&gt; -d &lt;folder&gt;</code>, then <code>npm install ./&lt;folder&gt;/&lt;package&gt;/&lt;package&gt;-&lt;version&gt;.tgz</code></td></tr>
+    <tr><td><code>oci</code> (Docker)</td><td>A tar of one image in OCI image layout</td><td><code>docker load -i &lt;name&gt;</code></td></tr>
+    <tr><td><code>zip</code> (every other format)</td><td>A zip of the files below the folder, by their path below it</td><td><code>unzip &lt;name&gt; -d &lt;folder&gt;</code></td></tr>
+  </tbody>
+</table>
+<p>The archive is named <code>&lt;repository&gt;-&lt;last name of the folder&gt;.zip</code>, with <code>root</code> for the root. An image is named <code>&lt;image&gt;-&lt;tag&gt;.tar</code>, with <code>_</code> for each <code>/</code> of the image name. As a <code>file://</code> repository a <code>maven</code> export serves releases and SNAPSHOT versions. Unpacked into <code>~/.m2/repository</code> it serves releases only, because Maven 3.9 does not find a SNAPSHOT with time stamped files there.</p>
+<p>An export holds at most 20,000 files and 2 GiB, counted from the index before the first byte. The server streams two exports at a time, and one per signed in account. An export ends after 2 hours, or when the browser reads nothing for 60 seconds. No setting changes these numbers. An archive that ends early breaks the download, and the browser reports it as failed.</p>
+<table>
+  <thead><tr><th>Status</th><th>Message</th></tr></thead>
+  <tbody>
+    <tr><td><code>400</code></td><td><code>the form &lt;form&gt; does not fit repository &lt;name&gt; of format &lt;format&gt;, which exports as &lt;form&gt;</code></td></tr>
+    <tr><td><code>404</code></td><td><code>&lt;folder&gt; is no folder of &lt;repository&gt;</code>, or <code>&lt;folder&gt; holds nothing the form &lt;form&gt; exports</code></td></tr>
+    <tr><td><code>409</code></td><td><code>the stored path "&lt;path&gt;" cannot be an archive entry: &lt;reason&gt;</code>, or <code>the entry "&lt;name&gt;" stands twice in the archive, or as a file beside a folder of its name</code></td></tr>
+    <tr><td><code>413</code></td><td><code>the export holds &lt;n&gt; files and &lt;n&gt; bytes; the limits are 20000 files and 2147483648 bytes</code>, with <code>or more</code> after a count the server stopped early</td></tr>
+    <tr><td><code>429</code></td><td><code>two exports stream already; try again in 30 s</code>, or <code>an export of this account streams already: one export at a time per account; try again in 30 s</code></td></tr>
+  </tbody>
+</table>
+<p>The export of a Docker image has messages of its own for <code>404</code> and <code>409</code>.</p>
+</section>
+
+<section id="search">
+<h2>Search</h2>
+<p>Search finds components by keyword, coordinates or checksum in the repositories the user may browse. You need a user with the search permission.</p>
+<figure><img class="dark-only" src="assets/screens/search-dark.png" alt="Search screen with the criteria form and five Maven components found for the keyword invoice, dark theme"><img class="light-only" src="assets/screens/search-light.png" alt="Search screen with the criteria form and five Maven components found for the keyword invoice, light theme"><figcaption>Search with results</figcaption></figure>
+<p>The search screen takes a keyword, a format, a repository, the criteria of the format and a checksum. The address holds the query, so a search can be linked. The results table loads 50 components per request, and a row opens the file in the tree. A component is a Maven version by its coordinates, an npm tarball, a Docker manifest, or for other formats a file by its folder and name. Maven metadata, npm documents and Docker blobs are not components.</p>
+<p>The REST route is <code>GET /service/rest/v1/search</code>:</p>
+<table>
+  <thead><tr><th>Parameter</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>q</code></td><td>Words that must all occur in group, name, version or path; <code>*</code> matches any text; case does not count.</td></tr>
+    <tr><td><code>repository</code></td><td>One repository; a group searches its members under the permission of the group. Without it every repository the caller may browse.</td></tr>
+    <tr><td><code>format</code>, <code>group</code>, <code>name</code>, <code>version</code>, <code>sha1</code></td><td>Exact criteria of the component</td></tr>
+    <tr><td><code>maven.groupId</code>, <code>maven.artifactId</code>, <code>maven.baseVersion</code>, <code>maven.extension</code>, <code>maven.classifier</code></td><td>Maven coordinates</td></tr>
+    <tr><td><code>docker.imageName</code>, <code>docker.imageTag</code>, <code>npm.scope</code></td><td>Docker and npm criteria; a leading <code>@</code> of the scope is dropped</td></tr>
+    <tr><td><code>continuationToken</code></td><td>The token of the previous page; it belongs to one query</td></tr>
+  </tbody>
+</table>
+<p>Each value may hold 1024 bytes, and each parameter may be given once. An unknown parameter answers <code>400</code>. A value that is no UTF-8 or holds a NUL byte answers <code>400</code> with <code>{"message":"the search parameter &lt;name&gt; is no text: it must be UTF-8 without a NUL byte"}</code>. These parameters answer <code>501</code> in this version: <code>md5</code>, <code>sha256</code>, <code>sha512</code>, <code>npm.author</code>, <code>npm.description</code>, <code>npm.keywords</code>, <code>npm.license</code>, <code>docker.layerId</code>, <code>docker.contentDigest</code>, <code>sort</code>, <code>direction</code>, <code>prerelease</code>, <code>timeout</code>, <code>gavec</code>, <code>lastBlobUpdated</code>. A search that takes longer than 2 minutes answers <code>503</code>.</p>
+<pre><code>curl -s -u viewer "http://localhost:8793/service/rest/v1/search?q=invoice-core&amp;version=1.2.0"
+{"items":[{"id":"ZGVtby1tYXZlbi1ob3N0ZWQ63xp-uJfHV6wepUkFmWMj5A","repository":"demo-maven-hosted","format":"maven2","group":"com.example.billing","name":"invoice-core","version":"1.2.0","assets":[...]}],"continuationToken":null}
+curl -s -u viewer "http://localhost:8793/service/rest/v1/search?md5=0123"
+{"message":"the search parameter md5 is not available in this server yet","area":"search"}</code></pre>
+</section>
+
+<section id="api">
+<h2>API</h2>
+<p>A script calls the same routes as the interface. You need <code>state.sqlite</code> for the REST routes and a user with the permissions of the route. Without <code>state.sqlite</code> the operations marked "needs state.sqlite" below do not exist, and no route checks a caller. The operations marked "needs state.sqlite and writes" exist while writes are on (<a href="#writes">Writes</a>); with writes off they answer <code>501</code> with the area <code>content</code>, or <code>404</code>.</p>
+<h3>Authentication</h3>
+<p>A script sends Basic credentials of a local or LDAP user with every request, or a token as <code>Authorization: Bearer &lt;token&gt;</code> (<a href="#tokens">Tokens</a>). The interface signs in with <code>POST /api/session</code> and the JSON body <code>{"username": "...", "password": "..."}</code>, and then sends the cookie <code>pipesmith_session</code>. The answer holds a <code>csrfToken</code>. A write with the cookie must send it in the header <code>X-Pipesmith-Csrf</code>; a write with Basic credentials needs none. <code>DELETE /api/session</code> signs out.</p>
+<p>A request without credentials to a protected route gets <code>401</code>. A signed in user without the permission gets <code>403</code>. <code>GET /api/status</code> gives a caller without credentials the name and the version only. A signed in caller with the permission <code>blobstores:read</code> gets the full document: data directory, bind, ports, stores with their roots, totals and the scan state. Every other signed in caller gets the same keys, with the data directory, the bind address and the root, repositories and manifest of each store as <code>null</code>. Its list of Docker ports holds the repositories it may browse, and the error of a failed scan is a fixed text. Without <code>state.sqlite</code> every caller gets the full document.</p>
+<h3>Error Bodies</h3>
+<table>
+  <thead><tr><th>Routes</th><th>Body of an error</th></tr></thead>
+  <tbody>
+    <tr><td>REST routes below <code>/service/rest/v1/</code>, <code>/api/session</code>, <code>/api/areas</code></td><td><code>{"message":"..."}</code>, for a refusal also <code>"area"</code></td></tr>
+    <tr><td><code>/api/repositories</code>, <code>/api/browse/</code>, <code>/api/asset/</code>, <code>/api/scan</code></td><td><code>{"error":"..."}</code></td></tr>
+    <tr><td><code>/api/export/</code></td><td><code>{"message":"..."}</code>, for some refusals with more fields</td></tr>
+    <tr><td>a path no route knows, a method a path does not offer</td><td><code>{"detail":"Not Found"}</code>, <code>{"detail":"Method Not Allowed"}</code> with <code>Allow</code></td></tr>
+    <tr><td><code>/repository/</code> and the browse listings</td><td>plain text</td></tr>
+    <tr><td>Docker paths</td><td><code>{"errors": [{"code": "...", "message": "..."}]}</code></td></tr>
+  </tbody>
+</table>
+<p>An operation that this version does not serve answers <code>501</code> after sign in:</p>
+<pre><code>{"message":"POST /service/rest/v1/security/users is not available in this server yet","area":"security"}</code></pre>
+<h3 id="folder-export">Folder Export</h3>
+<p><code>GET /api/export/&lt;repository&gt;</code> answers the archive of <a href="#export">Export</a>, with the read permission of the repository. <code>path</code> names the folder. An empty <code>path</code> means the root. For <code>oci</code> it names the manifest <code>v2/&lt;image&gt;/manifests/&lt;tag or digest&gt;</code>. <code>form</code> must be the form of the format, which is also the default. <code>platform</code> chooses one platform of a Docker index. <code>dry=1</code> answers the counts as JSON and sends no archive:</p>
+<pre><code>curl -s -u admin "http://localhost:8793/api/export/demo-maven-hosted?path=com/example/billing&amp;dry=1"
+{"repository":"demo-maven-hosted","path":"com/example/billing","form":"maven","name":"demo-maven-hosted-billing.zip","files":10,"bytes":1766,"exact":true,"max_files":20000,"max_bytes":2147483648,"busy":false,"own_export":false}
+curl -s -u admin -OJ "http://localhost:8793/api/export/demo-maven-hosted?path=com/example/billing"</code></pre>
+<p>The archive comes with <code>200</code>, <code>Content-Disposition: attachment</code> and <code>Cache-Control: no-store</code>, and without <code>Content-Length</code>. A transfer that breaks makes <code>curl</code> exit with an error. A refusal is JSON with <code>message</code>; the API page lists them. The server log adds one line per export: <code>export of "demo-maven-hosted" path "com/example/billing" form "maven": 10 files, 1766 bytes, 3 ms</code>.</p>
+<h3>Operations</h3>
+<p>The table lists every operation this version serves, read from the OpenAPI document. <a href="api.html">The API page</a> shows each with its parameters and answers, and <a href="openapi.json">openapi.json</a> is the document itself. The binary also answers it at <code>/api/openapi.json</code>.</p>
+<table class="ops" data-openapi="openapi.json" hidden>
+  <thead><tr><th>Method</th><th>Path</th><th>What</th><th>Who</th></tr></thead>
+  <tbody></tbody>
+</table>
+<noscript><p>The list of operations needs JavaScript. <a href="api.html">The API page</a> and <a href="openapi.json">openapi.json</a> hold all of them.</p></noscript>
+<p class="note" id="ops-error" hidden>The OpenAPI document could not be loaded. <a href="api.html">The API page</a> lists the operations.</p>
+<h3>Examples</h3>
+<pre><code>curl -u viewer -O http://localhost:8793/repository/demo-maven-hosted/com/example/billing/invoice-core/1.2.0/invoice-core-1.2.0.jar
+curl -u viewer "http://localhost:8793/service/rest/v1/search?q=invoice-core"</code></pre>
+</section>
+
+<section id="commands">
+<h2>Commands</h2>
+<p><code>pipesmith-registry help</code> prints every command; <code>&lt;command&gt; -h</code> prints the options of one. Long options may be shortened to any unique start. Every command reads the data directory of <a href="#files">Files</a>.</p>
+<table class="commands">
+  <thead><tr><th>Command</th><th>Options</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>serve</code></td><td><code>--port N</code>: the main port. <code>--bind ADDR</code>: the address of every listener. <code>--server-names NAMES</code>: the names of the Host gate, comma separated. <code>--ask-ldap-password</code>: asks at the terminal for missing bind passwords. <code>--tls-cert FILE</code>, <code>--tls-key FILE</code>: the certificate and the key of every listener, PEM. <code>--writes</code>: turns writes on.</td><td>Runs the server in the foreground, with one more listener per Docker repository that has a port.</td></tr>
+    <tr><td><code>store add &lt;name&gt;</code></td><td><code>--kind</code>: <code>&lt;blob store kind&gt;</code> or <code>directory</code>. <code>--root PATH</code>: the folder of the store. <code>--repos a,b</code>: limits a directory store to these folders. <code>--manifest PATH</code>: gives a directory store SHA-1, content type and creation time.</td><td>Attaches a store in <code>config.json</code>.</td></tr>
+    <tr><td><code>store list</code></td><td></td><td>Lists the stores with kind, files, size and root; <code>(missing)</code> after a root that is gone.</td></tr>
+    <tr><td><code>store remove &lt;name&gt;</code></td><td></td><td>Detaches a store and drops its rows from the index.</td></tr>
+    <tr><td><code>scan [&lt;name&gt;]</code></td><td></td><td>Scans one store, or all of them and then the write store, into the index and the catalog.</td></tr>
+    <tr><td><code>repos</code></td><td><code>--json</code>: prints JSON, with each remote address without user and password.</td><td>Lists the repositories with format, type, access, Docker port, files, size, newest file and a note.</td></tr>
+    <tr><td><code>repos port &lt;name&gt; &lt;port|none&gt;</code></td><td></td><td>Sets the Docker port of a repository in <code>config.json</code>, or removes it with <code>none</code>. It takes effect at the next start.</td></tr>
+    <tr><td><code>docker-check &lt;name&gt;</code></td><td></td><td>Reads every stored manifest of a Docker repository and lists the blobs and manifests it names that are not in the index.</td></tr>
+    <tr><td><code>update &lt;release directory&gt;</code></td><td><code>--root DIR</code>: the install root, default <code>/opt/pipesmith-registry</code>. <code>--allow-downgrade</code>: installs a version that is not higher, or a release without the command <code>schema</code>. <code>--no-catalog-backup</code>: migrates <code>catalog.sqlite</code> without a copy when the space for one is missing; a failed update then leaves the unit stopped.</td><td>Checks the release with the trusted key, installs it below <code>releases/</code>, switches <code>current</code>, restarts the unit and waits for its health. Goes back by itself when that fails (<a href="#update">Update</a>).</td></tr>
+    <tr><td><code>update --switch &lt;version&gt;</code></td><td><code>--root</code>, <code>--allow-downgrade</code>, <code>--no-catalog-backup</code> as above.</td><td>The same for <code>&lt;root&gt;/releases/&lt;version&gt;</code>.</td></tr>
+    <tr><td><code>update --fetch</code></td><td><code>--version V</code>: this version in place of the highest. <code>--allow-downgrade</code>: lets <code>V</code> be the running or a lower version. <code>--scheduled</code>: then switches when <code>scheduled_switch</code> is <code>true</code>. <code>--root</code> as above.</td><td>Downloads and checks a release into <code>&lt;root&gt;/releases/&lt;version&gt;</code>. Restarts nothing without <code>--scheduled</code>.</td></tr>
+    <tr><td><code>rollback</code></td><td><code>--root DIR</code> as above.</td><td>Switches <code>current</code> back to <code>previous</code>, restarts the unit and waits for its health.</td></tr>
+    <tr><td><code>import-settings &lt;file&gt;</code></td><td></td><td>Writes <code>repositories.json</code> from a repository settings export. Credentials are not taken over.</td></tr>
+    <tr><td><code>import &lt;directory&gt;</code></td><td><code>--data DIR</code>: the data directory, before the variable.</td><td>Checks an export of the old database and writes its records into <code>state.sqlite</code>, its repositories also into <code>repositories.json</code>.</td></tr>
+    <tr><td><code>import-state</code></td><td><code>--settings FILE</code>: the settings export, required. <code>--data DIR</code>: as above.</td><td>Writes the repositories of a settings export into <code>state.sqlite</code> and <code>repositories.json</code>.</td></tr>
+    <tr><td><code>state show</code></td><td><code>--data DIR</code>: as above.</td><td>Prints the counts and records of <code>state.sqlite</code> as JSON, without password hashes, and with addresses and blob store paths without user and password.</td></tr>
+    <tr><td><code>user add &lt;name&gt;</code></td><td><code>--roles a,b</code>, <code>--first-name F</code>, <code>--last-name L</code>, <code>--email E</code>, <code>--data DIR</code>.</td><td>Adds a local user. The password comes from standard input, at a terminal from a prompt without echo. Creates <code>state.sqlite</code> when it is missing.</td></tr>
+    <tr><td><code>user password &lt;name&gt;</code></td><td><code>--data DIR</code>.</td><td>Sets the password of a local user, read the same way.</td></tr>
+    <tr><td><code>user enable &lt;name&gt;</code>, <code>user disable &lt;name&gt;</code></td><td><code>--data DIR</code>.</td><td>Lets a local user sign in again, or stops it from signing in.</td></tr>
+    <tr><td><code>user roles &lt;name&gt; [&lt;role,role&gt;]</code></td><td><code>--data DIR</code>.</td><td>Shows the roles of a local user, or sets them.</td></tr>
+    <tr><td><code>anonymous on</code>, <code>anonymous off</code></td><td><code>--user ID</code>, <code>--roles a,b</code> (on only), <code>--data DIR</code>.</td><td>Lets requests without credentials in as this user with these roles, or asks every request for credentials.</td></tr>
+    <tr><td><code>realms list</code></td><td><code>--data DIR</code>.</td><td>Prints the active realms in their order, then the others.</td></tr>
+    <tr><td><code>realms set &lt;realm,realm&gt;</code></td><td><code>--default-role ROLE</code>: the role the realm <code>DefaultRole</code> gives every signed in user. <code>--data DIR</code>.</td><td>Sets the active realms and their order.</td></tr>
+    <tr><td><code>ldap password &lt;connection&gt;</code></td><td><code>--data DIR</code>.</td><td>Writes the bind password of an LDAP connection to <code>secrets/</code> of the data directory, read as for <code>user password</code>.</td></tr>
+    <tr><td><code>ldap ca &lt;connection&gt; &lt;file|none&gt;</code></td><td><code>--data DIR</code>.</td><td>Names the file of CA certificates an <code>ldaps</code> connection is verified against besides the system roots, or removes it.</td></tr>
+    <tr><td><code>ldap check [&lt;connection&gt;]</code></td><td><code>--data DIR</code>.</td><td>Connects and binds as <code>serve</code> would, and finds the search base.</td></tr>
+    <tr><td><code>token issue &lt;user&gt;</code></td><td><code>--kind npm|user</code>, required. <code>--source default|LDAP</code>. <code>--data DIR</code>.</td><td>Issues a token and prints it once (<a href="#token-commands">Token Commands</a>).</td></tr>
+    <tr><td><code>token list &lt;user&gt;</code></td><td><code>--source default|LDAP</code>, <code>--data DIR</code>.</td><td>Lists the tokens of a user without their secret part.</td></tr>
+    <tr><td><code>token revoke &lt;id&gt;</code></td><td><code>--data DIR</code>.</td><td>Revokes a token by its id, the part between its dots.</td></tr>
+    <tr><td><code>maven rebuild-metadata &lt;repository&gt;</code></td><td><code>--group G</code>, <code>--artifact A</code>, <code>--version V</code>.</td><td>Writes <code>maven-metadata.xml</code> of a hosted maven2 repository and its checksum files again from the files it holds. Needs <code>state.sqlite</code>; refused beside a <code>serve</code> with writes on.</td></tr>
+    <tr><td><code>schema</code></td><td></td><td>Prints the schema versions this binary writes, as JSON: <code>{"catalog":2,"state":2}</code>.</td></tr>
+    <tr><td><code>config</code></td><td>One of: <code>--get KEY</code>, one value (<code>data_dir</code>, <code>bind</code>, <code>port</code>, <code>config_path</code>, <code>index_path</code>, <code>repositories_path</code>). <code>--check</code>, the problems. <code>--json</code>, all as JSON. <code>--docker-ports</code>, one line <code>&lt;port&gt; &lt;repository&gt;</code> per Docker listener of the next start.</td><td>Shows the resolved paths and settings.</td></tr>
+    <tr><td><code>version</code></td><td></td><td>Prints <code>pipesmith-registry</code> and the version.</td></tr>
+    <tr><td><code>help</code></td><td></td><td>Prints the help. No command, <code>-h</code> and <code>--help</code> do the same.</td></tr>
+  </tbody>
+</table>
+<p>The commands of users, anonymous access, realms, LDAP and tokens need no sign in. A change reaches a running <code>serve</code> within about a second.</p>
+<h3>Exit Codes</h3>
+<p>Every command exits with 0 when it is done, 1 when it refused or failed, and 2 for wrong usage. A refusal prints <code>error: &lt;text&gt;</code> on standard error; wrong usage adds <code>see: pipesmith-registry help</code>. These cases also exit with 1:</p>
+<ul>
+  <li><code>scan</code>, when any store failed. The other stores are scanned.</li>
+  <li><code>docker-check</code>, when a blob or manifest is missing, a manifest is unreadable, or there is no index yet.</li>
+  <li><code>config --check</code>, when it printed a problem.</li>
+  <li><code>state show</code>, without <code>state.sqlite</code>.</li>
+  <li><code>update</code> and <code>rollback</code>, when they refused, or when a switch failed and they went back.</li>
+</ul>
+<p><code>config --get</code> with an unknown key exits with 2. <code>serve</code> exits with 0 after SIGTERM or SIGINT. <code>tools/h2export.sh</code> has its own codes: 0 done, 1 failed, 2 usage, 3 refused path, 4 schema mismatch, 5 database cannot be opened.</p>
+<p><code>update</code> with none or two of a release directory, <code>--fetch</code> and <code>--switch</code>, with <code>--version</code> or <code>--scheduled</code> without <code>--fetch</code>, or with <code>--no-catalog-backup</code> and <code>--fetch</code>, exits with 2. <code>update --fetch</code> exits with 0 when no newer version exists.</p>
+</section>
+
+<section id="files">
+<a id="configure"></a>
+<h2>Files</h2>
+<h3>Data Directory</h3>
+<p>The data directory is <code>PIPESMITH_REGISTRY_DATA</code>, else <code>ARTIFACT_REPOSITORY_DATA</code>, else the folder <code>data</code> in the parent of the folder that holds the binary. The binary resolves its own symbolic links first. <code>~</code> is expanded, and an empty variable counts as unset. <code>import</code>, <code>import-state</code> and <code>state show</code> also take <code>--data</code>, which wins over the variables. The first command that writes creates the folder with mode <code>0750</code> before the umask. No command changes the mode of an existing file or folder.</p>
+<table>
+  <thead><tr><th>File</th><th>Holds</th><th>Written by</th><th>Mode</th></tr></thead>
+  <tbody>
+    <tr><td><code>config.json</code></td><td>Bind address, port, attached stores, Docker port overrides. Written by hand: <code>writes</code>, <code>tls_cert</code>, <code>tls_key</code>, <code>trusted_proxies</code>.</td><td><code>store add</code>, <code>store remove</code>, <code>repos port</code></td><td><code>0600</code></td></tr>
+    <tr><td><code>repositories.json</code></td><td>Repository list with format, type, group members and Docker ports</td><td><code>import-settings</code>, <code>import-state</code>, <code>import</code> of a set with repositories</td><td><code>0600</code></td></tr>
+    <tr><td><code>state.sqlite</code></td><td>Users with password hashes, roles, role mappings, privileges, LDAP connections, realms, the anonymous setting, blob store definitions, repositories, token digests</td><td><code>import</code>, <code>import-state</code>, the commands of users, anonymous access, realms, LDAP and tokens; <code>serve</code> writes the last use of a token</td><td><code>0600</code> when created</td></tr>
+    <tr><td><code>secrets/ldap-&lt;id&gt;</code></td><td>The bind password of one LDAP connection</td><td><code>ldap password</code></td><td>folder <code>0700</code>, file <code>0600</code></td></tr>
+    <tr><td><code>stores/local-write/</code></td><td>The write store (<a href="#write-store">Write Store</a>)</td><td><code>serve</code> with writes on</td><td>folders <code>0750</code>, files <code>0600</code></td></tr>
+    <tr><td><code>index.sqlite</code></td><td>One row per live file of each store</td><td><code>scan</code>, <code>store remove</code>, <code>POST /api/scan</code>, <code>serve</code> with writes on; <code>serve</code> creates it empty when missing</td><td>no mode set; <code>0644</code> with umask <code>022</code></td></tr>
+    <tr><td><code>catalog.sqlite</code></td><td>The same rows as components and assets, not read yet</td><td><code>scan</code>, <code>POST /api/scan</code></td><td><code>0600</code></td></tr>
+    <tr><td><code>catalog.sqlite.fill-&lt;random&gt;/</code></td><td>Staging of a running scan; a later scan removes one older than 24 hours</td><td><code>scan</code></td><td>folder <code>0700</code>, files <code>0600</code></td></tr>
+    <tr><td><code>state.sqlite.v&lt;n&gt;</code>, <code>catalog.sqlite.v&lt;n&gt;</code></td><td>The file as it was before a migration to a newer schema, <code>state.sqlite.v1</code> in this version; it stays until an operator moves it away or the way back of <code>update</code> renames it back</td><td>the first command that opens a file of an older schema; for <code>catalog.sqlite</code> only when the disk has twice the size of the file free</td><td><code>0600</code></td></tr>
+    <tr><td><code>state.sqlite.failed</code>, <code>catalog.sqlite.failed</code></td><td>A migrated file after the way back of <code>update</code>; it stays until an operator moves it away</td><td><code>update</code></td><td>the mode of the migrated file</td></tr>
+    <tr><td><code>secrets/&lt;token_file&gt;</code></td><td>The token of the fetch stage, read only by <code>update --fetch</code></td><td>the operator</td><td>not readable by group or others</td></tr>
+    <tr><td><code>manifests/</code></td><td>Lookup tables of a directory store with <code>--manifest</code></td><td>the first <code>scan</code> of such a store</td><td>folder <code>0750</code></td></tr>
+    <tr><td><code>-wal</code>, <code>-shm</code> beside each SQLite file</td><td>The write log of SQLite</td><td>SQLite</td><td>not set by the binary</td></tr>
+  </tbody>
+</table>
+<p>The mode of <code>index.sqlite</code> was read with <code>ls -l</code> after a scan on macOS with umask <code>022</code>. <code>config.json</code> and <code>repositories.json</code> are written to a temporary file in the same folder and renamed.</p>
+<h3 id="install-root">Install Root</h3>
+<table>
+  <thead><tr><th>Path</th><th>Holds</th><th>Mode</th></tr></thead>
+  <tbody>
+    <tr><td><code>update.json</code></td><td>The settings of <code>update</code>: <code>trusted_key</code>, <code>data_dir</code>, <code>unit</code>, <code>drain_seconds</code>, <code>health_address</code>, <code>health_tls_cert</code>, <code>channel</code>, <code>limits</code>, <code>timeouts</code>, <code>scheduled_switch</code></td><td>owner of the root or root; not writable by group or others</td></tr>
+    <tr><td>the file of <code>trusted_key</code></td><td>The public key that signed <code>SHA256SUMS</code></td><td>as <code>update.json</code>, and so is its folder</td></tr>
+    <tr><td><code>releases/&lt;version&gt;/</code></td><td><code>pipesmith-registry</code>, the same file as <code>pipesmith-registry-&lt;os&gt;-&lt;arch&gt;</code>, <code>SHA256SUMS</code>, <code>SHA256SUMS.sigstore.json</code>; after a fetch also <code>sbom.cdx.json</code></td><td>folder <code>0755</code>, binaries <code>0755</code>, other files <code>0644</code></td></tr>
+    <tr><td><code>current</code>, <code>previous</code></td><td>Relative links to <code>releases/&lt;version&gt;</code></td><td></td></tr>
+    <tr><td><code>releases/&lt;version&gt;.partial/</code></td><td>A fetch in progress; removed when it fails</td><td>folder <code>0700</code></td></tr>
+    <tr><td><code>releases/.staging-*</code></td><td>The copy of a running update; the next update removes what a stopped run left</td><td></td></tr>
+  </tbody>
+</table>
+<h3 id="ports-list">Ports</h3>
+<p>The main port is 8793. <code>config.json</code> may set another, <code>PIPESMITH_REGISTRY_PORT</code> (else <code>ARTIFACT_REPOSITORY_PORT</code>) wins over it, and <code>serve --port</code> wins over all. It must lie between 1 and 65535, and port 8791 is refused (<code>port 8791 is reserved on this machine; use --port N</code>). A Docker port comes from <code>repos port</code> first, else from the repository definition. It must lie between 1024 and 65535, differ from the main port and from 8791, and belong to one repository only.</p>
+<h3>Environment</h3>
+<table>
+  <thead><tr><th>Variable</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>PIPESMITH_REGISTRY_DATA</code>, <code>ARTIFACT_REPOSITORY_DATA</code></td><td>The data directory, first name first.</td></tr>
+    <tr><td><code>PIPESMITH_REGISTRY_PORT</code>, <code>ARTIFACT_REPOSITORY_PORT</code></td><td>The main port; it wins over <code>config.json</code> and loses to <code>serve --port</code>.</td></tr>
+    <tr><td><code>PIPESMITH_REGISTRY_LDAP_PASSWORD_&lt;ID&gt;</code></td><td>The bind password of one LDAP connection; it wins over <code>secrets/</code> (see <a href="#ldap">LDAP</a>).</td></tr>
+    <tr><td><code>PIPESMITH_REGISTRY_DRAIN</code></td><td>The seconds open requests get after a stop began, 1 to 3600; 5 when unset (<a href="#service">Service</a>).</td></tr>
+    <tr><td><code>PIPESMITH_REGISTRY_WRITES</code></td><td>Turns writes on or off; it wins over <code>config.json</code> and loses to <code>serve --writes</code> (see <a href="#turn-on">Turn On</a>).</td></tr>
+    <tr><td><code>FORWARDED_ALLOW_IPS</code></td><td>The peers whose <code>X-Forwarded-Proto</code> and <code>X-Forwarded-For</code> count for the access log and the scheme of built addresses; default <code>127.0.0.1,::1</code>. The throttle and the cookie read <code>trusted_proxies</code> (see <a href="#reverse-proxy">Reverse Proxy</a>).</td></tr>
+    <tr><td><code>NOTIFY_SOCKET</code>, <code>WATCHDOG_USEC</code>, <code>WATCHDOG_PID</code></td><td>Set by systemd for the notify protocol and the watchdog.</td></tr>
+    <tr><td><code>HOME</code></td><td>The folder <code>~</code> stands for.</td></tr>
+  </tbody>
+</table>
+<p>The image sets <code>PIPESMITH_REGISTRY_DATA=/data</code>.</p>
+</section>
+
+<section id="security">
+<h2>Security</h2>
+<table>
+  <thead><tr><th>Topic</th><th>This version</th></tr></thead>
+  <tbody>
+    <tr><td>Blob stores</td><td>The stores of the existing install are opened for reading only. A systemd unit can mount them with <code>ReadOnlyPaths=</code>. Writes go into <code>stores/local-write</code> of the data directory, with writes on only.</td></tr>
+    <tr><td>Writes</td><td>Off by default. They need <code>state.sqlite</code>, credentials and the action <code>add</code>, <code>edit</code> or <code>delete</code>, also with anonymous access on. A write from a browser page of another origin answers <code>403</code>.</td></tr>
+    <tr><td>Network</td><td>Local addresses only, until <code>state.sqlite</code> holds a user who can sign in, through a local password or an LDAP connection with its realm active, and <code>--server-names</code> names the server. Every request passes the Host gate. A network bind without TLS writes a warning at every start.</td></tr>
+    <tr><td>Public routes</td><td><span class="public-routes"><code>/</code>, <code>/api/health</code>, <code>/api/status</code> (name and version only), <code>/api/openapi.json</code>, <code>/service/rest/v1/status</code>, <code>/service/rest/v1/status/writable</code>, <code>/api/session</code></span> and the manual need no sign in. <span class="public-routes">The token routes <code>PUT /repository/&lt;repository&gt;/-/user/org.couchdb.user:&lt;user&gt;</code>, <code>GET /repository/&lt;repository&gt;/-/whoami</code>, <code>DELETE /repository/&lt;repository&gt;/-/user/token/&lt;token&gt;</code> and <code>GET /repository/&lt;name&gt;/v2/token</code></span> pass without a sign in and check the credentials they are given (<a href="#tokens">Tokens</a>).</td></tr>
+    <tr><td>Status</td><td><code>GET /api/status</code> shows the data directory, the bind address and the roots of the stores to a user with the permission <code>blobstores:read</code> only. Other signed in users get these fields as <code>null</code>, and the Docker ports of the repositories they may browse.</td></tr>
+    <tr><td>Remote addresses</td><td>Shown without user and password in the REST answers, in <code>repos --json</code> and in <code>state show</code>. The stored definitions keep the address as imported.</td></tr>
+    <tr><td>Maven metadata</td><td>One member document of a group merge may be 16 MiB. Its entities expand to 8 MiB at most, its elements nest 1,102 deep at most, and it holds at most 200,000 elements and 200,000 attributes. A document over a bound is left out of the merge.</td></tr>
+    <tr><td>npm archives</td><td>The data of one extended header or sparse map stops at 1 MiB, of all headers of one archive at 4 MiB. One archive inflates to 1 GiB at most, one package document to 4 GiB over all its archives. An archive over a bound gives no version.</td></tr>
+    <tr><td>Scan request</td><td>A body of <code>POST /api/scan</code> over 64 KiB answers <code>413</code>. The server reads and drops up to 16 MiB of it first.</td></tr>
+    <tr><td>Manifest program</td><td>A <code>.zst</code> manifest is read by <code>zstd</code> from an absolute entry of <code>PATH</code> only. The program gets <code>PATH</code>, <code>HOME</code>, <code>TMPDIR</code>, <code>LANG</code> and <code>LC_ALL</code> of the environment and no other variable.</td></tr>
+    <tr><td>Transport</td><td>TLS 1.2 or newer and HTTP/1.1 on every listener with <code>--tls-cert</code> and <code>--tls-key</code>, one certificate for all. Without them plain HTTP; then use an SSH tunnel or a reverse proxy that ends TLS.</td></tr>
+    <tr><td>Behind a reverse proxy</td><td><code>trusted_proxies</code> decides the client address of the throttle and <code>Secure</code> of the session cookie. <code>FORWARDED_ALLOW_IPS</code> decides the client of the access log. Both can set <code>https</code> in the addresses the server builds.</td></tr>
+    <tr><td>Stored files</td><td>With <code>state.sqlite</code>, every file answer carries <code>X-Content-Type-Options: nosniff</code> and <code>Content-Security-Policy: sandbox</code>.</td></tr>
+    <tr><td>Tokens</td><td>npm and user tokens are kept as the SHA-256 of their secret part and do not expire; revoke them with <code>token revoke</code>. Docker tokens live 300 seconds in memory. Tokens of the old service are refused.</td></tr>
+    <tr><td>Sign in throttle</td><td>Counted per pair of lower case user name and client address. After 5 failures the pair waits 2 seconds, and each further failure doubles the wait, up to 15 minutes. There is no limit per address alone, because behind a tunnel every user comes from <code>127.0.0.1</code>. Behind a proxy of <code>trusted_proxies</code> the address comes from <code>X-Forwarded-For</code>.</td></tr>
+    <tr><td>Sessions</td><td>Kept in memory: 30 minutes idle, 12 hours at most, 20 per user. A restart signs everybody out. The cookie <code>pipesmith_session</code> is <code>HttpOnly</code> and <code>SameSite=Strict</code>; it gets <code>Secure</code> on a TLS connection and behind a proxy of <code>trusted_proxies</code> that sends <code>X-Forwarded-Proto: https</code>. A write with the cookie needs the request token.</td></tr>
+    <tr><td>Passwords</td><td>A successful Basic check is kept 300 seconds, 10,000 at most, under an HMAC-SHA-256 key of the process; a change of <code>state.sqlite</code> and a restart empty the cache. A refused check takes at least 5 milliseconds and runs a hash for unknown users too. LDAP bind passwords come from the environment, from <code>secrets/</code> of the data directory or from the terminal, and are never written to the log.</td></tr>
+    <tr><td>Data directory</td><td><code>state.sqlite</code> holds password hashes and token digests and gets mode <code>0600</code> when a command creates it. <code>state.sqlite.v1</code> holds the hashes as they were before the upgrade, mode <code>0600</code>. <code>secrets/</code> has mode <code>0700</code>, its files <code>0600</code>. The commands create the folder with <code>0750</code> and never change an existing mode. Set it to <code>0700</code> yourself, as <a href="#install">Install</a> does.</td></tr>
+    <tr><td>Export</td><td><code>tools/h2export.sh</code> reads password hashes only with <code>--with-password-hashes</code>, and writes the export with modes <code>0700</code> and <code>0600</code>.</td></tr>
+    <tr><td>Release</td><td>Static binaries, <code>SHA256SUMS</code> and SBOMs in SPDX and CycloneDX. The release script signs <code>SHA256SUMS</code> with a key unless it runs with <code>--no-sign</code>; the release notes list the files of each release.</td></tr>
+    <tr><td>Updates</td><td><code>update</code> runs only as the owner of the install root and refuses a root, <code>releases/</code>, <code>update.json</code> or key that group or others can write. It installs a release only when the signature over <code>SHA256SUMS</code> verifies with the key of <code>trusted_key</code> and the binary has its SHA-256. It refuses a key in or below the release directory. It runs the new binary once without a shell and with an empty environment before the switch.</td></tr>
+    <tr><td>Update channel</td><td>Only <code>update --fetch</code> asks a host other than the registry itself. Its requests are all <code>GET</code> to the <code>server</code> of <code>update.json</code>, and only when an operator or the timer runs it. They carry no running version, host name or repository data. The token stays in <code>secrets/</code> of the data directory and goes only to that server, over <code>https</code> or to loopback.</td></tr>
+    <tr><td>Folder export</td><td><code>GET /api/export/</code> needs the read permission of the repository, as a download does. It refuses a stored path that no archive entry may carry with <code>409</code>, and writes nothing on the server but its log line.</td></tr>
+    <tr><td>Viewer</td><td>Reads files with <code>GET</code> through their download address, at most 2 MiB of each.</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="troubleshooting">
+<h2>Troubleshooting</h2>
+<p>Each row starts from what you see: a message of a command, a line of the log or an answer to a client.</p>
+<table class="trouble">
+  <thead><tr><th>You see</th><th>Cause</th><th>Do</th></tr></thead>
+  <tbody>
+    <tr><td><code>scan</code> or <code>serve</code> prints <code>warning: the data directory &lt;dir&gt; lies on a &lt;kind&gt; file system; two processes that use the index there at the same time can lose its writes.</code></td><td>The data directory lies on a Docker Desktop share, NFS, SMB or FUSE.</td><td>Run one process on it and start scans through the server, or move the data directory to a local Linux file system (<a href="#container">Container</a>).</td></tr>
+    <tr><td><code>serve</code> stops with <code>error: [Errno &lt;n&gt;] cannot listen on &lt;address&gt; port &lt;port&gt;: Address already in use</code></td><td>Another process holds the main port or a Docker port, often the old service.</td><td>Give the main port with <code>--port</code>, move a Docker port with <code>repos port</code> (<a href="#docker-ports">Docker Ports</a>).</td></tr>
+    <tr><td><code>serve</code> stops with <code>error: bind address '0.0.0.0' is not local; only 127.0.0.1, localhost, ::1 are allowed until users are imported (import) or added (user add), or an LDAP connection is imported, with its realm active (realms set), then with --server-names NAME[,NAME]</code></td><td>A network bind while nobody in <code>state.sqlite</code> can sign in.</td><td>Import the users (<a href="#import">Import</a>) or add one with <code>user add</code>, check the active realms with <code>realms list</code>, then bind with <code>--server-names</code> (<a href="#network">Network</a>).</td></tr>
+    <tr><td>The log holds <code>WARNING pipesmith_registry.security: bind address &lt;bind&gt; is not local and TLS is off: ...</code></td><td>A network bind without TLS.</td><td>Start with <code>--tls-cert</code> and <code>--tls-key</code>, or bind to <code>127.0.0.1</code> behind a reverse proxy that ends TLS (<a href="#tls">TLS</a>).</td></tr>
+    <tr><td><code>serve</code> stops with <code>error: TLS needs a certificate and a key: give --tls-cert and --tls-key, or tls_cert and tls_key in config.json</code></td><td>Only one of the two files is given.</td><td>Give both, as options or as keys of <code>config.json</code> (<a href="#tls">TLS</a>).</td></tr>
+    <tr><td><code>serve</code> stops with <code>error: TLS certificate &lt;cert&gt; with key &lt;key&gt;: &lt;reason&gt;</code></td><td>A file is missing or unreadable for the service user, it is no PEM file, or the key does not belong to the certificate.</td><td>Check path, owner, mode and pair of both files (<a href="#tls">TLS</a>).</td></tr>
+    <tr><td>The log holds <code>WARNING pipesmith_registry.security: forwarded headers from &lt;address&gt;, which is no trusted proxy: ...</code></td><td>A proxy or a client sends forwarded headers and is not in <code>trusted_proxies</code>.</td><td>List the proxy in <code>trusted_proxies</code> of <code>config.json</code> and start the server again (<a href="#reverse-proxy">Reverse Proxy</a>).</td></tr>
+    <tr><td><code>serve</code> stops with <code>error: bind address '0.0.0.0' is not local; name this server with --server-names NAME[,NAME]</code></td><td>A network bind without server names.</td><td>Add every name and address the clients use to <code>--server-names</code> (<a href="#network">Network</a>).</td></tr>
+    <tr><td>A client or a browser gets <code>403</code> with <code>Forbidden: the Host header does not name this server</code></td><td>The client reached the server under a name that is not <code>localhost</code>, <code>127.0.0.1</code>, <code>[::1]</code> or a server name. Behind a proxy this is the public name.</td><td>Add the name to <code>--server-names</code> and start the server again (<a href="#host-gate">Host Gate</a>).</td></tr>
+    <tr><td><code>POST /api/scan</code> answers <code>403</code> with <code>{"error":"the Host 'registry.example.com' is not this server"}</code> or <code>{"error":"the header X-Artifact-Repository: 1 is missing"}</code></td><td>The scan request wants the header <code>X-Artifact-Repository: 1</code> and a <code>Host</code> with the main port. A proxy on port 443 sends the name without that port.</td><td>Send the header, or start the scan on the host with <code>scan</code> (<a href="#fresh-content">Fresh Content</a>).</td></tr>
+    <tr><td><code>POST /api/scan</code> answers <code>413</code> with <code>{"error":"the body is larger than 65536 bytes"}</code></td><td>The body is over 64 KiB. The scan request needs <code>{"store": "&lt;name&gt;"}</code> only.</td><td>Send the name of the store alone (<a href="#fresh-content">Fresh Content</a>).</td></tr>
+    <tr><td>The log holds <code>WARNING pipesmith_registry.security: LDAP connection &lt;name&gt; left out: &lt;reason&gt;</code></td><td>The connection could not be built, for example because its bind password is missing. The reason names the cause.</td><td>Set the variable that the warning names, write the password with <code>ldap password &lt;name&gt;</code>, or start with <code>--ask-ldap-password</code> (<a href="#ldap">LDAP</a>).</td></tr>
+    <tr><td>No local user can sign in after an import that printed <code>note: the export holds no password hashes, so no local user can sign in</code></td><td>The export was made without <code>--with-password-hashes</code>.</td><td>Export again with <code>--with-password-hashes</code> and import that export (<a href="#import">Import</a>).</td></tr>
+    <tr><td>A sign in or a client gets <code>429</code> with <code>Retry-After</code></td><td>Five or more failed sign ins for the same user name from the same address.</td><td>Wait the seconds that <code>Retry-After</code> names, then sign in with the right password (<a href="#throttle">Throttle</a>).</td></tr>
+    <tr><td>After a restart of the server the interface shows <code>Your session has ended. Sign in again.</code></td><td>Sessions live in memory, so a restart ends all of them.</td><td>Sign in again (<a href="#sessions">Sessions</a>).</td></tr>
+    <tr><td><code>/</code> shows a page without sign in and without the interface</td><td>The data directory holds no <code>state.sqlite</code>.</td><td>Import an export of the old database (<a href="#import">Import</a>).</td></tr>
+    <tr><td><code>store add</code> stops with <code>error: &lt;root&gt; has no content/ directory, so it is not a file blob store</code></td><td>The root is not the folder of a blob store.</td><td>Give the folder that holds <code>content/</code>, or attach a plain tree with <code>--kind directory</code> (<a href="#attach">Attach</a>).</td></tr>
+    <tr><td><code>scan</code> stops with <code>error: no stores attached; add one with: store add &lt;name&gt; --kind &lt;kind&gt; --root &lt;path&gt;</code></td><td>No store is attached in this data directory.</td><td>Attach each blob store, then scan (<a href="#attach">Attach</a>).</td></tr>
+    <tr><td><code>scan</code> prints <code>error: scan &lt;name&gt; failed, the index keeps its previous rows: &lt;reason&gt;</code></td><td>The store could not be read. One reason is <code>store &lt;name&gt; at &lt;root&gt; holds no files, but the index has &lt;n&gt; rows of it</code>, which points at a disk that is not mounted.</td><td>Fix the cause the reason names and scan again (<a href="#scan">Scan</a>).</td></tr>
+    <tr><td><code>repos</code> shows 0 files for a repository, or prints <code>no repositories; scan a store or run import-settings</code></td><td>No scan yet, the store of the repository is not attached, or the repository is a group, which counts only its own rows.</td><td>Attach the store under the name of the existing install and scan it (<a href="#compare">Compare</a>).</td></tr>
+    <tr><td>A file that the old service stored after the last scan answers <code>404</code> with <code>Not found</code></td><td>The index holds the files of the last scan.</td><td>Scan the store again, by hand or from a timer (<a href="#fresh-content">Fresh Content</a>).</td></tr>
+    <tr><td><code>import</code> stops with <code>error: &lt;export&gt;/&lt;file&gt; does not have the SHA-256 of the manifest</code>, <code>error: [Errno 2] No such file or directory: '&lt;export&gt;/manifest.json'</code> or <code>error: &lt;export&gt;/manifest.json has version &lt;n&gt;, this binary reads version 1</code></td><td>A file changed after the export, the path does not name the export folder, or the export comes from another version of the export program. A refused import writes nothing.</td><td>Copy the export folder again unchanged, or export again with the <code>tools/h2export.sh</code> of this version (<a href="#import">Import</a>).</td></tr>
+    <tr><td><code>docker-check</code> prints <code>&lt;name&gt;:&lt;tag&gt; missing &lt;digest&gt;</code> and exits with 1</td><td>The index has no row for a blob or manifest that a stored manifest names: its store is not attached or not scanned since it was written.</td><td>Attach and scan the store that holds it, then run <code>docker-check</code> again (<a href="#docker">Docker</a>).</td></tr>
+    <tr><td>A deploy, <code>npm publish</code> or a Docker push gets <code>405</code> with <code>Method not allowed: this server is read only</code> or the registry error <code>UNSUPPORTED</code></td><td>Writes are off, or the repository is a group, a proxy, offline or of a format without writes.</td><td>Start <code>serve</code> with writes on (<a href="#turn-on">Turn On</a>) and write to a hosted repository.</td></tr>
+    <tr><td><code>serve</code> stops with <code>error: writes need state.sqlite with the users who may write; import them first (import), then start with writes on</code></td><td>Writes are on and the data directory holds no <code>state.sqlite</code>.</td><td>Import the users first (<a href="#import">Import</a>), then start with writes on.</td></tr>
+    <tr><td>A write gets <code>401</code> with <code>Authentication required</code> or the registry error <code>UNAUTHORIZED</code></td><td>The client sent no credentials or wrong ones. With writes on every write needs credentials, also with anonymous access on.</td><td>Give the client the credentials of a user with <code>add</code>, <code>edit</code> or <code>delete</code> on the repository (<a href="#write-permissions">Permissions</a>).</td></tr>
+    <tr><td>A write gets <code>403</code> with <code>requested access to the resource is denied</code></td><td>The user lacks the action the write needs.</td><td>Write as a user that holds it, or give the user a role that holds it (<a href="#write-permissions">Permissions</a>).</td></tr>
+    <tr><td>A deploy gets <code>400</code> with <code>the repository does not allow updating assets</code></td><td>The write policy is <code>ALLOW_ONCE</code>, and the path exists.</td><td>Deploy a new version (<a href="#refusals">Refusals</a>).</td></tr>
+    <tr><td><code>npm login</code> gets <code>403</code> with <code>npm tokens are off: the realm NpmToken is not in the active realms</code></td><td>The realm <code>NpmToken</code> is off.</td><td>Add it to the active realms with <code>realms set</code> (<a href="#token-realms">Realms</a>).</td></tr>
+    <tr><td>A command stops with <code>error: the copy &lt;path&gt;/state.sqlite.v1 exists, ...</code></td><td>A copy of an earlier migration lies beside <code>state.sqlite</code>.</td><td>Move the copy away while no other process uses the file, then start again (<a href="#state-schema">State Schema</a>).</td></tr>
+    <tr><td>An earlier binary stops with <code>&lt;file&gt; has schema 2, this binary knows schema 1</code></td><td>This version migrated <code>state.sqlite</code>.</td><td>Use this version, or go back with <code>state.sqlite.v1</code> (<a href="#state-schema">State Schema</a>).</td></tr>
+    <tr><td>A REST call gets <code>501</code> with <code>{"message":"&lt;method&gt; &lt;path&gt; is not available in this server yet","area":"&lt;area&gt;"}</code></td><td>This version does not serve that operation.</td><td>Use the old service for it. The table of <a href="#api">API</a> lists the served operations.</td></tr>
+    <tr><td><code>update</code> stops with <code>error: update configuration: cannot read /opt/pipesmith-registry/update.json</code></td><td>The install root is the one of Place, without the layout of <code>update</code>.</td><td>Move it into the layout (<a href="#update-layout">Update Layout</a>).</td></tr>
+    <tr><td><code>error: install root: /opt/pipesmith-registry/current does not exist; the first release is installed by hand</code></td><td>The install root has no link <code>current</code>.</td><td>Put the first release in place by hand (<a href="#update-layout">Update Layout</a>).</td></tr>
+    <tr><td><code>error: no trusted public key configured</code>, or <code>error: trusted public key lies in the release directory: &lt;path&gt;</code></td><td><code>update.json</code> has no <code>trusted_key</code>, or it names a file inside the release directory.</td><td>Name a key file outside the release directory in <code>trusted_key</code> (<a href="#update-layout">Update Layout</a>).</td></tr>
+    <tr><td><code>error: SHA256SUMS.sigstore.json missing: &lt;path&gt;</code></td><td>The release directory holds no signature.</td><td>Download <code>SHA256SUMS.sigstore.json</code> as well. A release without it cannot be installed with <code>update</code>.</td></tr>
+    <tr><td><code>error: signature over SHA256SUMS does not verify with the trusted key</code></td><td>The release was signed with another key, or <code>SHA256SUMS</code> changed.</td><td>Download the release again and check the key of <code>trusted_key</code> (<a href="#update-checks">Checks</a>).</td></tr>
+    <tr><td><code>error: SHA256SUMS malformed: &lt;name&gt; listed twice</code></td><td>The published <code>SHA256SUMS</code> of 0.1.2 lists names twice.</td><td>Install 0.1.2 by hand; <code>update</code> does not install it.</td></tr>
+    <tr><td><code>error: switch to releases/&lt;v&gt; failed: health check failed: no healthy answer with version &lt;v&gt; at &lt;address&gt; within 30s; last: &lt;cause&gt;; went back to releases/&lt;old&gt;, which answers again</code></td><td>The new version did not answer at the address of the health wait.</td><td>Read the journal of the unit. When the unit listens on another port than the health wait asks, set <code>health_address</code> (<a href="#update-restart">Restart</a>).</td></tr>
+    <tr><td><code>error: ...; went back to releases/&lt;old&gt;, then the way back stopped: &lt;reason&gt;</code></td><td>The way back could not put a data file back, for example a <code>catalog.sqlite</code> migrated with <code>--no-catalog-backup</code>.</td><td>The unit is stopped. The reason names the file; put it right, then start the unit (<a href="#way-back">Way Back</a>).</td></tr>
+    <tr><td><code>error: schema: &lt;path&gt; has schema &lt;n&gt;, written by releases/&lt;current&gt;, and releases/&lt;previous&gt; writes schema &lt;m&gt;; rollback changed nothing and restarted nothing; ...</code></td><td>The previous release cannot open the migrated data file.</td><td>Stay on the current release (<a href="#rollback">Rollback</a>).</td></tr>
+    <tr><td>An export answers <code>413</code> with <code>the export holds &lt;n&gt; files and &lt;n&gt; bytes; the limits are 20000 files and 2147483648 bytes</code></td><td>The folder is larger than one export may be.</td><td>Export a folder further down (<a href="#export">Export</a>).</td></tr>
+    <tr><td>An export answers <code>409</code> with <code>the stored path "&lt;path&gt;" cannot be an archive entry: &lt;reason&gt;</code></td><td>A stored file has a name that no archive entry may carry.</td><td>Download that file on its own, or export a folder without it (<a href="#export">Export</a>).</td></tr>
+    <tr><td>The viewer shows "The file could not be loaded"</td><td>The server refused the download of the file.</td><td>Give the user the read permission of the repository (<a href="#viewer">Viewer</a>).</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="limits">
+<h2>Limits</h2>
+<ul>
+  <li>Writes are off by default. With writes on, only hosted repositories of Maven, npm, Docker and raw take writes, into the one store <code>stores/local-write</code>. No command sets the policies or limits of a repository.</li>
+  <li>With writes on, the interface and <code>GET /service/rest/v1/read-only</code> still say that the server is read only. The interface offers no write action then; clients can write.</li>
+  <li>Deleted and replaced files stay on disk with a delete mark.</li>
+  <li>The server does not write <code>maven-metadata.xml</code> on a deploy; <code>maven rebuild-metadata</code> does.</li>
+  <li>No Docker schema 1 manifests.</li>
+  <li>No proxy or group caching. A proxy repository serves what its store held at the last scan, and nothing is fetched from upstream.</li>
+  <li>npm and user tokens do not expire. Docker tokens live 300 seconds in memory and cannot be listed or revoked. No screen of the interface issues tokens.</li>
+  <li>Tokens of the old service are not taken over.</li>
+  <li>TLS has one certificate for every listener, read at start, TLS 1.2 or newer and HTTP/1.1 only, and no client certificates.</li>
+  <li><code>trusted_proxies</code> is set in <code>config.json</code> only.</li>
+  <li>No format logic for PyPI and the other formats besides Maven, npm and Docker: their files are served by path.</li>
+  <li>No changes in the administration screens, no task runner, no log files and no log rotation. The log goes to standard error.</li>
+  <li><code>update</code> and <code>rollback</code> need systemd and do not apply to a container. No command makes the install root of Update Layout or installs the unit files.</li>
+  <li><code>update</code> trusts the key that <code>trusted_key</code> names. The project does not yet publish that key in a second place.</li>
+  <li><code>rollback</code> restores no data file and checks no signature. <code>update</code> writes no history and no log line of its own.</li>
+  <li>The fetch stage reads one package of one owner on one Forgejo server and follows no redirect to another host. It has run only against a local stub, and no update has run on a host.</li>
+  <li>The viewer only reads: at most 2 MiB and 1,000,000 lines of a file.</li>
+  <li>An export holds at most 20,000 files and 2 GiB, and no setting changes that. It has no resume. A Docker repository exports one image per archive and no folder.</li>
+  <li>Search knows SHA-1 only among the checksums and has no sort.</li>
+  <li>Answer bodies are described in words in the OpenAPI document of this version; it has no schemas for them.</li>
+  <li>Sessions live in memory.</li>
+  <li>Files that the old service writes appear after the next scan.</li>
+  <li>The unit file of Service, a TLS proxy in front of the server and the container image have not run on a host yet. The released binary runs on a Linux host since version 0.1.1, read only and on a network address. Memory and CPU on a host are not measured.</li>
+</ul>
+</section>
+</main>
+</div>
+
+<footer>Pipesmith Registry 0.1.3. Licensed under the Apache License 2.0. Source and releases on <a href="https://github.com/iogentic/pipesmith-registry">GitHub</a>.</footer>
+
+</body>
+</html>

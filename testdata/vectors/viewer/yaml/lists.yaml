@@ -1,0 +1,7 @@
+items:
+  - id: 1
+    tags: ["a", "b"]
+  - id: 2
+  - plain item
+matrix:
+  - - 1

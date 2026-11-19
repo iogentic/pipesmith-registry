@@ -1,0 +1,214 @@
+{
+ "source": "section Refusals of docs/plans/phase-4-write-path.md; the rows of npm and docker, one case per request, read by tests/write/test_npm.py and tests/write/test_docker.py. scenario names the request of the test; text is a part of the answer body, code the error code of the registry protocol",
+ "rows": [
+  {
+   "case": "Any write while writes are off",
+   "format": "npm",
+   "scenario": "publish",
+   "repository": "demo-npm",
+   "writes": false,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (W17): the answer of 0.1.1, which the suite of step 0 pins; no public page states it"
+  },
+  {
+   "case": "Any write while writes are off",
+   "format": "docker",
+   "scenario": "start-upload",
+   "repository": "demo-docker",
+   "writes": false,
+   "status": 405,
+   "code": "UNSUPPORTED",
+   "source": "provisional (W17): the answer of 0.1.1, which the suite of step 0 pins; the code is code-13 of the OCI distribution spec v1.1.1, section Error Codes, read 2026-11-18"
+  },
+  {
+   "case": "Write to a group or a proxy",
+   "format": "npm",
+   "scenario": "publish",
+   "repository": "demo-npm-group",
+   "writes": true,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (P10): the answer of 0.1.1 for every write; no public page states it"
+  },
+  {
+   "case": "Write to a group or a proxy",
+   "format": "npm",
+   "scenario": "publish",
+   "repository": "demo-npm-proxy",
+   "writes": true,
+   "status": 405,
+   "text": "Method not allowed: this server is read only",
+   "source": "provisional (P10): the answer of 0.1.1 for every write; no public page states it"
+  },
+  {
+   "case": "Write to a group or a proxy",
+   "format": "docker",
+   "scenario": "start-upload",
+   "repository": "demo-docker-group",
+   "writes": true,
+   "status": 405,
+   "code": "UNSUPPORTED",
+   "source": "provisional (P10): the answer of 0.1.1 for every write; no public page states it"
+  },
+  {
+   "case": "Write to a group or a proxy",
+   "format": "docker",
+   "scenario": "start-upload",
+   "repository": "demo-docker-proxy",
+   "writes": true,
+   "status": 405,
+   "code": "UNSUPPORTED",
+   "source": "provisional (P10): the answer of 0.1.1 for every write; no public page states it"
+  },
+  {
+   "case": "Write policy read only",
+   "format": "npm",
+   "scenario": "publish",
+   "repository": "demo-npm-readonly",
+   "writes": true,
+   "status": 400,
+   "text": "the repository is read only",
+   "source": "provisional (W6): no public page states it"
+  },
+  {
+   "case": "Write policy read only",
+   "format": "docker",
+   "scenario": "start-upload",
+   "repository": "demo-docker-readonly",
+   "writes": true,
+   "status": 405,
+   "code": "UNSUPPORTED",
+   "source": "provisional (W6) for a push; for a delete the OCI distribution spec v1.1.1, section Content Management, read 2026-11-18, asks 400 or 405 when deletion is disabled"
+  },
+  {
+   "case": "Second write of a path under the allow once policy",
+   "format": "npm",
+   "scenario": "republish",
+   "repository": "demo-npm-once",
+   "writes": true,
+   "status": 400,
+   "text": "the repository does not allow updating assets",
+   "source": "provisional (W6): no public page states it"
+  },
+  {
+   "case": "Second push of a tag under the allow once policy",
+   "format": "docker",
+   "scenario": "retag",
+   "repository": "demo-docker-once",
+   "writes": true,
+   "status": 400,
+   "code": "DENIED",
+   "source": "provisional (W6): no public page states it; DENIED is code-12 of the OCI distribution spec v1.1.1, section Error Codes, read 2026-11-18"
+  },
+  {
+   "case": "Second push of a tag under the allow once policy: the tag latest with storage.latestPolicy",
+   "format": "docker",
+   "scenario": "retag-latest",
+   "repository": "demo-docker-once",
+   "writes": true,
+   "status": 201,
+   "source": "provisional (W6): the exemption of section Refusals of the phase 4 plan"
+  },
+  {
+   "case": "Content against the strict content type validation",
+   "format": "npm",
+   "scenario": "publish-not-gzip",
+   "repository": "demo-npm",
+   "writes": true,
+   "status": 400,
+   "text": "does not match its extension",
+   "source": "provisional (W6, W8): no public page states it"
+  },
+  {
+   "case": "Digest of the body differs from the digest of the request",
+   "format": "docker",
+   "scenario": "wrong-digest",
+   "repository": "demo-docker",
+   "writes": true,
+   "status": 400,
+   "code": "DIGEST_INVALID",
+   "source": "OCI distribution spec v1.1.1, read 2026-11-18: code-4 of section Error Codes; 400 is a failure code of end-6 in section Endpoints"
+  },
+  {
+   "case": "Manifest names a blob the repository does not hold",
+   "format": "docker",
+   "scenario": "unknown-blob",
+   "repository": "demo-docker",
+   "writes": true,
+   "status": 400,
+   "code": "MANIFEST_BLOB_UNKNOWN",
+   "source": "OCI distribution spec v1.1.1, section Push, read 2026-11-18, for the code; the status is provisional (W6): end-7 names 404 and 413 only"
+  },
+  {
+   "case": "Chunk out of order",
+   "format": "docker",
+   "scenario": "chunk-out-of-order",
+   "repository": "demo-docker",
+   "writes": true,
+   "status": 416,
+   "code": "BLOB_UPLOAD_INVALID",
+   "source": "OCI distribution spec v1.1.1, section Pushing a blob in chunks, read 2026-11-18, for 416; the code is provisional (W6)"
+  },
+  {
+   "case": "Delete of a path whose row lies in a read only store",
+   "format": "npm",
+   "scenario": "delete-old-tarball",
+   "repository": "demo-npm",
+   "writes": true,
+   "status": 409,
+   "text": "which is read only",
+   "source": "provisional (W6): no public page states it"
+  },
+  {
+   "case": "Delete of a path whose row lies in a read only store",
+   "format": "docker",
+   "scenario": "delete-old-manifest",
+   "repository": "demo-docker",
+   "writes": true,
+   "status": 409,
+   "code": "DENIED",
+   "source": "provisional (W6): no public page states it"
+  },
+  {
+   "case": "Body above the limit",
+   "format": "npm",
+   "scenario": "publish",
+   "repository": "demo-npm-small",
+   "writes": true,
+   "status": 413,
+   "text": "larger than the limit",
+   "source": "provisional (W14): no public page states it"
+  },
+  {
+   "case": "Body above the limit",
+   "format": "docker",
+   "scenario": "monolithic",
+   "repository": "demo-docker-small",
+   "writes": true,
+   "status": 413,
+   "code": "SIZE_INVALID",
+   "source": "provisional (W14) for a blob; the OCI distribution spec v1.1.1, section Pushing Manifests, read 2026-11-18, asks 413 for a manifest above the limit of a registry"
+  },
+  {
+   "case": "Store below the floor",
+   "format": "npm",
+   "scenario": "publish",
+   "repository": "demo-npm-full",
+   "writes": true,
+   "status": 507,
+   "text": "free space it must leave",
+   "source": "provisional (W14): no public page states it"
+  },
+  {
+   "case": "Store below the floor",
+   "format": "docker",
+   "scenario": "monolithic",
+   "repository": "demo-docker-full",
+   "writes": true,
+   "status": 507,
+   "code": "BLOB_UPLOAD_INVALID",
+   "source": "provisional (W14): no public page states it"
+  }
+ ]
+}

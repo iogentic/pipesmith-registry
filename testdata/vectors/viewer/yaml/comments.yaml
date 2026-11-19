@@ -1,0 +1,6 @@
+# a comment
+a: 1 # after a value
+b: "# not a comment"
+c: value#not-comment
+url: http://example.com/a#b
+...

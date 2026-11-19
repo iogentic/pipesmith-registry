@@ -25,6 +25,10 @@ IMAGE="golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d6
 GOVULNCHECK="golang.org/x/vuln/cmd/govulncheck@v1.9.0"
 # The gosec image and arguments of kit/scripts/gosec.sh in Pipesmith CI.
 GOSEC_IMAGE="ghcr.io/securego/gosec:2.30.0@sha256:7bcf1edbab3e80d8006a28d53e7031a9c9775be8eec30679e4adc1f51d272121"
+# The build targets as os/arch, the one list of this script: build writes a
+# binary for each, check vets each one that is not the platform of the
+# container, and tools/release.sh reads this line for the names of the binaries.
+TARGETS="darwin/arm64 linux/amd64 linux/arm64"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CACHE="${PSR_GO_CACHE:-$ROOT/.cache}"
 mkdir -p "$CACHE/go-mod" "$CACHE/go-build"
@@ -49,7 +53,7 @@ in_go() {
     -v "$ROOT:/src" \
     -v "$CACHE/go-mod:/go/pkg/mod" \
     -v "$CACHE/go-build:/root/.cache/go-build" \
-    -e PSR_VERSION="$VERSION" \
+    -e PSR_VERSION="$VERSION" -e TARGETS="$TARGETS" \
     -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/src \
     -w /src \
     "$IMAGE" sh -euc "$*"
@@ -63,7 +67,7 @@ check() {
     # The tests run for the platform of the container only. vet also type
     # checks the other targets of build, which a file for one platform breaks.
     native="$(go env GOOS)/$(go env GOARCH)"
-    for target in darwin/arm64 linux/amd64 linux/arm64; do
+    for target in $TARGETS; do
       if [ "$target" != "$native" ]; then
         echo "go vet for $target"
         CGO_ENABLED=0 GOOS="${target%/*}" GOARCH="${target#*/}" go vet ./...
@@ -75,7 +79,7 @@ check() {
 
 build() {
   in_go '
-    for target in darwin/arm64 linux/amd64 linux/arm64; do
+    for target in $TARGETS; do
       os="${target%/*}"; arch="${target#*/}"
       CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath \
         -ldflags "-s -w -X github.com/iogentic/pipesmith-registry/internal/version.Version=$PSR_VERSION" \

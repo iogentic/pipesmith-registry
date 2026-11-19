@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipesmith Registry API</title>
+<meta name="description" content="The operations of the Pipesmith Registry API, read from its OpenAPI document.">
+<link rel="icon" type="image/png" href="assets/favicon-32.png">
+<link rel="stylesheet" href="manual.css">
+<script src="manual.js" defer></script>
+<script src="api.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <img src="assets/logo.png" alt="Pipesmith Registry logo">
+  <span class="name">Pipesmith Registry</span>
+  <span class="version">API <span id="api-version"></span></span>
+  <span class="spacer"></span>
+  <a class="top-link" href="./">Manual</a>
+  <a class="top-link registry-only" href="../">Registry</a>
+  <button class="theme" type="button" id="theme-toggle" aria-label="Switch between light and dark theme">Light theme</button>
+</header>
+
+<main class="api">
+  <h1>Pipesmith Registry API</h1>
+  <p class="lead" id="api-count" aria-live="polite">The operations are read from openapi.json.</p>
+  <p class="api-download">Download the OpenAPI document: <a id="api-download" href="openapi.json" download>openapi.json</a></p>
+  <noscript><p class="note">This page needs JavaScript to list the operations. The download above holds all of them.</p></noscript>
+  <p class="note" id="api-error" hidden></p>
+  <div class="api-tools" id="api-tools" hidden>
+    <label class="api-filter" for="api-filter">Filter</label>
+    <input id="api-filter" type="search" autocomplete="off" spellcheck="false" placeholder="Method, path or summary">
+    <label class="api-switch"><input id="api-refused" type="checkbox"> Show operations not served yet</label>
+  </div>
+  <div id="api-list"></div>
+</main>
+</body>
+</html>

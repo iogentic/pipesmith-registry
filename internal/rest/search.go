@@ -159,8 +159,8 @@ func likeOf(value string) string {
 }
 
 // newPattern is a whole value pattern; within is true for a term of q,
-// which may match a part of a field.
-func newPattern(value string, within bool) pattern {
+// which may match a part of a field. The value is text (isText).
+func newPattern(value string, within bool) (pattern, error) {
 	parts := strings.Split(asciiLower(value), "*")
 	for i, p := range parts {
 		parts[i] = regexp.QuoteMeta(p)
@@ -169,7 +169,11 @@ func newPattern(value string, within bool) pattern {
 	if !within {
 		expr = "^" + expr + "$"
 	}
-	return pattern{re: regexp.MustCompile("(?s)" + expr), like: likeOf(value)}
+	re, err := regexp.Compile("(?s)" + expr)
+	if err != nil {
+		return pattern{}, err
+	}
+	return pattern{re: re, like: likeOf(value)}, nil
 }
 
 func (p pattern) match(s string) bool { return p.re.MatchString(asciiLower(s)) }
@@ -223,6 +227,10 @@ func parseQuery(q url.Values) (*searchQuery, *Answer) {
 			a, _ := badRequest("the search parameter " + name + " is longer than 1024 bytes")
 			return nil, &a
 		}
+		if !isText(value) {
+			a, _ := badRequest(noTextMessage(name))
+			return nil, &a
+		}
 		if name != "continuationToken" {
 			canonical = append(canonical, name+"="+value)
 		}
@@ -238,7 +246,12 @@ func parseQuery(q url.Values) (*searchQuery, *Answer) {
 		switch name {
 		case "q":
 			for _, term := range strings.Fields(value) {
-				out.terms = append(out.terms, newPattern(term, true))
+				p, err := newPattern(term, true)
+				if err != nil {
+					a, _ := badRequest(noTextMessage(name))
+					return nil, &a
+				}
+				out.terms = append(out.terms, p)
 			}
 		case "repository":
 			out.repository, out.hasRepository = value, true
@@ -246,11 +259,14 @@ func parseQuery(q url.Values) (*searchQuery, *Answer) {
 			out.format = value
 		case "sha1":
 			out.sha1 = strings.ToLower(value)
-		case "npm.scope":
-			out.fields[name] = newPattern(strings.TrimPrefix(value, "@"), false)
 		case "continuationToken":
 		default:
-			out.fields[name] = newPattern(value, false)
+			p, err := newPattern(strings.TrimPrefix(value, scopePrefix(name)), false)
+			if err != nil {
+				a, _ := badRequest(noTextMessage(name))
+				return nil, &a
+			}
+			out.fields[name] = p
 		}
 	}
 	sort.Strings(canonical)

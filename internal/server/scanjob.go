@@ -36,12 +36,26 @@ type cancellableStore struct {
 }
 
 func (c *cancellableStore) Entries(counts *stores.ScanCounts, yield func(stores.Entry) error) error {
-	return c.Store.Entries(counts, func(e stores.Entry) error {
+	return c.Store.Entries(counts, c.stoppable(yield))
+}
+
+// Walk is the walk of a store that gives its marked blobs too, for the scan
+// of the write store (writescan.go); it stops as Entries does.
+func (c *cancellableStore) Walk(counts *stores.ScanCounts, yield func(stores.Entry) error, marked func(stores.Marked) error) error {
+	w, ok := c.Store.(walker)
+	if !ok {
+		return c.Entries(counts, yield)
+	}
+	return w.Walk(counts, c.stoppable(yield), marked)
+}
+
+func (c *cancellableStore) stoppable(yield func(stores.Entry) error) func(stores.Entry) error {
+	return func(e stores.Entry) error {
 		if c.cancel.Load() {
 			return &scanCancelled{"scan of store " + c.Name() + " cancelled"}
 		}
 		return yield(e)
-	})
+	}
 }
 
 // scanJob is ScanJob: at most one scan at a time, in a goroutine of its
@@ -51,8 +65,11 @@ type scanJob struct {
 	takeOver  func() error // takes the new rows over into the read path
 	cancelled atomic.Bool
 
-	mu        sync.Mutex
-	run       scanRunner
+	mu  sync.Mutex
+	run scanRunner
+	// runFor gives the runner of a store that needs one of its own, nil for
+	// run: the scan of the write store (writescan.go).
+	runFor    func(s stores.Store) scanRunner
 	running   bool
 	store     string
 	progress  int
@@ -81,7 +98,13 @@ func (j *scanJob) start(s stores.Store) bool {
 	j.running, j.store, j.progress, j.startedMS = true, s.Name(), 0, nowMS()
 	done := make(chan struct{})
 	j.done = done
-	go j.work(s, j.run, done)
+	run := j.run
+	if j.runFor != nil {
+		if own := j.runFor(s); own != nil {
+			run = own
+		}
+	}
+	go j.work(s, run, done)
 	return true
 }
 

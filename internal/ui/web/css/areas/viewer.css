@@ -1,0 +1,201 @@
+/* The read only file viewer of Browse (S46). Rows have one fixed height, so the view draws only the
+   rows of the visible window; the script sets --rows, --offset, --cols and --digits as numbers. */
+
+.viewer {
+  --row-h: 20px;
+  display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-small);
+}
+.viewer-scroll {
+  flex: 1 1 auto; min-height: 0; overflow: auto; position: relative;
+  font-family: var(--mono); font-size: 13px; line-height: var(--row-h);
+}
+.viewer-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.viewer-space {
+  position: relative;
+  height: calc(var(--rows, 0) * var(--row-h));
+  min-width: calc(var(--cols, 0) * 1ch + var(--gutter) + 64px);
+  --gutter: calc(var(--digits, 1) * 1ch + 24px);
+}
+.viewer-rows {
+  position: absolute; top: 0; left: 0; right: 0;
+  transform: translateY(calc(var(--offset, 0) * var(--row-h)));
+}
+.vrow { display: flex; height: var(--row-h); white-space: pre; }
+.vnum {
+  position: sticky; left: 0; z-index: 1; flex: 0 0 auto;
+  width: var(--gutter); padding-right: 12px; box-sizing: border-box; text-align: right;
+  color: var(--text-muted); background: var(--surface-2); user-select: none;
+}
+.vcode { flex: 1 0 auto; padding-left: 12px; position: relative; tab-size: 4; unicode-bidi: isolate; }
+
+/* A bidirectional control character of the file: its own isolate, so it reorders nothing, with its
+   name shown in front of it. */
+.vbidi {
+  unicode-bidi: isolate; margin: 0 1px; padding: 0 2px; border-radius: 2px;
+  font-size: 10px; color: var(--text); background: var(--surface-2); outline: 1px solid var(--syntax-mark-line);
+}
+.vbidi::before { content: "U+"; }
+.vbidi[data-bidi="202a"]::before { content: "LRE"; }
+.vbidi[data-bidi="202b"]::before { content: "RLE"; }
+.vbidi[data-bidi="202c"]::before { content: "PDF"; }
+.vbidi[data-bidi="202d"]::before { content: "LRO"; }
+.vbidi[data-bidi="202e"]::before { content: "RLO"; }
+.vbidi[data-bidi="2066"]::before { content: "LRI"; }
+.vbidi[data-bidi="2067"]::before { content: "RLI"; }
+.vbidi[data-bidi="2068"]::before { content: "FSI"; }
+.vbidi[data-bidi="2069"]::before { content: "PDI"; }
+
+/* Arrows of the folds, drawn with borders; guides from an opening line to its closing line. */
+.vfold, .vfold-space {
+  position: sticky; left: var(--gutter); z-index: 1; flex: 0 0 16px; width: 16px; height: var(--row-h);
+  background: var(--surface);
+}
+.vfold { border: 0; padding: 0; margin: 0; cursor: pointer; color: var(--text-muted); }
+.vfold::before {
+  content: ""; position: absolute; left: 4px; top: 8px;
+  border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor;
+}
+.vfold[aria-expanded="false"]::before { left: 6px; top: 6px; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 5px solid currentColor; border-right: 0; }
+.vfold:hover, .vfold:focus-visible { color: var(--text); }
+.vfold:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.vguide {
+  position: absolute; top: 0; bottom: 0; width: 0; pointer-events: none;
+  left: calc(12px + var(--col, 0) * 1ch); border-left: 1px solid var(--syntax-guide);
+}
+.vellipsis {
+  margin-left: 1ch; padding: 0 6px; height: 16px; line-height: 14px; vertical-align: 1px;
+  font: inherit; font-size: 11px; color: var(--text-muted); cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-small);
+}
+.vcode > span[data-c] { cursor: text; }
+.vmark { background: var(--syntax-mark); outline: 1px solid var(--syntax-mark-line); border-radius: 2px; }
+
+/* Toolbar and status line of the view. */
+.vtools { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); align-items: center; padding: var(--s2); border-bottom: 1px solid var(--border); }
+.vgroup { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s2); align-items: center; }
+.vtools input.vfind { width: 14em; min-height: 30px; padding: 2px var(--s2); }
+.vtools input.vgoto { width: 6em; min-height: 30px; padding: 2px var(--s2); }
+.vcase-label { display: inline-flex; gap: var(--s1); align-items: center; font-size: var(--size-small); white-space: nowrap; }
+.vcount { min-width: 5em; }
+.vfound { background: var(--syntax-found); border-radius: 2px; }
+.vcurrent { background: var(--syntax-current); outline: 1px solid var(--syntax-mark-line); }
+.vrow.vtarget .vnum { color: var(--text); font-weight: 700; }
+
+/* Wrap: every row is in the document and takes the height its text needs. */
+.viewer.wrap .viewer-space { height: auto; min-width: 0; }
+.viewer.wrap .viewer-rows { position: static; transform: none; }
+.viewer.wrap .vrow { height: auto; min-height: var(--row-h); white-space: pre-wrap; overflow-wrap: anywhere; }
+.viewer.wrap .vcode { flex: 1 1 0; min-width: 0; }
+.viewer.wrap .vnum, .viewer.wrap .vfold, .viewer.wrap .vfold-space { position: static; }
+.vinfo { margin: 0; padding: 2px var(--s3); min-height: 24px; font-size: var(--size-small); color: var(--text-muted); border-top: 1px solid var(--border); }
+
+/* Colours per token kind (call B14). Each reaches 4.5 to 1 on --surface, measured by
+   tests/page/check_viewer_parts.py, group folds, in both themes. */
+:root {
+  --syntax-tag: #0033B3;
+  --syntax-attr: #6C3B9E;
+  --syntax-string: #067D17;
+  --syntax-number: #1750EB;
+  --syntax-keyword: #9E4B00;
+  --syntax-key: #871094;
+  --syntax-comment: #5E6A7A;
+  --syntax-punct: #3D4452;
+  --syntax-entity: #A0431F;
+  --syntax-meta: #7A5600;
+  --syntax-heading: #0033B3;
+  --syntax-code: #2F5D3A;
+  --syntax-guide: #D3D9E4;
+  --syntax-mark: #FFF1B8;
+  --syntax-mark-line: #C9A227;
+  --syntax-found: #DCE8FF;
+  --syntax-current: #FFE08A;
+}
+:root[data-theme="dark"] {
+  --syntax-tag: #E8BF6A;
+  --syntax-attr: #C9A0FF;
+  --syntax-string: #9BD38A;
+  --syntax-number: #6FB3FF;
+  --syntax-keyword: #FF9F5A;
+  --syntax-key: #E58AE8;
+  --syntax-comment: #8A96AA;
+  --syntax-punct: #C5CDDA;
+  --syntax-entity: #FFB38A;
+  --syntax-meta: #D4B26A;
+  --syntax-heading: #8DB8FF;
+  --syntax-code: #A9D7A0;
+  --syntax-guide: #26314A;
+  --syntax-mark: #3A3418;
+  --syntax-mark-line: #A88B2E;
+  --syntax-found: #1D2B4A;
+  --syntax-current: #4A3D12;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --syntax-tag: #E8BF6A;
+    --syntax-attr: #C9A0FF;
+    --syntax-string: #9BD38A;
+    --syntax-number: #6FB3FF;
+    --syntax-keyword: #FF9F5A;
+    --syntax-key: #E58AE8;
+    --syntax-comment: #8A96AA;
+    --syntax-punct: #C5CDDA;
+    --syntax-entity: #FFB38A;
+    --syntax-meta: #D4B26A;
+    --syntax-heading: #8DB8FF;
+    --syntax-code: #A9D7A0;
+    --syntax-guide: #26314A;
+    --syntax-mark: #3A3418;
+    --syntax-mark-line: #A88B2E;
+    --syntax-found: #1D2B4A;
+    --syntax-current: #4A3D12;
+  }
+}
+.t-tag { color: var(--syntax-tag); }
+.t-attr { color: var(--syntax-attr); }
+.t-string { color: var(--syntax-string); }
+.t-number { color: var(--syntax-number); }
+.t-keyword { color: var(--syntax-keyword); }
+.t-key { color: var(--syntax-key); }
+.t-comment { color: var(--syntax-comment); }
+.t-punct { color: var(--syntax-punct); }
+.t-entity { color: var(--syntax-entity); }
+.t-meta { color: var(--syntax-meta); }
+.t-heading { color: var(--syntax-heading); font-weight: 700; }
+.t-code { color: var(--syntax-code); }
+
+/* Screen S46: at 1001 pixels and wider the tree stands left and the source right, each with its own
+   scroll. Below that the tree is a panel above the source that the button Files opens. */
+.vscreen {
+  display: grid; grid-template-columns: minmax(320px, 30%) minmax(0, 1fr); gap: var(--s4);
+  height: max(420px, calc(100vh - var(--top-height) - 170px));
+}
+.vscreen > .panel + .panel { margin-top: 0; }
+.vtree-panel { padding: var(--s3); overflow: auto; min-height: 0; }
+/* A name of the tree stays on one line; a cut one ends with an ellipsis and its button carries the
+   full name as its title. */
+.vtree button.node { overflow-wrap: normal; }
+.vtree .node-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vsource-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.vsource-panel > .notice { margin-bottom: var(--s3); }
+.vsource-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s2) var(--s4); margin-bottom: var(--s3); }
+.vsource-head .titles { flex: 1 1 240px; min-width: 0; }
+.vsource-head h2 { margin-bottom: var(--s1); }
+.vsource-head .actions { margin: 0; }
+.vstatus { flex: 1 0 100%; margin: 0; }
+.vsource-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.vcard .facts { margin-top: var(--s4); }
+.btn.vfiles { display: none; }
+@media (max-width: 1000px) {
+  .vscreen { display: block; height: auto; }
+  .btn.vfiles { display: inline-flex; }
+  .vtree-panel { display: none; max-height: 45vh; margin-bottom: var(--s4); }
+  .vtree-panel.open { display: block; }
+  .vsource-panel { height: max(360px, calc(100vh - var(--top-height) - 120px)); }
+}
+
+/* The export dialog of Browse: one command per row with its copy button. */
+.export-command { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); }
+.export-command code { flex: 1 1 auto; min-width: 0; margin: 0; }
+.export-notices:empty { display: none; }

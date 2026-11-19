@@ -1,0 +1,32 @@
+{
+ "note": "Expressions that the class accepts while it drops or reads part of the text in its own way, with the lines of the source file quartz-core/src/main/java/org/quartz/CronExpression.java of https://github.com/quartz-scheduler/quartz at tag v2.3.2, the same file as at tag quartz-2.3.0, read 2026-11-19. This parser refuses them: in each the class drops part of the text or reads it in its own way, so a reading of the text and the runs of the class would differ. field is the field this parser names.",
+ "cases": [
+  {"source": "source", "what": "the class reads seven fields and ignores the rest (lines 469 to 491)", "expression": "0 0 12 * * ? 2027 5", "refused": "eight fields", "field": "expression"},
+  {"source": "source", "what": "after the space the seventh field is a line break alone; the class trims it to nothing (line 470), its set of years stays empty and it finds no time (lines 1546 to 1553)", "expression": "0 0 12 * * ? \n", "refused": "a field of white space alone", "field": "year"},
+  {"source": "source", "what": "the class takes the first day of the list only (line 1316)", "expression": "0 0 12 15W,20 * ?", "refused": "W in a list", "field": "day of month"},
+  {"source": "source", "what": "the class takes the lowest weekday of the list for the #, the first of a sorted set (line 1420): the third Monday", "expression": "0 0 12 ? * 6#3,2", "refused": "# in a list", "field": "day of week"},
+  {"source": "source", "what": "the class ignores the W after a range (lines 816 to 818)", "expression": "0 0 12 1-15W * ?", "refused": "W after a range", "field": "day of month"},
+  {"source": "source", "what": "the class ignores a step after names (lines 552 to 596)", "expression": "0 0 12 ? * MON-FRI/2", "refused": "a step after names", "field": "day of week"},
+  {"source": "source", "what": "the class reads TUE and ignores the rest (lines 533 and 596); TUES is no full name", "expression": "0 0 12 ? * TUES", "refused": "a name of four letters", "field": "day of week"},
+  {"source": "source", "what": "the class reads MON and drops the rest, as the character after the three letters is no - (lines 558 to 596): the range is Monday alone", "expression": "0 0 12 ? * MONDAY-FRIDAY", "refused": "a range of full names", "field": "day of week"},
+  {"source": "source", "what": "the class reads MON and drops #2 (lines 558 to 596): every Monday", "expression": "0 0 12 ? * MONDAY#2", "refused": "# after a full name", "field": "day of week"},
+  {"source": "source", "what": "the class takes the field and its set of weekdays stays empty (line 484); its search fails at line 1464", "expression": "0 0 12 ? * ,", "refused": "no value in the field", "field": "day of week"},
+  {"source": "source", "what": "the class ignores the character after the number (lines 849 to 851)", "expression": "0 0 12 5X * ?", "refused": "a character after a number", "field": "day of month"},
+  {"source": "source", "what": "the class ignores what follows L (lines 738 to 741)", "expression": "0 0 12 ? * 6L2", "refused": "a character after L", "field": "day of week"},
+  {"source": "source", "what": "the class reads LW (lines 532 and 665 to 667)", "expression": "0 0 12 L-W * ?", "refused": "L- without a number", "field": "day of month"},
+  {"source": "source", "what": "the class reads L, Saturday, and ignores the W (lines 655 to 662)", "expression": "0 0 12 ? * LW", "refused": "W in the day of week", "field": "day of week"},
+  {"source": "source", "what": "the class lets one character follow ? (lines 599 to 605)", "expression": "0 0 12 ?5 * MON", "refused": "a character after ?", "field": "day of month"},
+  {"source": "source", "what": "the class reads the day of month as ? (lines 1259 and 1260)", "expression": "0 0 12 ?,5 * MON", "refused": "? in a list", "field": "day of month"},
+  {"source": "source", "what": "the class reads * (lines 632 to 651)", "expression": "*5 0 12 * * ?", "refused": "a character after *", "field": "seconds"},
+  {"source": "source", "what": "the class reads */5 (lines 624 to 653)", "expression": "0 /5 12 * * ?", "refused": "/ without a start", "field": "minutes"},
+  {"source": "source", "what": "the class reads 1 (lines 1001 to 1009)", "expression": "0 0 12 1/0 * ?", "refused": "a step of 0", "field": "day of month"},
+  {"source": "source", "what": "the class reads * (lines 1014 to 1017)", "expression": "0 0 12 ? * */0", "refused": "a step of 0", "field": "day of week"},
+  {"source": "source", "what": "99 passes the check as the mark of * (lines 978 and 1014)", "expression": "0 0 99 ? * *", "refused": "hour 99", "field": "hours"},
+  {"source": "source", "what": "98 passes the check as the mark of ? (lines 983 and 1001 to 1006)", "expression": "0 0 12 98 * MON", "refused": "day 98", "field": "day of month"},
+  {"source": "source", "what": "the end 0 passes the check of line 983 and the range wraps", "expression": "0 0 12 5-0 * ?", "refused": "a range that ends at day 0", "field": "day of month"},
+  {"source": "source", "what": "no range check before W (lines 744 to 756)", "expression": "0 0 12 0W * ?", "refused": "W after day 0", "field": "day of month"},
+  {"source": "source", "what": "no range check before # (lines 758 to 778)", "expression": "0 0 12 ? * 9#1", "refused": "# after weekday 9", "field": "day of week"},
+  {"source": "source", "what": "L leaves the set of minutes empty (lines 655 to 680)", "expression": "0 L 12 * * ?", "refused": "L in the minutes", "field": "minutes"},
+  {"source": "source", "what": "a step on a range is not checked (lines 796 to 815)", "expression": "0 0 12 1-5/70 * ?", "refused": "a step of 70", "field": "day of month"}
+ ]
+}

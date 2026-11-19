@@ -7,8 +7,6 @@ import (
 	"mime"
 	"net/http"
 	"strconv"
-
-	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // maxSignInBody bounds the body of POST /api/session (8 KiB).
@@ -78,8 +76,9 @@ func (s *Service) serveSignIn(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	subject, ok, wait := s.tryPair(body.Username, clientAddress(r), func() (model.Subject, bool) {
-		return s.signIn(r.Context(), body.Username, body.Password)
+	v := s.refresh()
+	got, ok, wait := s.tryPair(body.Username, s.ClientAddress(r), func(user string) checked {
+		return s.signIn(r.Context(), v, user, body.Password)
 	})
 	if wait > 0 {
 		w.Header().Set("Retry-After", strconv.Itoa(wait))
@@ -93,25 +92,26 @@ func (s *Service) serveSignIn(w http.ResponseWriter, r *http.Request) {
 	if old, err := r.Cookie(CookieName); err == nil {
 		s.sessions.remove(old.Value)
 	}
-	created, err := s.sessions.create(subject)
+	created, err := s.sessions.create(got, v.gen)
 	if err != nil {
 		writeMessage(w, http.StatusInternalServerError, "no session could be started")
 		return
 	}
-	// #nosec G124 -- Secure only over TLS (decision T3, interface contract); HttpOnly and SameSite=Strict are set.
+	// #nosec G124 -- Secure over TLS and behind a trusted proxy that says https (decisions T3 and E8); HttpOnly and SameSite=Strict are set.
 	http.SetCookie(w, &http.Cookie{Name: CookieName, Value: created.id, Path: "/", HttpOnly: true,
-		SameSite: http.SameSiteStrictMode, Secure: r.TLS != nil})
-	writeJSON(w, http.StatusOK, answerOf(created))
+		SameSite: http.SameSiteStrictMode, Secure: s.proxies.Secure(r)})
+	writeJSON(w, http.StatusOK, answerOf(&created))
 }
 
 func (s *Service) serveSession(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(CookieName)
 	if err == nil {
-		if live, ok := s.sessions.get(cookie.Value); ok {
+		v := s.refresh()
+		if live, ok := s.sessions.live(cookie.Value, v.gen, v.subject); ok {
 			writeJSON(w, http.StatusOK, answerOf(&live))
 			return
 		}
-		clearCookie(w, r)
+		clearCookie(w, s.proxies.Secure(r))
 	}
 	writeJSON(w, http.StatusOK, sessionAnswer{Permissions: []string{}})
 }
@@ -125,7 +125,7 @@ func (s *Service) serveSignOut(w http.ResponseWriter, r *http.Request) {
 			}
 			s.sessions.remove(cookie.Value)
 		}
-		clearCookie(w, r)
+		clearCookie(w, s.proxies.Secure(r))
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -146,10 +146,10 @@ func answerOf(live *session) sessionAnswer {
 	}
 }
 
-func clearCookie(w http.ResponseWriter, r *http.Request) {
-	// #nosec G124 -- Secure only over TLS (decision T3, interface contract); HttpOnly and SameSite=Strict are set.
+func clearCookie(w http.ResponseWriter, secure bool) {
+	// #nosec G124 -- Secure over TLS and behind a trusted proxy that says https (decisions T3 and E8); HttpOnly and SameSite=Strict are set.
 	http.SetCookie(w, &http.Cookie{Name: CookieName, Value: "", Path: "/", MaxAge: -1, HttpOnly: true,
-		SameSite: http.SameSiteStrictMode, Secure: r.TLS != nil})
+		SameSite: http.SameSiteStrictMode, Secure: secure})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

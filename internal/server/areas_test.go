@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -89,8 +90,34 @@ func TestAreasForEverySignedInUser(t *testing.T) {
 	}
 }
 
+// writingSecureApp is newSecureApp with writes on.
+func writingSecureApp(t *testing.T) *secureApp {
+	t.Helper()
+	sec := newFakeSecurity()
+	return &secureApp{app: startWriting(t, sec, true), sec: sec}
+}
+
 func TestAreasNamesEveryRefusalOfTheContract(t *testing.T) {
-	a := newSecureApp(t, newFakeSecurity())
+	// with writes off 73 of the 104 requests of the contract at 1e6d884 are
+	// refused, as the list of TestContractRefusals counts them, and the one
+	// request of beyondContract; with writes on the 4 of writeRefusals are
+	// served
+	for _, c := range []struct {
+		name  string
+		app   *secureApp
+		count int
+	}{{"writes off", newSecureApp(t, newFakeSecurity()), 74}, {"writes on", writingSecureApp(t), 70}} {
+		t.Run(c.name, func(t *testing.T) { refusalsOfTheContract(t, c.app, c.count) })
+	}
+}
+
+// beyondContract are the refusals of requests the contract of the interface
+// does not name: the field list of every format, a REST write of the old
+// product that answers as the others with writes off
+// (TestTheListOfUploadSpecsIsARefusalWithWritesOff).
+var beyondContract = map[string]bool{"GET /service/rest/v1/formats/upload-specs": true}
+
+func refusalsOfTheContract(t *testing.T, a *secureApp, count int) {
 	v := areasOf(t, a, asAdmin)
 	contract := contractRequests(t)
 	seen := map[string]bool{}
@@ -100,7 +127,7 @@ func TestAreasNamesEveryRefusalOfTheContract(t *testing.T) {
 			t.Errorf("%s listed twice", key)
 		}
 		seen[key] = true
-		if !contract[key] {
+		if !contract[key] && !beyondContract[key] {
 			t.Errorf("%s is not a request of the contract", key)
 		}
 		if strings.ContainsAny(e.Path, "()|?*+\\") {
@@ -115,15 +142,49 @@ func TestAreasNamesEveryRefusalOfTheContract(t *testing.T) {
 			t.Errorf("%s: area %v in the 501, %q in the list", key, area, e.Area)
 		}
 	}
-	// 73 of the 104 requests of the contract at 1e6d884 are refused, as the
-	// list of TestContractRefusals counts them
-	if len(v.Refused) != 73 {
-		t.Fatalf("%d refused, want 73", len(v.Refused))
+	if len(v.Refused) != count {
+		t.Fatalf("%d refused, want %d", len(v.Refused), count)
+	}
+}
+
+// With writes off the list of GET /api/areas is the one of 0.1.1 with one
+// entry more: the three requests of writeRefusals that 0.1.1 lists first, in
+// its order, then the field list of every format (beyondContract), then the
+// table of 0.1.1.
+func TestAreasWithWritesOffAsBefore(t *testing.T) {
+	a := newSecureApp(t, newFakeSecurity())
+	r := a.send("GET", "/api/areas", "basic", asAdmin)
+	data, err := rest.Areas(refusedOf(slices.Concat(writeRefusals, refusalTable))).JSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(r.body) != string(data) || !strings.HasPrefix(string(r.body), `{"readOnly":`) {
+		t.Fatalf("%s", r.body)
+	}
+	var v areasAnswer
+	if err := json.Unmarshal(r.body, &v); err != nil {
+		t.Fatal(err)
+	}
+	for i, want := range []string{"DELETE /service/rest/v1/assets/{id}", "GET /service/rest/v1/formats/{format}/upload-specs",
+		"POST /service/rest/v1/components", "GET /service/rest/v1/formats/upload-specs"} {
+		if got := v.Refused[i].Method + " " + v.Refused[i].Path; got != want {
+			t.Fatalf("refused %d is %s, want %s", i, got, want)
+		}
 	}
 }
 
 func TestNoOtherRequestOfTheContractAnswers501(t *testing.T) {
-	a := newSecureApp(t, newFakeSecurity())
+	// 31 requests outside the list with writes off, 34 with writes on
+	for _, c := range []struct {
+		name   string
+		app    *secureApp
+		served int
+	}{{"writes off", newSecureApp(t, newFakeSecurity()), 31}, {"writes on", writingSecureApp(t), 34}} {
+		t.Run(c.name, func(t *testing.T) { servedOfTheContract(t, c.app, c.served) })
+	}
+}
+
+func servedOfTheContract(t *testing.T, a *secureApp, want int) {
 	v := areasOf(t, a, asAdmin)
 	refused := map[string]bool{}
 	for _, e := range v.Refused {
@@ -140,15 +201,31 @@ func TestNoOtherRequestOfTheContractAnswers501(t *testing.T) {
 		}
 		served++
 	}
-	if served != 31 {
-		t.Fatalf("%d requests outside the list, want 31", served)
+	if served != want {
+		t.Fatalf("%d requests outside the list, want %d", served, want)
 	}
 }
 
 func TestAPlaceholderIsOneSegment(t *testing.T) {
-	a := newSecureApp(t, newFakeSecurity())
+	// with writes off the templates of writeRefusals are refusals too: 21
+	// templates with a placeholder of one segment give 34 requests; with
+	// writes on 19 give 32
+	for _, c := range []struct {
+		name  string
+		app   *secureApp
+		table []refusalDecl
+		count int
+	}{
+		{"writes off", newSecureApp(t, newFakeSecurity()), slices.Concat(writeRefusals, refusalTable), 34},
+		{"writes on", writingSecureApp(t), refusalTable, 32},
+	} {
+		t.Run(c.name, func(t *testing.T) { placeholdersAreOneSegment(t, c.app, c.table, c.count) })
+	}
+}
+
+func placeholdersAreOneSegment(t *testing.T, a *secureApp, table []refusalDecl, count int) {
 	wide := 0
-	for _, d := range refusalTable {
+	for _, d := range table {
 		if strings.Contains(d.template, "+}") || !strings.Contains(d.template, "{") {
 			continue
 		}
@@ -162,8 +239,7 @@ func TestAPlaceholderIsOneSegment(t *testing.T) {
 			}
 		}
 	}
-	// 21 templates with a placeholder of one segment give 34 requests
-	if wide != 34 {
-		t.Fatalf("%d requests checked", wide)
+	if wide != count {
+		t.Fatalf("%d requests checked, want %d", wide, count)
 	}
 }

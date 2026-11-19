@@ -26,7 +26,8 @@ export async function render(ctx) {
       h("div", { class: "brand" }, h("img", { src: "assets/symbol-64.png", alt: "", width: "28", height: "28" }), h("span", { text: "Pipesmith Registry" })),
       h("h1", { tabindex: "-1", text: "Sign in" }),
       h("p", { class: "sub", text: "With your user name and password, or with your directory account." }),
-      formEl
+      formEl,
+      h("p", { class: "foot" }, h("a", { href: "manual/", target: "_blank", rel: "noopener", text: "Documentation" }))
     )
   );
   ctx.main.append(page);

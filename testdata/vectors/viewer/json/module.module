@@ -1,0 +1,19 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.example",
+    "module": "demo-lib",
+    "version": "1.0.0"
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        { "name": "demo-lib-1.0.0.jar", "size": 1024 }
+      ]
+    }
+  ]
+}

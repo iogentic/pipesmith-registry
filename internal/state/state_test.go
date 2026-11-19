@@ -145,8 +145,8 @@ func TestCreateModesAndSchemaRow(t *testing.T) {
 	if err := db.QueryRow("SELECT value FROM meta WHERE key = 'schema'").Scan(&version); err != nil {
 		t.Fatal(err)
 	}
-	if version != state.SchemaVersion || state.SchemaVersion != 1 {
-		t.Fatalf("schema row %d, constant %d; want 1", version, state.SchemaVersion)
+	if version != state.SchemaVersion || state.SchemaVersion != 2 {
+		t.Fatalf("schema row %d, constant %d; want 2", version, state.SchemaVersion)
 	}
 	var tables []string
 	rows, err := db.Query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
@@ -160,7 +160,7 @@ func TestCreateModesAndSchemaRow(t *testing.T) {
 		}
 		tables = append(tables, name)
 	}
-	want := "blob_stores ldap_servers meta privileges repositories role_privileges role_roles roles settings user_roles users"
+	want := "blob_stores ldap_servers meta privileges repositories role_privileges role_roles roles settings tokens user_roles users"
 	if strings.Join(tables, " ") != want {
 		t.Fatalf("tables %v, want %s", tables, want)
 	}
@@ -272,16 +272,18 @@ func TestNewerSchemaIsRefused(t *testing.T) {
 	if err := st.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := raw(t, dir).Exec("UPDATE meta SET value = 2 WHERE key = 'schema'"); err != nil {
+	newer := state.SchemaVersion + 1
+	if _, err := raw(t, dir).Exec("UPDATE meta SET value = ? WHERE key = 'schema'", newer); err != nil {
 		t.Fatal(err)
 	}
 	for _, open := range []func(string) (*state.Store, error){state.Open, state.Create} {
 		got, err := open(dir)
 		if err == nil {
 			_ = got.Close()
-			t.Fatal("a file of schema 2 was opened")
+			t.Fatalf("a file of schema %d was opened", newer)
 		}
-		if !strings.Contains(err.Error(), "schema 2") || !strings.Contains(err.Error(), "schema 1") {
+		if !strings.Contains(err.Error(), fmt.Sprintf("schema %d", newer)) ||
+			!strings.Contains(err.Error(), fmt.Sprintf("schema %d", state.SchemaVersion)) {
 			t.Fatalf("refusal %q does not name both versions", err)
 		}
 	}

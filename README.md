@@ -6,7 +6,7 @@ Pipesmith Registry is a single static binary that serves the file blob stores of
 
 ## State of 0.1
 
-Version 0.1.2. It reads and never writes the blob stores.
+Version 0.1.3. It reads and never writes the blob stores.
 
 What works:
 
@@ -17,6 +17,7 @@ What works:
 - Sign in with imported local users and LDAP, with permissions on every route.
 - An administration interface at `/` and a REST API under `/service/rest/v1`. Both only read.
 - `serve --bind <address> --server-names NAME[,NAME]` serves on a network address once users are imported.
+- TLS on every listener with `serve --tls-cert FILE --tls-key FILE`.
 - Readiness, watchdog and stopping are reported to systemd (`Type=notify`).
 
 Not there yet:
@@ -24,7 +25,6 @@ Not there yet:
 - Uploads and deploys answer `405`, changes through the REST API answer `501`.
 - Proxy and group caching: the server serves what the stores already hold.
 - Tokens for Docker and npm clients. Clients send Basic credentials.
-- TLS. The server speaks plain HTTP.
 - Changes to the administration settings, log rotation, self update.
 
 The systemd unit and the network bind have not run on a Linux host yet.
@@ -46,7 +46,7 @@ The screenshots show invented data.
 The release has binaries for `linux-amd64`, `linux-arm64` and `darwin-arm64`. Download one of them with the checksum file and check it:
 
 ```bash
-VERSION=0.1.2
+VERSION=0.1.3
 BASE=https://github.com/iogentic/pipesmith-registry/releases/download/v$VERSION
 curl -fLO "$BASE/pipesmith-registry-linux-amd64"
 curl -fLO "$BASE/SHA256SUMS"
@@ -54,7 +54,7 @@ sha256sum --check --ignore-missing SHA256SUMS
 chmod +x pipesmith-registry-linux-amd64
 ```
 
-On macOS, use `shasum -a 256 --check --ignore-missing SHA256SUMS`. Release 0.1.2 is not signed. Signed releases come with the self update in a later version; the checksum only shows that the download is complete.
+On macOS, use `shasum -a 256 --check --ignore-missing SHA256SUMS`. Release 0.1.3 is not signed. The checksum only shows that the download is complete.
 
 Attach a blob store, import the repository list, scan, and start:
 
@@ -76,21 +76,23 @@ Without imported users there is no sign in, and the server stays on the local ad
 The image is on Docker Hub, built for linux/amd64. It runs as user 65532 and keeps its data in `/data`. Put `/data` on a Docker volume:
 
 ```bash
-IMAGE=iogentic/pipesmith-registry:0.1.2
+IMAGE=iogentic/pipesmith-registry:0.1.3
 docker volume create pipesmith-data
-docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" store add default --kind directory --root /stores/default
+docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" store add default --kind <blob store kind> --root /stores/default
 docker run --rm -v pipesmith-data:/data -v "$PWD/export:/import:ro" "$IMAGE" import /import
 docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" scan
 docker run -d --name pipesmith-registry -p 127.0.0.1:8081:8081 -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" serve --port 8081 --bind 0.0.0.0 --server-names localhost
 ```
 
 - `import` reads an export of the users made with `tools/h2export.sh`. The bind address `0.0.0.0`, which `-p` needs, works only with imported users.
-- One process at a time on the data directory: stop the server before `scan`, or start a scan through the server with `POST /api/scan` as an administrator.
+- On a Docker volume the server answers from the last finished scan while a `scan` runs beside it. A user with every permission can also start a scan through the server with `POST /api/scan`.
 - A data directory on a Docker Desktop share from macOS or Windows, on NFS, SMB or FUSE loses index writes when two processes use it at once. `scan` and `serve` print a warning there.
 
 ## Manual
 
-The manual is at [iogentic.github.io/pipesmith-registry](https://iogentic.github.io/pipesmith-registry/). It covers install, configuration, users, the systemd service, the interface, the API, client settings, security and the limits of this release.
+The manual is at [iogentic.github.io/pipesmith-registry](https://iogentic.github.io/pipesmith-registry/). It has 24 chapters in four parts: Start (Overview, First Run, Take Over), Run (Install, Sign In, Writes, Service, Network, Container, Upgrade, Update), Use (Maven, npm, Docker, Tokens, Raw Files, Browse, Search, API) and Reference (Commands, Files, Security, Troubleshooting, Limits).
+
+A running server shows the manual at `/manual/` and its API description at `/manual/api.html`. The OpenAPI document is served at `/api/openapi.json`. Releases after 0.1.2 hold the manual as a PDF, `pipesmith-registry-manual.pdf`.
 
 ## Build From Source
 

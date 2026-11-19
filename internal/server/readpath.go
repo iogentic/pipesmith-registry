@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -13,6 +15,7 @@ import (
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
@@ -47,6 +50,7 @@ func keyOf(path string) fileKey {
 type reposKey struct {
 	file       fileKey
 	generation int64
+	snapshot   *model.Snapshot // the state the attributes of the repositories come from; nil without security
 }
 
 // state is one view of the data directory: the attached stores and the
@@ -65,14 +69,21 @@ type state struct {
 // repositories of one server. sync takes over a change of config.json, of
 // repositories.json or of the index generation before each request.
 type readPath struct {
-	cfg       *config.Config
-	openPorts map[string]int // the ports this process listens on, repository -> port
-	index     *index.Index
-	mu        sync.Mutex
-	current   atomic.Pointer[state]
+	cfg        *config.Config
+	openPorts  map[string]int         // the ports this process listens on, repository -> port
+	writeStore stores.Store           // the write store of the data directory, attached beside config.json; nil for none
+	snapshot   func() *model.Snapshot // the state of the security; nil without security
+	index      *index.Index
+	mu         sync.Mutex
+	current    atomic.Pointer[state]
+	// lateWrite gives the write store once it exists, for a server without
+	// writes that found none at its start (attachLate); nil otherwise.
+	lateWrite func() stores.Store
 }
 
-func attach(configs []config.StoreConfig, dataDir string) (map[string]stores.Store, error) {
+// attach makes the stores of config.json, and adds extra, the write store,
+// under its name when no store of config.json has it.
+func attach(configs []config.StoreConfig, dataDir string, extra stores.Store) (map[string]stores.Store, error) {
 	attached := map[string]stores.Store{}
 	for _, sc := range configs {
 		s, err := stores.Make(sc, dataDir)
@@ -81,16 +92,19 @@ func attach(configs []config.StoreConfig, dataDir string) (map[string]stores.Sto
 		}
 		attached[sc.Name] = s
 	}
+	if extra != nil && attached[extra.Name()] == nil {
+		attached[extra.Name()] = extra
+	}
 	return attached, nil
 }
 
-func newReadPath(cfg *config.Config, dockerPorts map[int]string) (*readPath, error) {
-	rp := &readPath{cfg: cfg, openPorts: map[string]int{}}
+func newReadPath(cfg *config.Config, dockerPorts map[int]string, writeStore stores.Store, snapshot func() *model.Snapshot) (*readPath, error) {
+	rp := &readPath{cfg: cfg, openPorts: map[string]int{}, writeStore: writeStore, snapshot: snapshot}
 	for _, port := range sortedPorts(dockerPorts) {
 		rp.openPorts[dockerPorts[port]] = port
 	}
 	st := &state{configKey: keyOf(cfg.ConfigPath()), configs: append([]config.StoreConfig(nil), cfg.Stores...)}
-	attached, err := attach(cfg.Stores, cfg.DataDir)
+	attached, err := attach(cfg.Stores, cfg.DataDir, writeStore)
 	if err != nil {
 		return nil, err
 	}
@@ -109,18 +123,36 @@ func newReadPath(cfg *config.Config, dockerPorts map[int]string) (*readPath, err
 	if err != nil {
 		return fail(err)
 	}
-	st.reposKey = reposKey{st.definitionsKey, generation}
+	st.reposKey = reposKey{st.definitionsKey, generation, rp.currentSnapshot()}
 	if st.definitions, err = repos.LoadDefinitions(cfg.RepositoriesPath()); err != nil {
 		return fail(err)
 	}
-	if st.repositories, err = rp.repositoriesOf(st.definitions); err != nil {
+	if st.repositories, err = rp.repositoriesOf(st.definitions, st.reposKey.snapshot); err != nil {
 		return fail(err)
 	}
 	rp.current.Store(st)
 	return rp, nil
 }
 
-func (rp *readPath) repositoriesOf(definitions []repos.Repo) (*repos.Repositories, error) {
+// snapshotOf is the source of the state of a security, nil without one.
+func snapshotOf(sec model.Security) func() *model.Snapshot {
+	if sec == nil {
+		return nil
+	}
+	return sec.Snapshot
+}
+
+// currentSnapshot is the state of the security now, nil without one.
+func (rp *readPath) currentSnapshot() *model.Snapshot {
+	if rp.snapshot == nil {
+		return nil
+	}
+	return rp.snapshot()
+}
+
+// repositoriesOf are the repositories of the definitions and the index,
+// with the stored attributes of the state when there is one.
+func (rp *readPath) repositoriesOf(definitions []repos.Repo, snapshot *model.Snapshot) (*repos.Repositories, error) {
 	names, err := rp.index.RepoNames()
 	if err != nil {
 		return nil, err
@@ -129,7 +161,11 @@ func (rp *readPath) repositoriesOf(definitions []repos.Repo) (*repos.Repositorie
 	if err != nil {
 		return nil, err
 	}
-	return repos.New(definitions, names, hints), nil
+	repositories := repos.New(definitions, names, hints)
+	if snapshot != nil {
+		repositories = repositories.WithAttributes(snapshot.Repositories)
+	}
+	return repositories, nil
 }
 
 // sync returns the state after taking over what changed since the last
@@ -141,7 +177,7 @@ func (rp *readPath) sync() (*state, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := reposKey{keyOf(rp.cfg.RepositoriesPath()), generation}
+	key := reposKey{keyOf(rp.cfg.RepositoriesPath()), generation, rp.currentSnapshot()}
 	st := rp.current.Load()
 	if configKey == st.configKey && key == st.reposKey {
 		return st, nil
@@ -150,6 +186,7 @@ func (rp *readPath) sync() (*state, error) {
 	defer rp.mu.Unlock()
 	next := *rp.current.Load()
 	defer func() { rp.current.Store(&next) }()
+	rp.attachLate(&next)
 	if configKey != next.configKey {
 		next.configKey = configKey
 		if err := rp.reloadStores(&next); err != nil {
@@ -158,18 +195,47 @@ func (rp *readPath) sync() (*state, error) {
 	}
 	if key != next.reposKey {
 		next.reposKey = key
-		if err := rp.reloadRepositories(&next, key.file); err != nil {
+		if err := rp.reloadRepositories(&next, key.file, key.snapshot); err != nil {
 			return nil, err
 		}
 	}
 	return &next, nil
 }
 
+// attachLate attaches the write store when it appeared after the start of a
+// server without writes: the command maven rebuild-metadata makes it beside
+// such a server and writes rows of it into the index, and a row of a store
+// that is not attached answers 503 (finding S4 of review 4). The rows come
+// with a new generation of the index, and its take over calls this first.
+func (rp *readPath) attachLate(next *state) {
+	if rp.writeStore != nil || rp.lateWrite == nil {
+		return
+	}
+	s := rp.lateWrite()
+	if s == nil {
+		return
+	}
+	rp.writeStore = s
+	if next.stores[s.Name()] == nil {
+		attached := maps.Clone(next.stores)
+		attached[s.Name()] = s
+		next.stores = attached
+	}
+}
+
 func (rp *readPath) reloadStores(next *state) error {
 	cfg, err := config.Load(rp.cfg.DataDir, config.Env(nil))
+	if err == nil && stores.Writable(rp.writeStore) &&
+		slices.ContainsFunc(cfg.Stores, func(sc config.StoreConfig) bool { return sc.Name == rp.writeStore.Name() }) {
+		// as at a start with writes on: the store would take the place of the
+		// write store in the read path (finding N6 of review 4)
+		logAt(slogWarn, serverLogger, "configuration not reloaded, the attached stores stay: store %s of %s has the name of the write store of this server; remove it",
+			rp.writeStore.Name(), rp.cfg.ConfigPath())
+		return nil
+	}
 	var attached map[string]stores.Store
 	if err == nil {
-		attached, err = attach(cfg.Stores, rp.cfg.DataDir)
+		attached, err = attach(cfg.Stores, rp.cfg.DataDir, rp.writeStore)
 	}
 	if err != nil {
 		if Caught(err) {
@@ -182,7 +248,7 @@ func (rp *readPath) reloadStores(next *state) error {
 	return nil
 }
 
-func (rp *readPath) reloadRepositories(next *state, definitionsKey fileKey) error {
+func (rp *readPath) reloadRepositories(next *state, definitionsKey fileKey, snapshot *model.Snapshot) error {
 	if definitionsKey != next.definitionsKey {
 		next.definitionsKey = definitionsKey
 		definitions, err := repos.LoadDefinitions(rp.cfg.RepositoriesPath())
@@ -195,7 +261,7 @@ func (rp *readPath) reloadRepositories(next *state, definitionsKey fileKey) erro
 			return err
 		}
 	}
-	repositories, err := rp.repositoriesOf(next.definitions)
+	repositories, err := rp.repositoriesOf(next.definitions, snapshot)
 	if err != nil {
 		return err
 	}

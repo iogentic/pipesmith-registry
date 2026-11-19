@@ -179,6 +179,8 @@ function userMenu() {
     h("div", { class: "who" }, h("div", { class: "id", text: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.userId }), h("div", { class: "muted small break", text: user.emailAddress || user.userId })),
     h("a", { href: "#/account", role: "menuitem", text: "Account" }),
     allowed("nexus:apikey:*") ? h("a", { href: "#/tokens", role: "menuitem", text: "Tokens" }) : null,
+    h("a", { href: "manual/", target: "_blank", rel: "noopener", role: "menuitem", text: "Documentation" }),
+    h("a", { href: "manual/api.html", target: "_blank", rel: "noopener", role: "menuitem", text: "API" }),
     h("button", { type: "button", role: "menuitem", text: "About", dataset: { menu: "about" } }),
     h("button", { type: "button", role: "menuitem", text: "Sign out", dataset: { menu: "signout" } })
   );
@@ -229,6 +231,7 @@ async function about() {
       { class: "stack" },
       h("p", {}, h("strong", { text: name }), status && status.version ? ` version ${status.version}` : ""),
       h("p", { class: "muted", text: "An artifact repository server for Maven, npm, Docker and raw files. It reads existing blob stores in place and serves them under the same addresses." }),
+      h("p", { class: "muted", text: "Copyright (c) 2026 Christopher Ezell" }),
       h("p", { class: "muted", text: "Licensed under the Apache License 2.0." })
     ),
     actions: [{ label: "Close", value: "close", kind: "primary" }]
@@ -287,7 +290,19 @@ function frame(current) {
     menuButton,
     brand(),
     allowed("nexus:search:read") ? topSearch() : null,
-    h("div", { class: "top-end" }, themeToggle(), userMenu())
+    h(
+      "div",
+      { class: "top-end" },
+      h(
+        "span",
+        { class: "hide-narrow" },
+        h("a", { class: "btn quiet small", href: "manual/", target: "_blank", rel: "noopener", text: "Documentation" }),
+        " ",
+        h("a", { class: "btn quiet small", href: "manual/api.html", target: "_blank", rel: "noopener", text: "API" })
+      ),
+      themeToggle(),
+      userMenu()
+    )
   );
   const shell = h(
     "div",

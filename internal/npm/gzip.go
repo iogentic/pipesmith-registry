@@ -176,9 +176,11 @@ func (z *gzipReader) trailer() error {
 // decompressed data, reads that stop short at the end, and seeks; a seek
 // backwards decompresses again from the start, as Python does.
 type stream struct {
-	data []byte
-	z    *gzipReader
-	pos  int64
+	data     []byte
+	z        *gzipReader
+	pos      int64
+	inflated int64 // bytes read from z and the readers before it
+	budget   *inflateBudget
 }
 
 func newStream(data []byte) *stream {
@@ -191,7 +193,7 @@ func (s *stream) read(n int64) ([]byte, error) {
 	buf := make([]byte, min(n, 64*1024))
 	for int64(len(out)) < n {
 		chunk := buf[:min(int64(len(buf)), n-int64(len(out)))]
-		k, err := s.z.Read(chunk)
+		k, err := s.pull(chunk)
 		out = append(out, chunk[:k]...)
 		s.pos += int64(k)
 		if err == io.EOF {
@@ -217,7 +219,7 @@ func (s *stream) seek(target *big.Int) error {
 	}
 	buf := make([]byte, 32*1024)
 	for s.pos < t {
-		k, err := s.z.Read(buf[:min(int64(len(buf)), t-s.pos)])
+		k, err := s.pull(buf[:min(int64(len(buf)), t-s.pos)])
 		s.pos += int64(k)
 		if err == io.EOF {
 			return nil

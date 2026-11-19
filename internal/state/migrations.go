@@ -8,7 +8,7 @@ import (
 
 // SchemaVersion is the version of the last step, the value of the schema row
 // of a file this binary writes.
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 // steps are the schema steps of state.sqlite, numbered from 1. Schema 1 is
 // the one of releases 0.1.0 and 0.1.1 and never changes: a further table or
@@ -16,6 +16,7 @@ const SchemaVersion = 1
 // The accessors of a step live in a file of their own.
 var steps = []migrate.Step{
 	{Version: 1, Apply: schema1},
+	{Version: 2, Apply: schema2},
 }
 
 // schema1 creates the tables of schema 1 beside the meta table of the runner.
@@ -40,6 +41,26 @@ func schema1(tx *sql.Tx) error {
 			" soft_quota TEXT) WITHOUT ROWID",
 		"CREATE TABLE IF NOT EXISTS repositories (name TEXT PRIMARY KEY, format TEXT NOT NULL, type TEXT NOT NULL," +
 			" online INTEGER NOT NULL, attributes TEXT NOT NULL) WITHOUT ROWID",
+	} {
+		if _, err := tx.ExecContext(bg, statement); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// schema2 adds the tokens this server issues and the generation row
+// (decision E3 of the execution plan). A token row holds its user, kind and
+// public half, the SHA-256 of its secret half, and the times of its issue
+// and of its last use in milliseconds since 1970 UTC; the rowid keeps the
+// order of issue. The generation is the row generation of the meta table,
+// which every identity write raises (tokens.go).
+func schema2(tx *sql.Tx) error {
+	for _, statement := range []string{
+		"CREATE TABLE IF NOT EXISTS tokens (public TEXT NOT NULL UNIQUE, kind TEXT NOT NULL, user_id TEXT NOT NULL," +
+			" source TEXT NOT NULL, digest BLOB NOT NULL, created INTEGER NOT NULL, last_used INTEGER)",
+		"CREATE INDEX IF NOT EXISTS tokens_owner ON tokens (user_id, source, kind)",
+		"INSERT INTO meta VALUES ('" + generationKey + "', 0) ON CONFLICT (key) DO NOTHING",
 	} {
 		if _, err := tx.ExecContext(bg, statement); err != nil {
 			return err

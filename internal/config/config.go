@@ -21,6 +21,7 @@ import (
 const (
 	EnvData       = "PIPESMITH_REGISTRY_DATA"
 	EnvPort       = "PIPESMITH_REGISTRY_PORT"
+	EnvWrites     = "PIPESMITH_REGISTRY_WRITES"
 	LegacyEnvData = "ARTIFACT_REPOSITORY_DATA"
 	LegacyEnvPort = "ARTIFACT_REPOSITORY_PORT"
 )
@@ -135,6 +136,9 @@ func Save(cfg *Config) error {
 	if _, err := checkPort(cfg.Port, "port"); err != nil {
 		return err
 	}
+	if err := checkProcess(cfg); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(cfg.DataDir, 0o750); err != nil {
 		return err
 	}
@@ -169,6 +173,11 @@ func Save(cfg *Config) error {
 		ports.Set(name, port)
 	}
 	doc := pyjson.NewObject().Set("bind", cfg.Bind).Set("port", cfg.Port).Set("stores", stores).Set("docker_ports", ports)
+	if cfg.Writes {
+		// only while on: with writes off the file keeps the bytes of the port
+		doc.Set("writes", true)
+	}
+	saveProcess(cfg, doc)
 	text, err := pyjson.DumpsIndent(doc, 2)
 	if err != nil {
 		return err
@@ -375,6 +384,13 @@ func apply(cfg *Config, data *pyjson.Object) error {
 		cfg.Stores = append(cfg.Stores, StoreConfig{Name: name, Kind: get(obj, "kind").(string),
 			Root: get(obj, "root").(string), Repos: repos, Manifest: manifest})
 	}
+	if value, ok := data.Get("writes"); ok {
+		on, isBool := value.(bool)
+		if !isBool {
+			return valueError("%s: writes is not true or false", path)
+		}
+		cfg.Writes = on
+	}
 	ports := pyjson.NewObject()
 	if value := get(data, "docker_ports"); truthy(value) {
 		obj, ok := value.(*pyjson.Object)
@@ -393,7 +409,7 @@ func apply(cfg *Config, data *pyjson.Object) error {
 		}
 		cfg.DockerPorts[name] = port
 	}
-	return nil
+	return applyProcess(cfg, data)
 }
 
 // checkPort is _port of the Python module: int(value) in 1 to 65535. A
@@ -431,4 +447,24 @@ func checkPort(value any, what string) (int, error) {
 		return 0, valueError("%s is outside 1 to 65535: %s", what, n)
 	}
 	return int(n.Int64()), nil
+}
+
+// WritesFrom is the value writes of serve without its option (W17 of the
+// phase 4 plan): EnvWrites when it is set, else file, the key of
+// config.json. The variable takes 1, true, on or yes for on and 0, false,
+// off or no for off, without regard to case and surrounding space.
+func WritesFrom(getenv func(string) string, file bool) (bool, error) {
+	if getenv == nil {
+		getenv = os.Getenv
+	}
+	value := strings.ToLower(strings.TrimSpace(getenv(EnvWrites)))
+	switch value {
+	case "":
+		return file, nil
+	case "1", "true", "on", "yes":
+		return true, nil
+	case "0", "false", "off", "no":
+		return false, nil
+	}
+	return false, valueError("%s is neither on nor off: %s", EnvWrites, pystr.Repr(getenv(EnvWrites)))
 }

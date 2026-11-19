@@ -1,0 +1,236 @@
+/* Colours of internal/ui/web/css/tokens.css, the tokens of the product interface. */
+:root, :root[data-theme="dark"] {
+  --bg: #05070D; --surface: #0D1322; --surface-2: #151D31;
+  --text: #F2F6FF; --text-muted: #A6B3CF; --border: #1F2A42;
+  --primary: #4D8DFF; --accent: #22E6FF; --link: #8DB8FF;
+  --aurora: #3D7BFF; --aurora-2: #22E6FF; --aurora-3: #8A5CFF;
+  --code-bg: #0A0F1C; --warning: #FFC857;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F5F7FC; --surface: #FFFFFF; --surface-2: #EEF2FA;
+  --text: #0A1020; --text-muted: #46526E; --border: #D8DEEA;
+  --primary: #1D4FE0; --accent: #086F87; --link: #1D4FE0;
+  --aurora: #2B62F0; --aurora-2: #12B5D6; --aurora-3: #7A52F0;
+  --code-bg: #EEF2FA; --warning: #8A5200;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 76px; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+a { color: var(--link); }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; }
+code { background: var(--surface-2); border-radius: 4px; padding: 0.1em 0.35em; overflow-wrap: anywhere; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; overflow-wrap: normal; }
+header.top {
+  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px;
+  padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+header.top::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, var(--aurora-2), var(--aurora), var(--aurora-3));
+}
+header.top img { width: 36px; height: 36px; }
+header.top .name { font-weight: 700; font-size: 18px; }
+header.top .version { color: var(--text-muted); font-size: 14px; }
+header.top .spacer { flex: 1; }
+button.theme {
+  font: inherit; font-size: 14px; color: var(--text); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+}
+button.theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; max-width: 1180px; margin: 0 auto; padding: 32px 24px 64px; }
+nav.toc { position: sticky; top: 84px; align-self: start; font-size: 15px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a { display: block; padding: 4px 10px; border-radius: 6px; color: var(--text-muted); text-decoration: none; border-left: 2px solid transparent; }
+nav.toc a:hover { color: var(--text); background: var(--surface-2); border-left-color: var(--aurora); }
+main { min-width: 0; }
+h1 { font-size: 34px; line-height: 1.2; margin: 0 0 8px; }
+.lead { color: var(--text-muted); font-size: 18px; margin: 0 0 24px; }
+h2 { font-size: 26px; margin: 56px 0 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+h3 { font-size: 19px; margin: 28px 0 8px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 15px; display: block; overflow-x: auto; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+th { color: var(--text-muted); font-weight: 600; background: var(--surface-2); }
+.note { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--warning); border-radius: 8px; padding: 10px 16px; margin: 16px 0; }
+.note p { margin: 6px 0; }
+figure { margin: 20px 0; }
+figure img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); }
+figcaption { color: var(--text-muted); font-size: 14px; margin-top: 8px; }
+.shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.shots figure { margin: 0; }
+:root[data-theme="dark"] .light-only, :root[data-theme="light"] .dark-only { display: none; }
+footer { max-width: 1180px; margin: 0 auto; padding: 24px; color: var(--text-muted); font-size: 14px; border-top: 1px solid var(--border); }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 20px 16px 48px; }
+  nav.toc { position: static; }
+  nav.toc ol { display: flex; flex-wrap: wrap; gap: 4px; }
+  nav.toc a { border-left: 0; background: var(--surface-2); }
+  .shots { grid-template-columns: minmax(0, 1fr); }
+  header.top { padding: 10px 16px; }
+  header.top .version { display: none; }
+  h1 { font-size: 28px; }
+}
+
+header.top .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+header.top img, header.top a.top-link, button.theme { flex-shrink: 0; white-space: nowrap; }
+header.top a.top-link { font-size: 14px; color: var(--link); text-decoration: none; padding: 6px 4px; }
+header.top a.top-link:hover { text-decoration: underline; }
+/* manual.js sets data-served="registry" when the binary serves the page below /manual/. */
+:root:not([data-served="registry"]) .registry-only { display: none; }
+@media (max-width: 480px) {
+  /* The name stays whole: the links and the theme button wrap to a second row. */
+  html { scroll-padding-top: 116px; }
+  header.top { gap: 4px 8px; flex-wrap: wrap; }
+  header.top img { width: 28px; height: 28px; }
+  header.top .name { font-size: 16px; overflow: visible; text-overflow: clip; }
+  header.top .spacer { flex: 1 0 100%; height: 0; }
+}
+[hidden] { display: none !important; }
+/* Chapter list in four parts. */
+nav.toc .part { margin: 16px 10px 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+nav.toc .part:first-child { margin-top: 0; }
+@media (max-width: 860px) {
+  nav.toc .part { margin: 10px 0 4px; }
+}
+/* Table of served operations in the chapter API, filled by manual.js. */
+table.ops td code { background: none; padding: 0; white-space: nowrap; overflow-wrap: normal; }
+table.ops td:first-child code { font-weight: 700; }
+table.commands td:first-child code { white-space: nowrap; }
+@media (max-width: 860px) {
+  table.ops td:nth-child(2) code { white-space: normal; overflow-wrap: anywhere; }
+}
+/* API page (api.html, api.js). Method labels: text colour on --surface-2, contrast of at least 4.5 to 1. */
+:root, :root[data-theme="dark"] {
+  --m-get: #8DB8FF; --m-post: #5EE6A8; --m-put: #FFC857; --m-delete: #FF8A8A; --m-patch: #C9A6FF; --m-other: #A6B3CF;
+}
+:root[data-theme="light"] {
+  --m-get: #1D4FE0; --m-post: #0B6E3F; --m-put: #8A5200; --m-delete: #B3261E; --m-patch: #6A3FD0; --m-other: #46526E;
+}
+main.api { max-width: 1180px; margin: 0 auto; padding: 32px 24px 64px; min-width: 0; }
+main.api [hidden] { display: none !important; }
+.api-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 16px 0 8px; }
+.api-tools input[type="search"] {
+  font: inherit; font-size: 15px; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; min-width: 0; flex: 1 1 220px; max-width: 420px;
+}
+.api-tools input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.api-filter { font-weight: 600; }
+.api-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; }
+.api-tag-text { color: var(--text-muted); margin: 0 0 12px; }
+details.op { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); margin: 8px 0; min-width: 0; }
+details.op > summary {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 8px 12px; cursor: pointer; list-style: none;
+}
+details.op > summary::-webkit-details-marker { display: none; }
+details.op > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details.op[open] > summary { border-bottom: 1px solid var(--border); }
+.method {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-weight: 700;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 1px 8px; min-width: 64px; text-align: center;
+  color: var(--m-other);
+}
+.method-get { color: var(--m-get); } .method-post { color: var(--m-post); } .method-put { color: var(--m-put); }
+.method-delete { color: var(--m-delete); } .method-patch { color: var(--m-patch); }
+.op-path { background: none; padding: 0; overflow-wrap: anywhere; min-width: 0; }
+.op-summary { flex: 1 1 200px; min-width: 0; }
+.op-perm { color: var(--text-muted); font-size: 14px; overflow-wrap: anywhere; min-width: 0; }
+.op-body { padding: 4px 12px 12px; min-width: 0; }
+.op-body h4 { margin: 12px 0 4px; font-size: 15px; }
+.op-body table { font-size: 14px; margin: 4px 0 8px; }
+.op-body td { overflow-wrap: anywhere; }
+.op-body td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: nowrap; }
+.op-needs { color: var(--text-muted); }
+@media (max-width: 860px) {
+  main.api { padding: 20px 16px 48px; }
+  main.api h2 { font-size: 22px; margin-top: 36px; }
+}
+
+/* Print form, prepared by preparePrint of manual.js: A4, light theme, cover, contents, numbered chapters. */
+@page { size: A4; }
+@media print {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --bg: #FFFFFF; --surface: #FFFFFF; --surface-2: #EEF2FA;
+    --text: #0A1020; --text-muted: #46526E; --border: #D8DEEA;
+    --primary: #1D4FE0; --accent: #086F87; --link: #0A1020;
+    --aurora: #2B62F0; --aurora-2: #12B5D6; --aurora-3: #7A52F0;
+    --code-bg: #F5F7FC; --warning: #8A5200;
+    color-scheme: light;
+  }
+  body { font-size: 10.5pt; line-height: 1.45; background: #FFFFFF; }
+  header.top, nav.toc, button.theme, header.top a.top-link { display: none; }
+  .layout { display: block; max-width: none; padding: 0; margin: 0; }
+  main > h1 { display: none; }
+  .lead { font-size: 12pt; margin: 0 0 12pt; }
+  main > section { break-before: page; }
+  h2 { font-size: 17pt; margin: 0 0 8pt; padding-top: 0; border-top: 0; }
+  h3 { font-size: 12.5pt; margin: 14pt 0 4pt; }
+  h2, h3, h4 { break-after: avoid; break-inside: avoid; }
+  h2 .number, h3 .number { color: var(--text-muted); }
+  p, li { orphans: 3; widows: 3; }
+  /* A sentence that leads into a block stays on the page of the block. */
+  p:has(+ pre), p:has(+ table), p:has(+ ul), p:has(+ ol), .note:has(+ pre) { break-after: avoid; }
+  code, pre { font-size: 9pt; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible; padding: 6pt 8pt; border-radius: 4pt; }
+  pre code { white-space: inherit; overflow-wrap: anywhere; }
+  table { display: table; overflow: visible; width: 100%; font-size: 9.5pt; margin: 8pt 0 12pt; }
+  thead { display: table-header-group; }
+  th, td { padding: 4pt 6pt; }
+  /* Names in the first column and paths of operations stay whole; messages of Troubleshooting wrap.
+     A4 is narrower than 860 pixels, so these rules carry :root to win over the narrow window rules. */
+  :root main td:first-child > code, :root table.ops td code { white-space: nowrap; overflow-wrap: normal; }
+  :root table.trouble td:first-child > code { white-space: normal; overflow-wrap: anywhere; }
+  :root table.trouble td { min-width: 0; }
+  table.ops, table.ops code { font-size: 8.5pt; }
+  figure, pre, tr, .note { break-inside: avoid; }
+  figure { margin: 12pt 0; }
+  figure img { border-radius: 4pt; }
+  figcaption { font-size: 9pt; }
+  :root[data-theme] .dark-only { display: none; }
+  :root[data-theme] .light-only { display: block; }
+  a { color: var(--text); text-decoration: none; }
+  a.print-href::after { content: " (" attr(href) ")"; overflow-wrap: anywhere; }
+  footer { max-width: none; padding: 12pt 0 0; font-size: 9pt; }
+  .print-cover {
+    display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    height: 245mm; break-after: page;
+  }
+  .print-cover p { margin: 0; }
+  .print-logo { width: 42mm; height: 42mm; margin-bottom: 14mm; }
+  .print-name { font-size: 30pt; font-weight: 700; }
+  .print-title { font-size: 20pt; color: var(--text-muted); margin-top: 4mm !important; }
+  .print-version { font-size: 13pt; margin-top: 18mm !important; }
+  .print-licence { font-size: 11pt; color: var(--text-muted); margin-top: 3mm !important; }
+  .print-contents { break-after: page; font-size: 9pt; line-height: 1.2; }
+  .print-contents-title { font-size: 17pt; font-weight: 700; margin: 0 0 8pt; }
+  .print-part { font-size: 8pt; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin: 6pt 0 1pt; }
+  .print-list { list-style: none; margin: 0; padding: 0; }
+  .print-list li { display: flex; align-items: baseline; break-inside: avoid; }
+  .print-chapter { font-weight: 600; margin-top: 2pt; }
+  .print-section { padding-left: 16pt; }
+  .print-list .number { display: inline-block; min-width: 2.4em; color: var(--text-muted); }
+  .print-fill { flex: 1; border-bottom: 1px dotted var(--border); margin: 0 4pt; min-width: 8pt; }
+  .print-page { min-width: 2em; text-align: right; }
+}
+}
+/* The first column of a table names a file, a command or a path: kept on one line, the table scrolls. */
+main td:first-child > code { white-space: nowrap; overflow-wrap: normal; }
+@media (max-width: 860px) {
+  main td:first-child > code { white-space: normal; overflow-wrap: anywhere; }
+  /* A figure keeps a width at which its labels stay readable, and scrolls inside its frame. */
+  .figure-frame { overflow-x: auto; border-radius: 12px; }
+  .figure-frame img { min-width: 1100px; }
+}
+@media print {
+  .figure-frame img { min-width: 0; }
+}
+/* Troubleshooting: messages wrap inside their cell; on a narrow window the table keeps readable columns and scrolls. */
+table.trouble td:first-child > code { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 860px) {
+  table.trouble td { min-width: 15em; }
+}

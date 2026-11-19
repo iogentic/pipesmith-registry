@@ -1,0 +1,27 @@
+{
+ "format": "npm",
+ "note": "Rows of the table Coordinates of docs/plans/phase-1c-rest-read.md. The group is the scope without its leading @, the name the package name without the scope; unverified against an answer of the old product, the leg report names the source read. A tarball whose file name is not <name>-<version>.tgz gives no component.",
+ "cases": [
+  {"row": "tarball", "path": "demo-pkg/-/demo-pkg-1.0.0.tgz",
+   "expect": {"group": "", "name": "demo-pkg", "version": "1.0.0", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "tarball", "path": "@demo/widgets/-/widgets-2.1.0-beta.1.tgz",
+   "expect": {"group": "demo", "name": "widgets", "version": "2.1.0-beta.1", "classifier": "", "extension": "", "prerelease": true}},
+  {"row": "tarball", "path": "demo-pkg/-/demo-pkg-1.0.0+build.7.tgz",
+   "expect": {"group": "", "name": "demo-pkg", "version": "1.0.0+build.7", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "tarball", "path": "demo-pkg/-/demo-pkg-1.0.0-rc.1+build.7.tgz",
+   "expect": {"group": "", "name": "demo-pkg", "version": "1.0.0-rc.1+build.7", "classifier": "", "extension": "", "prerelease": true}},
+  {"row": "tarball", "path": "demo-pkg/-/other-pkg-1.0.0.tgz", "expect": null},
+  {"row": "tarball", "path": "demo-pkg/-/demo-pkg-.tgz", "expect": null},
+  {"row": "tarball", "path": "demo-pkg/-/demo-pkg-1.0.0.tar.gz", "expect": null},
+  {"row": "tarball", "path": "@demo/-/widgets-1.0.0.tgz", "expect": null},
+  {"row": "tarball", "path": ".hidden/-/.hidden-1.0.0.tgz", "expect": null},
+  {"row": "tarball", "path": "demo-pkg/-/sub/demo-pkg-1.0.0.tgz", "expect": null},
+  {"row": "package document", "path": "demo-pkg",
+   "expect": {"group": "", "name": "demo-pkg", "version": "", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "package document", "path": "@demo/widgets",
+   "expect": {"group": "demo", "name": "widgets", "version": "", "classifier": "", "extension": "", "prerelease": false}},
+  {"row": "package document", "path": "demo-pkg/1.0.0", "expect": null},
+  {"row": "package document", "path": "@demo", "expect": null},
+  {"row": "package document", "path": "Demo Pkg", "expect": null}
+ ]
+}

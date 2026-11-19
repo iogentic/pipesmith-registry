@@ -75,79 +75,64 @@ function tasksCard(items) {
   );
 }
 
+// The repository list as two cards: the count with a line per type, and the formats.
+function repositoryCards(repos) {
+  const byType = {};
+  for (const r of repos) byType[r.type] = (byType[r.type] || 0) + 1;
+  const typeLine = Object.entries(byType)
+    .sort()
+    .map(([t, n]) => `${number(n)} ${typeName(t).toLowerCase()}`)
+    .join(", ");
+  const byFormat = {};
+  for (const r of repos) byFormat[r.format] = (byFormat[r.format] || 0) + 1;
+  const formatLine = Object.entries(byFormat)
+    .sort()
+    .map(([f, n]) => `${formatName(f)} ${number(n)}`)
+    .join(", ");
+  return [stat("Repositories you can see", number(repos.length), typeLine || "None yet"), formatLine ? stat("Formats", number(Object.keys(byFormat).length), formatLine) : null];
+}
+
+function scanCard(s) {
+  return h(
+    "div",
+    { class: "card" },
+    h("div", { class: "stat-label", text: "Index scan" }),
+    h("div", { class: "stat" }, s.scan.running ? mark("busy", "Running") : mark("ok", "Idle")),
+    h("p", { text: s.scan.running && s.scan.store ? `Scanning the store ${s.scan.store}` : `Version ${s.version || "unknown"}` })
+  );
+}
+
+function checksCard(checks) {
+  const results = Object.values(checks);
+  const failing = results.filter((r) => !r.healthy).length;
+  return h(
+    "a",
+    { class: "card", href: "#/admin/status" },
+    h("div", { class: "stat-label", text: "Health checks" }),
+    h("div", { class: "stat" }, failing ? mark("error", `${failing} failing`) : mark("ok", "All healthy")),
+    h("p", { text: `${number(results.length)} checks` })
+  );
+}
+
+// Puts a card for each label into the grid that says it is loading. When the request has
+// answered, the card at the same index of what cards returns takes its place, and a place
+// without a card is removed. A failed request removes its places and hands its error to failed.
+function fill(grid, request, labels, cards, failed) {
+  const places = labels.map(([label, kind]) =>
+    grid.appendChild(h("div", { class: ["card", kind], "aria-busy": "true" }, h("div", { class: "stat-label", text: label }), loading()))
+  );
+  request.then(cards).then(
+    (made) => places.forEach((place, i) => (made[i] ? place.replaceWith(made[i]) : place.remove())),
+    (error) => {
+      places.forEach((place) => place.remove());
+      if (failed) failed(error);
+    }
+  );
+}
+
 export async function render(ctx) {
   const user = ctx.session.user;
   ctx.main.append(pageHead({ title: "Overview", sub: `Signed in as ${user.userId}.` }));
-  const body = h("div", { class: "stack" }, loading());
-  ctx.main.append(body);
-
-  // The read only state shows in the band of the frame on every screen, so the overview does not repeat it.
-  const [status, repositories, checks, tasks] = await Promise.allSettled([
-    api.status(),
-    api.repositories.list(),
-    ctx.can("nexus:atlas:read") ? api.statusChecks() : Promise.resolve(null),
-    ctx.can("nexus:tasks:read") ? api.tasks.list() : Promise.resolve(null)
-  ]);
-
-  const parts = [];
-
-  const cards = [];
-  if (repositories.status === "fulfilled") {
-    const repos = repositories.value || [];
-    const byType = {};
-    for (const r of repos) byType[r.type] = (byType[r.type] || 0) + 1;
-    const typeLine = Object.entries(byType)
-      .sort()
-      .map(([t, n]) => `${number(n)} ${typeName(t).toLowerCase()}`)
-      .join(", ");
-    cards.push(stat("Repositories you can see", number(repos.length), typeLine || "None yet"));
-    const byFormat = {};
-    for (const r of repos) byFormat[r.format] = (byFormat[r.format] || 0) + 1;
-    const formatLine = Object.entries(byFormat)
-      .sort()
-      .map(([f, n]) => `${formatName(f)} ${number(n)}`)
-      .join(", ");
-    if (formatLine) cards.push(stat("Formats", number(Object.keys(byFormat).length), formatLine));
-  } else {
-    parts.push(problem(repositories.reason, "Repositories could not be loaded"));
-  }
-  if (status.status === "fulfilled" && status.value) {
-    const s = status.value;
-    if (s.totals) {
-      cards.push(stat("Files served", number(s.totals.files), `${bytes(s.totals.bytes)} in ${number(s.totals.stores)} blob stores`));
-    }
-    if (s.scan) {
-      cards.push(
-        h(
-          "div",
-          { class: "card" },
-          h("div", { class: "stat-label", text: "Index scan" }),
-          h("div", { class: "stat" }, s.scan.running ? mark("busy", "Running") : mark("ok", "Idle")),
-          h("p", { text: s.scan.running && s.scan.store ? `Scanning the store ${s.scan.store}` : `Version ${s.version || "unknown"}` })
-        )
-      );
-    }
-  }
-  if (checks.status === "fulfilled" && checks.value) {
-    const results = Object.values(checks.value);
-    const failing = results.filter((r) => !r.healthy).length;
-    cards.push(
-      h(
-        "a",
-        { class: "card", href: "#/admin/status" },
-        h("div", { class: "stat-label", text: "Health checks" }),
-        h("div", { class: "stat" }, failing ? mark("error", `${failing} failing`) : mark("ok", "All healthy")),
-        h("p", { text: `${number(results.length)} checks` })
-      )
-    );
-  }
-  if (status.status === "fulfilled" && status.value && Array.isArray(status.value.stores) && status.value.stores.length) {
-    cards.push(storesCard(status.value, ctx.can("nexus:blobstores:read")));
-  }
-  if (tasks.status === "fulfilled" && tasks.value && Array.isArray(tasks.value.items) && tasks.value.items.length) {
-    cards.push(tasksCard(tasks.value.items));
-  }
-  parts.push(h("div", { class: "cards overview-grid" }, cards));
 
   const links = [];
   links.push(linkButton("Browse repositories", "#/browse", "primary"));
@@ -155,7 +140,25 @@ export async function render(ctx) {
   if (ctx.can("nexus:component:add")) links.push(linkButton("Upload", "#/upload"));
   if (ctx.can("nexus:repository-admin:*:*:read")) links.push(linkButton("Repositories", "#/admin/repositories"));
   if (ctx.can("nexus:tasks:read")) links.push(linkButton("Tasks", "#/admin/tasks"));
-  parts.push(h("section", { class: "section" }, h("h2", { text: "Shortcuts" }), h("div", { class: "actions" }, links)));
+  const grid = h("div", { class: "cards overview-grid" });
+  ctx.main.append(h("div", { class: "stack" }, grid, h("section", { class: "section" }, h("h2", { text: "Shortcuts" }), h("div", { class: "actions" }, links))));
 
-  body.replaceChildren(...parts);
+  // Each card stands as soon as its own request has answered, in the order of the cards.
+  // The read only state shows in the band of the frame on every screen, so the overview does not repeat it.
+  const status = api.status();
+  fill(grid, api.repositories.list(), [["Repositories you can see"], ["Formats"]], (repos) => repositoryCards(repos || []),
+    (error) => grid.before(problem(error, "Repositories could not be loaded")));
+  fill(grid, status, [["Files served"], ["Index scan"]], (s) => [
+    s && s.totals ? stat("Files served", number(s.totals.files), `${bytes(s.totals.bytes)} in ${number(s.totals.stores)} blob stores`) : null,
+    s && s.scan ? scanCard(s) : null
+  ]);
+  if (ctx.can("nexus:atlas:read")) fill(grid, api.statusChecks(), [["Health checks"]], (checks) => [checks ? checksCard(checks) : null]);
+  fill(grid, status, [["Blob stores", "wide-card"]], (s) => [
+    s && Array.isArray(s.stores) && s.stores.length ? storesCard(s, ctx.can("nexus:blobstores:read")) : null
+  ]);
+  if (ctx.can("nexus:tasks:read")) {
+    fill(grid, api.tasks.list(), [["Tasks", "full-card"]], (tasks) => [
+      tasks && Array.isArray(tasks.items) && tasks.items.length ? tasksCard(tasks.items) : null
+    ]);
+  }
 }

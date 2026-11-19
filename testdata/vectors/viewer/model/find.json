@@ -1,0 +1,129 @@
+{
+ "about": "Steps on find and go to line, written by hand. Each step acts on the view of text (scanned as kind) and is followed by what is expected: count is the number of matches, current the [line, start] of the current match or null, visible the visible lines (only where the text is short enough to list), hidden lines that must not be drawn, shown a line whose row must lie inside the window, top the first line whose row lies whole inside the window.",
+ "kind": "xml",
+ "text": "alpha Beta gamma\nbeta BETA\n<a>\n  beta inside\n</a>\nnothing here\nALPHA beta\nend of the head\nfiller line 9\nfiller line 10\nfiller line 11\nfiller line 12\nfiller line 13\nfiller line 14\nfiller line 15\nfiller line 16\nfiller line 17\nfiller line 18\nfiller line 19\nfiller line 20\nfiller line 21\nfiller line 22\nfiller line 23\nfiller line 24\nfiller line 25\nfiller line 26\nfiller line 27\nfiller line 28\nfiller line 29\nfiller line 30\nfiller line 31\nfiller line 32\nfiller line 33\nfiller line 34\nfiller line 35\nfiller line 36\nfiller line 37\nfiller line 38\nfiller line 39\nfiller line 40\nfiller line 41\nfiller line 42\nfiller line 43\nfiller line 44\nfiller line 45\nfiller line 46\nfiller line 47\nfiller line 48\nfiller line 49\nfiller line 50\nfiller line 51\nfiller line 52\nfiller line 53\nfiller line 54\nfiller line 55\nfiller line 56\nfiller line 57\nfiller line 58\nfiller line 59\nfiller line 60\nfiller line 61\nfiller line 62\nfiller line 63\nfiller line 64\nfiller line 65\nfiller line 66\nfiller line 67\nfiller line 68\nfiller line 69\nfiller line 70\nfiller line 71\nfiller line 72\nfiller line 73\nfiller line 74\nfiller line 75\nfiller line 76\nfiller line 77\nfiller line 78\nfiller line 79\nfiller line 80\nfiller line 81\nfiller line 82\nfiller line 83\nfiller line 84\nfiller line 85\nfiller line 86\nfiller line 87\nfiller line 88\nfiller line 89\nfiller line 90\nfiller line 91\nfiller line 92\nfiller line 93\nfiller line 94\nfiller line 95\nfiller line 96\nfiller line 97\nfiller line 98\nfiller line 99\nfiller line 100\nfiller line 101\nfiller line 102\nfiller line 103\nfiller line 104\nfiller line 105\nfiller line 106\nfiller line 107\nfiller line 108\nfiller line 109\nfiller line 110\nfiller line 111\nfiller line 112\nfiller line 113\nfiller line 114\nfiller line 115\nfiller line 116\nfiller line 117\nfiller line 118\nfiller line 119\nfiller line 120\nfiller line 121\nfiller line 122\nfiller line 123\nfiller line 124\nfiller line 125\nfiller line 126\nfiller line 127\nfiller line 128\nfiller line 129\nfiller line 130\nfiller line 131\nfiller line 132\nfiller line 133\nfiller line 134\nfiller line 135\nfiller line 136\nfiller line 137\nfiller line 138\nfiller line 139\nfiller line 140\nfiller line 141\nfiller line 142\nfiller line 143\nfiller line 144\nfiller line 145\nfiller line 146\nfiller line 147\nfiller line 148\nfiller line 149\nfiller line 150\nfiller line 151\nfiller line 152\nfiller line 153\nfiller line 154\nfiller line 155\nfiller line 156\nfiller line 157\nfiller line 158\nfiller line 159\nfiller line 160\nfiller line 161\nfiller line 162\nfiller line 163\nfiller line 164\nfiller line 165\nfiller line 166\nfiller line 167\nfiller line 168\nfiller line 169\nfiller line 170\nfiller line 171\nfiller line 172\nfiller line 173\nfiller line 174\nfiller line 175\nfiller line 176\nfiller line 177\nfiller line 178\nfiller line 179\nfiller line 180\nfiller line 181\nfiller line 182\nfiller line 183\nfiller line 184\nfiller line 185\nfiller line 186\nfiller line 187\nfiller line 188\nfiller line 189\nfiller line 190\nfiller line 191\nfiller line 192\nfiller line 193\nfiller line 194\nfiller line 195\nfiller line 196\nfiller line 197\nfiller line 198\nfiller line 199\nfiller line 200\n",
+ "steps": [
+  {
+   "do": "toggle",
+   "line": 3,
+   "hidden": [
+    4,
+    5
+   ]
+  },
+  {
+   "do": "find",
+   "query": "beta",
+   "case": false,
+   "count": 5,
+   "current": [
+    1,
+    6
+   ]
+  },
+  {
+   "do": "next",
+   "count": 5,
+   "current": [
+    2,
+    0
+   ]
+  },
+  {
+   "do": "next",
+   "current": [
+    2,
+    5
+   ]
+  },
+  {
+   "do": "next",
+   "current": [
+    4,
+    2
+   ],
+   "shown": 4
+  },
+  {
+   "do": "next",
+   "current": [
+    7,
+    6
+   ]
+  },
+  {
+   "do": "next",
+   "current": [
+    1,
+    6
+   ]
+  },
+  {
+   "do": "prev",
+   "current": [
+    7,
+    6
+   ]
+  },
+  {
+   "do": "find",
+   "query": "beta",
+   "case": true,
+   "count": 3,
+   "current": [
+    2,
+    0
+   ]
+  },
+  {
+   "do": "find",
+   "query": "Filler Line 19",
+   "case": false,
+   "count": 11,
+   "current": [
+    19,
+    0
+   ]
+  },
+  {
+   "do": "next",
+   "current": [
+    190,
+    0
+   ],
+   "shown": 190
+  },
+  {
+   "do": "find",
+   "query": "zzz",
+   "case": false,
+   "count": 0,
+   "current": null
+  },
+  {
+   "do": "goto",
+   "line": 150,
+   "top": 150,
+   "current": null
+  },
+  {
+   "do": "toggle",
+   "line": 3,
+   "hidden": [
+    4,
+    5
+   ]
+  },
+  {
+   "do": "goto",
+   "line": 5,
+   "shown": 5,
+   "top": 5
+  },
+  {
+   "do": "goto",
+   "line": 999,
+   "shown": 200
+  }
+ ]
+}

@@ -1,0 +1,11 @@
+text: |
+  first line
+  second line
+folded: >-
+  folded text
+nothing: ~
+empty: null
+yes_no: no
+float: -1.5e3
+anchor: &base !!map
+alias: *base

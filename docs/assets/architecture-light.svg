@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="psr-architecture" viewBox="0 0 1360 806" width="1360" height="806" role="img" aria-label="Architecture of Pipesmith Registry 0.1.3. Maven, npm and Docker clients and a browser send requests to one static binary. Inside it a request passes the listeners, one main port plus one port per Docker repository, then a Host gate that answers 403 unless the Host header names the server, then sign in and permissions. Clients send Basic credentials or a token. A request then reaches the embedded interface with the manual, the REST API, which answers 501 for refused areas, or the read path for Maven, npm, Docker and plain files. The read path and the REST API look files up in an SQLite index. Sign in reads users, roles and privileges from state.sqlite. On disk the binary reads the file blob stores of an existing install in place and never writes them. Its own data directory holds config.json, repositories.json, state.sqlite with users, roles, privileges and LDAP connections, index.sqlite and catalog.sqlite, which scan fills from the blob stores. Nothing reads catalog.sqlite yet."><title>Pipesmith Registry architecture</title><defs><marker id="psr-architecture-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2B62F0" stroke="none"/></marker><marker id="psr-architecture-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#12B5D6" stroke="none"/></marker><marker id="psr-architecture-write" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7A52F0" stroke="none"/></marker></defs>
+<rect x="0" y="0" width="1360" height="806" rx="18" fill="#F5F7FC" stroke="#D8DEEA" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="46" font-size="12" font-weight="600" fill="#46526E" text-anchor="start" letter-spacing="1.6">PIPESMITH REGISTRY 0.1.3</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="86" font-size="30" font-weight="700" fill="#0A1020" text-anchor="start">Architecture</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="116" font-size="15" font-weight="400" fill="#46526E" text-anchor="start">One static binary serves the file blob stores of an existing install in place. It writes only to its own data directory.</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="156" font-size="11" font-weight="600" fill="#46526E" text-anchor="start" letter-spacing="1.6">CLIENTS</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="330" y="156" font-size="11" font-weight="600" fill="#46526E" text-anchor="start" letter-spacing="1.6">ONE BINARY</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="986" y="156" font-size="11" font-weight="600" fill="#46526E" text-anchor="start" letter-spacing="1.6">ON DISK</text>
+<rect x="34" y="176" width="240" height="92" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="202" font-size="16" font-weight="650" fill="#0A1020" text-anchor="start">Maven</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="222" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">Maven and Gradle builds</text>
+<text x="50" y="240" font-size="12" font-weight="400" fill="#46526E" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/repository/&lt;name&gt;/...</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="257" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">Basic or user token</text>
+<rect x="34" y="282" width="240" height="92" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="308" font-size="16" font-weight="650" fill="#0A1020" text-anchor="start">npm</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="328" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">package documents, tarballs</text>
+<text x="50" y="346" font-size="12" font-weight="400" fill="#46526E" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/repository/&lt;name&gt;/...</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="363" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">Basic or npm token</text>
+<rect x="34" y="388" width="240" height="92" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="414" font-size="16" font-weight="650" fill="#0A1020" text-anchor="start">Docker</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="434" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">one port per repository</text>
+<text x="50" y="452" font-size="12" font-weight="400" fill="#46526E" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/v2/... on that port</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="469" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">Basic or Docker token</text>
+<rect x="34" y="494" width="240" height="92" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="520" font-size="16" font-weight="650" fill="#0A1020" text-anchor="start">Browser</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="540" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">administration interface</text>
+<text x="50" y="558" font-size="12" font-weight="400" fill="#46526E" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/ and /service/rest/v1</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="575" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">session cookie</text>
+<rect x="330" y="176" width="600" height="456" rx="14" fill="#EEF2FA" stroke="#7A859C" stroke-width="1.4"/>
+<text x="350" y="204" font-size="14" font-weight="650" fill="#0A1020" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">pipesmith-registry serve</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="910" y="204" font-size="12" font-weight="400" fill="#46526E" text-anchor="end">static, no runtime dependencies</text>
+<rect x="350" y="220" width="560" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="366" y="245" font-size="15" font-weight="650" fill="#0A1020" text-anchor="start">Listeners</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="366" y="265" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">the main port and one port per Docker repository</text>
+<rect x="350" y="294" width="560" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="366" y="319" font-size="15" font-weight="650" fill="#0A1020" text-anchor="start">Host gate</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="366" y="339" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">403 unless the Host header names this server</text>
+<path d="M630,278 V292" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="350" y="368" width="560" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="366" y="393" font-size="15" font-weight="650" fill="#0A1020" text-anchor="start">Sign in and permissions</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="366" y="413" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">local users and LDAP; roles and privileges from state.sqlite</text>
+<path d="M630,352 V366" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M274,222 C312,222 312,234 348,234" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M274,328 C312,328 312,244 348,244" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M274,434 C312,434 312,254 348,254" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M274,540 C312,540 312,264 348,264" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="350" y="442" width="176" height="86" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="364" y="467" font-size="15" font-weight="650" fill="#0A1020" text-anchor="start">Interface</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="364" y="489" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">embedded, at /</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="364" y="508" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">manual at /manual/</text>
+<path d="M438,426 V440" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="542" y="442" width="176" height="86" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="556" y="467" font-size="15" font-weight="650" fill="#0A1020" text-anchor="start">REST API</text>
+<text x="556" y="489" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/service/rest/v1</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="556" y="508" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">refused areas: 501</text>
+<path d="M630,426 V440" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="734" y="442" width="176" height="86" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="748" y="467" font-size="15" font-weight="650" fill="#0A1020" text-anchor="start">Read path</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="748" y="489" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">Maven, npm, Docker,</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="748" y="508" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">other formats as files</text>
+<path d="M822,426 V440" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="350" y="554" width="560" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="366" y="579" font-size="15" font-weight="650" fill="#0A1020" text-anchor="start">Index</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="366" y="599" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">SQLite: one row per file of the last scan</text>
+<path d="M630,528 V552" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<path d="M822,528 V552" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-architecture-req)"/>
+<rect x="986" y="176" width="340" height="200" rx="10" fill="#FFFFFF" stroke="#12B5D6" stroke-width="1.6"/>
+<path d="M1005,202 v16 a27,7 0 0 0 54,0 v-16" fill="#EEF2FA" stroke="#12B5D6" stroke-width="1.5"/>
+<ellipse cx="1032" cy="202" rx="27" ry="7" fill="#FFFFFF" stroke="#12B5D6" stroke-width="1.5"/>
+<path d="M1005,222 v16 a27,7 0 0 0 54,0 v-16" fill="#EEF2FA" stroke="#12B5D6" stroke-width="1.5"/>
+<ellipse cx="1032" cy="222" rx="27" ry="7" fill="#FFFFFF" stroke="#12B5D6" stroke-width="1.5"/>
+<path d="M1005,242 v16 a27,7 0 0 0 54,0 v-16" fill="#EEF2FA" stroke="#12B5D6" stroke-width="1.5"/>
+<ellipse cx="1032" cy="242" rx="27" ry="7" fill="#FFFFFF" stroke="#12B5D6" stroke-width="1.5"/>
+<path d="M1071,202 v16 a27,7 0 0 0 54,0 v-16" fill="#EEF2FA" stroke="#12B5D6" stroke-width="1.5"/>
+<ellipse cx="1098" cy="202" rx="27" ry="7" fill="#FFFFFF" stroke="#12B5D6" stroke-width="1.5"/>
+<path d="M1071,222 v16 a27,7 0 0 0 54,0 v-16" fill="#EEF2FA" stroke="#12B5D6" stroke-width="1.5"/>
+<ellipse cx="1098" cy="222" rx="27" ry="7" fill="#FFFFFF" stroke="#12B5D6" stroke-width="1.5"/>
+<path d="M1071,242 v16 a27,7 0 0 0 54,0 v-16" fill="#EEF2FA" stroke="#12B5D6" stroke-width="1.5"/>
+<ellipse cx="1098" cy="242" rx="27" ry="7" fill="#FFFFFF" stroke="#12B5D6" stroke-width="1.5"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1142" y="212" font-size="16" font-weight="650" fill="#0A1020" text-anchor="start">File blob stores</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1142" y="232" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">the layout the existing</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1142" y="250" font-size="13" font-weight="400" fill="#46526E" text-anchor="start">install already uses</text>
+<text x="1004" y="300" font-size="12" font-weight="400" fill="#46526E" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">content/&lt;folders&gt;/&lt;id&gt;.bytes</text>
+<text x="1004" y="320" font-size="12" font-weight="400" fill="#46526E" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">content/&lt;folders&gt;/&lt;id&gt;.properties</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1004" y="352" font-size="13" font-weight="600" fill="#0A1020" text-anchor="start">Read in place, never written.</text>
+<rect x="986" y="428" width="340" height="270" rx="10" fill="#FFFFFF" stroke="#7A52F0" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1004" y="458" font-size="16" font-weight="650" fill="#0A1020" text-anchor="start">Data directory</text>
+<text x="1308" y="458" font-size="11" font-weight="400" fill="#46526E" text-anchor="end" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">PIPESMITH_REGISTRY_DATA</text>
+<path d="M1004,478 h12 l6,6 v16 h-18 z" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.2"/>
+<path d="M1016,478 v6 h6" fill="none" stroke="#7A859C" stroke-width="1.2"/>
+<text x="1034" y="489" font-size="13" font-weight="600" fill="#0A1020" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">config.json</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1034" y="506" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">stores, port, Docker ports</text>
+<path d="M1004,522 h12 l6,6 v16 h-18 z" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.2"/>
+<path d="M1016,522 v6 h6" fill="none" stroke="#7A859C" stroke-width="1.2"/>
+<text x="1034" y="533" font-size="13" font-weight="600" fill="#0A1020" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">repositories.json</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1034" y="550" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">repository list</text>
+<path d="M1004,566 h12 l6,6 v16 h-18 z" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.2"/>
+<path d="M1016,566 v6 h6" fill="none" stroke="#7A859C" stroke-width="1.2"/>
+<text x="1034" y="577" font-size="13" font-weight="600" fill="#0A1020" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">state.sqlite</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1034" y="594" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">users, roles, privileges, LDAP</text>
+<path d="M1004,610 h12 l6,6 v16 h-18 z" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.2"/>
+<path d="M1016,610 v6 h6" fill="none" stroke="#7A859C" stroke-width="1.2"/>
+<text x="1034" y="621" font-size="13" font-weight="600" fill="#0A1020" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">index.sqlite</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1034" y="638" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">files of the last scan</text>
+<path d="M1004,654 h12 l6,6 v16 h-18 z" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.2"/>
+<path d="M1016,654 v6 h6" fill="none" stroke="#7A859C" stroke-width="1.2"/>
+<text x="1034" y="665" font-size="13" font-weight="600" fill="#0A1020" text-anchor="start" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">catalog.sqlite</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1034" y="682" font-size="12" font-weight="400" fill="#46526E" text-anchor="start">copy of the scan rows, not read yet</text>
+<path d="M910,472 C950,472 946,346 984,346" fill="none" stroke="#12B5D6" stroke-width="2" marker-end="url(#psr-architecture-read)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="974" y="336" font-size="12" font-weight="400" fill="#46526E" text-anchor="end">reads</text>
+<path d="M910,583 C970,583 926,627 998,627" fill="none" stroke="#12B5D6" stroke-width="2" marker-end="url(#psr-architecture-read)"/>
+<path d="M1296,376 V426" fill="none" stroke="#7A52F0" stroke-width="2" marker-end="url(#psr-architecture-write)" stroke-dasharray="5 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1286" y="407" font-size="12" font-weight="400" fill="#46526E" text-anchor="end">scan</text>
+<path d="M34,742 H68" fill="none" stroke="#2B62F0" stroke-width="2" marker-end="url(#psr-architecture-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="78" y="746" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">request</text>
+<path d="M149.8,742 H183.8" fill="none" stroke="#12B5D6" stroke-width="2" marker-end="url(#psr-architecture-read)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="193.8" y="746" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">read from disk</text>
+<path d="M317.4,742 H351.4" fill="none" stroke="#7A52F0" stroke-width="2" marker-end="url(#psr-architecture-write)" stroke-dasharray="5 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="361.4" y="746" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">written by scan</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="784" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="start">Read from internal/cli, internal/server, internal/auth, internal/config and internal/scan of Pipesmith Registry 0.1.3, checked 2026-11-19.</text>
+</svg>

@@ -1,0 +1,9 @@
+---
+name: demo-lib
+version: "1.0.0"
+build:
+  tool: gradle
+  options:
+    parallel: true
+    workers: 4
+"quoted key": 'single'

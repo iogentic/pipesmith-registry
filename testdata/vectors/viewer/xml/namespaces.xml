@@ -1,0 +1,5 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace='http://example.com/demo'>
+  <xs:element name="demo" type="xs:string"/>
+  <demo:config demo:mode="strict"></demo:config>
+</xs:schema>
