@@ -73,10 +73,10 @@ Without imported users there is no sign in, and the server stays on the local ad
 
 ## Container
 
-The release holds the image as `image.tar`, built for linux/amd64. It runs as user 65532 and keeps its data in `/data`. Load the image and put `/data` on a Docker volume:
+The image is on Docker Hub, built for linux/amd64. It runs as user 65532 and keeps its data in `/data`. Put `/data` on a Docker volume:
 
 ```bash
-IMAGE=$(docker load -i image.tar | sed -n 's/^Loaded image: //p')
+IMAGE=iogentic/pipesmith-registry:0.1.3
 docker volume create pipesmith-data
 docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" store add default --kind <blob store kind> --root /stores/default
 docker run --rm -v pipesmith-data:/data -v "$PWD/export:/import:ro" "$IMAGE" import /import
