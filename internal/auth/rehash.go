@@ -53,14 +53,35 @@ func unsalted(stored string) bool {
 // replaced only while it still holds that form, so a password another
 // process set meanwhile stays; the write raises the generation, and the
 // next reload brings the new form. Each view tries a user once. A failure
-// leaves the sign in as it is and says so in the log.
-func (s *Service) rehash(v *view, id, stored, password string) {
+// leaves the sign in as it is and says so in the log. It returns the form
+// stored, "" for none: a sign in of the same view that comes while the first
+// one stores it waits for that and gets the same form, which a session or a
+// Docker token is bound to as well (review 3-34).
+func (s *Service) rehash(v *view, id, stored, password string) string {
 	if s.store == nil || !unsalted(stored) {
-		return
+		return ""
 	}
-	if _, tried := v.rehashed.LoadOrStore(id, true); tried {
-		return
+	mine := &rehashed{done: make(chan struct{})}
+	if got, tried := v.rehashed.LoadOrStore(id, mine); tried {
+		first := got.(*rehashed)
+		<-first.done
+		return first.form
 	}
+	defer close(mine.done)
+	// a view loaded before the form of another view was stored holds the
+	// unsalted form still: it takes the form of that try
+	key := id + "\x00" + stored
+	if got, tried := s.rehashes.LoadOrStore(key, mine); tried {
+		first := got.(*rehashed)
+		<-first.done
+		mine.form = first.form
+		return mine.form
+	}
+	defer func() {
+		if mine.form == "" {
+			s.rehashes.Delete(key)
+		}
+	}()
 	form, err := HashPassword(password)
 	changed := false
 	if err == nil {
@@ -71,5 +92,16 @@ func (s *Service) rehash(v *view, id, stored, password string) {
 		s.log.Warn("the salted form of a password was not stored", "user", id, "error", err.Error())
 	case changed:
 		s.log.Info("the password of a user is stored in the salted form now", "user", id)
+		mine.form = form
 	}
+	return mine.form
+}
+
+// rehashed is the try of a view to store the form of a user again: done
+// closes when it ended, and form is the form it stored, "" for none.
+// Service.rehashes keeps the tries that stored a form, by user id and the
+// unsalted form they replaced.
+type rehashed struct {
+	done chan struct{}
+	form string
 }

@@ -183,7 +183,7 @@ func dockerBase(req *request, repo repos.Repo) string {
 	if req.dockerRepo != "" {
 		return "/v2"
 	}
-	return repositoryPrefix + quote(repo.Name, "") + "/v2"
+	return repositoryPrefix + quote(addressed(req, repo).Name, "") + "/v2" // the group a write came through (decision 5.16)
 }
 
 // answerSession is the answer of a session that goes on: status 202 for a
@@ -287,7 +287,7 @@ func (s *Server) mountBlob(w *recorder, req *request, st *state, repo repos.Repo
 	}
 	address := peerAddress(w)
 	if source.Store == s.writes.writer.Name() {
-		_, err = s.linkCopy(repo, path, source, octet, stores.Digests{}, false, subject, address) // a blob by its digest: the same bytes
+		_, err = s.linkCopy(repo, path, source, octet, stores.Digests{}, false, false, subject, address) // a blob by its digest: the same bytes
 	} else {
 		err = s.copyFromStore(st, repo, path, source, digest, subject, address)
 	}
@@ -372,6 +372,7 @@ func (s *Server) patchUpload(w *recorder, req *request, repo repos.Repo, setting
 	if err != nil {
 		return s.dockerFailed(w, req, err)
 	}
+	defer room.release() // the chunk lands in the file of the session, which the next measure counts
 	body := newTimedBody(w, req)
 	n, err := s.appendChunk(sess, room.reader(body), settings.MaxBodyBytes-sess.size)
 	var refusal *writeRefusal
@@ -608,7 +609,7 @@ func (s *Server) cancelUpload(w *recorder, req *request, repo repos.Repo, call *
 // uploadCall is the session a read path names below v2/ while writes are
 // on, nil for any other path and with writes off.
 func (s *Server) uploadCall(rest string) *docker.V2Path {
-	if s.writes.writer == nil {
+	if !s.writes.clients {
 		return nil
 	}
 	call, err := docker.ParseWrite(rest)

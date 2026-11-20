@@ -74,7 +74,8 @@ func TestWriteSettingsFromAttributes(t *testing.T) {
 }
 
 // WithAttributes gives each repository the attributes of the record of its
-// name and leaves the repositories it was called on as they are.
+// name, adds a record without a repository as one (ruling ST3), and leaves
+// the repositories it was called on as they are.
 func TestWithAttributes(t *testing.T) {
 	rs := New([]Repo{{Name: "demo-raw", Format: "raw", Type: "hosted", Defined: true}}, []string{"discovered"}, nil)
 	records := []model.Repository{
@@ -86,8 +87,10 @@ func TestWithAttributes(t *testing.T) {
 	if raw.WriteSettings().WritePolicy != "ALLOW" || !raw.Defined {
 		t.Fatalf("%+v", raw)
 	}
-	if _, ok := with.Get("elsewhere"); ok {
-		t.Fatal("a record without a repository became one")
+	// ruling ST3: a record without a definition is a repository of its own
+	if e, ok := with.Get("elsewhere"); !ok || e.Type != "hosted" || e.Format != "raw" || e.Defined || e.Record == nil ||
+		e.Attributes["x"] != 1 {
+		t.Fatalf("the record without a definition: %+v %v", e, ok)
 	}
 	if d, _ := with.Get("discovered"); d.Attributes != nil {
 		t.Fatalf("%+v", d)
@@ -95,8 +98,11 @@ func TestWithAttributes(t *testing.T) {
 	if before, _ := rs.Get("demo-raw"); before.Attributes != nil {
 		t.Fatal("WithAttributes changed the repositories it was called on")
 	}
-	if !reflect.DeepEqual(names(with.All()), names(rs.All())) {
-		t.Fatalf("%v", names(with.All()))
+	if got := names(with.All()); !reflect.DeepEqual(got, []string{"demo-raw", "discovered", "elsewhere"}) {
+		t.Fatalf("%v", got)
+	}
+	if _, ok := rs.Get("elsewhere"); ok {
+		t.Fatal("WithAttributes changed the repositories it was called on")
 	}
 	if rs.WithAttributes(nil) == nil {
 		t.Fatal("nil records")
@@ -109,4 +115,45 @@ func names(list []Repo) []string {
 		out = append(out, r.Name)
 	}
 	return out
+}
+
+// A group that exists only as a record takes its members from
+// group.memberNames, in their order (ruling ST3).
+func TestARecordGroupResolves(t *testing.T) {
+	rs := New([]Repo{{Name: "demo-b", Format: "raw", Type: "hosted", Defined: true}}, nil, nil).WithAttributes([]model.Repository{
+		{Name: "demo-a", Format: "raw", Type: "hosted", Online: true},
+		{Name: "demo-g", Format: "raw", Type: "group", Online: true,
+			Attributes: map[string]any{"group": map[string]any{"memberNames": []any{"demo-b", "demo-a"}}}},
+	})
+	if got := names(rs.Resolve("demo-g")); !reflect.DeepEqual(got, []string{"demo-b", "demo-a"}) {
+		t.Fatalf("%v", got)
+	}
+	if a, _ := rs.Get("demo-a"); !a.TakesWrites() {
+		t.Fatalf("a hosted record that is online takes no writes: %+v", a)
+	}
+}
+
+// A record whose name the index holds rows of, without a definition, keeps
+// the format and the type of its record (ruling ST3): its first write makes
+// the name a discovered one.
+func TestARecordWithRowsKeepsItsKind(t *testing.T) {
+	rs := New(nil, []string{"demo-made"}, map[string]string{"demo-made": "raw"}).WithAttributes([]model.Repository{
+		{Name: "demo-made", Format: "maven2", Type: "hosted", Online: true}})
+	if r, _ := rs.Get("demo-made"); r.Format != "maven2" || r.Type != "hosted" || r.Defined || !r.TakesWrites() {
+		t.Fatalf("%+v", r)
+	}
+}
+
+// A limit stored as decimal text, as a record of an earlier create may hold
+// it, is read as its number; other text still falls back to the default.
+func TestWriteSettingsReadLimitsStoredAsText(t *testing.T) {
+	r := Repo{Name: "demo-raw", Format: "raw", Type: "hosted",
+		Attributes: map[string]any{"max_body_bytes": "4096", "free_space_floor_bytes": "0"}}
+	if got := r.WriteSettings(); got.MaxBodyBytes != 4096 || got.FreeSpaceFloor != 0 {
+		t.Fatalf("%+v", got)
+	}
+	r.Attributes = map[string]any{"max_body_bytes": "4096 ", "free_space_floor_bytes": "-1"}
+	if got := r.WriteSettings(); got.MaxBodyBytes != DefaultMaxBodyBytes || got.FreeSpaceFloor != DefaultFreeSpaceFloor {
+		t.Fatalf("%+v", got)
+	}
 }

@@ -43,6 +43,7 @@ type Fill struct {
 	store string
 	stage *staging
 	done  bool
+	held  bool // Hold took the writer; Commit or Discard gives it back
 }
 
 func addressable(path string) bool {
@@ -91,6 +92,36 @@ func (f *Fill) Add(e stores.Entry) error {
 	return f.stage.add(e)
 }
 
+// Choose names the blob of a key that the arbiter of the store kept
+// (index.Arbiter): Commit takes the staged entry at location for the path
+// instead of the newer one, and no entry when location is "", the row the
+// arbiter dropped. A key the arbiter never decided keeps the rule of the
+// index.
+func (f *Fill) Choose(repo, path, location string) {
+	if f.stage.chosen == nil {
+		f.stage.chosen = map[key]string{}
+	}
+	f.stage.chosen[key{repo, path}] = location
+}
+
+// Hold takes the writer of the catalog for Commit: no other write of this
+// opening runs from then on until the fill ends. A scan holds it before the
+// index takes its rows, so that a write of the hook that follows the index
+// waits for the fill and is not undone by it.
+func (f *Fill) Hold() error {
+	if f.done {
+		return ErrFillDone
+	}
+	if f.held {
+		return nil
+	}
+	if err := f.c.lock(); err != nil {
+		return err
+	}
+	f.held = true
+	return nil
+}
+
 // Discard ends the fill without a change of the catalog and removes the
 // staging folder. A second call does nothing.
 func (f *Fill) Discard() error {
@@ -98,6 +129,10 @@ func (f *Fill) Discard() error {
 		return nil
 	}
 	f.done = true
+	if f.held {
+		f.held = false
+		f.c.unlock()
+	}
 	return os.RemoveAll(f.stage.dir)
 }
 
@@ -111,7 +146,11 @@ func (f *Fill) Commit(formats Formats, held []string) error {
 	}
 	source, err := f.stage.source()
 	if err == nil {
-		err = f.c.write(func(tx *sql.Tx) error { return f.apply(tx, source, formats, held) })
+		write := f.c.write
+		if f.held {
+			write = f.c.writeLocked
+		}
+		err = write(func(tx *sql.Tx) error { return f.apply(tx, source, formats, held) })
 		err = errors.Join(err, source.close())
 	}
 	return errors.Join(err, f.Discard())

@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/logs/audit"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
@@ -143,6 +144,12 @@ func realmOff(what, realm string) *model.Error {
 func (s *Service) bearer(ctx context.Context, v *view, text string) (*model.Subject, error) {
 	tok, err := parseToken(text)
 	if errors.Is(err, errOldShape) {
+		// a key that matches but signs nobody in answers as one that matches
+		// nothing, so the answer tells no right key from a wrong one
+		// (review secrets-3)
+		if subject, _ := s.importedBearer(ctx, v, text); subject != nil {
+			return subject, nil
+		}
 		return nil, model.ErrOldToken
 	}
 	if err != nil || !v.realms[tokenRealms[tok.kind]] {
@@ -161,7 +168,7 @@ func (s *Service) bearer(ctx context.Context, v *view, text string) (*model.Subj
 			// the answer of the directory that issued the token has ended:
 			// the directory is asked again, as for an npm token (review R7)
 			p, ok := s.directoryUser(ctx, v, who.user.ID)
-			if !ok {
+			if !ok || p.user.Entry != who.user.Entry {
 				return nil, model.ErrUnauthorized
 			}
 			who = &p
@@ -226,13 +233,23 @@ func (s *Service) tokenRow(tok parsedToken) (model.Token, bool) {
 func (s *Service) tokenUser(ctx context.Context, v *view, row model.Token) (principal, bool) {
 	switch row.Source {
 	case SourceLocal:
-		if _, there := v.local[row.UserID]; !there {
+		u, there := v.local[row.UserID]
+		if !there {
 			s.revokeOrphan(v, row)
 			return principal{}, false
 		}
-		return principal{user: model.User{ID: row.UserID, Source: SourceLocal}, realm: RealmLocal}, true
+		return localPrincipal(u), true
 	case SourceLDAP:
-		return s.directoryUser(ctx, v, row.UserID)
+		p, ok := s.directoryUser(ctx, v, row.UserID)
+		if !ok {
+			return principal{}, false
+		}
+		if !s.bindings.holds(row.Public, p.user.Entry) {
+			s.log.Warn("the token of a directory user was issued for another directory entry of that name, so it is refused",
+				"token", row.Public, "user", row.UserID)
+			return principal{}, false
+		}
+		return p, true
 	}
 	return principal{}, false
 }
@@ -258,6 +275,11 @@ func (s *Service) NpmLogin(r *http.Request, user, password string) (model.Issued
 	got, ok, wait := s.tryPair(user, s.ClientAddress(r), func(user string) checked {
 		return s.signIn(r.Context(), v, user, password)
 	})
+	if ok {
+		audit.SetSubject(r.Context(), got.subject.User.ID, got.subject.Realm)
+	} else {
+		setRefused(r.Context(), v, user)
+	}
 	switch {
 	case wait > 0:
 		return model.IssuedToken{}, throttled(wait)
@@ -268,12 +290,16 @@ func (s *Service) NpmLogin(r *http.Request, user, password string) (model.Issued
 	case s.store == nil:
 		return model.IssuedToken{}, errors.New("auth: tokens need the state file")
 	}
+	audit.SetSubject(r.Context(), got.subject.User.ID, got.subject.Realm)
 	text, row, err := NewToken(KindNpm, got.principal.user.ID, got.principal.user.Source, s.now())
 	if err != nil {
 		return model.IssuedToken{}, err
 	}
 	if _, err := s.store.AddToken(row, MaxTokensPerKind); err != nil {
 		return model.IssuedToken{}, err
+	}
+	if got.principal.realm == RealmLDAP {
+		s.bindings.holds(row.Public, got.principal.user.Entry)
 	}
 	return model.IssuedToken{Text: text, IssuedAt: row.Created}, nil
 }
@@ -303,6 +329,11 @@ func (s *Service) DockerToken(r *http.Request, repository string) (model.IssuedT
 		return model.IssuedToken{}, model.ErrUnauthorized
 	}
 	got, ok, wait := s.basic(r, v, user, pass)
+	if ok {
+		audit.SetSubject(r.Context(), got.subject.User.ID, got.subject.Realm)
+	} else {
+		setRefused(r.Context(), v, user)
+	}
 	switch {
 	case wait > 0:
 		return model.IssuedToken{}, throttled(wait)
@@ -317,8 +348,9 @@ func (s *Service) DockerToken(r *http.Request, repository string) (model.IssuedT
 
 // issueDocker puts a Docker bearer token of who into memory. A token of the
 // anonymous subject, who nil, takes no place there (review N2): its public
-// half is the time of its issue and its secret half a MAC of that under a
-// key of the process.
+// half is the time of its issue on the monotonic clock of the service
+// (review 3-37) and its secret half a MAC of that under a key of the
+// process.
 func (s *Service) issueDocker(who *principal) (model.IssuedToken, error) {
 	if who == nil {
 		public, secret, issued := s.docker.anonymous()
@@ -345,6 +377,16 @@ func (s *Service) RevokeToken(subject *model.Subject, text string) error {
 		return model.ErrUnauthorized
 	}
 	tok, err := parseToken(text)
+	if errors.Is(err, errOldShape) {
+		removed, err := s.revokeImported(subject, text)
+		if err != nil {
+			return err
+		}
+		if !removed {
+			return model.ErrNoToken
+		}
+		return nil
+	}
 	if err != nil || tok.kind == KindDocker {
 		return model.ErrNoToken
 	}
@@ -356,6 +398,7 @@ func (s *Service) RevokeToken(subject *model.Subject, text string) error {
 	if err != nil {
 		return err
 	}
+	s.bindings.drop(row.Public)
 	if !removed {
 		return model.ErrNoToken
 	}
@@ -374,10 +417,12 @@ func (s *Service) Tokens(userID, source string) ([]model.Token, error) {
 // dockerTokens holds the Docker bearer tokens of signed in users in memory:
 // the SHA-256 of the secret half, who the token names and when it ends. A
 // full store drops the expired tokens first, then the one that ends first.
-// Tokens of the anonymous subject are no entries; key signs them.
+// Tokens of the anonymous subject are no entries; key signs them, and
+// elapsed, the monotonic clock of the service, dates them.
 type dockerTokens struct {
 	mu      sync.Mutex
 	now     func() time.Time
+	elapsed func() time.Duration
 	max     int
 	entries map[string]dockerToken
 	key     []byte
@@ -394,15 +439,18 @@ func newDockerTokens(now func() time.Time) (*dockerTokens, error) {
 	if _, err := rand.Read(key); err != nil {
 		return nil, err
 	}
-	return &dockerTokens{now: now, max: MaxDockerTokens, entries: map[string]dockerToken{}, key: key}, nil
+	start := now()
+	return &dockerTokens{now: now, elapsed: func() time.Duration { return now().Sub(start) }, max: MaxDockerTokens,
+		entries: map[string]dockerToken{}, key: key}, nil
 }
 
 // anonymous gives the halves of a token of the anonymous subject issued now:
-// the time of the issue in milliseconds as a varint, and its MAC.
+// the time of the issue on the monotonic clock in milliseconds as a varint,
+// and its MAC. issued is the wall clock time of the answer.
 func (d *dockerTokens) anonymous() (public, secret string, issued time.Time) {
 	issued = time.UnixMilli(d.now().UnixMilli())
 	var at [publicBytes]byte
-	binary.PutVarint(at[:], issued.UnixMilli())
+	binary.PutVarint(at[:], d.elapsed().Milliseconds())
 	public = base64.RawURLEncoding.EncodeToString(at[:])
 	return public, base64.RawURLEncoding.EncodeToString(d.mac(public)), issued
 }
@@ -425,7 +473,8 @@ func (d *dockerTokens) liveAnonymous(public, secret string) bool {
 		return false
 	}
 	ms, n := binary.Varint(at)
-	return n > 0 && d.now().Before(time.UnixMilli(ms).Add(DockerTokenTime))
+	age := d.elapsed() - time.Duration(ms)*time.Millisecond
+	return n > 0 && age >= 0 && age < DockerTokenTime
 }
 
 // put keeps a token for DockerTokenTime and returns the time of its issue.

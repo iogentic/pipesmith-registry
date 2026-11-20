@@ -359,3 +359,120 @@ func TestExportImageReadsEachManifestOfAnIndexOnce(t *testing.T) {
 		t.Fatalf("the export gave %s", layout.Manifests[0].Digest)
 	}
 }
+
+// browsetools-32: the form oci reads a manifest only by a path the registry
+// read path answers. A stored image under a name outside the grammar, and an
+// index whose descriptor holds a tag where its digest stands, are refused as
+// the read path refuses them; the twins of the grammar export.
+func TestExportImageKeepsTheGrammarOfTheReadPath(t *testing.T) {
+	files := dockerImage("Demo/Upper", "1.0", []byte("layer of the upper case name"))
+	tagged := dockerImage("demo/tagref", "1.0", []byte("layer of the tagged image"))
+	tagManifest := tagged["v2/demo/tagref/manifests/1.0"].data
+	pointing := func(digest string) []byte {
+		return []byte(fmt.Sprintf(`{"schemaVersion": 2, "mediaType": %q, "manifests": [{"mediaType": %q, "size": %d, "digest": %q, "platform": {"architecture": "amd64", "os": "linux"}}]}`,
+			ociIndexType, dockerManifestType, len(tagManifest), digest))
+	}
+	tagged["v2/demo/tagref/manifests/2.0"] = file{pointing("1.0"), ociIndexType}
+	tagged["v2/demo/tagref/manifests/3.0"] = file{pointing(digestOf(tagManifest)), ociIndexType}
+	for p, f := range tagged {
+		files[p] = f
+	}
+	a := startExport(t, exportOptions{blobs: blobsOf("demo-docker", files), defs: []*pyjson.Object{dockerDef("demo-docker", 14697)}})
+	// the read path refuses the name and answers the tag of the descriptor only as a tag
+	status(t, a.get("/repository/demo-docker/v2/Demo/Upper/manifests/1.0"), 400)
+	for _, dry := range []string{"", "1"} {
+		upper := a.get(exportTarget("demo-docker", "path", "v2/Demo/Upper/manifests/1.0", "dry", dry))
+		if upper.status != 400 || !strings.Contains(fmt.Sprint(upper.object(t)["message"]), "not a repository name") {
+			t.Errorf("name outside the grammar, dry %q: %d %s", dry, upper.status, upper.body)
+		}
+		byTag := a.get(exportTarget("demo-docker", "path", "v2/demo/tagref/manifests/2.0", "dry", dry))
+		if byTag.status != 404 {
+			t.Errorf("descriptor with a tag, dry %q: %d %s", dry, byTag.status, byTag.body)
+		}
+	}
+	// the twins: the same image by a descriptor with its digest, and the tag itself
+	for _, ref := range []string{"3.0", "1.0"} {
+		got := a.get(exportTarget("demo-docker", "path", "v2/demo/tagref/manifests/"+ref))
+		status(t, got, 200)
+		if layout, _ := checkLayout(t, got.body); layout.Manifests[0].Digest != digestOf(tagManifest) {
+			t.Fatalf("%s: the export gave %s", ref, layout.Manifests[0].Digest)
+		}
+	}
+}
+
+// dockerManifestEntry is one image of the manifest.json that docker load
+// reads on an engine without OCI support.
+type dockerManifestEntry struct {
+	Config   string
+	RepoTags []string
+	Layers   []string
+}
+
+// The OCI tar carries a Docker style manifest.json beside index.json and
+// oci-layout: the config and the layers as paths of the tar, in the order of
+// the manifest, and the tag of a named export. An export by digest names no
+// tag.
+func TestExportImageCarriesADockerManifest(t *testing.T) {
+	a, images := dockerExportApp(t, export.Limits{})
+	var doc manifestDoc
+	if err := json.Unmarshal(images["app"]["v2/demo/app/manifests/1.0"].data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	inTar := func(digest string) string { return "blobs/sha256/" + strings.TrimPrefix(digest, "sha256:") }
+	var layers []string
+	for _, l := range doc.Layers {
+		layers = append(layers, inTar(l.Digest))
+	}
+	for _, c := range []struct {
+		ref  string
+		tags []string
+	}{{"1.0", []string{"demo/app:1.0"}}, {digestOf(images["app"]["v2/demo/app/manifests/1.0"].data), nil}} {
+		got := a.get(exportTarget("demo-docker", "path", "v2/demo/app/manifests/"+c.ref))
+		status(t, got, 200)
+		_, names := checkLayout(t, got.body)
+		entries, _ := readTarAnswer(got.body)
+		var raw []byte
+		for _, e := range entries {
+			if e.name == "manifest.json" {
+				raw = e.data
+			}
+		}
+		var m []dockerManifestEntry
+		if err := json.Unmarshal(raw, &m); err != nil || len(m) != 1 {
+			t.Fatalf("%s: manifest.json %q: %v", c.ref, raw, err)
+		}
+		if m[0].Config != inTar(doc.Config.Digest) || !slices.Equal(m[0].Layers, layers) || !slices.Equal(m[0].RepoTags, c.tags) {
+			t.Fatalf("%s: manifest.json %+v, want config %s layers %q tags %q", c.ref, m[0], inTar(doc.Config.Digest), layers, c.tags)
+		}
+		for _, p := range append([]string{m[0].Config}, m[0].Layers...) {
+			if !slices.Contains(names, p) {
+				t.Fatalf("%s: manifest.json names %s, which the tar does not hold", c.ref, p)
+			}
+		}
+	}
+}
+
+// browsetools-45: the name an exported image gets from docker load follows
+// the rule of Docker for a name without a registry host: docker.io/library/
+// before a name of one part, docker.io/ before a name with a slash. This
+// pins the naming of today; whether the export should name the registry host
+// instead is a question for the owner.
+func TestExportImageNameFollowsTheRuleOfDocker(t *testing.T) {
+	files := dockerImage("solo", "1.0", []byte("layer of solo"))
+	for p, f := range dockerImage("demo/app", "2.0", []byte("layer of demo app")) {
+		files[p] = f
+	}
+	a := startExport(t, exportOptions{blobs: blobsOf("demo-docker", files), defs: []*pyjson.Object{dockerDef("demo-docker", 14698)}})
+	for _, c := range []struct{ path, full, tag string }{
+		{"v2/solo/manifests/1.0", "docker.io/library/solo:1.0", "solo:1.0"},
+		{"v2/demo/app/manifests/2.0", "docker.io/demo/app:2.0", "demo/app:2.0"},
+	} {
+		got := a.get(exportTarget("demo-docker", "path", c.path))
+		status(t, got, 200)
+		index, _ := checkLayout(t, got.body)
+		annotations := index.Manifests[0].Annotations
+		if annotations["io.containerd.image.name"] != c.full || annotations["org.opencontainers.image.ref.name"] != c.tag {
+			t.Fatalf("%s: annotations %v", c.path, annotations)
+		}
+	}
+}

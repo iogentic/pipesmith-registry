@@ -13,6 +13,7 @@ type recorder struct {
 	path   string // the path of the access line
 	client string // the client of the access line, "<host>:<port>"
 	wrote  bool
+	audit  *pendingAudit // the audit line of the request, written before the answer (audit.go)
 }
 
 func (w *recorder) WriteHeader(status int) {
@@ -20,6 +21,7 @@ func (w *recorder) WriteHeader(status int) {
 		return
 	}
 	w.wrote = true
+	w.writeAudit(status)
 	w.s.accessLine(w.r, w.client, w.path, status)
 	w.ResponseWriter.WriteHeader(status)
 }
@@ -43,6 +45,7 @@ func (s *Server) writeLog(line string) {
 // accessLine is the line of uvicorn's access logger:
 // INFO:     <client>:<port> - "<METHOD> <path> HTTP/<version>" <status> <phrase>
 func (s *Server) accessLine(r *http.Request, client, path string, status int) {
+	client, path = s.noteAccess(r, client, path)
 	if s.access == nil {
 		return
 	}

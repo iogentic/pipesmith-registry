@@ -1,6 +1,7 @@
 // YAML line scanner of the viewer: comments, keys, list dashes, quoted strings, numbers, keywords,
 // anchors, aliases and tags, flow punctuation and block scalars. Folds by indentation: a line folds
-// over the lines below it that are more indented. The scanner never throws.
+// over the lines below it that are more indented; a comment line counts as blank there. The scanner
+// never throws.
 
 import { Result } from "./result.js";
 import { indentFolds } from "./lines.js";
@@ -30,6 +31,7 @@ export function scan(text) {
       block = -1;
     }
     if (empty) continue;
+    if (/^[ \t]*#/.test(line)) indents[n] = -1;
     if (col === 0 && /^(?:---|\.\.\.)(?=\s|$)/.test(line)) {
       r.token(start, start + 3, "meta");
       col = 3;

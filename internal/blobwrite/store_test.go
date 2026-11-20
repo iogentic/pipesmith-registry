@@ -349,3 +349,45 @@ func TestCommitChecksTheIDAgain(t *testing.T) {
 		t.Fatalf("%q %v", data, err)
 	}
 }
+
+// RemoveLoose removes a bytes file without properties and refuses every
+// other file: a blob with its properties, a name the writer never gives, a
+// location outside the date scheme or the root.
+func TestRemoveLoose(t *testing.T) {
+	root := newStore(t)
+	w := openTestWriter(t, root, Options{Now: fixedClock, NewID: idList(id1, id2)})
+	kept, err := w.Write(strings.NewReader("kept"), attributes("demo-raw", "a.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	loose, err := w.Write(strings.NewReader("loose"), attributes("demo-raw", "b.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(root, strings.TrimSuffix(loose.Entry.Location, ".bytes")+".properties")); err != nil {
+		t.Fatal(err)
+	}
+	stray := filepath.Join(root, "content", "2026", "11", "18", "10", "15", "stray.bytes")
+	if err := os.WriteFile(stray, []byte("stray"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	before := treeDigest(t, root)
+	for _, location := range []string{"", kept.Entry.Location, "../outside.bytes", "content/../../outside.bytes",
+		"content/2026/11/18/10/15/stray.bytes", "content/tmp/" + id2 + ".bytes", "content/" + id2 + ".bytes"} {
+		if err := w.RemoveLoose(location); err == nil {
+			t.Errorf("%q: no error", location)
+		}
+	}
+	if treeDigest(t, root) != before {
+		t.Fatal("a refused removal changed the store")
+	}
+	if err := w.RemoveLoose(loose.Entry.Location); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Lstat(filepath.Join(root, loose.Entry.Location)); err == nil {
+		t.Fatal("the loose bytes file is still there")
+	}
+	if counts, live := scanCounts(t, root); counts.Live != 1 || live[0].Location != kept.Entry.Location {
+		t.Fatalf("after the removal: %+v %+v", counts, live)
+	}
+}

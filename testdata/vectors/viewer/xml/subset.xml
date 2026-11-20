@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<!DOCTYPE note [
+  <!-- the author's note -->
+  <!ELEMENT note (#PCDATA)>
+]>
+<note a="1">x</note>

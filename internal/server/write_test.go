@@ -70,6 +70,13 @@ func tokenRoute(c writeCase, method string) bool {
 // startWriting starts the server of startSecured with writes on or off.
 func startWriting(t *testing.T, security model.Security, writes bool) *app {
 	t.Helper()
+	return startSwitched(t, security, writes, false)
+}
+
+// startSwitched is startWriting with upstream on or off as well (decision
+// 5.1 of the phase 5 plan).
+func startSwitched(t *testing.T, security model.Security, writes, upstream bool) *app {
+	t.Helper()
 	blobs := []testkit.BlobSpec{
 		spec("demo-maven", jarPath, []byte("jar bytes"), "application/java-archive"),
 		spec("demo-npm", "widget/-/widget-1.2.3.tgz", []byte("tarball"), "application/x-tgz"),
@@ -80,7 +87,7 @@ func startWriting(t *testing.T, security model.Security, writes bool) *app {
 	stores := []config.StoreConfig{blobStore(t, base, "store-a", blobs...)}
 	opts := appOptions{defs: []*pyjson.Object{def("demo-maven", "maven2", "hosted"), def("demo-npm", "npm", "hosted"),
 		def("demo-raw", "raw", "hosted"), def("demo-group", "maven2", "group", "demo-maven"), dockerDef("demo-docker", 14690)},
-		dockerRepos: []string{"demo-docker"}, security: security, writes: writes}
+		dockerRepos: []string{"demo-docker"}, security: security, writes: writes, upstream: upstream}
 	return startApp(t, base, prepare(t, base, stores, opts), opts)
 }
 
@@ -99,11 +106,11 @@ func TestWriteRouteIsTheDispatch(t *testing.T) {
 	want := reflect.ValueOf((*Server).write).Pointer()
 	found := 0
 	for _, rt := range routes {
-		if slices.Contains(rt.methods, "PUT") {
+		if slices.Contains(rt.Methods, "PUT") {
 			found++
-			if reflect.ValueOf(rt.handle).Pointer() != want || rt.rule.kind != ruleClient || rt.pattern.String() != `^/repository/(.*)\n?$` ||
-				!slices.Equal(rt.methods, writeMethods) {
-				t.Fatalf("the write route is %v %v %v", rt.pattern, rt.methods, rt.rule)
+			if reflect.ValueOf(rt.Handle).Pointer() != want || rt.Rule.kind != ruleClient || rt.Pattern.String() != `^/repository/(.*)\n?$` ||
+				!slices.Equal(rt.Methods, writeMethods) {
+				t.Fatalf("the write route is %v %v %v", rt.Pattern, rt.Methods, rt.Rule)
 			}
 		}
 	}
@@ -159,5 +166,27 @@ func TestWriteStubsKeepTheRefusal(t *testing.T) {
 	if r := on.writeTo(writeCase{target: "/repository/demo-raw/docs/readme.txt"}, http.MethodGet, "basic", asAdmin); r.status != 200 ||
 		string(r.body) != "readme" {
 		t.Fatalf("GET with writes on: %d %q", r.status, r.body)
+	}
+	// With upstream on and writes off (decision P5-2 of the phase 5
+	// session) the write store is open for the proxies, and every write
+	// method answers as with both off, byte for byte and header for header.
+	upstream := startSwitched(t, newFakeSecurity(), false, true)
+	if upstream.srv.writes.writer == nil {
+		t.Fatal("upstream on without the writer of the write store")
+	}
+	for _, c := range writeCases {
+		for _, method := range writeMethods {
+			before := off.writeTo(c, method, "basic", asAdmin)
+			after := upstream.writeTo(c, method, "basic", asAdmin)
+			before.header.Del("Date")
+			after.header.Del("Date")
+			if before.status != after.status || string(before.body) != string(after.body) || !reflect.DeepEqual(before.header, after.header) {
+				t.Errorf("%s %s%s: upstream on %d %q %v, both off %d %q %v", method, c.docker, c.target,
+					after.status, after.body, after.header, before.status, before.body, before.header)
+			}
+			if (after.status != c.want.status || string(after.body) != c.want.body) && !tokenRoute(c, method) {
+				t.Errorf("%s %s%s with upstream on: %d %q, want %+v", method, c.docker, c.target, after.status, after.body, c.want)
+			}
+		}
 	}
 }

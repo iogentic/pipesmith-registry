@@ -153,7 +153,7 @@ func Check(dir string, opt Options) (*Release, error) {
 	if want == "" {
 		return nil, fmt.Errorf("%w: %s", ErrNotListed, name)
 	}
-	f, err := root.Open(name)
+	f, err := openRegular(root, name)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrNoBinary, err)
 	}
@@ -334,8 +334,27 @@ func keyOutside(key, dir string) error {
 	return nil
 }
 
+// openRegular opens name below root without waiting on a FIFO and refuses
+// anything but a regular file, so a release directory cannot block the
+// command while it holds the lock of the root.
+func openRegular(root *os.Root, name string) (*os.File, error) {
+	f, err := root.OpenFile(name, os.O_RDONLY|openNonblock, 0)
+	if err != nil {
+		return nil, err
+	}
+	info, err := f.Stat()
+	if err == nil && !info.Mode().IsRegular() {
+		err = fmt.Errorf("%s is not a regular file (mode %v)", name, info.Mode())
+	}
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
+}
+
 func readLimited(root *os.Root, name string) ([]byte, error) {
-	f, err := root.Open(name)
+	f, err := openRegular(root, name)
 	if err != nil {
 		return nil, err
 	}

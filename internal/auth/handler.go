@@ -7,6 +7,8 @@ import (
 	"mime"
 	"net/http"
 	"strconv"
+
+	"github.com/iogentic/pipesmith-registry/internal/logs/audit"
 )
 
 // maxSignInBody bounds the body of POST /api/session (8 KiB).
@@ -59,6 +61,7 @@ func (s *Service) SessionHandler() http.Handler {
 }
 
 func (s *Service) serveSignIn(w http.ResponseWriter, r *http.Request) {
+	audit.SetAction(r.Context(), "session.sign_in")
 	if media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || media != "application/json" {
 		writeMessage(w, http.StatusUnsupportedMediaType, msgMediaType)
 		return
@@ -77,6 +80,7 @@ func (s *Service) serveSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v := s.refresh()
+	setRefused(r.Context(), v, body.Username) // one line for a bad password and an unknown user, finding 7b-2
 	got, ok, wait := s.tryPair(body.Username, s.ClientAddress(r), func(user string) checked {
 		return s.signIn(r.Context(), v, user, body.Password)
 	})
@@ -89,6 +93,7 @@ func (s *Service) serveSignIn(w http.ResponseWriter, r *http.Request) {
 		writeMessage(w, http.StatusUnauthorized, msgWrongPair)
 		return
 	}
+	audit.SetSubject(r.Context(), got.subject.User.ID, got.subject.Realm)
 	if old, err := r.Cookie(CookieName); err == nil {
 		s.sessions.remove(old.Value)
 	}
@@ -117,8 +122,10 @@ func (s *Service) serveSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) serveSignOut(w http.ResponseWriter, r *http.Request) {
+	audit.SetAction(r.Context(), "session.sign_out")
 	if cookie, err := r.Cookie(CookieName); err == nil {
 		if live, ok := s.sessions.get(cookie.Value); ok {
+			audit.SetSubject(r.Context(), live.subject.User.ID, live.subject.Realm)
 			if subtle.ConstantTimeCompare([]byte(r.Header.Get(CSRFHeader)), []byte(live.csrf)) != 1 {
 				writeMessage(w, http.StatusForbidden, msgCSRF)
 				return

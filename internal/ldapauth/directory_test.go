@@ -54,6 +54,8 @@ func TestNewAcceptsStoredSpellings(t *testing.T) {
 		func(s *model.LDAPServer) { s.UserObjectClass = "" },
 		func(s *model.LDAPServer) { s.GroupMemberFormat = "uid=${username},ou=people,dc=example,dc=com" },
 		func(s *model.LDAPServer) { s.ConnectionTimeoutSeconds = 0; s.ConnectionRetryDelaySeconds = 0 },
+		func(s *model.LDAPServer) { s.GroupMemberAttribute = "member:1.2.840.113556.1.4.1941:" },
+		func(s *model.LDAPServer) { s.GroupMemberAttribute = "uniqueMember:1.2.3.4:" },
 	}
 	for i, change := range cases {
 		s := validServer()
@@ -86,6 +88,17 @@ func TestNewRefusesSettings(t *testing.T) {
 		"no member attribute":          func(s *model.LDAPServer, _ *string) { s.GroupMemberAttribute = "" },
 		"no group id attribute":        func(s *model.LDAPServer, _ *string) { s.GroupIDAttribute = "" },
 		"format without placeholder":   func(s *model.LDAPServer, _ *string) { s.GroupMemberFormat = "cn=everyone" },
+		"member rule without end":      func(s *model.LDAPServer, _ *string) { s.GroupMemberAttribute = "member:1.2.840.113556.1.4.1941" },
+		"member rule with letters":     func(s *model.LDAPServer, _ *string) { s.GroupMemberAttribute = "member:1.2.abc:" },
+		"member rule with space":       func(s *model.LDAPServer, _ *string) { s.GroupMemberAttribute = "member :1.2.3:" },
+		"member rule with parenthesis": func(s *model.LDAPServer, _ *string) { s.GroupMemberAttribute = "member:1.2.3:)(x" },
+		"member rule with equals":      func(s *model.LDAPServer, _ *string) { s.GroupMemberAttribute = "member:1.2.3:=x" },
+		"member rule with star":        func(s *model.LDAPServer, _ *string) { s.GroupMemberAttribute = "member:*:" },
+		"group id attribute with rule": func(s *model.LDAPServer, _ *string) { s.GroupIDAttribute = "cn:1.2.3:" },
+		"member of attribute with rule": func(s *model.LDAPServer, _ *string) {
+			s.GroupType = "dynamic"
+			s.UserMemberOfAttribute = "memberOf:1.2.840.113556.1.4.1941:"
+		},
 		"dynamic without attribute": func(s *model.LDAPServer, _ *string) {
 			s.GroupType = "dynamic"
 			s.UserMemberOfAttribute = ""
@@ -616,5 +629,27 @@ func TestChainUnavailableWhenNoneAnswers(t *testing.T) {
 	_, _, err := ldapauth.NewChain(dirs...).Login(context.Background(), "demo-ldap-reader", "x")
 	if !errors.Is(err, ldapauth.ErrUnavailable) || errors.Is(err, ldapauth.ErrInvalidCredentials) {
 		t.Fatalf("no directory answered: %v", err)
+	}
+}
+
+func TestUsersUnreachable(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	_ = ln.Close()
+	s := validServer()
+	s.Port = port
+	d, err := ldapauth.New(s, canaryBindPassword)
+	if err != nil {
+		t.Fatal(err)
+	}
+	members, more, err := d.Users(context.Background(), 20)
+	if !errors.Is(err, ldapauth.ErrUnavailable) || members != nil || more || strings.Contains(err.Error(), canaryBindPassword) {
+		t.Fatalf("closed port: %v %v %v", members, more, err)
+	}
+	if _, _, err := d.Users(context.Background(), 0); err == nil || errors.Is(err, ldapauth.ErrUnavailable) {
+		t.Fatalf("a limit of 0: %v", err)
 	}
 }

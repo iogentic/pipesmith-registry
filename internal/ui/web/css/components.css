@@ -453,3 +453,26 @@ body.has-chooser { padding-bottom: 88px; }
 .tree .kind { flex: none; width: 14px; height: 12px; border: 1.5px solid var(--text-muted); border-radius: 2px; }
 .tree .kind.dir { border-color: var(--aurora); background: color-mix(in srgb, var(--aurora) 22%, transparent); }
 .tree .meta { margin-left: auto; color: var(--text-muted); font-size: var(--size-small); white-space: nowrap; }
+
+/* Column widths: the edge on the right of a column head, dragged or moved with the arrow keys
+   (ui/table.js). Once a width is set the table keeps it with a fixed layout. */
+table.data.sized { table-layout: fixed; }
+table.data.sized thead th { overflow: hidden; text-overflow: ellipsis; }
+table.data.sized td { overflow-wrap: anywhere; }
+table.data.sized td .tag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+table.data thead th.resizable { position: relative; padding-right: calc(var(--s4) + 6px); }
+.col-resize {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 11px; cursor: col-resize; touch-action: none;
+  outline: none;
+}
+.col-resize::after {
+  content: ""; position: absolute; top: 22%; bottom: 22%; right: 4px; width: 2px; border-radius: 1px;
+  background: var(--border);
+}
+.col-resize:hover::after, .col-resize.active::after { background: var(--primary); }
+.col-resize:focus-visible::after { background: var(--focus); top: 8%; bottom: 8%; width: 3px; }
+.table-tools .col-reset { margin-left: auto; }
+@media (max-width: 700px) {
+  .col-resize, .table-tools .col-reset { display: none; }
+  table.data.sized { table-layout: auto; }
+}

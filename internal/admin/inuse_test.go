@@ -46,7 +46,7 @@ func TestInUseVectors(t *testing.T) {
 			counts.add(c.Row, len(*c.Refusals) > 0)
 		}
 	}
-	counts.check(t, "inuse", "R4")
+	counts.check(t, "inuse", "R4", "ST2")
 }
 
 // The users of a store and of a policy are the repositories that name it,

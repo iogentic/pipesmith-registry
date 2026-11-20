@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="psr-flow-write-path" viewBox="0 0 1360 992" width="1360" height="992" role="img" aria-label="Write Path, Pipesmith Registry 0.2.0. A write is in the store and the index before the answer; a delete marks the blob and removes no file. 1: Client to Server: PUT /repository/&lt;hosted&gt;/&lt;path&gt;. 2: Server: origin, credentials, permission, policy, size, free space. 3: Server to content/tmp: stream the body: MD5, SHA-1, SHA-256, SHA-512. 4: Server: size and digest checked; path lock; index lock within 10 s. 5: content/tmp to content/&lt;minute&gt;: rename the bytes, write &lt;id&gt;.properties. 6: Server to reconciliation: one line: time, &lt;id&gt;, true. 7: Server to index.sqlite: row in files_&lt;store&gt;, same transaction. 8: Server to Client: 201; the file is served at once. Delete. 9: Client to Server: DELETE /repository/&lt;hosted&gt;/&lt;path&gt;. 10: Server to index.sqlite: no row: 404; row in a store of the existing install: 409. 11: Server to content/&lt;minute&gt;: deleted=true, deletedReason, deletedDateTime. 12: Server to index.sqlite: row dropped; no file removed. 13: Server to Client: 204."><title>Pipesmith Registry write path</title><style>#psr-flow-write-path{--psr-bg:#F5F7FC; --psr-panel:#FFFFFF; --psr-dim:#EEF2FA; --psr-ink:#0A1020; --psr-muted:#46526E; --psr-line:#D8DEEA; --psr-edge:#7A859C; --psr-req:#2B62F0; --psr-read:#12B5D6; --psr-write:#7A52F0;}@media (prefers-color-scheme: dark){#psr-flow-write-path{--psr-bg:#05070D; --psr-panel:#0D1322; --psr-dim:#151D31; --psr-ink:#F2F6FF; --psr-muted:#A6B3CF; --psr-line:#1F2A42; --psr-edge:#5B6A8C; --psr-req:#3D7BFF; --psr-read:#22E6FF; --psr-write:#8A5CFF;}}[data-theme="light"] #psr-flow-write-path{--psr-bg:#F5F7FC; --psr-panel:#FFFFFF; --psr-dim:#EEF2FA; --psr-ink:#0A1020; --psr-muted:#46526E; --psr-line:#D8DEEA; --psr-edge:#7A859C; --psr-req:#2B62F0; --psr-read:#12B5D6; --psr-write:#7A52F0;}[data-theme="dark"] #psr-flow-write-path{--psr-bg:#05070D; --psr-panel:#0D1322; --psr-dim:#151D31; --psr-ink:#F2F6FF; --psr-muted:#A6B3CF; --psr-line:#1F2A42; --psr-edge:#5B6A8C; --psr-req:#3D7BFF; --psr-read:#22E6FF; --psr-write:#8A5CFF;}#psr-flow-write-path text{font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}#psr-flow-write-path .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}</style><defs><marker id="psr-flow-write-path-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-req, #3D7BFF)" stroke="none"/></marker><marker id="psr-flow-write-path-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-muted, #A6B3CF)" stroke="none"/></marker><marker id="psr-flow-write-path-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-read, #22E6FF)" stroke="none"/></marker><marker id="psr-flow-write-path-write" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-write, #8A5CFF)" stroke="none"/></marker></defs>
+<rect x="0" y="0" width="1360" height="992" rx="18" fill="var(--psr-bg, #05070D)" stroke="var(--psr-line, #1F2A42)" stroke-width="1"/>
+<text x="34" y="46" font-size="12" font-weight="600" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" letter-spacing="1.6">PIPESMITH REGISTRY 0.2.0</text>
+<text x="34" y="86" font-size="30" font-weight="700" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Write Path</text>
+<text x="34" y="116" font-size="15" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">A write is in the store and the index before the answer; a delete marks the blob and removes no file.</text>
+<path d="M168,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="70" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.6"/>
+<text x="168" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">Client</text>
+<text x="168" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">with writes on</text>
+<path d="M381.6,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="283.6" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.6"/>
+<text x="381.6" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">Server</text>
+<text x="381.6" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">hosted repository</text>
+<path d="M595.2,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="497.2" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.6"/>
+<text x="595.2" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle" class="mono">content/tmp</text>
+<text x="595.2" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">stores/local-write</text>
+<path d="M808.8,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="710.8" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.6"/>
+<text x="808.8" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle" class="mono">content/&lt;minute&gt;</text>
+<text x="808.8" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">&lt;id&gt;.bytes, .properties</text>
+<path d="M1022.4,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="924.4" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.6"/>
+<text x="1022.4" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">reconciliation</text>
+<text x="1022.4" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">one file per day</text>
+<path d="M1236,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="1138" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.6"/>
+<text x="1236" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle" class="mono">index.sqlite</text>
+<text x="1236" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">files of the store</text>
+<circle cx="47" cy="275" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="279" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">1</text>
+<path d="M168,283 H377.6" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-req)"/>
+<text x="274.8" y="274" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle" class="mono">PUT /repository/&lt;hosted&gt;/&lt;path&gt;</text>
+<circle cx="47" cy="321" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="325" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">2</text>
+<rect x="365.6" y="306" width="421.3" height="30" rx="7" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="379.6" y="325.5" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">origin, credentials, permission, policy, size, free space</text>
+<circle cx="47" cy="367" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="371" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">3</text>
+<path d="M381.6,375 H591.2" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-write)" stroke-dasharray="6 4"/>
+<text x="488.4" y="366" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">stream the body: MD5, SHA-1, SHA-256, SHA-512</text>
+<circle cx="47" cy="413" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="417" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">4</text>
+<rect x="365.6" y="398" width="428.2" height="30" rx="7" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="379.6" y="417.5" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">size and digest checked; path lock; index lock within 10 s</text>
+<circle cx="47" cy="459" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="463" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">5</text>
+<path d="M595.2,467 H804.8" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-write)" stroke-dasharray="6 4"/>
+<text x="702" y="458" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">rename the bytes, write &lt;id&gt;.properties</text>
+<circle cx="47" cy="505" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="509" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">6</text>
+<path d="M381.6,513 H1018.4" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-write)" stroke-dasharray="6 4"/>
+<text x="702" y="504" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">one line: time, &lt;id&gt;, true</text>
+<circle cx="47" cy="551" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="555" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">7</text>
+<path d="M381.6,559 H1232" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-write)" stroke-dasharray="6 4"/>
+<text x="808.8" y="550" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">row in files_&lt;store&gt;, same transaction</text>
+<circle cx="47" cy="597" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="601" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">8</text>
+<path d="M381.6,605 H172" fill="none" stroke="var(--psr-muted, #A6B3CF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-muted)" stroke-dasharray="2 4"/>
+<text x="274.8" y="596" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">201; the file is served at once</text>
+<rect x="34" y="628" width="1292" height="40" rx="8" fill="var(--psr-dim, #151D31)" stroke="var(--psr-line, #1F2A42)" stroke-width="1"/>
+<text x="50" y="653" font-size="13" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Delete</text>
+<circle cx="47" cy="699" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="703" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">9</text>
+<path d="M168,707 H377.6" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-req)"/>
+<text x="274.8" y="698" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle" class="mono">DELETE /repository/&lt;hosted&gt;/&lt;path&gt;</text>
+<circle cx="47" cy="745" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="749" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">10</text>
+<path d="M381.6,753 H1232" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-read)"/>
+<text x="808.8" y="744" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">no row: 404; row in a store of the existing install: 409</text>
+<circle cx="47" cy="791" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="795" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">11</text>
+<path d="M381.6,799 H804.8" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-write)" stroke-dasharray="6 4"/>
+<text x="595.2" y="790" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">deleted=true, deletedReason, deletedDateTime</text>
+<circle cx="47" cy="837" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="841" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">12</text>
+<path d="M381.6,845 H1232" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-write)" stroke-dasharray="6 4"/>
+<text x="808.8" y="836" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">row dropped; no file removed</text>
+<circle cx="47" cy="883" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="887" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">13</text>
+<path d="M381.6,891 H172" fill="none" stroke="var(--psr-muted, #A6B3CF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-muted)" stroke-dasharray="2 4"/>
+<text x="274.8" y="882" font-size="13" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">204</text>
+<path d="M34,936 H68" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-req)"/>
+<text x="78" y="940" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">request</text>
+<path d="M170.3,936 H204.3" fill="none" stroke="var(--psr-muted, #A6B3CF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-muted)" stroke-dasharray="2 4"/>
+<text x="214.3" y="940" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">answer</text>
+<path d="M299.7,936 H333.7" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-read)"/>
+<text x="343.7" y="940" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">read from disk</text>
+<path d="M484.3,936 H518.3" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-write-path-write)" stroke-dasharray="6 4"/>
+<text x="528.3" y="940" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">write to disk</text>
+<text x="34" y="974" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">Read from internal/server (ingest.go, write.go), internal/blobwrite and internal/index of Pipesmith Registry 0.2.0, checked 2026-11-19.</text>
+</svg>

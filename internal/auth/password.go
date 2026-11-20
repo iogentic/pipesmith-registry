@@ -19,10 +19,15 @@ import (
 // PBKDF2 key costs the full round count, so the key length has a bound as
 // the rounds have one: 512 bits is twice the longest digest of the two PRFs,
 // holds the 128 and 256 bit keys of the password vectors and costs at most
-// 4 blocks per round.
+// 4 blocks per round. MaxHashWork bounds the digests of one check (review
+// 3-63): the rounds of a Shiro 1 form, the rounds times the blocks of a
+// PBKDF2 key. It is 200 times the most the old product writes by default
+// (PBKDF2 SHA-256, 10000 rounds, one block) and above the rounds OWASP names
+// for PBKDF2 with SHA-1 and SHA-256.
 const (
 	MaxPasswordBytes = 1024
-	MaxIterations    = 10_000_000
+	MaxHashWork      = 2_000_000
+	MaxIterations    = MaxHashWork
 	MaxKeyBits       = 512
 )
 
@@ -49,7 +54,7 @@ var pbkdf2Digests = map[string]func() hash.Hash{
 // the forms of the old product: Shiro 1 modular crypt, PBKDF2 in the PHC
 // form, or unsalted hex SHA-1 or MD5. The digests are compared in constant
 // time. An unknown form, a password longer than MaxPasswordBytes, a stored
-// form with more than MaxIterations rounds and a PBKDF2 key longer than
+// form that costs more than MaxHashWork digests and a PBKDF2 key longer than
 // MaxKeyBits give false without a hash.
 func VerifyPassword(password, stored string) bool {
 	if len(password) > MaxPasswordBytes {
@@ -122,6 +127,9 @@ func verifyPBKDF2(password, stored string) bool {
 	if !ok || err != nil || bits <= 0 || bits%8 != 0 || bits > MaxKeyBits {
 		return false
 	}
+	if blocks := (bits/8 + prf().Size() - 1) / prf().Size(); rounds > MaxHashWork/blocks {
+		return false
+	}
 	salt, err1 := base64.StdEncoding.DecodeString(fields[3])
 	want, err2 := base64.StdEncoding.DecodeString(fields[4])
 	if err1 != nil || err2 != nil || len(want) != bits/8 {
@@ -153,6 +161,33 @@ func verifyHex(password, stored string) bool {
 		return false
 	}
 	return subtle.ConstantTimeCompare(sum, want) == 1
+}
+
+// FormTooCostly reports a stored form of a known kind whose check would cost
+// more than MaxHashWork digests, which VerifyPassword refuses.
+func FormTooCostly(stored string) bool {
+	fields := strings.Split(stored, "$")
+	blocks, rounds := 1, ""
+	switch {
+	case strings.HasPrefix(stored, "$shiro1$") && len(fields) == 6:
+		rounds = fields[3]
+	case strings.HasPrefix(stored, "$PBKDF2") && len(fields) == 5:
+		prf, ok := pbkdf2Digests[fields[1]]
+		attributes := map[string]string{}
+		for _, kv := range strings.Split(fields[2], ",") {
+			key, value, _ := strings.Cut(kv, "=")
+			attributes[key] = value
+		}
+		bits, err := strconv.Atoi(attributes["key_len"])
+		if !ok || err != nil || bits <= 0 || bits > MaxKeyBits {
+			return false
+		}
+		blocks, rounds = (bits/8+prf().Size()-1)/prf().Size(), attributes["key_iteration"]
+	default:
+		return false
+	}
+	n, err := strconv.Atoi(rounds)
+	return err == nil && n > MaxHashWork/blocks
 }
 
 // iterations reads a round count from 1 to MaxIterations.

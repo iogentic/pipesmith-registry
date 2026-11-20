@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/iogentic/pipesmith-registry/internal/auth"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
 // changed gives the stored form with one byte of its digest changed.
@@ -162,4 +163,42 @@ func FuzzVerifyPassword(f *testing.F) {
 	f.Fuzz(func(t *testing.T, password, stored string) {
 		auth.VerifyPassword(password, stored)
 	})
+}
+
+// Review 3-63, point c: the stored form sets the cost of a check, so the
+// digests one check runs have an upper bound, auth.MaxHashWork: the rounds of
+// a Shiro 1 form, the rounds times the blocks of a PBKDF2 key. The bound is
+// 200 times the most the old product writes by default (PBKDF2 SHA-256,
+// 10000 rounds, one block) and above the rounds OWASP names for PBKDF2. A
+// form above it is refused without a digest, and the load names its user.
+func TestPasswordFormCostBound(t *testing.T) {
+	if auth.MaxHashWork != 2_000_000 {
+		t.Fatalf("MaxHashWork %d, want 2000000", auth.MaxHashWork)
+	}
+	salt := base64.StdEncoding.EncodeToString(make([]byte, 16))
+	sha512 := base64.StdEncoding.EncodeToString(make([]byte, 64))
+	key := func(bits int) string { return base64.StdEncoding.EncodeToString(make([]byte, bits/8)) }
+	over := []string{
+		fmt.Sprintf("$shiro1$SHA-512$%d$%s$%s", auth.MaxHashWork+1, salt, sha512),
+		fmt.Sprintf("$PBKDF2WithHmacSHA256$key_iteration=%d,key_len=256$%s$%s", auth.MaxHashWork+1, salt, key(256)),
+		// 4 blocks of 160 bits for a key of 512 bits
+		fmt.Sprintf("$PBKDF2WithHmacSHA1$key_iteration=%d,key_len=512$%s$%s", auth.MaxHashWork/4+1, salt, key(512)),
+		fmt.Sprintf("$PBKDF2WithHmacSHA256$key_iteration=%d,key_len=512$%s$%s", auth.MaxHashWork/2+1, salt, key(512)),
+	}
+	for _, stored := range over {
+		before := auth.HashRuns()
+		if auth.VerifyPassword("demo-cost-pass-1", stored) || auth.HashRuns() != before {
+			t.Errorf("%.60s: verified or ran %d digests", stored, auth.HashRuns()-before)
+		}
+	}
+	snap := fixture(t)
+	snap.Users = append(snap.Users, model.User{ID: "demo-costly", Status: "active", Source: auth.SourceLocal, PasswordHash: over[0]})
+	e := newEnv(t, snap)
+	if logs := e.logs.String(); !strings.Contains(logs, "level=WARN") || !strings.Contains(logs, "demo-costly") ||
+		!strings.Contains(logs, "costs more than") {
+		t.Fatalf("no warning about the costly form: %q", logs)
+	}
+	if strings.Count(e.logs.String(), "costs more than") != 1 {
+		t.Fatalf("a warning for a form within the bound: %q", e.logs.String())
+	}
 }

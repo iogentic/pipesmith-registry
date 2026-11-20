@@ -19,16 +19,23 @@ import (
 // *Store records the runs of the scheduler.
 var _ tasks.Store = (*Store)(nil)
 
-// withRuns is the list steps with schema4 as its next version; applied
-// counts the calls of that step.
+// withRuns is the list steps with a count of the calls of its step 5 in
+// applied.
 func withRuns(applied *int) []migrate.Step {
-	return append(slices.Clip(steps), migrate.Step{Version: len(steps) + 1, Apply: func(tx *sql.Tx) error {
-		*applied++
-		return schema4(tx)
-	}})
+	list := slices.Clone(steps)
+	for i, step := range list {
+		if step.Version == 4 {
+			apply := step.Apply
+			list[i].Apply = func(tx *sql.Tx) error {
+				*applied++
+				return apply(tx)
+			}
+		}
+	}
+	return list
 }
 
-// runsStore is a new state file that has every step and schema4.
+// runsStore is a new state file that has every step and schema5.
 func runsStore(t *testing.T) *Store {
 	t.Helper()
 	dir := filepath.Join(t.TempDir(), "data")
@@ -66,7 +73,7 @@ func tableRows(t *testing.T, path, table string) string {
 // The step opens the released file of schema 1: task_runs exists with its
 // columns and its index, the records of schema 1 are as they were, and a
 // second open applies nothing.
-func TestSchema4OnTheReleasedFile(t *testing.T) {
+func TestSchema5OnTheReleasedFile(t *testing.T) {
 	dir := dataDirOf(t, "v1.sqlite")
 	path := Path(dir)
 	released := copied(t, path, filepath.Join(t.TempDir(), "released.sqlite"))
@@ -159,24 +166,6 @@ func TestSchema4OnTheReleasedFile(t *testing.T) {
 	}
 	if _, err := os.Stat(path + ".v2"); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("the second open wrote a copy: %v", err)
-	}
-}
-
-// The step is not in the list of this binary yet, so a file it creates has
-// no task_runs; schema4 joins the list after the steps 2 and 3.
-func TestSchema4IsNotListedYet(t *testing.T) {
-	st, err := Create(filepath.Join(t.TempDir(), "data"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer st.Close()
-	var tables, runs int
-	if err := st.readers.QueryRow("SELECT count(*), count(*) FILTER (WHERE name = 'task_runs') FROM sqlite_master"+
-		" WHERE type = 'table'").Scan(&tables, &runs); err != nil {
-		t.Fatal(err)
-	}
-	if tables == 0 || runs != 0 {
-		t.Fatalf("%d tables, %d of them task_runs; want the tables of the list and no task_runs", tables, runs)
 	}
 }
 
@@ -356,5 +345,141 @@ func TestSchedulerRecordsRunsInTaskRuns(t *testing.T) {
 				t.Fatalf("run %d of %s: %+v, want %+v with start, end and result", i, id, r, w)
 			}
 		}
+	}
+}
+
+// LastRuns gives the run of each task with the latest start, the one with
+// the highest id among runs of one start, a run without an end among them;
+// a task without runs is not in the map.
+func TestLastRuns(t *testing.T) {
+	st := runsStore(t)
+	at := time.Date(2026, 11, 20, 8, 0, 0, 0, time.UTC)
+	empty, err := st.LastRuns()
+	if err != nil || len(empty) != 0 {
+		t.Fatalf("%v %v", empty, err)
+	}
+	first, _ := st.BeginRun("demo-a", at)
+	if err := st.EndRun(first, at.Add(time.Second), tasks.ResultFailed, "first"); err != nil {
+		t.Fatal(err)
+	}
+	second, _ := st.BeginRun("demo-a", at.Add(time.Minute))
+	if err := st.EndRun(second, at.Add(2*time.Minute), tasks.ResultOK, "second"); err != nil {
+		t.Fatal(err)
+	}
+	same, _ := st.BeginRun("demo-a", at.Add(time.Minute))
+	open, _ := st.BeginRun("demo-b", at.Add(time.Hour))
+	last, err := st.LastRuns()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(last) != 2 || last["demo-a"].ID != same || last["demo-a"].Result != "" || !last["demo-a"].Ended.IsZero() ||
+		last["demo-b"].ID != open || !last["demo-b"].Started.Equal(at.Add(time.Hour)) {
+		t.Fatalf("%+v", last)
+	}
+	if err := st.EndRun(same, at.Add(3*time.Minute), tasks.ResultCanceled, "stopped"); err != nil {
+		t.Fatal(err)
+	}
+	if last, _ = st.LastRuns(); last["demo-a"].Result != tasks.ResultCanceled || last["demo-a"].Message != "stopped" {
+		t.Fatalf("%+v", last["demo-a"])
+	}
+}
+
+// PropertySecretFiles lists the secret files of the properties of one task,
+// and of no other task or capability.
+func TestPropertySecretFiles(t *testing.T) {
+	dir := t.TempDir()
+	for _, p := range []string{PropertySecretPath(dir, SecretKindTask, "demo", "remotePassword"), PropertySecretPath(dir, SecretKindTask, "demo", "token"),
+		PropertySecretPath(dir, SecretKindTask, "demo-other", "token"), PropertySecretPath(dir, SecretKindCapability, "demo", "token")} {
+		if err := WriteSecret(p, []byte("example-secret")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	files, err := PropertySecretFiles(dir, SecretKindTask, "demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{PropertySecretPath(dir, SecretKindTask, "demo", "remotePassword"), PropertySecretPath(dir, SecretKindTask, "demo", "token")}
+	if !slices.Equal(files, want) {
+		t.Fatalf("%v, want %v", files, want)
+	}
+	if none, err := PropertySecretFiles(t.TempDir(), SecretKindTask, "demo"); err != nil || len(none) != 0 {
+		t.Fatalf("without a folder: %v %v", none, err)
+	}
+}
+
+// Ruling SB12: the end of a run removes the runs of its task beyond the
+// last KeptRuns, the oldest first, and leaves the runs of other tasks; the
+// end of the open runs at a start does the same for every task.
+func TestRunsKeepTheLastRunsOfEachTask(t *testing.T) {
+	st := runsStore(t)
+	at := time.Date(2026, 11, 20, 8, 0, 0, 0, time.UTC)
+	other, _ := st.BeginRun("demo-b", at)
+	if err := st.EndRun(other, at, tasks.ResultOK, ""); err != nil {
+		t.Fatal(err)
+	}
+	var first int64
+	for i := 0; i <= KeptRuns; i++ {
+		id, err := st.BeginRun("demo-a", at.Add(time.Duration(i)*time.Second))
+		if err == nil {
+			err = st.EndRun(id, at.Add(time.Duration(i)*time.Second), tasks.ResultOK, "")
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if i == 0 {
+			first = id
+		}
+	}
+	runs, err := st.TaskRuns("demo-a")
+	if err != nil || len(runs) != KeptRuns || runs[0].ID == first || !runs[0].Started.Equal(at.Add(time.Second)) {
+		t.Fatalf("%d runs of demo-a, first %+v, %v", len(runs), runs[0], err)
+	}
+	if b, _ := st.TaskRuns("demo-b"); len(b) != 1 {
+		t.Fatalf("%d runs of demo-b", len(b))
+	}
+	// one open run more, ended by a start
+	if _, err := st.BeginRun("demo-a", at.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := st.EndOpenRuns(at.Add(2*time.Hour), tasks.ResultInterrupted, "start"); n != 1 || err != nil {
+		t.Fatalf("%d %v", n, err)
+	}
+	if runs, _ = st.TaskRuns("demo-a"); len(runs) != KeptRuns || runs[len(runs)-1].Result != tasks.ResultInterrupted {
+		t.Fatalf("%d runs after the start", len(runs))
+	}
+}
+
+// LastRun reads the last run of one task through the index on task and
+// start, and finds none for a task without runs.
+func TestLastRunReadsOneTask(t *testing.T) {
+	st := runsStore(t)
+	at := time.Date(2026, 11, 20, 8, 0, 0, 0, time.UTC)
+	a1, _ := st.BeginRun("demo-a", at)
+	a2, _ := st.BeginRun("demo-a", at.Add(time.Minute))
+	_, _ = st.BeginRun("demo-b", at.Add(time.Hour))
+	_ = a1
+	last, ok, err := st.LastRun("demo-a")
+	if err != nil || !ok || last.ID != a2 {
+		t.Fatalf("%+v %v %v", last, ok, err)
+	}
+	if _, ok, err := st.LastRun("demo-none"); ok || err != nil {
+		t.Fatalf("a task without runs: %v %v", ok, err)
+	}
+	rows, err := st.readers.QueryContext(bg, "EXPLAIN QUERY PLAN "+lastRunQuery, "demo-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var plan []string
+	for rows.Next() {
+		var id, parent, unused int
+		var detail string
+		if err := rows.Scan(&id, &parent, &unused, &detail); err != nil {
+			t.Fatal(err)
+		}
+		plan = append(plan, detail)
+	}
+	if text := strings.Join(plan, "; "); !strings.Contains(text, "SEARCH task_runs USING INDEX task_runs_task_started (task_id=?)") {
+		t.Fatalf("plan %s", text)
 	}
 }

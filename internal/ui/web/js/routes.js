@@ -64,6 +64,7 @@ export const ROUTES = [
   { id: "S43", path: "/admin/metrics", title: "Metrics", module: "./pages/system/metrics.js", section: "system", nav: "Metrics", text: "Requests and downloads per day.", perm: "nexus:metrics:read" },
 
   { id: "S33", path: "/admin/status", title: "Status", module: "./pages/support/status.js", section: "support", nav: "Status", text: "Health checks of the server.", perm: "nexus:atlas:read" },
+  { id: "S47", path: "/admin/updates", title: "Updates", module: "./pages/support/updates.js", section: "support", nav: "Updates", text: "The trusted key of updates and the installed release.", perm: "nexus:atlas:read" },
   { id: "S34", path: "/admin/system-information", title: "System information", module: "./pages/support/system-information.js", section: "support", nav: "System information", text: "Version, schema and settings of the running server.", perm: "nexus:atlas:read" },
   { id: "S30", path: "/admin/logging", title: "Logging", module: "./pages/support/logging.js", section: "support", nav: "Logging", text: "The level of each logger.", perm: "nexus:logging:read" },
   { id: "S31", path: "/admin/logs", title: "Log files", module: "./pages/support/logs.js", section: "support", nav: "Log files", text: "Read and download the log files.", perm: "nexus:logging:read" },

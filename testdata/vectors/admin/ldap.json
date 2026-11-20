@@ -1,0 +1,103 @@
+{
+ "family": "ldap",
+ "note": "The rules of the LDAP connections (leg 6-identity, contract S26 and S27): the form of a connection with the prefix of its field ids, the bind password (ruling I18), the change of a directory that needs the full permission (I17) and the change of order. A case of op form takes the base body with set merged and drop removed. Every name, host and password is invented.",
+ "base": {"name": "demo-corp", "protocol": "ldap", "useTrustStore": false, "host": "ldap.example.com", "port": 389,
+  "searchBase": "dc=example,dc=com", "authScheme": "SIMPLE", "authRealm": "", "authUsername": "uid=demo-bind,ou=services,dc=example,dc=com",
+  "authPassword": "example-bind-1", "connectionTimeoutSeconds": 30, "connectionRetryDelaySeconds": 300, "maxIncidentsCount": 3,
+  "userBaseDn": "ou=people", "userSubtree": true, "userObjectClass": "inetOrgPerson", "userLdapFilter": "", "userIdAttribute": "uid",
+  "userRealNameAttribute": "cn", "userEmailAddressAttribute": "mail", "userPasswordAttribute": "", "ldapGroupsAsRoles": true,
+  "groupType": "static", "groupBaseDn": "ou=groups", "groupSubtree": true, "groupObjectClass": "groupOfNames", "groupIdAttribute": "cn",
+  "groupMemberAttribute": "member", "groupMemberFormat": "${dn}", "userMemberOfAttribute": ""},
+ "stored": ["demo-corp", "demo-second", "demo-third"],
+ "cases": [
+  {"row": "S27", "op": "form", "refusals": []},
+  {"row": "S27", "op": "form", "set": {"id": "other-id", "order": 9, "caFile": "/etc/passwd", "protocol": "LDAPS", "port": 636}, "refusals": []},
+  {"row": "S27", "op": "form", "set": {"authScheme": "none", "authUsername": ""}, "drop": ["authPassword"], "refusals": []},
+  {"row": "S27", "op": "form", "set": {"ldapGroupsAsRoles": false}, "drop": ["groupType"], "refusals": []},
+  {"row": "S27", "op": "form", "drop": ["name", "host", "port"], "refusals": [
+   {"code": "ldap-field", "status": 400, "field": "name", "names": ["name"]},
+   {"code": "ldap-field", "status": 400, "field": "host", "names": ["host"]},
+   {"code": "ldap-field", "status": 400, "field": "port", "names": ["port"]}]},
+  {"row": "S27", "op": "form", "prefix": "connection.", "set": {"searchBase": null}, "drop": ["groupType"], "refusals": [
+   {"code": "ldap-field", "status": 400, "field": "connection.searchBase", "names": ["searchBase"]},
+   {"code": "ldap-field", "status": 400, "field": "connection.groupType", "names": ["groupType"]}]},
+  {"row": "S27", "op": "form", "set": {"port": "389"}, "refusals": [
+   {"code": "body-invalid", "status": 400, "field": "port", "names": ["port"]}]},
+  {"row": "S27", "op": "form", "prefix": "connection.", "set": {"userSubtree": "yes"}, "refusals": [
+   {"code": "body-invalid", "status": 400, "field": "connection.userSubtree", "names": ["userSubtree"]}]},
+  {"row": "S27", "op": "form", "set": {"name": "demo corp", "protocol": "http", "host": "ldap.example.com/x", "port": 70000}, "refusals": [
+   {"code": "name-invalid", "status": 400, "field": "name", "names": ["demo corp"]},
+   {"code": "ldap-field", "status": 400, "field": "protocol", "names": ["http"]},
+   {"code": "ldap-field", "status": 400, "field": "host", "names": ["ldap.example.com/x"]},
+   {"code": "ldap-field", "status": 400, "field": "port", "names": ["70000"]}]},
+  {"row": "S27", "op": "form", "set": {"authScheme": "SIMPLE", "authUsername": ""}, "refusals": [
+   {"code": "ldap-field", "status": 400, "field": "authUsername", "names": ["SIMPLE"]}]},
+  {"row": "S27", "op": "form", "set": {"authScheme": "DIGEST-MD5"}, "refusals": [
+   {"code": "not-offered", "status": 400, "field": "authScheme", "names": ["DIGEST_MD5"]}]},
+  {"row": "S27", "op": "form", "set": {"authScheme": "KERBEROS"}, "refusals": [
+   {"code": "ldap-field", "status": 400, "field": "authScheme", "names": ["KERBEROS"]}]},
+  {"row": "S27", "op": "form", "set": {"connectionTimeoutSeconds": 0, "connectionRetryDelaySeconds": -1, "maxIncidentsCount": -1, "groupType": "nested"}, "refusals": [
+   {"code": "ldap-field", "status": 400, "field": "connectionTimeoutSeconds", "names": ["timeout"]},
+   {"code": "ldap-field", "status": 400, "field": "connectionRetryDelaySeconds", "names": ["retry delay"]},
+   {"code": "ldap-field", "status": 400, "field": "maxIncidentsCount", "names": ["incidents"]},
+   {"code": "ldap-field", "status": 400, "field": "groupType", "names": ["nested"]}]},
+  {"row": "S27", "op": "form", "prefix": "connection.", "set": {"userBaseDn": "not a dn"}, "refusals": [
+   {"code": "ldap-field", "status": 400, "field": "connection", "names": ["demo-corp", "not a dn"]}]},
+  {"row": "S27", "op": "form", "set": {"userLdapFilter": "(&(x"}, "refusals": [
+   {"code": "ldap-field", "status": 400, "field": "*", "names": ["filter"]}]},
+  {"row": "I27", "op": "form", "set": {"id": "x", "order": 3, "caFile": "/srv/ca.pem"}, "refusals": []},
+  {"row": "I27", "op": "form", "set": {"bindPassword": "x", "Name": "demo-corp"}, "refusals": [
+   {"code": "body-invalid", "status": 400, "field": "Name", "names": ["Name"]},
+   {"code": "body-invalid", "status": 400, "field": "bindPassword", "names": ["bindPassword"]}]},
+  {"row": "I27", "op": "form", "prefix": "connection.", "set": {"port": 389.0, "extra": {"a": 1}}, "refusals": [
+   {"code": "body-invalid", "status": 400, "field": "connection.extra", "names": ["extra"]}]},
+
+  {"row": "I18", "op": "password", "scheme": "SIMPLE", "create": true, "password": "example-bind-1", "refusals": []},
+  {"row": "I18", "op": "password", "scheme": "SIMPLE", "create": true, "refusals": [
+   {"code": "password-invalid", "status": 400, "field": "authPassword", "names": ["SIMPLE"]}]},
+  {"row": "I18", "op": "password", "scheme": "simple", "create": true, "password": "", "refusals": [
+   {"code": "password-invalid", "status": 400, "field": "authPassword", "names": ["bind password"]}]},
+  {"row": "I18", "op": "password", "scheme": "SIMPLE", "create": false, "refusals": []},
+  {"row": "I18", "op": "password", "scheme": "SIMPLE", "create": false, "password": "", "refusals": [
+   {"code": "password-invalid", "status": 400, "field": "authPassword", "names": ["bind password"]}]},
+  {"row": "I18", "op": "password", "scheme": "SIMPLE", "create": false, "prefix": "connection.", "password": "line\n", "refusals": [
+   {"code": "password-invalid", "status": 400, "field": "connection.authPassword", "names": ["control character"]}]},
+  {"row": "I18", "op": "password", "scheme": "SIMPLE", "create": false, "password": "x", "repeat": 4097, "refusals": [
+   {"code": "password-invalid", "status": 400, "field": "authPassword", "names": ["4096"]}]},
+  {"row": "I18", "op": "password", "scheme": "NONE", "create": true, "password": "", "refusals": []},
+
+  {"row": "I17", "op": "grant", "held": ["nexus:*"], "refusals": []},
+  {"row": "I17", "op": "grant", "held": ["nexus:ldap:*"], "refusals": [
+   {"code": "grant-exceeds", "status": 403, "names": ["the create of the LDAP connection demo-corp", "nexus:*"]}]},
+  {"row": "I17", "op": "changed", "set": {"name": "demo-renamed", "authPassword": "example-bind-2", "connectionTimeoutSeconds": 5, "authUsername": "uid=other"}, "changed": false},
+  {"row": "I17", "op": "changed", "set": {"host": "ldap2.example.com"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"searchBase": "dc=example,dc=org"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userLdapFilter": "(mail=*)"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"groupMemberFormat": "uid=${username}"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"ldapGroupsAsRoles": false}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"protocol": "ldaps"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"port": 636}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userBaseDn": "ou=staff"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userSubtree": false}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userObjectClass": "person"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userIdAttribute": "cn"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userRealNameAttribute": "displayName"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userEmailAddressAttribute": "email"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userPasswordAttribute": "userPassword"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"userMemberOfAttribute": "memberOf"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"groupType": "Static"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"groupBaseDn": "ou=teams"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"groupSubtree": false}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"groupObjectClass": "groupOfUniqueNames"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"groupIdAttribute": "ou"}, "changed": true},
+  {"row": "I17", "op": "changed", "set": {"groupMemberAttribute": "uniqueMember"}, "changed": true},
+
+  {"row": "S26", "op": "order", "names": ["demo-third", "demo-corp", "demo-second"], "refusals": []},
+  {"row": "S26", "op": "order", "names": ["demo-third", "demo-corp"], "refusals": [
+   {"code": "ldap-order", "status": 400, "field": "*", "names": ["demo-second", "missing"]}]},
+  {"row": "S26", "op": "order", "names": ["demo-third", "demo-corp", "demo-corp"], "refusals": [
+   {"code": "ldap-order", "status": 400, "field": "*", "names": ["demo-corp", "twice"]}]},
+  {"row": "S26", "op": "order", "names": ["demo-third", "demo-corp", "demo-other"], "refusals": [
+   {"code": "ldap-order", "status": 400, "field": "*", "names": ["demo-other"]}]}
+ ]
+}

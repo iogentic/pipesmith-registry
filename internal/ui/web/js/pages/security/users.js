@@ -1,4 +1,5 @@
-// S23 Users: one source at a time, filtered by the server on the user id.
+// S23 Users: one source at a time, filtered by the server on the user id. The user columns start
+// wide and the roles narrow, so an id and a mail address keep to one or two lines.
 
 import { h, replace } from "../../dom.js";
 import { api } from "../../api.js";
@@ -52,13 +53,13 @@ export async function render(ctx) {
 
   const columns = () => {
     const list = [
-      { key: "userId", label: "User id", class: "break" },
-      { key: "name", label: "Name", value: name },
-      { key: "emailAddress", label: "Mail", class: "break" },
-      { key: "status", label: "State", value: (u) => (STATUS[u.status] || { label: u.status }).label, render: (u) => statusMark(u.status) },
-      { key: "roles", label: "Roles", sort: false, value: (u) => (u.roles || []).join(" "), render: (u) => tags(u.roles) }
+      { key: "userId", label: "User id", class: "break", width: 20 },
+      { key: "name", label: "Name", value: name, width: 15 },
+      { key: "emailAddress", label: "Mail", class: "break", width: 22 },
+      { key: "status", label: "State", value: (u) => (STATUS[u.status] || { label: u.status }).label, render: (u) => statusMark(u.status), width: 11 },
+      { key: "roles", label: "Roles", sort: false, value: (u) => (u.roles || []).join(" "), render: (u) => tags(u.roles), width: 32 }
     ];
-    if (source !== "default") list.push({ key: "externalRoles", label: "Directory groups", sort: false, value: (u) => (u.externalRoles || []).join(" "), render: (u) => tags(u.externalRoles) });
+    if (source !== "default") list.push({ key: "externalRoles", label: "Directory groups", sort: false, value: (u) => (u.externalRoles || []).join(" "), render: (u) => tags(u.externalRoles), width: 20 });
     return list;
   };
 

@@ -26,26 +26,34 @@ const treeID = "43014e95e7dcd77ef6e6e1552a6b3d2dce35b638"
 // LOCAL_CHANGES.md lists them: the git blob id each had at 1e6d884 (git
 // rev-parse 1e6d884:ui/web/<file>) and the one it has here (git
 // hash-object), both read on 2026-11-18; the id of js/app.js here read
-// again on 2026-11-19, the ids of js/pages/signin.js read on 2026-11-19.
+// again on 2026-11-19, the ids of js/pages/signin.js read on 2026-11-19, the ids of
+// js/ui/table.js, css/components.css and js/pages/security/users.js read on 2026-11-19, the ids
+// here of js/pages/overview.js, js/api.js, js/routes.js and index.html read again on 2026-11-20.
 var changed = map[string]struct{ taken, here string }{
-	"css/tokens.css":          {taken: "7be33c7811f56994bdbac5a66dabe7a96cf7ad55", here: "e0ae07e4bf4350534a436fa133117ab0ffbf74c8"},
-	"js/app.js":               {taken: "4562a6861333f633f1375aa0105c98f23231833d", here: "efcb289c4a877beba54a0c57991b637a1e1b5435"},
-	"js/pages/overview.js":    {taken: "121d922eb60a8338fcea601bd02919017a5f4f2c", here: "a81ca7d55d91b206894c79e43a913a4bc8b73973"},
-	"js/pages/signin.js":      {taken: "7f980fb5d625dcad5eaa479be7e0702755262a8b", here: "4f56705ed045fe1f339b3f2ddbf002ff1d4610ce"},
-	"js/preview.js":           {taken: "20675502d1edc6305e4529f80513279dd10b2075", here: "7f8738e53e9d79154450b08029992a61d83e99e2"},
-	"js/api.js":               {taken: "6c512c140771011137ef5ad3579e553f9e943e68", here: "97039bf9cc360b0523614620c3fc036e28fab351"},
-	"index.html":              {taken: "d2ac82b9bb632d5e7e1172f0e3033c2be9b5d541", here: "48ab43ce95387b7212307ac0576832c5a1f541c0"},
-	"js/routes.js":            {taken: "a3e1dd35ec8b2bb404a59d54407d3f3b3a5e2e2c", here: "dd565d85abff79d05b46033100ac2b659ab5c7ad"},
-	"js/pages/browse/tree.js": {taken: "cb56f5f1c081d4793a548d3432956249e30dd951", here: "7ce59159f30fffa53002ced4f9009917f6f7284b"},
+	"css/tokens.css":             {taken: "7be33c7811f56994bdbac5a66dabe7a96cf7ad55", here: "e0ae07e4bf4350534a436fa133117ab0ffbf74c8"},
+	"js/app.js":                  {taken: "4562a6861333f633f1375aa0105c98f23231833d", here: "efcb289c4a877beba54a0c57991b637a1e1b5435"},
+	"js/pages/overview.js":       {taken: "121d922eb60a8338fcea601bd02919017a5f4f2c", here: "375d01f8a9e93f7ef1cd6ef2416e9f82a9410624"},
+	"js/pages/signin.js":         {taken: "7f980fb5d625dcad5eaa479be7e0702755262a8b", here: "4f56705ed045fe1f339b3f2ddbf002ff1d4610ce"},
+	"js/preview.js":              {taken: "20675502d1edc6305e4529f80513279dd10b2075", here: "7f8738e53e9d79154450b08029992a61d83e99e2"},
+	"js/api.js":                  {taken: "6c512c140771011137ef5ad3579e553f9e943e68", here: "33cd2b9426efafbfd5e91dab45d2fd8dc84d404f"},
+	"index.html":                 {taken: "d2ac82b9bb632d5e7e1172f0e3033c2be9b5d541", here: "80a7f0e8c99ec61a168bf769398f167cf779a5c9"},
+	"js/routes.js":               {taken: "a3e1dd35ec8b2bb404a59d54407d3f3b3a5e2e2c", here: "053a54a4f4494ef2e573d3642e8b80f0fd1adb2e"},
+	"js/pages/browse/tree.js":    {taken: "cb56f5f1c081d4793a548d3432956249e30dd951", here: "7ce59159f30fffa53002ced4f9009917f6f7284b"},
+	"js/ui/table.js":             {taken: "9f063ef80507bb3f92a701732dc8d55b94d2c5de", here: "fa4304d6e8f27453f01accf2e4a18de912f5e854"},
+	"css/components.css":         {taken: "17dbd6e56c04ada756a1194dcc2dcff67638a0fb", here: "d4e9ccbe4927c7f32c9ca6fab2ed1db867c2bfd3"},
+	"js/pages/security/users.js": {taken: "6f3a7d083975dc5aa47eac256437a88bd2ead03e", here: "f556566b08e275ac1d71ae4498396d7c30fa1516"},
 }
 
 // added are the files of web that the taken commit does not hold, as section Added Files of
 // LOCAL_CHANGES.md lists them. The tree test leaves them out, and with them every folder that holds
 // nothing else, so the rest of the tree is still compared with the taken tree.
 var added = []string{
+	"css/areas/figures.css",
 	"css/areas/viewer.css",
 	"js/pages/browse/export-dialog.js",
 	"js/pages/browse/view.js",
+	"js/pages/support/updates.js",
+	"js/ui/figures.js",
 	"js/viewer/filetree.js",
 	"js/viewer/grammar/asciidoc.js",
 	"js/viewer/grammar/json.js",

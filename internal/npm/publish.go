@@ -27,6 +27,13 @@ const (
 	MaxPublishDocument = 16 << 20
 	// maxPublishDepth is the deepest nesting of arrays and objects taken.
 	maxPublishDepth = 512
+	// maxPublishValues is the most values of a publish document outside the
+	// data of its attachments. 16 MiB of small values such as "1," or "{},"
+	// decode to about 300 MiB of heap (runtime.MemStats in a Go test,
+	// 2026-11-20); this many keep it near 40 MiB. A stored document of
+	// 16 MiB, which the rewrite of an unpublish sends back, holds about
+	// 560,000 values at 30 bytes each.
+	maxPublishValues = 1 << 20
 	// maxKeyBytes is the longest key taken, quotes and escapes included.
 	maxKeyBytes = 64 << 10
 	readBuffer  = 64 << 10
@@ -85,10 +92,19 @@ func ReadPublish(r io.Reader, open func(name string) (io.Writer, error)) (*pyjso
 }
 
 // scanner reads JSON from a buffered reader; budget is what may still be
-// read outside the data of attachments.
+// read outside the data of attachments, values the values read there.
 type scanner struct {
 	r      *bufio.Reader
 	budget int64
+	values int
+}
+
+// count counts one more value outside the data of attachments.
+func (sc *scanner) count() error {
+	if sc.values++; sc.values > maxPublishValues {
+		return refused("the publish document holds more than " + strconv.Itoa(maxPublishValues) + " values besides the data of its attachments")
+	}
+	return nil
 }
 
 // ended turns the end of the input inside a document into a refusal: the
@@ -220,6 +236,9 @@ func (sc *scanner) copyString(out *bytes.Buffer, limit int) error {
 
 // value reads one value and decodes it as json.loads does.
 func (sc *scanner) value() (any, error) {
+	if err := sc.count(); err != nil {
+		return nil, err
+	}
 	raw, err := sc.capture()
 	if err != nil {
 		return nil, err
@@ -269,9 +288,13 @@ func (sc *scanner) capture() ([]byte, error) {
 }
 
 // copyContainer copies an array or an object whose opening bracket is
-// copied, up to its closing bracket.
+// copied, up to its closing bracket. Each bracket that opens and each comma
+// counts one value.
 func (sc *scanner) copyContainer(raw *bytes.Buffer, open byte) error {
 	closers := []byte{closer(open)}
+	if err := sc.count(); err != nil {
+		return err
+	}
 	for len(closers) > 0 {
 		c, err := sc.take()
 		if err != nil {
@@ -283,7 +306,14 @@ func (sc *scanner) copyContainer(raw *bytes.Buffer, open byte) error {
 			if err := sc.copyString(raw, MaxPublishDocument); err != nil {
 				return err
 			}
+		case ',':
+			if err := sc.count(); err != nil {
+				return err
+			}
 		case '{', '[':
+			if err := sc.count(); err != nil {
+				return err
+			}
 			if len(closers) >= maxPublishDepth {
 				return refused("the publish document is nested deeper than " + strconv.Itoa(maxPublishDepth) + " levels")
 			}

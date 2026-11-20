@@ -14,6 +14,7 @@ import (
 
 	"github.com/iogentic/pipesmith-registry/internal/export"
 	"github.com/iogentic/pipesmith-registry/internal/index"
+	"github.com/iogentic/pipesmith-registry/internal/maven"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 )
@@ -53,11 +54,13 @@ type exportRequest struct {
 	st                 *state
 }
 
-// exportEntry is one listed path: the archive entry and the index row of
-// the member that wins it.
+// exportEntry is one listed path: the archive entry, the index row of the
+// member that wins it, and the size the limits count: the index size, or
+// for a merged maven-metadata.xml of a group the size of the merge.
 type exportEntry struct {
 	name  string
 	asset index.Asset
+	size  int64
 }
 
 // streamsAtATime bound the exports that stream at the same time (call
@@ -72,6 +75,9 @@ const (
 	// that reads just fast enough for the stall time would else hold its
 	// place for days.
 	defaultTimeLimit = 2 * time.Hour
+	// leftOutShown bounds the paths a dry call names that the archive
+	// leaves out; left_out counts them all
+	leftOutShown = 20
 )
 
 // exports is the state of the export in a Server: its limits and one place
@@ -184,39 +190,102 @@ func (s *Server) exportRoute(w *recorder, req *request, match []string) error {
 			[2]any{"files", over.Files}, [2]any{"bytes", over.Bytes}, [2]any{"max_files", over.MaxFiles},
 			[2]any{"max_bytes", over.MaxBytes}, [2]any{"complete", over.Complete})
 	}
-	names := make([]string, len(entries))
-	for i, e := range entries {
-		if err := export.CheckEntryName(e.name); err != nil {
-			return exportRefusal(w, req, http.StatusConflict, err.Error(), [2]any{"path", e.asset.Path})
-		}
-		names[i] = e.name
-	}
-	if clash, ok := export.UniqueNames(names); !ok {
-		stored := clash
-		for _, e := range entries {
-			if e.name == clash {
-				stored = e.asset.Path
-				break
-			}
-		}
-		return exportRefusal(w, req, http.StatusConflict,
-			fmt.Sprintf("the entry %q stands twice in the archive, or as a file beside a folder of its name", clash), [2]any{"path", stored})
+	entries, leftOut := keepArchivable(entries)
+	if len(entries) == 0 && len(leftOut) > 0 {
+		// the export would hold only paths no archive may hold
+		return exportRefusal(w, req, http.StatusConflict, leftOut[0].reason, [2]any{"path", leftOut[0].path})
 	}
 	if len(entries) == 0 {
 		return exportRefusal(w, req, http.StatusNotFound, fmt.Sprintf("%s holds nothing the form %s exports", er.shown(), er.form))
 	}
 	archive := export.ArchiveName(repo.Name, er.folder)
 	if er.dry {
+		var total int64
+		for _, e := range entries {
+			total += e.size
+		}
+		shown := []any{}
+		for _, l := range leftOut[:min(len(leftOut), leftOutShown)] {
+			shown = append(shown, l.path)
+		}
 		return writeExportJSON(w, req, s.withPlaces(req, pyjson.NewObject().Set("repository", repo.Name).Set("path", er.folder).Set("form", er.form).
-			Set("name", archive).Set("files", tally.Files()).Set("bytes", tally.Bytes()).Set("exact", repo.Type != "group").
-			Set("max_files", limits.MaxFiles).Set("max_bytes", limits.MaxBytes)))
+			Set("name", archive).Set("files", len(entries)).Set("bytes", total).Set("exact", repo.Type != "group").
+			Set("max_files", limits.MaxFiles).Set("max_bytes", limits.MaxBytes).Set("left_out", len(leftOut)).Set("left_out_paths", shown)))
 	}
 	release, ok := s.takeSlot(w, req)
 	if !ok {
 		return nil
 	}
 	defer release()
-	return s.streamZip(w, req, er, archive, entries)
+	return s.streamZip(w, req, er, archive, entries, len(leftOut))
+}
+
+// leftOutEntry is a listed path the archive leaves out, with why.
+type leftOutEntry struct {
+	path, reason string
+}
+
+// keepArchivable leaves out every entry an unpack cannot hold beside the
+// others (calls B19, B20): a name CheckEntryName refuses, a name below a
+// file of the archive ("a/b" beside the file "a"; the file stays), and the
+// second entry of one name. The rest keep their order; the left out ones
+// are in the order of the listing.
+func keepArchivable(entries []exportEntry) ([]exportEntry, []leftOutEntry) {
+	type out struct {
+		at int
+		leftOutEntry
+	}
+	var left []out
+	names := map[string]bool{}
+	valid := make([]bool, len(entries))
+	for i, e := range entries {
+		if err := export.CheckEntryName(e.name); err != nil {
+			left = append(left, out{i, leftOutEntry{e.asset.Path, err.Error()}})
+			continue
+		}
+		valid[i], names[e.name] = true, true
+	}
+	var kept []exportEntry
+	seen := map[string]bool{}
+	for i, e := range entries {
+		if !valid[i] {
+			continue
+		}
+		if file := fileAbove(e.name, names); file != "" {
+			left = append(left, out{i, leftOutEntry{e.asset.Path, fmt.Sprintf("the entry %q lies below the file %q of the archive", e.name, file)}})
+			continue
+		}
+		if seen[e.name] {
+			left = append(left, out{i, leftOutEntry{e.asset.Path, fmt.Sprintf("the entry %q stands twice in the archive", e.name)}})
+			continue
+		}
+		seen[e.name] = true
+		kept = append(kept, e)
+	}
+	sort.SliceStable(left, func(i, j int) bool { return left[i].at < left[j].at })
+	leftOut := make([]leftOutEntry, len(left))
+	for i, l := range left {
+		leftOut[i] = l.leftOutEntry
+	}
+	return kept, leftOut
+}
+
+// fileAbove is the first folder of name that is itself a name of names, or
+// "".
+func fileAbove(name string, names map[string]bool) string {
+	for i := strings.IndexByte(name, '/'); i >= 0; i = nextSlash(name, i) {
+		if names[name[:i]] {
+			return name[:i]
+		}
+	}
+	return ""
+}
+
+func nextSlash(name string, at int) int {
+	if j := strings.IndexByte(name[at+1:], '/'); j >= 0 {
+		return at + 1 + j
+	}
+	return -1
 }
 
 // exportAccount is the key of the account of a request in running, or ""
@@ -332,10 +401,16 @@ func (s *Server) exportListing(er *exportRequest, limits export.Limits) ([]expor
 				stopped = true
 				return index.ErrStop
 			}
-			entries = append(entries, exportEntry{name: name, asset: a})
+			entries = append(entries, exportEntry{name: name, asset: a, size: a.Size})
 			return nil
 		})
 		if err != nil {
+			return nil, nil, err
+		}
+	}
+	if merges(er.repo) && !stopped {
+		var err error
+		if entries, tally, err = s.countMerges(er, entries, limits); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -350,6 +425,34 @@ func (s *Server) exportListing(er *exportRequest, limits export.Limits) ([]expor
 		})
 	}
 	return entries, tally, nil
+}
+
+// merges is true for a group whose read path merges maven-metadata.xml.
+func merges(repo repos.Repo) bool { return repo.Type == "group" && repo.Format == "maven2" }
+
+// countMerges counts each merged maven-metadata.xml and its checksums with
+// the size of the bytes the group answers, and leaves out such a path the
+// group answers no bytes for. The tally starts again over the entries. A
+// listing that stopped at a limit keeps its count, which refuses it.
+func (s *Server) countMerges(er *exportRequest, entries []exportEntry, limits export.Limits) ([]exportEntry, *export.Tally, error) {
+	tally := export.NewTally(limits)
+	kept := entries[:0]
+	for _, e := range entries {
+		if base, _ := maven.SplitChecksum(e.asset.Path); maven.IsMetadataPath(base) {
+			b, err := s.rp.file(er.st, er.repo, er.members, e.asset.Path)
+			if err != nil {
+				return nil, nil, err
+			}
+			if b == nil {
+				continue
+			}
+			b.close()
+			e.size = b.size
+		}
+		kept = append(kept, e)
+		tally.Add(e.size)
+	}
+	return kept, tally, nil
 }
 
 func splitPath(p string) (parent, name string) {
@@ -395,14 +498,14 @@ func streamHeaders(w *recorder, contentType, name string) {
 // streamZip writes the archive. An entry that cannot be read ends it early,
 // without its central directory, and breaks the transfer; the server log
 // names why.
-func (s *Server) streamZip(w *recorder, req *request, er *exportRequest, archive string, entries []exportEntry) error {
+func (s *Server) streamZip(w *recorder, req *request, er *exportRequest, archive string, entries []exportEntry, leftOut int) error {
 	started := time.Now()
 	list := make([]export.Entry, len(entries))
 	var written int64
 	skipped := 0
 	for i, e := range entries {
-		path := e.asset.Path
-		list[i] = export.Entry{Name: e.name, Size: e.asset.Size, ModifiedMS: e.asset.CreatedMS,
+		path, counted := e.asset.Path, e.size
+		list[i] = export.Entry{Name: e.name, Size: e.size, ModifiedMS: e.asset.CreatedMS,
 			Open: func() (io.ReadCloser, int64, error) {
 				if err := req.r.Context().Err(); err != nil {
 					return nil, 0, fmt.Errorf("the client left: %w", err)
@@ -421,6 +524,12 @@ func (s *Server) streamZip(w *recorder, req *request, er *exportRequest, archive
 				if b == nil {
 					return nil, 0, fmt.Errorf("%s is gone from %s", path, er.repo.Name)
 				}
+				if b.size > counted {
+					// the store grew after the listing: no entry sends more
+					// than the limits counted for it
+					b.close()
+					return nil, 0, &export.SizeError{Name: path, Want: counted, Read: b.size}
+				}
 				written += b.size
 				if b.file != nil {
 					return b.file, b.size, nil
@@ -432,7 +541,7 @@ func (s *Server) streamZip(w *recorder, req *request, er *exportRequest, archive
 	out, done := s.stallBound(w)
 	err := export.WriteZip(out, list)
 	done()
-	s.exportLog(er, len(entries)-skipped, written, started, err)
+	s.exportLog(er, len(entries)-skipped, written, leftOut, started, err)
 	endStream(err)
 	return nil
 }
@@ -488,8 +597,9 @@ func endStream(err error) {
 	}
 }
 
-// exportLog is the server log line at the end of an export (call B27).
-func (s *Server) exportLog(er *exportRequest, files int, bytes int64, started time.Time, err error) {
+// exportLog is the server log line at the end of an export (call B27); it
+// counts the paths the archive left out.
+func (s *Server) exportLog(er *exportRequest, files int, bytes int64, leftOut int, started time.Time, err error) {
 	path := er.folder
 	if path == "" {
 		path = "/"
@@ -500,5 +610,9 @@ func (s *Server) exportLog(er *exportRequest, files int, bytes int64, started ti
 			er.repo.Name, path, er.form, ms, PyText(err))
 		return
 	}
-	logAt(slogInfo, serverLogger, "export of %q path %q form %q: %d files, %d bytes, %d ms", er.repo.Name, path, er.form, files, bytes, ms)
+	left := ""
+	if leftOut > 0 {
+		left = fmt.Sprintf(", %d left out", leftOut)
+	}
+	logAt(slogInfo, serverLogger, "export of %q path %q form %q: %d files, %d bytes%s, %d ms", er.repo.Name, path, er.form, files, bytes, left, ms)
 }

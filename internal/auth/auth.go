@@ -66,6 +66,13 @@ type Options struct {
 	// X-Forwarded-Proto count for the sign in limits and the session cookie;
 	// nil trusts none.
 	TrustedProxies TrustedProxies
+	// Imported holds the keys an import took over from the old product, and
+	// InstallKey reads the install key they are stored under (decisions K4
+	// and K5 of docs/plans/secrets-import.md); it is read at the start and
+	// at every reload, and nil key, an error or a nil InstallKey lets no
+	// imported key in. Nil Imported takes none.
+	Imported   ImportedKeys
+	InstallKey func() ([]byte, error)
 }
 
 // Service implements model.Security. It is safe for concurrent use.
@@ -97,8 +104,17 @@ type Service struct {
 	lookups        *lookups
 	lookupFlight   *flight[lookupAnswer]
 	lookupWarnings *warnings
+	bindings       *tokenBindings
+	// the forms rehash stored, by user id and unsalted form (rehash.go)
+	rehashes sync.Map
 	// the checks of Basic credentials in flight (basic)
 	checks *flight[basicAnswer]
+
+	// the imported keys and the install key they are stored under
+	// (imported.go)
+	imported     ImportedKeys
+	installKeyOf func() ([]byte, error)
+	installKey   atomic.Pointer[[]byte]
 }
 
 var _ model.Security = (*Service)(nil)
@@ -147,9 +163,13 @@ func New(o Options) (*Service, error) {
 		floorSleep: time.Sleep,
 	}
 	s.lookups, s.lookupFlight, s.lookupWarnings = newLookups(now), newFlight[lookupAnswer](), newWarnings()
+	s.bindings = newTokenBindings()
 	start := now()
 	s.elapsed = func() time.Duration { return now().Sub(start) }
+	docker.elapsed = func() time.Duration { return s.elapsed() }
 	s.checks = newFlight[basicAnswer]()
+	s.imported, s.installKeyOf = o.Imported, o.InstallKey
+	s.loadInstallKey()
 	v := newView(o.Snapshot, o.Generation, slices.Clone(o.Directories))
 	s.cur.Store(v)
 	s.next.Store(int64(ReloadInterval))
@@ -207,11 +227,14 @@ func (s *Service) Subject(r *http.Request) (*model.Subject, error) {
 }
 
 // basicAnswer is the result of a check of Basic credentials under the
-// limiter.
+// limiter. ended: the request that ran the check ended before an answer, so
+// a busy answer of its directories says nothing of the others (row 3-49 of
+// review 3).
 type basicAnswer struct {
-	got  signedIn
-	ok   bool
-	wait int
+	got   signedIn
+	ok    bool
+	wait  int
+	ended bool
 }
 
 // basic checks the Basic credentials of r (decisions N8 and E10, reviews S2
@@ -224,8 +247,8 @@ type basicAnswer struct {
 // comparison: the first asks the cache for a success of the last
 // CredentialTime against the same view and runs the check when there is
 // none, the others take only its success or its answer that a directory had
-// no place. After a refusal each of them runs a check of its own under its
-// reservation. settle gives the reservation back by its rule; from the
+// no place. After a refusal, and after a check whose request ended, each of
+// them runs a check of its own under its reservation. settle gives the reservation back by its rule; from the
 // question to the cache on, a way out that sets no result, a panic
 // included, counts as a failure.
 func (s *Service) basic(r *http.Request, v *view, typed, pass string) (signedIn, bool, int) {
@@ -251,14 +274,16 @@ func (s *Service) basic(r *http.Request, v *view, typed, pass string) (signedIn,
 			*mine = checked{got: got, ok: true, compared: true, remembered: true}
 			return basicAnswer{got: got, ok: true}
 		}
-		return check(held)
+		a := check(held)
+		a.ended = !a.ok && ctx.Err() != nil
+		return a
 	})
 	switch {
 	case err != nil:
 		return signedIn{}, false, 0
 	case shared && a.ok:
 		return a.got.clone(), true, 0
-	case shared && a.wait == 0:
+	case shared && (a.wait == 0 || a.ended):
 		a = check(false)
 	}
 	return a.got, a.ok, a.wait
@@ -271,15 +296,16 @@ func (s *Service) basic(r *http.Request, v *view, typed, pass string) (signedIn,
 // remembered success forgets none (review R1). Only a request that compared
 // nothing gives its reservation back without a result: one that took the
 // answer of another request with the same password (c nil), and one whose
-// directories had no place for it while no realm compared the password with
-// a credential of the name.
+// directories had no place for it or did not answer while no realm
+// compared the password with a credential of the name (row 3-53 of review
+// 3).
 func (s *Service) settle(user, address string, c *checked) {
 	switch {
 	case c == nil || c.remembered:
 		s.limiter.release(user, address)
 	case c.ok:
 		s.limiter.end(user, address, true)
-	case c.busy && !c.compared:
+	case (c.busy || c.down) && !c.compared:
 		s.limiter.release(user, address)
 	default:
 		s.limiter.end(user, address, false)
@@ -315,12 +341,17 @@ func (s *Service) checkBasic(ctx context.Context, v *view, user, pass string) ch
 // advice only (finding T5 of review 3): the limiter holds no wait for it.
 // settle gives the reservation back or counts one failure by its rule, and
 // the pair waits only once its failures make it wait, as after refusals.
-// remembered: the success came from the cache.
+// down: no realm accepted the pair and a directory did not answer while the
+// request lasted, so it compared nothing either (row 3-53 of review 3); the
+// check is a refusal, and settle counts no failure for it unless a realm
+// compared. A request that ended before the answer counts as compared: its
+// bind may have reached the directory. remembered:
+// the success came from the cache.
 type checked struct {
-	got            signedIn
-	ok             bool
-	compared, busy bool
-	remembered     bool
+	got                  signedIn
+	ok                   bool
+	compared, busy, down bool
+	remembered           bool
 }
 
 // tryPair runs check for the user name under a reservation of the pair in
@@ -382,15 +413,19 @@ func (s *Service) checkLocal(v *view, user, pass string) (got signedIn, ok, deci
 	if !decides || !match {
 		return signedIn{}, false, decides
 	}
-	s.rehash(v, u.ID, u.PasswordHash, pass)
+	p := principal{user: u, realm: RealmLocal, forms: [][32]byte{formDigest(u.PasswordHash)}}
+	if form := s.rehash(v, u.ID, u.PasswordHash, pass); form != "" {
+		p.forms = append(p.forms, formDigest(form))
+	}
+	p.user.PasswordHash = ""
 	u.PasswordHash = ""
-	return signedIn{principal: principal{user: u, realm: RealmLocal}, subject: v.subjectOf(u, u.Roles, RealmLocal), by: RealmLocal}, true, true
+	return signedIn{principal: p, subject: v.subjectOf(u, u.Roles, RealmLocal), by: RealmLocal}, true, true
 }
 
 // checkDirectories asks the directories in their order; the first that
 // accepts the pair signs the user in. Every answer of a directory counts as
-// a comparison of the password, a refusal and an error as well; only a
-// directory without a place for the check asked nothing. Such a directory
+// a comparison of the password, a refusal and an error as well; a directory
+// without a place for the check and one that did not answer asked nothing. Such a directory
 // marks the check as busy, and the directories after it are asked
 // (finding T3 of review 3).
 func (s *Service) checkDirectories(ctx context.Context, v *view, user, pass string) checked {
@@ -404,12 +439,14 @@ func (s *Service) checkDirectories(ctx context.Context, v *view, user, pass stri
 			c.busy = true
 			continue
 		}
+		if errors.Is(err, ErrUnreachable) && ctx.Err() == nil {
+			c.down = true
+			s.log.Warn("directory did not answer", "connection", i+1, "of", len(v.dirs))
+			continue
+		}
 		c.compared = true
 		if err != nil {
-			switch {
-			case errors.Is(err, ErrUnreachable):
-				s.log.Warn("directory did not answer", "connection", i+1, "of", len(v.dirs))
-			case !errors.Is(err, ErrWrongPair):
+			if !errors.Is(err, ErrWrongPair) {
 				s.log.Warn("directory sign in failed", "connection", i+1, "of", len(v.dirs))
 			}
 			continue
@@ -441,7 +478,7 @@ func (s *Service) checkDirectories(ctx context.Context, v *view, user, pass stri
 // limiter.
 func (s *Service) signIn(ctx context.Context, v *view, user, pass string) checked {
 	start := s.floorNow()
-	var busy, compared bool
+	var busy, compared, down bool
 	for _, realm := range v.checked {
 		var c checked
 		switch realm {
@@ -455,10 +492,10 @@ func (s *Service) signIn(ctx context.Context, v *view, user, pass string) checke
 		if c.ok {
 			return c
 		}
-		busy, compared = busy || c.busy, compared || c.compared
+		busy, compared, down = busy || c.busy, compared || c.compared, down || c.down
 	}
 	s.floor(start)
-	return checked{busy: busy, compared: compared}
+	return checked{busy: busy, compared: compared, down: down}
 }
 
 // floor sleeps for what is left of RefusalFloor since start.

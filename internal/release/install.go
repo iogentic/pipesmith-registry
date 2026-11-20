@@ -45,6 +45,12 @@ type ServiceManager interface {
 	Stop(ctx context.Context, unit string) error
 }
 
+// ActiveReporter is a ServiceManager that says whether a unit is active.
+// The health wait asks it when the ServiceManager has it; Systemctl has it.
+type ActiveReporter interface {
+	Active(ctx context.Context, unit string) (bool, error)
+}
+
 // Systemctl restarts and stops a unit with systemctl, without a shell.
 type Systemctl struct{}
 
@@ -61,6 +67,27 @@ func (Systemctl) Restart(ctx context.Context, unit string) error {
 // Stop runs systemctl stop -- unit.
 func (Systemctl) Stop(ctx context.Context, unit string) error { return systemctl(ctx, "stop", unit) }
 
+// Active runs systemctl is-active --quiet -- unit: exit code 0 is active,
+// another exit code is not.
+func (Systemctl) Active(ctx context.Context, unit string) (bool, error) {
+	if !ValidUnit(unit) {
+		return false, fmt.Errorf("unit %q is not a plain service unit name", unit)
+	}
+	var out capped
+	cmd := exec.CommandContext(ctx, "systemctl", "is-active", "--quiet", "--", unit) // #nosec G204 -- a fixed program, fixed arguments and a checked unit name, no shell.
+	cmd.Stdout, cmd.Stderr = &out, &out
+	ownGroup(cmd)
+	err := cmd.Run()
+	var exit *exec.ExitError
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.As(err, &exit):
+		return false, nil
+	}
+	return false, fmt.Errorf("systemctl is-active %s: %v: %s", unit, err, strings.TrimSpace(out.String()))
+}
+
 func systemctl(ctx context.Context, verb, unit string) error {
 	if !ValidUnit(unit) {
 		return fmt.Errorf("unit %q is not a plain service unit name", unit)
@@ -68,6 +95,7 @@ func systemctl(ctx context.Context, verb, unit string) error {
 	var out capped
 	cmd := exec.CommandContext(ctx, "systemctl", verb, "--", unit) // #nosec G204 -- a fixed program, a fixed verb and a checked unit name, no shell.
 	cmd.Stdout, cmd.Stderr = &out, &out
+	ownGroup(cmd)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("systemctl %s %s: %v: %s", verb, unit, err, strings.TrimSpace(out.String()))
 	}
@@ -98,6 +126,8 @@ type Updater struct {
 	ownerOf func(string) (int, error)
 	statOf  func(string) (fileStat, error)
 	hook    func(point string) error
+	now     func() time.Time // the clock; nil is time.Now
+	began   bool             // the last update or rollback wrote the record of its switch
 	// freeSpace replaces migrate.FreeSpace in tests.
 	freeSpace func(dir string) (uint64, error)
 }
@@ -133,15 +163,20 @@ type session struct {
 	prevTarget  string     // target of previous as written, when prevExisted
 	prevExisted bool
 	unlock      func()
-	owner       int         // uid of the root
-	dataDir     string      // data_dir of update.json
-	plan        *schemaPlan // the files the new release migrates
+	owner       int // uid of the root
+	statOf      func(string) (fileStat, error)
+	dataDir     string         // data_dir of update.json
+	plan        *schemaPlan    // the files the new release migrates
+	halted      bool           // the way back stopped before its end; the record of the switch stays
+	action      string         // update or rollback, for the record of the switch
+	signals     chan os.Signal // SIGINT, SIGHUP and SIGTERM held from the first record on
 }
 
 // begin checks the owner and the owners and modes of the root, takes the
 // lock, reads update.json and the links, and resolves the address of the
 // health wait. withKey checks the trusted key as well. It changes nothing.
 func (u *Updater) begin(withKey bool) (*session, error) {
+	u.began = false
 	l := Layout{Root: u.Root}
 	euid, ownerOf, statOf := os.Geteuid, fileOwner, lstatFile
 	if u.euid != nil {
@@ -164,7 +199,11 @@ func (u *Updater) begin(withKey bool) (*session, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &session{l: l, unlock: unlock, owner: owner}
+	s := &session{l: l, owner: owner, statOf: statOf}
+	s.unlock = func() {
+		u.releaseSignals(s)
+		unlock()
+	}
 	if err := u.read(s, withKey, statOf); err != nil {
 		unlock()
 		return nil, err
@@ -212,7 +251,11 @@ func (u *Updater) read(s *session, withKey bool, statOf func(string) (fileStat, 
 			return err
 		}
 	}
+	if err := u.unitRule(s); err != nil {
+		return err
+	}
 	u.step("current: %s/%s", ReleasesDir, current)
+	u.listCopies(s.dataDir)
 	return nil
 }
 
@@ -276,13 +319,18 @@ func (u *Updater) Switch(version string, opts UpdateOptions) error {
 }
 
 // UpdateWith is Update with every flag.
-func (u *Updater) UpdateWith(dir string, opts UpdateOptions) error {
+func (u *Updater) UpdateWith(dir string, opts UpdateOptions) (err error) {
 	allowDowngrade := opts.AllowDowngrade
 	s, err := u.begin(true)
 	if err != nil {
 		return err
 	}
 	defer s.unlock()
+	rec := &recorder{u: u, s: s, action: "update"}
+	defer func() { rec.finish(err) }()
+	if err := u.endPending(s, rec); err != nil {
+		return err
+	}
 	if err := u.removeLeftovers(s); err != nil {
 		return err
 	}
@@ -316,6 +364,7 @@ func (u *Updater) UpdateWith(dir string, opts UpdateOptions) error {
 	if err != nil {
 		return err
 	}
+	rec.to = v.String()
 	if err := versionRule(v, s.current, allowDowngrade); err != nil {
 		return err
 	}
@@ -329,22 +378,40 @@ func (u *Updater) UpdateWith(dir string, opts UpdateOptions) error {
 	if err := u.writeCheck(s.plan); err != nil {
 		return err
 	}
+	if err := u.requestCopies(s.plan); err != nil {
+		return err
+	}
+	defer u.dropRequests(s.plan)
 
 	created, err := u.install(s, rel, staging, v.String())
 	if err != nil {
 		return err
 	}
 	if v.String() == s.current {
+		rec.inPlace = true
 		return u.restartInPlace(s, created)
+	}
+	if err := u.writePending(s, "update", v.String()); err != nil {
+		removeCreated(created)
+		return fmt.Errorf("%w: the record %s: %v", ErrInstall, PendingFile, err)
 	}
 	if err := u.switchTo(s, v.String()); err != nil {
 		removeCreated(created)
+		u.clearPending(s)
 		return fmt.Errorf("%w: switch to %s/%s: %v", ErrInstall, ReleasesDir, v, err)
 	}
 	u.step("switched: current -> %s/%s, previous -> %s/%s", ReleasesDir, v, ReleasesDir, s.current)
+	rec.back = true
+	if err := u.at("kill-after-switch"); err != nil {
+		return err
+	}
 	if err := u.restartAndWait(s, v.String()); err != nil {
 		return u.wayBack(s, v.String(), created, err)
 	}
+	if err := u.at("kill-after-restart"); err != nil {
+		return err
+	}
+	u.clearPending(s)
 	return nil
 }
 
@@ -368,12 +435,17 @@ func (u *Updater) removeLeftovers(s *session) error {
 }
 
 // Rollback switches current to the release previous points to.
-func (u *Updater) Rollback() error {
+func (u *Updater) Rollback() (err error) {
 	s, err := u.begin(false)
 	if err != nil {
 		return err
 	}
 	defer s.unlock()
+	rec := &recorder{u: u, s: s, action: "rollback"}
+	defer func() { rec.finish(err) }()
+	if err := u.endPending(s, rec); err != nil {
+		return err
+	}
 	prev, err := s.l.ReadLink(PreviousLink)
 	if errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("%w: %s does not exist; there is no release to go back to", ErrLayout, s.l.path(PreviousLink))
@@ -387,17 +459,27 @@ func (u *Updater) Rollback() error {
 	if info, err := os.Lstat(filepath.Join(s.l.Release(prev), InstalledBinary)); err != nil || !info.Mode().IsRegular() {
 		return fmt.Errorf("%w: %s/%s holds no %s", ErrLayout, ReleasesDir, prev, InstalledBinary)
 	}
+	rec.to = prev
 	u.step("previous: %s/%s", ReleasesDir, prev)
+	if err := u.checkBefore(s, prev); err != nil {
+		return err
+	}
 	if err := u.rollbackSchema(s, prev); err != nil {
 		return err
 	}
+	if err := u.writePending(s, "rollback", prev); err != nil {
+		return fmt.Errorf("%w: the record %s: %v", ErrInstall, PendingFile, err)
+	}
 	if err := u.switchTo(s, prev); err != nil {
+		u.clearPending(s)
 		return fmt.Errorf("%w: switch to %s/%s: %v", ErrInstall, ReleasesDir, prev, err)
 	}
 	u.step("switched: current -> %s/%s, previous -> %s/%s", ReleasesDir, prev, ReleasesDir, s.current)
-	if err := u.restartAndWait(s, prev); err != nil {
+	rec.back = true
+	if err := u.restartAndWait(s, u.versionOf(s, prev)); err != nil {
 		return u.wayBack(s, prev, "", err)
 	}
+	u.clearPending(s)
 	return nil
 }
 
@@ -424,15 +506,23 @@ func (u *Updater) switchTo(s *session, name string) error {
 // health wait of name.
 func (u *Updater) wayBack(s *session, name, created string, cause error) error {
 	failed := fmt.Errorf("switch to %s/%s failed: %w", ReleasesDir, name, cause)
+	if err := u.markBack(s, name); err != nil {
+		return fmt.Errorf("%w; the way back did not start, current points to %s/%s: the record %s: %v", failed, ReleasesDir, name, PendingFile, err)
+	}
 	if err := u.restore(s); err != nil {
 		return fmt.Errorf("%w; the way back failed, current may still point to %s/%s: %v", failed, ReleasesDir, name, err)
 	}
 	u.step("switched back: current -> %s/%s", ReleasesDir, s.current)
 	if s.plan != nil && len(s.plan.files) > 0 {
-		return u.wayBackSchema(s, created, failed)
+		err := u.wayBackSchema(s, created, failed)
+		if !s.halted {
+			u.clearPending(s)
+		}
+		return err
 	}
-	err := u.restartAndWait(s, s.current)
+	err := u.restartAndWait(s, u.versionOf(s, s.current))
 	removeCreated(created)
+	u.clearPending(s)
 	if err != nil {
 		return fmt.Errorf("%w; went back to %s/%s, which does not answer either: %v", failed, ReleasesDir, s.current, err)
 	}
@@ -448,6 +538,25 @@ func (u *Updater) restartInPlace(s *session, created string) error {
 		return fmt.Errorf("restart of %s/%s failed: %w; current and previous are unchanged", ReleasesDir, s.current, err)
 	}
 	return nil
+}
+
+// versionOf is the version the binary of releases/<name>/ answers, for a
+// directory installed by hand under another name than its version; name
+// when the binary gives no version, or when the directory fails the owner
+// and mode check, so its binary does not run as the owner of the root.
+func (u *Updater) versionOf(s *session, name string) string {
+	if _, err := ParseVersion(name); err == nil {
+		return name
+	}
+	if err := u.trustRelease(s, name); err != nil {
+		u.step("not run: %s/%s/%s, for its version: %v; the health wait asks for the version %s", ReleasesDir, name, InstalledBinary, err, name)
+		return name
+	}
+	v, err := u.runVersion(filepath.Join(s.l.Release(name), InstalledBinary))
+	if err != nil {
+		return name
+	}
+	return v.String()
 }
 
 func removeCreated(path string) {
@@ -510,6 +619,7 @@ func (u *Updater) runOnce(bin, command string) (string, string, error) {
 	cmd.Dir = filepath.Dir(bin)
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	cmd.WaitDelay = time.Second
+	ownGroup(cmd)
 	err := cmd.Run()
 	if ctx.Err() != nil {
 		return "", "", fmt.Errorf("no answer within %s", orDefault(u.VersionTimeout, DefaultVersionTimeout))
@@ -544,7 +654,7 @@ func copyBinary(rel *Release, dst string) error {
 		return err
 	}
 	defer root.Close()
-	in, err := root.Open(rel.Name)
+	in, err := openRegular(root, rel.Name)
 	if err != nil {
 		return err
 	}
@@ -727,14 +837,35 @@ func (u *Updater) restartAndWait(s *session, version string) error {
 		return fmt.Errorf("%w: %s: %v", ErrRestart, s.cfg.Unit, err)
 	}
 	u.step("restarted: %s", s.cfg.Unit)
-	if err := u.waitHealth(s.base, s.pin, version); err != nil {
+	if err := u.waitHealth(s.base, s.pin, version, u.activeCheck(ctx, s.cfg.Unit)); err != nil {
 		return err
 	}
 	u.step("healthy: %s answers with version %s", s.base, version)
 	return nil
 }
 
-func (u *Updater) waitHealth(base string, pin *healthPin, version string) error {
+// activeCheck is nil error when the service manager reports unit active or
+// reports no state of units.
+func (u *Updater) activeCheck(ctx context.Context, unit string) func() error {
+	return func() error {
+		reporter, ok := u.Service.(ActiveReporter)
+		if !ok {
+			return nil
+		}
+		on, err := reporter.Active(ctx, unit)
+		switch {
+		case err != nil:
+			return err
+		case !on:
+			return fmt.Errorf("the unit %s is not active", unit)
+		}
+		return nil
+	}
+}
+
+// waitHealth waits for a healthy answer with version while active passes, so
+// another process on the address of a unit that failed is no success.
+func (u *Updater) waitHealth(base string, pin *healthPin, version string, active func() error) error {
 	transport := &http.Transport{Proxy: nil, DisableKeepAlives: true}
 	if pin != nil {
 		transport.TLSClientConfig = pin.tlsConfig()
@@ -749,6 +880,9 @@ func (u *Updater) waitHealth(base string, pin *healthPin, version string) error 
 	deadline := time.Now().Add(timeout)
 	for {
 		err := probe(client, base, version)
+		if err == nil {
+			err = active()
+		}
 		if err == nil {
 			return nil
 		}
@@ -765,16 +899,26 @@ func probe(client *http.Client, base, version string) error {
 		return err
 	}
 	if health["status"] != "ok" {
-		return fmt.Errorf("/api/health answered status %v", health["status"])
+		return fmt.Errorf("/api/health answered status %s", quoted(health["status"]))
 	}
 	var status map[string]any
 	if err := getJSON(client, base+"/api/status", &status); err != nil {
 		return err
 	}
 	if status["version"] != version {
-		return fmt.Errorf("/api/status answered version %v", status["version"])
+		return fmt.Errorf("/api/status answered version %s", quoted(status["version"]))
 	}
 	return nil
+}
+
+// quoted is a JSON value of the server as a quoted Go string of at most 200
+// bytes, so no byte of the answer reaches the output raw.
+func quoted(v any) string {
+	text := fmt.Sprint(v)
+	if len(text) > 200 {
+		text = text[:200] + "..."
+	}
+	return fmt.Sprintf("%q", text)
 }
 
 func getJSON(client *http.Client, url string, dest *map[string]any) error {

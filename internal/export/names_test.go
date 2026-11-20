@@ -100,7 +100,13 @@ func TestEntryNames(t *testing.T) {
 
 func TestNpmEntryNames(t *testing.T) {
 	v := loadNameVectors(t)
+	tarballs, others := 0, 0
 	for _, c := range v.NpmEntries {
+		if c.Want == nil {
+			others++
+		} else {
+			tarballs++
+		}
 		got, ok := NpmEntryName(c.Path)
 		switch {
 		case c.Want == nil && ok:
@@ -108,6 +114,9 @@ func TestNpmEntryNames(t *testing.T) {
 		case c.Want != nil && (!ok || got != *c.Want):
 			t.Errorf("NpmEntryName(%q) = %q %v, want %q", c.Path, got, ok, *c.Want)
 		}
+	}
+	if tarballs == 0 || others == 0 {
+		t.Fatalf("%d tarball and %d other rows", tarballs, others)
 	}
 }
 
@@ -137,15 +146,25 @@ func TestUniqueNames(t *testing.T) {
 
 func TestStoredWithoutCompression(t *testing.T) {
 	v := loadNameVectors(t)
+	stored, compressed := 0, 0
 	for _, c := range v.Stored {
+		if c.Stored {
+			stored++
+		} else {
+			compressed++
+		}
 		if got := Stored(c.Name); got != c.Stored {
 			t.Errorf("Stored(%q) = %v, want %v", c.Name, got, c.Stored)
 		}
+	}
+	if stored == 0 || compressed == 0 {
+		t.Fatalf("%d stored and %d compressed rows", stored, compressed)
 	}
 }
 
 func TestLimits(t *testing.T) {
 	v := loadNameVectors(t)
+	passed, over := 0, 0
 	for i, c := range v.Limits {
 		tally := NewTally(Limits{MaxFiles: c.MaxFiles, MaxBytes: c.MaxBytes})
 		for _, size := range c.Sizes {
@@ -155,20 +174,25 @@ func TestLimits(t *testing.T) {
 		}
 		err := tally.Err()
 		if c.Error == nil {
+			passed++
 			if err != nil {
 				t.Errorf("row %d: %v, want nil", i, err)
 			}
 			continue
 		}
-		var over *LimitError
-		if !errors.As(err, &over) {
+		over++
+		var limit *LimitError
+		if !errors.As(err, &limit) {
 			t.Errorf("row %d: %v, want a LimitError", i, err)
 			continue
 		}
 		want := LimitError{Files: c.Error.Files, Bytes: c.Error.Bytes, MaxFiles: c.MaxFiles, MaxBytes: c.MaxBytes, Complete: c.Error.Complete}
-		if *over != want {
-			t.Errorf("row %d: %+v, want %+v", i, *over, want)
+		if *limit != want {
+			t.Errorf("row %d: %+v, want %+v", i, *limit, want)
 		}
+	}
+	if passed == 0 || over == 0 {
+		t.Fatalf("%d rows within and %d above the limits", passed, over)
 	}
 }
 

@@ -31,6 +31,8 @@ type fakeService struct {
 	unhealthy map[string]bool // versions whose health answers 503
 	late      int             // health answers 503 this many times after each restart
 	pending   int
+	inactive  map[string]bool   // versions whose unit the service manager reports as not active
+	versions  map[string]string // the version a release directory answers, when it is not its name
 }
 
 func (f *fakeService) Restart(_ context.Context, unit string) error {
@@ -58,6 +60,13 @@ func (f *fakeService) Stop(_ context.Context, unit string) error {
 	return nil
 }
 
+// Active reports a unit that runs a release and is not marked inactive.
+func (f *fakeService) Active(_ context.Context, unit string) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.running != "" && !f.inactive[f.running], nil
+}
+
 func (f *fakeService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	running, sick := f.running, f.unhealthy[f.running]
@@ -79,6 +88,11 @@ func (f *fakeService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprint(w, `{"status":"ok"}`)
 	case "/api/status":
+		f.mu.Lock()
+		if v, ok := f.versions[running]; ok {
+			running = v
+		}
+		f.mu.Unlock()
 		fmt.Fprintf(w, `{"name":"Pipesmith Registry","version":%q}`, running)
 	default:
 		http.NotFound(w, r)
@@ -152,13 +166,17 @@ func (r *rig) release(bin []byte) string {
 }
 
 // tree lists every entry below root: kind, mode, size, link target and the
-// SHA-256 of each file.
+// SHA-256 of each file. releases/history.jsonl is left out: every refusal
+// and way back appends to it, and TestHistoryLines checks its lines.
 func tree(t *testing.T, root string) string {
 	t.Helper()
 	var lines []string
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if p == filepath.Join(root, ReleasesDir, HistoryFile) {
+			return nil
 		}
 		info, err := os.Lstat(p)
 		if err != nil {

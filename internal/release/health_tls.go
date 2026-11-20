@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync"
 )
 
 // healthPin is the certificate the server presents, from the file a key
@@ -17,7 +18,24 @@ import (
 type healthPin struct {
 	path string
 	key  string // such as tls_cert of config.json
+	mu   sync.Mutex
 	der  []byte
+}
+
+// matches compares raw with the pin and, when they differ, reads the file
+// again, so a certificate renewed during the wait counts (finding A-10).
+func (p *healthPin) matches(raw []byte) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if bytes.Equal(raw, p.der) {
+		return true
+	}
+	fresh, err := loadHealthPin(p.path, p.key)
+	if err != nil || !bytes.Equal(raw, fresh.der) {
+		return false
+	}
+	p.der = fresh.der
+	return true
 }
 
 // loadHealthPin reads the first CERTIFICATE block of the PEM file path.
@@ -56,13 +74,14 @@ func loadHealthPin(path, key string) (*healthPin, error) {
 var errOtherCert = errors.New("the server presents another certificate than")
 
 // tlsConfig compares the first certificate the server presents with the pin,
-// byte for byte; no host name and no chain is checked.
+// byte for byte, and with the file of the pin read again when they differ; no
+// host name and no chain is checked.
 func (p *healthPin) tlsConfig() *tls.Config {
 	return &tls.Config{
 		MinVersion:         tls.VersionTLS12,
 		InsecureSkipVerify: true, // #nosec G402 -- VerifyConnection compares the certificate with the configured one.
 		VerifyConnection: func(cs tls.ConnectionState) error {
-			if len(cs.PeerCertificates) == 0 || !bytes.Equal(cs.PeerCertificates[0].Raw, p.der) {
+			if len(cs.PeerCertificates) == 0 || !p.matches(cs.PeerCertificates[0].Raw) {
 				return fmt.Errorf("%w %s (%s)", errOtherCert, p.path, p.key)
 			}
 			return nil

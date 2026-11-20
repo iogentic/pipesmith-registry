@@ -1,6 +1,7 @@
 package state
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -111,6 +112,22 @@ func WriteSecret(path string, value []byte) (err error) {
 	return os.Rename(f.Name(), path)
 }
 
+// DeleteSecret removes the secret file at path. A file that does not exist
+// is no error. A folder that checkFolder refuses keeps its file.
+func DeleteSecret(path string) error {
+	dir := filepath.Dir(path)
+	if _, err := os.Lstat(dir); errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err := checkFolder(dir); err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
 // ReadSecret reads the secret file at path: a regular file, no symbolic
 // link, that belongs to the user of the process and has no right for the
 // group or others, in a folder that checkFolder takes. ErrNoSecret when the
@@ -152,6 +169,82 @@ func ReadSecret(path string) ([]byte, error) {
 	}
 	if len(data) > MaxSecretBytes {
 		return nil, fmt.Errorf("the secret file %s is larger than %d bytes", path, MaxSecretBytes)
+	}
+	return data, nil
+}
+
+// InstallKeyPath is the file of the install key of the imported keys:
+// secrets/imported-keys (decision K4 of docs/plans/secrets-import.md).
+func InstallKeyPath(dataDir string) string {
+	return filepath.Join(dataDir, SecretsDir, "imported-keys")
+}
+
+// InstallKeyBytes is the length of the install key.
+const InstallKeyBytes = 32
+
+// ReadInstallKey is the install key of a data directory; ErrNoSecret when
+// no import made one.
+func ReadInstallKey(dataDir string) ([]byte, error) {
+	key, err := ReadSecret(InstallKeyPath(dataDir))
+	if err != nil {
+		return nil, err
+	}
+	if len(key) != InstallKeyBytes {
+		return nil, fmt.Errorf("the install key %s has %d bytes, not %d", InstallKeyPath(dataDir), len(key), InstallKeyBytes)
+	}
+	return key, nil
+}
+
+// MakeInstallKey is the install key of a data directory, made of
+// crypto/rand when there is none yet.
+func MakeInstallKey(dataDir string) ([]byte, error) {
+	key, err := ReadInstallKey(dataDir)
+	if !errors.Is(err, ErrNoSecret) {
+		return key, err
+	}
+	key = make([]byte, InstallKeyBytes)
+	if _, err := rand.Read(key); err != nil {
+		return nil, err
+	}
+	if err := WriteSecret(InstallKeyPath(dataDir), key); err != nil {
+		return nil, err
+	}
+	return key, nil
+}
+
+// ReadTrustFile reads a file this server trusts but need not keep secret,
+// such as the CA file of an LDAP connection: a regular file of at most max
+// bytes, no symbolic link at the last part of the path, that belongs to the
+// user of the process or to root and that neither the group nor others may
+// write. Others may read it.
+func ReadTrustFile(path string, max int64) ([]byte, error) {
+	f, err := openNoFollow(path)
+	if err != nil {
+		if isLoop(err) {
+			return nil, fmt.Errorf("%s is a symbolic link; name the file it points to", path)
+		}
+		return nil, err
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || info.Size() > max {
+		return nil, fmt.Errorf("%s is no regular file of at most %d bytes", path, max)
+	}
+	if owner, ok := ownerOf(info); !ok || (owner != processUID() && owner != 0) {
+		return nil, fmt.Errorf("%s belongs to user %d, neither to the user %d of this process nor to root", path, owner, processUID())
+	}
+	if perm := info.Mode().Perm(); perm&0o022 != 0 {
+		return nil, fmt.Errorf("%s has mode %04o, so the group or others may write it; chmod go-w %s", path, perm, path)
+	}
+	data, err := io.ReadAll(io.LimitReader(f, max+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > max {
+		return nil, fmt.Errorf("%s is no regular file of at most %d bytes", path, max)
 	}
 	return data, nil
 }

@@ -34,7 +34,78 @@ const (
 	CodeNotOffered        Code = "not-offered"        // a value that would switch on a function this server does not have (A23)
 )
 
-// Codes that later legs return; no rule of this package returns them.
+// Codes of the rules of the tasks.
+const (
+	CodeScheduleInvalid Code = "schedule-invalid"  // a schedule of a task that tasks.Schedule.Trigger refuses (Q2)
+	CodeTaskName        Code = "task-name"         // a task name that is empty or longer than 256 characters (Q3)
+	CodeTaskType        Code = "task-type"         // a task type this server does not have (Q3)
+	CodeTaskTypeChanged Code = "task-type-changed" // a save names another task type than the stored one (Q3)
+	CodeTaskEnabled     Code = "task-enabled"      // a value of enabled that is no JSON boolean (Q17)
+	CodePropertyUnknown Code = "property-unknown"  // a property that the task type does not define (Q4)
+	CodePropertyMissing Code = "property-missing"  // a required property that is absent or empty (Q4)
+	CodePropertyValue   Code = "property-value"    // a property value that is no string or does not fit its field (Q4)
+)
+
+// Codes of the rules of the users.
+const (
+	CodeUserDirectory Code = "user-directory" // a delete or an own account change of a user of another source than default (Q5, Q6)
+	CodeUserOwn       Code = "user-own"       // a delete of the own user (Q5)
+	CodeUserAnonymous Code = "user-anonymous" // a delete of the user that the anonymous access setting names (Q5)
+	CodeUserStatus    Code = "user-status"    // a user status other than active, locked, disabled and changepassword (Q7)
+)
+
+// Codes of the identity changes (leg 6-identity).
+const (
+	CodeBodyInvalid      Code = "body-invalid"      // a request body that is no JSON of the shape of its request
+	CodePasswordInvalid  Code = "password-invalid"  // a password that is empty, longer than 1024 bytes or holds a control character (I5)
+	CodePrivilegeMissing Code = "privilege-missing" // a privilege of a role that does not exist (S22)
+	CodeRoleInUse        Code = "role-in-use"       // a delete of a role that a user, a mapping, a role, the anonymous user or the default role holds (I4)
+	CodeRealmInvalid     Code = "realm-invalid"     // a realm list that is empty, holds an unknown or repeated realm, or DefaultRole without a role (N16); a realm of a user delete that names no source (I12)
+	CodeAnonymousSignIn  Code = "anonymous-sign-in" // anonymous access that would act as a user that signs in (R9, I10)
+	CodeGrantExceeds     Code = "grant-exceeds"     // a change that gives a role or a user a permission the acting subject does not hold (I9)
+)
+
+// Codes of the LDAP connections (leg 6-identity, contract S26 and S27).
+const (
+	CodeLDAPField Code = "ldap-field" // a field of an LDAP connection form that is missing or holds a value the connection cannot take
+	CodeLDAPOrder Code = "ldap-order" // a change of order that does not name every LDAP connection once
+)
+
+// Codes of the repository and store changes (leg 6-stores).
+const (
+	CodeRepositoryKind    Code = "repository-kind"    // a format or type outside the twelve kinds of A5
+	CodeRemoteInvalid     Code = "remote-invalid"     // a proxy without a remote address of http or https with a host and no user part (ST8)
+	CodeRemoteSecret      Code = "remote-secret"      // an upstream authentication this server cannot store or use (ST9)
+	CodeWriteStore        Code = "write-store"        // a repository that would write into another store than local-write (ST2)
+	CodeStoreUnknown      Code = "store-unknown"      // a repository that names no store or a store that does not exist
+	CodeDockerPort        Code = "docker-port"        // a Docker port in a create or save, which the host sets (ST7)
+	CodeMemberInUse       Code = "member-in-use"      // a delete of a repository that a group names as a member (ST5)
+	CodePathInvalid       Code = "path-invalid"       // a store path outside <data>/stores/, holding files, or another store's (ST1)
+	CodeStoreProtected    Code = "store-protected"    // a delete of local-write or of a store that config.json attaches (ST2)
+	CodeRepositoryDefined Code = "repository-defined" // a delete of a repository that repositories.json of the host defines
+)
+
+// Codes of the routing rules, the capabilities and the read only mode
+// (leg 6-system).
+const (
+	CodeRuleBound      Code = "rule-bound"      // a routing rule body, matcher list, matcher or test path above its bound (SY2)
+	CodeRuleMode       Code = "rule-mode"       // a routing rule mode other than ALLOW and BLOCK
+	CodeMatcherInvalid Code = "matcher-invalid" // a matcher that does not compile, or a rule without a matcher
+	CodePreviewScope   Code = "preview-scope"   // a routing preview scope other than all, group and proxy
+	CodeCapabilityType Code = "capability-type" // a capability type kinds.json does not know, or a save that changes the type (SY6)
+	CodePropertySecret Code = "property-secret" // a capability property whose key the secret word rule marks (SY5, A11)
+	CodeReadOnlyState  Code = "read-only-state" // a freeze, release or task run the state of the read only mode does not allow (SB2)
+)
+
+// Codes of the rules of a cleanup preview and of the format of a policy.
+const (
+	CodePreviewRepository Code = "preview-repository" // the repository of a preview is missing, a group or of another format (Q8)
+	CodeFormatUnknown     Code = "format-unknown"     // a cleanup policy format other than *, maven2, npm, docker and raw (Q15)
+)
+
+// Codes that later legs return. TaskRefusal returns not-found, unavailable
+// and the three task codes for the refusals of the scheduler (Q1); no other
+// rule of this package returns them.
 const (
 	CodeNotFound       Code = "not-found"        // the object does not exist
 	CodeForbidden      Code = "forbidden"        // the subject lacks the right
@@ -90,6 +161,46 @@ var answers = map[Code]answer{
 	CodeCriterionValue:    {http.StatusBadRequest, formFields, ""},
 	CodeCriteriaMissing:   {http.StatusBadRequest, formFields, ""},
 	CodeNotOffered:        {http.StatusBadRequest, formFields, ""},
+	CodeScheduleInvalid:   {http.StatusBadRequest, formFields, ""},
+	CodeTaskName:          {http.StatusBadRequest, formFields, ""},
+	CodeTaskType:          {http.StatusBadRequest, formFields, ""},
+	CodeTaskTypeChanged:   {http.StatusBadRequest, formFields, ""},
+	CodeTaskEnabled:       {http.StatusBadRequest, formFields, ""},
+	CodePropertyUnknown:   {http.StatusBadRequest, formFields, ""},
+	CodePropertyMissing:   {http.StatusBadRequest, formFields, ""},
+	CodePropertyValue:     {http.StatusBadRequest, formFields, ""},
+	CodeUserDirectory:     {http.StatusConflict, formMessage, ""},
+	CodeUserOwn:           {http.StatusConflict, formMessage, ""},
+	CodeUserAnonymous:     {http.StatusConflict, formMessage, ""},
+	CodeUserStatus:        {http.StatusBadRequest, formFields, ""},
+	CodeBodyInvalid:       {http.StatusBadRequest, formFields, ""},
+	CodePasswordInvalid:   {http.StatusBadRequest, formFields, ""},
+	CodePrivilegeMissing:  {http.StatusBadRequest, formFields, ""},
+	CodeRoleInUse:         {http.StatusConflict, formMessage, ""},
+	CodeRealmInvalid:      {http.StatusBadRequest, formFields, ""},
+	CodeAnonymousSignIn:   {http.StatusConflict, formMessage, ""},
+	CodeGrantExceeds:      {http.StatusForbidden, formMessage, ""},
+	CodeLDAPField:         {http.StatusBadRequest, formFields, ""},
+	CodeLDAPOrder:         {http.StatusBadRequest, formFields, ""},
+	CodePreviewRepository: {http.StatusBadRequest, formFields, ""},
+	CodeFormatUnknown:     {http.StatusBadRequest, formFields, ""},
+	CodeRepositoryKind:    {http.StatusNotImplemented, formMessageArea, ""},
+	CodeRemoteInvalid:     {http.StatusBadRequest, formFields, ""},
+	CodeRemoteSecret:      {http.StatusBadRequest, formFields, ""},
+	CodeWriteStore:        {http.StatusBadRequest, formFields, ""},
+	CodeStoreUnknown:      {http.StatusBadRequest, formFields, ""},
+	CodeDockerPort:        {http.StatusBadRequest, formFields, ""},
+	CodeMemberInUse:       {http.StatusConflict, formMessage, ""},
+	CodePathInvalid:       {http.StatusBadRequest, formFields, ""},
+	CodeStoreProtected:    {http.StatusConflict, formMessage, ""},
+	CodeRepositoryDefined: {http.StatusConflict, formMessage, ""},
+	CodeRuleBound:         {http.StatusBadRequest, formFields, ""},
+	CodeRuleMode:          {http.StatusBadRequest, formFields, ""},
+	CodeMatcherInvalid:    {http.StatusBadRequest, formFields, ""},
+	CodePreviewScope:      {http.StatusBadRequest, formFields, ""},
+	CodeCapabilityType:    {http.StatusBadRequest, formFields, ""},
+	CodePropertySecret:    {http.StatusBadRequest, formFields, ""},
+	CodeReadOnlyState:     {http.StatusConflict, formMessage, ""},
 	CodeNotFound:          {http.StatusNotFound, formMessage, ""},
 	CodeForbidden:         {http.StatusForbidden, formMessage, ""},
 	CodeRequestToken:      {http.StatusForbidden, formMessage, "missing or wrong request token"},

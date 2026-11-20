@@ -5,6 +5,8 @@ import (
 	"slices"
 	"sync"
 	"time"
+
+	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
 
 // The delete marks the write path sets on blobs of the write store (W4,
@@ -19,7 +21,11 @@ import (
 // path and at each GET /v1/status/writable, which answers 503 while a mark
 // waits, so that a client that asks before it writes holds back until the
 // store takes writes in full again. The marks that wait live in the memory
-// of the process; after a restart a blob that still waits stays live.
+// of the process and are not written down: the store holds them already. A
+// blob that waits is a live blob of the write store that a later blob of its
+// path replaces, and the next start finds every such blob in its scan of the
+// store and marks it, or lets its mark wait again (repairAtStart,
+// writestore.go). No file and no schema step of state.sqlite is needed.
 
 // maxWaitingMarks bounds the marks that wait to be tried again.
 const maxWaitingMarks = 1024
@@ -166,7 +172,9 @@ const maxDeletedTimes = 1 << 16
 // index holds no row of it any more, so a write of the path after a clock
 // that stepped back takes its time from here (finding S5 of review 4). A
 // write of the path forgets it, its row carries a later time. A restart
-// forgets them all.
+// forgets them, and every scan of the write store, the one at the start
+// included (repairAtStart), takes them in again from the delete marks of the
+// store (noteDeletes).
 type deletedTimes struct {
 	mu    sync.Mutex
 	times map[[2]string]int64
@@ -189,6 +197,16 @@ func (wp *writePath) noteDeleted(repo, path string, created int64) {
 		maps.DeleteFunc(d.times, func(_ [2]string, t int64) bool { return t <= cut })
 	}
 	d.times[key] = max(d.times[key], created)
+}
+
+// noteDeletes keeps the creation time of the blob written last of each path
+// that a delete marked, as a scan of the write store found them. A path
+// written again after its delete keeps a time too: its row carries a later
+// one, and bounds takes the later of both.
+func (wp *writePath) noteDeletes(deletes map[[2]string]stores.Entry) {
+	for key, blob := range deletes {
+		wp.noteDeleted(key[0], key[1], blob.CreatedMS)
+	}
 }
 
 // deletedTime is the creation time of the newest blob a delete of the path

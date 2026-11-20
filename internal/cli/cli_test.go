@@ -127,10 +127,31 @@ func wantHelp(v *cliVectors) string {
 		"The data directory is PIPESMITH_REGISTRY_DATA, else ARTIFACT_REPOSITORY_DATA, else <project root>/data.\n", 1)
 	text = strings.Replace(text, "ARTIFACT_REPOSITORY_PORT overrides the port of the configuration.\n",
 		"PIPESMITH_REGISTRY_PORT, else ARTIFACT_REPOSITORY_PORT, overrides the port of the configuration.\n", 1)
-	// The commands of the import, the identity commands, the maven command
-	// and the commands of the update are new in this product; the rest of the
-	// help is that of the reference.
-	return strings.Replace(text, "\n\nSettings\n", "\n\n"+stateHelpBody+identityHelpBody+mavenHelpBody+updateHelpBody+"Settings\n", 1)
+	// The commands of the import, the identity commands, the maven command,
+	// the commands of the update and repos remote-secret are new in this
+	// product; the rest of the help is that of the reference.
+	text = strings.Replace(text, "                                       import and takes effect at the next start\n",
+		"                                       import and takes effect at the next start\n"+
+			"  repos remote-secret <name>           read the secret of the sign in of a proxy at its remote\n"+
+			"                                       from standard input into secrets/remote/<name> of the\n"+
+			"                                       data directory, mode 0600; nothing of it is printed\n"+
+			"  repos write-settings <name> [--write-policy ALLOW|ALLOW_ONCE|DENY] [--max-body-bytes N]\n"+
+			"                       [--free-space-floor-bytes N] [--write-store local-write]\n"+
+			"                                       show, or set, the write settings of a hosted repository\n"+
+			"                                       in its record in state.sqlite\n", 1)
+	return strings.Replace(text, "\n\nSettings\n", "\n\n"+stateHelpBody+identityHelpBody+mavenHelpBody+updateHelpBody+logTargetHelpBody+"Settings\n", 1)
+}
+
+// withReposCommands is a text of the reference with repos remote-secret
+// and repos write-settings among the commands of repos, as argparse 3.12.13
+// prints it.
+func withReposCommands(text string) string {
+	text = strings.Replace(text, "usage: pipesmith-registry repos [-h] [--json] {port} ...\n\npositional arguments:\n  {port}\n\n"+
+		"options:\n  -h, --help  show this help message and exit\n",
+		"usage: pipesmith-registry repos [-h] [--json]\n                                {port,remote-secret,write-settings} ...\n\n"+
+			"positional arguments:\n  {port,remote-secret,write-settings}\n\n"+
+			"options:\n  -h, --help            show this help message and exit\n", 1)
+	return strings.Replace(text, "(choose from port)", "(choose from port, remote-secret, write-settings)", 1)
 }
 
 // withStateCommands is a usage message of the reference with the commands
@@ -138,21 +159,27 @@ func wantHelp(v *cliVectors) string {
 // of choices.
 func withStateCommands(text string) string {
 	return strings.Replace(text, "import-settings, config",
-		"import-settings, import, import-state, state, user, anonymous, realms, ldap, token, maven, update, rollback, schema, config", 1)
+		"import-settings, import, import-state, state, user, anonymous, realms, ldap, token, maven, update, rollback, schema, log-target, config", 1)
 }
 
 // withServeFlag is a text of the reference with the flags of serve that name
 // the host names of a network bind, that ask for LDAP bind passwords, that
-// name the files of the TLS listener and that switch writes on, as argparse
-// 3.12.13 prints it.
+// name the files of the TLS listener, that switch writes and upstream on and
+// that bound one export, as argparse 3.12.13 prints it.
 func withServeFlag(text string) string {
 	text = strings.Replace(text, "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n",
 		"usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n                                [--server-names SERVER_NAMES]\n"+
 			"                                [--ask-ldap-password] [--tls-cert FILE]\n"+
-			"                                [--tls-key FILE] [--writes]\n", 1)
-	return strings.Replace(text, "  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
+			"                                [--tls-key FILE] [--writes] [--upstream]\n"+
+			"                                [--export-max-files N] [--export-max-bytes N]\n", 1)
+	text = strings.Replace(text, "  -h, --help   show this help message and exit\n  --port PORT\n  --bind BIND\n",
 		"  -h, --help            show this help message and exit\n  --port PORT\n  --bind BIND\n  --server-names SERVER_NAMES\n"+
-			"  --ask-ldap-password\n  --tls-cert FILE\n  --tls-key FILE\n  --writes\n", 1)
+			"  --ask-ldap-password\n  --tls-cert FILE\n  --tls-key FILE\n  --writes\n  --upstream\n"+
+			"  --export-max-files N\n  --export-max-bytes N\n", 1)
+	// the log directory of serve
+	text = strings.Replace(text, "                                [--server-names SERVER_NAMES]\n",
+		"                                [--server-names SERVER_NAMES] [--log-dir DIR]\n", 1)
+	return strings.Replace(text, "  --server-names SERVER_NAMES\n", "  --server-names SERVER_NAMES\n  --log-dir DIR\n", 1)
 }
 
 func TestHelpTexts(t *testing.T) {
@@ -166,7 +193,7 @@ func TestHelpTexts(t *testing.T) {
 	}
 	for _, c := range v.CommandHelp {
 		code, out, errOut := run(t, c.Argv...)
-		if code != c.Exit || out != withServeFlag(c.Stdout) || errOut != "" {
+		if code != c.Exit || out != withReposCommands(withServeFlag(c.Stdout)) || errOut != "" {
 			t.Errorf("%v: %d\n%s\nwant\n%s", c.Argv, code, out, c.Stdout)
 		}
 	}
@@ -181,12 +208,12 @@ func TestParseVectors(t *testing.T) {
 		ns, err := parseArgs(c.Argv)
 		switch {
 		case c.Usage != nil:
-			if err == nil || err.Error() != withServeFlag(withStateCommands(*c.Usage)) {
+			if err == nil || err.Error() != withReposCommands(withServeFlag(withStateCommands(*c.Usage))) {
 				t.Errorf("%q: %v %v; want usage %q", c.Argv, ns, err, *c.Usage)
 			}
 		case c.Exit != nil:
 			help, ok := err.(*helpExit)
-			if !ok || help.text != withServeFlag(c.Stdout) {
+			if !ok || help.text != withReposCommands(withServeFlag(c.Stdout)) {
 				t.Errorf("%q: %v; want help %q", c.Argv, err, c.Stdout)
 			}
 		default:
@@ -199,14 +226,18 @@ func TestParseVectors(t *testing.T) {
 			}
 			want := c.Values
 			if ns.run == "cmd_serve" {
-				// The flags of serve for host names, LDAP bind passwords, TLS and
-				// writes are new in this product.
+				// The flags of serve for host names, LDAP bind passwords, TLS,
+				// writes and upstream are new in this product.
 				want = maps.Clone(c.Values)
 				want["ask_ldap_password"] = json.RawMessage("false")
 				want["server_names"] = json.RawMessage("null")
+				want["log_dir"] = json.RawMessage("null")
 				want["tls_cert"] = json.RawMessage("null")
 				want["tls_key"] = json.RawMessage("null")
 				want["writes"] = json.RawMessage("false")
+				want["upstream"] = json.RawMessage("false")
+				want["export_max_files"] = json.RawMessage("null")
+				want["export_max_bytes"] = json.RawMessage("null")
 			}
 			if len(ns.values) != len(want) {
 				t.Errorf("%q: values %v, want %v", c.Argv, ns.values, want)
@@ -314,7 +345,7 @@ func TestOutputHelperVectors(t *testing.T) {
 func TestUsageErrorsAndVersion(t *testing.T) {
 	dataDir(t)
 	code, out, errOut := run(t, "frobnicate")
-	if code != 2 || out != "" || errOut != "error: pipesmith-registry: argument command: invalid choice: 'frobnicate' (choose from serve, store, scan, repos, docker-check, import-settings, import, import-state, state, user, anonymous, realms, ldap, token, maven, update, rollback, schema, config, version)\nsee: pipesmith-registry help\n" {
+	if code != 2 || out != "" || errOut != "error: pipesmith-registry: argument command: invalid choice: 'frobnicate' (choose from serve, store, scan, repos, docker-check, import-settings, import, import-state, state, user, anonymous, realms, ldap, token, maven, update, rollback, schema, log-target, config, version)\nsee: pipesmith-registry help\n" {
 		t.Fatalf("%d %q %q", code, out, errOut)
 	}
 	code, out, _ = run(t, "version")
@@ -474,8 +505,8 @@ func TestScanCountsAndMissingRoot(t *testing.T) {
 	}
 }
 
-// A ValueError of one store, from int() of a number beyond the digit limit,
-// fails that store only: the scan reports it and goes on with the next.
+// A number beyond the digit limit in one properties file skips that file
+// only: the scan logs it, counts it unparsable and goes on (sa-31).
 func TestScanGoesOnAfterValueError(t *testing.T) {
 	dir := dataDir(t)
 	base := filepath.Dir(dir)
@@ -496,13 +527,14 @@ func TestScanGoesOnAfterValueError(t *testing.T) {
 	run(t, "store", "add", "digits", "--kind", "nexus-file", "--root", root)
 	run(t, "store", "add", "a", "--kind", "nexus-file", "--root", other)
 	code, out, errOut := run(t, "scan")
-	want := "error: scan digits failed, the index keeps its previous rows: Exceeds the limit (4300 digits) for integer string" +
-		" conversion: value has 4301 digits; use sys.set_int_max_str_digits() to increase the limit\n"
-	if code != 1 || errOut != want || !regexp.MustCompile(`^scan a: live=1 deleted=0 copies=0 no_bytes=0 unparsable=0 seconds=\d+\.\d\d\n$`).MatchString(out) {
+	// sa-31: the file is logged, counted unparsable and skipped; the reference ends the scan of digits there.
+	if code != 0 || !strings.Contains(errOut, "a number in it has too many digits; skipped") ||
+		!regexp.MustCompile(`(?m)^scan digits: live=0 deleted=0 copies=0 no_bytes=0 unparsable=1 seconds=\d+\.\d\d\n`+
+			`scan a: live=1 deleted=0 copies=0 no_bytes=0 unparsable=0 seconds=\d+\.\d\d\n$`).MatchString(out) {
 		t.Fatalf("%d %q %q", code, out, errOut)
 	}
 	code, out, _ = run(t, "store", "list")
-	if code != 0 || !regexp.MustCompile(`(?m)^digits  nexus-file      -     -  .*\n^a       nexus-file      1   1 B  `).MatchString(out) {
+	if code != 0 || !regexp.MustCompile(`(?m)^digits  nexus-file      0   0 B  .*\n^a       nexus-file      1   1 B  `).MatchString(out) {
 		t.Fatalf("%d %q", code, out)
 	}
 }

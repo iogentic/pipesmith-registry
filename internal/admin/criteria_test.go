@@ -109,3 +109,25 @@ func TestWholeDays(t *testing.T) {
 		}
 	}
 }
+
+// A criterion value gives its days as CheckCriteria takes it; any other
+// value gives none.
+func TestCriterionDays(t *testing.T) {
+	for _, c := range []struct {
+		value any
+		days  int64
+	}{
+		{1, 1}, {int64(30), 30}, {7.0, 7}, {json.Number("365"), 365}, {json.Number("2.0"), 2}, {json.Number("1e1"), 10},
+		{float64(maxDays), maxDays}, {json.Number("9007199254740992"), maxDays},
+	} {
+		if days, ok := CriterionDays(c.value); !ok || days != c.days {
+			t.Errorf("%v (%T): %d %v, want %d days", c.value, c.value, days, ok, c.days)
+		}
+	}
+	for _, v := range []any{nil, 0, int64(-3), 0.5, json.Number("1.5"), json.Number("x"), "3", true, 1e300,
+		json.Number("9007199254740993")} {
+		if days, ok := CriterionDays(v); ok || days != 0 {
+			t.Errorf("%v (%T): %d %v, want none", v, v, days, ok)
+		}
+	}
+}

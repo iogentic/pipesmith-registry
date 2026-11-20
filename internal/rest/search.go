@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,8 +24,27 @@ import (
 // not taken from a source here (unverified).
 var searchPage = 50
 
-// searchTimeout bounds one page of the search.
+// searchTimeout bounds one page of the search, and caps its parameter
+// timeout.
 const searchTimeout = 2 * time.Minute
+
+// searchDeadline is the time one page of the search may take: the
+// parameter timeout in whole seconds from 1 to the cap of searchTimeout,
+// searchTimeout without it; false for another value.
+func searchDeadline(values url.Values) (time.Duration, bool) {
+	given, found := values["timeout"]
+	if !found {
+		return searchTimeout, true
+	}
+	if len(given) != 1 {
+		return 0, false
+	}
+	seconds, err := strconv.Atoi(given[0])
+	if err != nil || seconds < 1 || time.Duration(seconds)*time.Second > searchTimeout {
+		return 0, false
+	}
+	return time.Duration(seconds) * time.Second, true
+}
 
 // maxValue bounds the length of one search value.
 const maxValue = 1024
@@ -35,7 +54,7 @@ const maxValue = 1024
 var served = map[string]bool{
 	"q": true, "repository": true, "format": true, "group": true, "name": true, "version": true, "sha1": true,
 	"maven.groupId": true, "maven.artifactId": true, "maven.baseVersion": true, "maven.extension": true, "maven.classifier": true,
-	"docker.imageName": true, "docker.imageTag": true, "npm.scope": true, "continuationToken": true,
+	"docker.imageName": true, "docker.imageTag": true, "npm.scope": true, "continuationToken": true, "timeout": true,
 }
 
 // deferred are parameters of the old product this server cannot answer
@@ -43,7 +62,7 @@ var served = map[string]bool{
 // the sort order. They are refused with 501 instead of matching nothing.
 var deferred = map[string]bool{
 	"md5": true, "sha256": true, "sha512": true, "npm.author": true, "npm.description": true, "npm.keywords": true, "npm.license": true,
-	"docker.layerId": true, "docker.contentDigest": true, "sort": true, "direction": true, "prerelease": true, "timeout": true,
+	"docker.layerId": true, "docker.contentDigest": true, "sort": true, "direction": true, "prerelease": true,
 	"gavec": true, "lastBlobUpdated": true,
 }
 
@@ -198,16 +217,27 @@ type searchQuery struct {
 	fields             map[string]pattern
 	sha1               string
 	repository, format string
-	needFormat         string // a format bound parameter limits the search to its format
-	token              *[4]string
-	digest             string // of the query without the token, ties a token to its query
+	needFormat         string     // a format bound parameter limits the search to its format
+	token              *[4]string // of a component search
+	assetToken         *[3]string // of an asset search
+	digest             string     // of the query without the token, ties a token to its query
+	timeout            time.Duration
 	hasRepository      bool
 }
 
 func badRequest(message string) (Answer, error) { return refuse(http.StatusBadRequest, message) }
 
-func parseQuery(q url.Values) (*searchQuery, *Answer) {
-	out := &searchQuery{fields: map[string]pattern{}}
+// searchKind is what a search lists: components or assets. The digest of
+// the query names it, so a token of one is refused by the other.
+type searchKind string
+
+const (
+	componentSearch searchKind = ""
+	assetSearch     searchKind = "assets"
+)
+
+func parseQuery(q url.Values, kind searchKind) (*searchQuery, *Answer) {
+	out := &searchQuery{fields: map[string]pattern{}, timeout: searchTimeout}
 	var canonical []string
 	for name, values := range q {
 		if deferred[name] {
@@ -260,6 +290,13 @@ func parseQuery(q url.Values) (*searchQuery, *Answer) {
 		case "sha1":
 			out.sha1 = strings.ToLower(value)
 		case "continuationToken":
+		case "timeout":
+			d, valid := searchDeadline(url.Values{name: values})
+			if !valid {
+				a, _ := badRequest("the search parameter timeout is a whole number of seconds from 1 to 120")
+				return nil, &a
+			}
+			out.timeout = d
 		default:
 			p, err := newPattern(strings.TrimPrefix(value, scopePrefix(name)), false)
 			if err != nil {
@@ -270,40 +307,28 @@ func parseQuery(q url.Values) (*searchQuery, *Answer) {
 		}
 	}
 	sort.Strings(canonical)
+	if kind != componentSearch {
+		canonical = append([]string{string(kind)}, canonical...)
+	}
 	sum := sha256.Sum256([]byte(strings.Join(canonical, "\x00")))
 	out.digest = base64.RawURLEncoding.EncodeToString(sum[:8])
 	if token, given := q["continuationToken"]; given {
-		key, valid := decodeToken(token[0], out.digest)
+		parts := 4
+		if kind == assetSearch {
+			parts = 3
+		}
+		key, valid := decodeKey(token[0], out.digest, parts)
 		if !valid {
 			a, _ := badRequest("the continuationToken does not belong to this search")
 			return nil, &a
 		}
-		out.token = &key
+		if kind == assetSearch {
+			out.assetToken = &[3]string{key[0], key[1], key[2]}
+		} else {
+			out.token = &[4]string{key[0], key[1], key[2], key[3]}
+		}
 	}
 	return out, nil
-}
-
-func encodeToken(key [4]string, digest string) string {
-	data, _ := json.Marshal(key[:]) // four strings always encode
-	return base64.RawURLEncoding.EncodeToString(data) + "." + digest
-}
-
-func decodeToken(token, digest string) ([4]string, bool) {
-	var key [4]string
-	head, tail, found := strings.Cut(token, ".")
-	if !found || tail != digest {
-		return key, false
-	}
-	data, err := base64.RawURLEncoding.DecodeString(head)
-	if err != nil {
-		return key, false
-	}
-	var parts []string
-	if err := json.Unmarshal(data, &parts); err != nil || len(parts) != 4 {
-		return key, false
-	}
-	copy(key[:], parts)
-	return key, true
 }
 
 // fieldOf is the coordinate a field parameter matches.
@@ -463,16 +488,21 @@ func (env *Env) searched(q *searchQuery) []repos.Repo {
 // path; the other values must equal their field, "*" standing for any run
 // of characters, without regard to the case of ASCII letters.
 func Search(env *Env, values url.Values) (Answer, error) {
-	q, refusal := parseQuery(values)
+	q, refusal := parseQuery(values, componentSearch)
 	if refusal != nil {
 		return *refusal, nil
 	}
+	return env.componentPage(q, searchPage)
+}
+
+// componentPage is one page of the components of q, at most size of them.
+func (env *Env) componentPage(q *searchQuery, size int) (Answer, error) {
 	if env.Catalog == nil {
 		return refuse(http.StatusServiceUnavailable, "the search is not ready")
 	}
-	ctx, cancel := context.WithTimeout(env.Context, searchTimeout)
+	ctx, cancel := env.searchContext(q.timeout)
 	defer cancel()
-	w := &window{limit: searchPage + 1}
+	w := &window{limit: size + 1}
 	pre := q.prefilter()
 	for _, r := range env.searched(q) {
 		if q.token != nil && r.Name < q.token[0] {
@@ -491,7 +521,10 @@ func Search(env *Env, values url.Values) (Answer, error) {
 			if q.token != nil && !keyLess(*q.token, key) {
 				return nil
 			}
-			asset := env.assetXO(r.Name, format, &a)
+			asset, err := env.assetXO(r.Name, format, &a)
+			if err != nil {
+				return err
+			}
 			w.add(key, func() componentXO {
 				return componentXO{ID: componentID(key), Repository: r.Name, Format: format, Group: optional(c.group, c.hasGroup),
 					Name: c.name, Version: optional(c.version, c.hasVersion)}
@@ -500,15 +533,15 @@ func Search(env *Env, values url.Values) (Answer, error) {
 		})
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) && env.Context.Err() == nil {
-				return refuse(http.StatusServiceUnavailable, "the search took longer than "+searchTimeout.String())
+				return refuse(http.StatusServiceUnavailable, "the search took longer than "+q.timeout.String())
 			}
 			return Answer{}, err
 		}
 	}
 	page := pageXO{Items: []componentXO{}}
 	for i, h := range w.hits {
-		if i == searchPage {
-			token := encodeToken(w.hits[i-1].key, q.digest)
+		if i == size {
+			token := encodeKey(w.hits[i-1].key[:], q.digest)
 			page.ContinuationToken = &token
 			break
 		}

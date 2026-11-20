@@ -9,12 +9,14 @@ import (
 )
 
 // StoreUsers are the repositories that name the blob store in
-// storage.blobStoreName, sorted.
+// storage.blobStoreName or in write_store, the attribute of this server
+// (ST2), sorted.
 func StoreUsers(s *model.Snapshot, store string) []string {
 	var names []string
 	for _, r := range s.Repositories {
 		storage, _ := r.Attributes["storage"].(map[string]any)
-		if name, _ := storage["blobStoreName"].(string); name == store {
+		name, _ := storage["blobStoreName"].(string)
+		if target, _ := r.Attributes["write_store"].(string); name == store || target == store {
 			names = append(names, r.Name)
 		}
 	}
@@ -89,6 +91,23 @@ func CheckRuleDelete(rule string, usedBy []string) error {
 // AnyFormat is the format of a cleanup policy that applies to every
 // format.
 const AnyFormat = "*"
+
+// PolicyFormats are the formats of a cleanup policy (ruling Q15).
+var PolicyFormats = []string{AnyFormat, "maven2", "npm", "docker", "raw"}
+
+// CheckFormatValue checks the format of a create or save of a cleanup
+// policy (ruling Q15): one of PolicyFormats, compared as it is, else 400 at
+// format; the empty value is refused too. stored is the format of the
+// stored policy on a save and nil on a create and a preview; a format the
+// stored policy holds is never refused (ruling R6). A preview passes the
+// refusal through PreviewPolicy, which gives it the field policy.format.
+func CheckFormatValue(format string, stored *string) error {
+	if slices.Contains(PolicyFormats, format) || stored != nil && format == *stored {
+		return nil
+	}
+	return &Refusal{Code: CodeFormatUnknown, Field: "format", Message: fmt.Sprintf(
+		"the format %q is not known; use one of %s", format, strings.Join(PolicyFormats, ", "))}
+}
 
 // CheckPolicyFormat checks the save of a cleanup policy that has the
 // format stored: a new format other than * is refused with 400 at format

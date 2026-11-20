@@ -20,6 +20,7 @@ import (
 // that fails and says what is where; no file is removed but -wal and -shm.
 func (u *Updater) wayBackSchema(s *session, created string, failed error) error {
 	stopped := func(format string, args ...any) error {
+		s.halted = true
 		return fmt.Errorf("%w; went back to %s/%s, then the way back stopped: %s", failed, ReleasesDir, s.current, fmt.Sprintf(format, args...))
 	}
 	err := u.at("back-stop")
@@ -52,7 +53,7 @@ func (u *Updater) wayBackSchema(s *session, created string, failed error) error 
 	if err := u.at("back-start"); err != nil {
 		return stopped("the unit %s is stopped and was not started: %v%s", s.cfg.Unit, err, restoredBefore(restored))
 	}
-	err = u.restartAndWait(s, s.current)
+	err = u.restartAndWait(s, u.versionOf(s, s.current))
 	removeCreated(created)
 	words := ""
 	if len(restored) > 0 {
@@ -77,6 +78,26 @@ func (u *Updater) wayBackSchema(s *session, created string, failed error) error 
 		return fmt.Errorf("%w; went back to %s/%s, which does not answer either%s: %v", failed, ReleasesDir, s.current, words, err)
 	}
 	return fmt.Errorf("%w; went back to %s/%s, which answers again%s", failed, ReleasesDir, s.current, words)
+}
+
+// sameFile reports whether failed is a link of path. A failed that is
+// another file is an error that names both; no failed is false.
+func sameFile(path, failed string) (bool, error) {
+	b, err := os.Lstat(failed)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	a, err := os.Lstat(path)
+	if err != nil {
+		return false, err
+	}
+	if !os.SameFile(a, b) {
+		return false, fmt.Errorf("%s exists and is not the migrated file %s; move it away, then run the command again", failed, path)
+	}
+	return true, nil
 }
 
 func suffixed(names []string, suffix string) []string {
@@ -136,9 +157,17 @@ func (u *Updater) restoreFile(f planFile) (restoreResult, error) {
 		}
 	}
 	failedPath := f.path + ".failed"
-	err = u.at("back-failed:" + f.name)
-	if err == nil {
-		err = os.Link(f.path, failedPath)
+	linked, err := sameFile(f.path, failedPath)
+	if err != nil {
+		return fileKept, fmt.Errorf("%s is the migrated file and %s the copy; %v", f.path, copyPath, err)
+	}
+	if !linked {
+		err = u.at("back-failed:" + f.name)
+		if err == nil {
+			err = os.Link(f.path, failedPath)
+		}
+	} else {
+		u.step("found: %s is the link of the migrated file a way back that stopped made", filepath.Base(failedPath))
 	}
 	if err != nil {
 		return fileKept, fmt.Errorf("%s is the migrated file and %s the copy: %v", f.path, copyPath, err)

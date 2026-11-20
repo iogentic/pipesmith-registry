@@ -19,7 +19,7 @@ import (
 // repository that its record says is offline, to a repository of another
 // format or to no repository keeps the refusal of the port.
 func (s *Server) write(w *recorder, req *request, match []string) error {
-	if s.writes.writer == nil {
+	if !s.writes.clients {
 		return s.refuseWrite(w, req, match)
 	}
 	t, err := parseTarget(req.raw, repositoryPrefix)
@@ -31,6 +31,10 @@ func (s *Server) write(w *recorder, req *request, match []string) error {
 		return err
 	}
 	repo, ok := st.repositories.Get(t.repo)
+	if ok && repo.Type == "group" {
+		// a group that names a writable member hands the write to it (decision 5.16, upstream_write.go)
+		repo, _ = s.throughGroup(st, req, repo)
+	}
 	if !ok || !repo.TakesWrites() {
 		return s.refuseWrite(w, req, match)
 	}
@@ -68,7 +72,11 @@ func (s *Server) writeAction(method string, t *target) (string, error) {
 	if t.path == "" {
 		return "add", nil
 	}
-	row, err := s.rp.index.Lookup(t.repo, t.path)
+	target, err := s.writeTarget(t.repo) // the writable member of a group (decision 5.16)
+	if err != nil {
+		return "", err
+	}
+	row, err := s.rp.index.Lookup(target, t.path)
 	if err != nil {
 		return "", err
 	}

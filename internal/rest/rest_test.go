@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/iogentic/pipesmith-registry/internal/admin"
 )
 
 func TestImpliesOfTheTests(t *testing.T) {
@@ -468,9 +470,20 @@ func TestStatusChecks(t *testing.T) {
 	}
 }
 
+// The answer shows the state of the mode; a released server with writes
+// off says that its content writes stay refused, a frozen one does not.
 func TestReadOnly(t *testing.T) {
-	m := body(t, ReadOnly(), nil, 200).(map[string]any)
-	if m["frozen"] != true || m["systemInitiated"] != true || m["summaryReason"] == "" || len(m) != 3 {
+	released := admin.ReadOnlyState{Reason: "The server takes changes."}
+	m := body(t, ReadOnly(released, true), nil, 200).(map[string]any)
+	if m["frozen"] != false || m["systemInitiated"] != false || m["summaryReason"] != "The server takes changes."+writesOffNote || len(m) != 3 {
+		t.Fatalf("%#v", m)
+	}
+	if m = body(t, ReadOnly(released, false), nil, 200).(map[string]any); m["summaryReason"] != "The server takes changes." {
+		t.Fatalf("%#v", m)
+	}
+	frozen := admin.ReadOnlyState{Frozen: true, SystemInitiated: true, Reason: "The disk is full."}
+	if m = body(t, ReadOnly(frozen, true), nil, 200).(map[string]any); m["frozen"] != true || m["systemInitiated"] != true ||
+		m["summaryReason"] != "The disk is full." {
 		t.Fatalf("%#v", m)
 	}
 }

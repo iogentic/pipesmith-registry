@@ -122,8 +122,16 @@ func (c *command) report(source string, r *importer.Result) {
 	if has(state.KindRepositories) {
 		counts = append(counts, fmt.Sprintf("repositories %d", len(s.Repositories)))
 	}
+	if r.Routing != nil {
+		counts = append(counts, fmt.Sprintf("routing rules %d, routing links %d", len(r.Routing.Rules), len(r.Routing.Links)))
+	}
 	c.print("%s", strings.Join(counts, ", "))
-	c.print("replaced in %s: %s", r.StatePath, kindNames(r.Kinds))
+	switch {
+	case len(r.Kinds) > 0:
+		c.print("replaced in %s: %s", r.StatePath, kindNames(r.Kinds))
+	case r.Secrets:
+		c.print("replaced in %s: the imported keys", r.StatePath)
+	}
 	if r.RepositoriesPath != "" {
 		c.print("wrote %s", r.RepositoriesPath)
 	}
@@ -137,9 +145,24 @@ func (c *command) report(source string, r *importer.Result) {
 	if len(r.UnmappedLDAPKeys) > 0 {
 		c.print("note: LDAP keys without a field, not imported: %s", strings.Join(r.UnmappedLDAPKeys, ", "))
 	}
-	if has(state.KindLDAP) && len(s.LDAP) > 0 {
+	if r.Secrets {
+		c.print("secrets: imported keys %d, remote secrets %d, LDAP bind passwords %d", r.ImportedKeys, r.RemoteSecrets,
+			r.LDAPSecrets)
+		if len(r.SecretsKept) > 0 {
+			c.print("note: %d secret files exist and were kept, the value of the export not written: %s; replace a value"+
+				" with repos remote-secret or ldap password", len(r.SecretsKept), strings.Join(r.SecretsKept, ", "))
+		}
+		left := r.SecretsLeft
+		if n := left.Keyed + left.Unreadable + left.UnknownDomains + left.Unreferenced; n > 0 {
+			c.print("note: %d secrets of the export were not taken over: %d under a key of their own, %d unreadable,"+
+				" %d keys of an unknown domain, %d named by nothing", n, left.Keyed, left.Unreadable, left.UnknownDomains,
+				left.Unreferenced)
+		}
+	} else if has(state.KindLDAP) && len(s.LDAP) > 0 {
 		c.print("note: LDAP bind passwords are never imported; give them at the start of serve")
 	}
+	c.reportRouting(r)
+	c.reportAdministration(r)
 }
 
 func (c *command) importExport() (int, error) {
@@ -204,6 +227,11 @@ type shownState struct {
 	Anonymous             model.Anonymous     `json:"anonymous"`
 	BlobStores            []model.BlobStore   `json:"blobStores"`
 	Repositories          []model.Repository  `json:"repositories"`
+	// The records of step 5. No secret is part of them (A11).
+	CleanupPolicies []model.CleanupPolicy `json:"cleanupPolicies"`
+	Tasks           []model.Task          `json:"tasks"`
+	Capabilities    []model.Capability    `json:"capabilities"`
+	ImportedKeys    map[string]int        `json:"importedKeys"`
 }
 
 func (c *command) stateShow() (int, error) {
@@ -211,10 +239,20 @@ func (c *command) stateShow() (int, error) {
 	if err != nil {
 		return 1, err
 	}
-	st, err := state.Open(cfg.DataDir)
+	// review 3-15: state show only reads, so it migrates no file
+	found, err := state.FoundSchema(cfg.DataDir)
 	if errors.Is(err, state.ErrAbsent) {
 		return 1, refuse("no state.sqlite in %s; write one with import or import-state", cfg.DataDir)
 	}
+	if err != nil {
+		return 1, err
+	}
+	if found < state.SchemaVersion {
+		return 1, refuse("%s has schema %d and this binary reads schema %d; state show changes no file. serve or another "+
+			"command that writes migrates it and keeps the copy %s.v%d; then run state show again",
+			state.Path(cfg.DataDir), found, state.SchemaVersion, state.Path(cfg.DataDir), found)
+	}
+	st, err := state.Open(cfg.DataDir)
 	if err != nil {
 		return 1, err
 	}
@@ -231,10 +269,15 @@ func (c *command) stateShow() (int, error) {
 		snap.Users[i].PasswordHash = ""
 	}
 	publicAddresses(snap)
+	imported, err := st.ImportedKeyCounts()
+	if err != nil {
+		return 1, err
+	}
 	doc := shownState{Schema: state.SchemaVersion, Path: state.Path(cfg.DataDir), Counts: state.Counts(snap),
 		UsersWithPasswordHash: hashes, Users: snap.Users, RoleMappings: snap.RoleMappings, Roles: snap.Roles,
 		Privileges: snap.Privileges, LDAP: snap.LDAP, Realms: snap.Realms, Anonymous: snap.Anonymous,
-		BlobStores: snap.BlobStores, Repositories: snap.Repositories}
+		BlobStores: snap.BlobStores, Repositories: snap.Repositories, CleanupPolicies: snap.CleanupPolicies, Tasks: snap.Tasks,
+		Capabilities: snap.Capabilities, ImportedKeys: imported}
 	data, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		return 1, err

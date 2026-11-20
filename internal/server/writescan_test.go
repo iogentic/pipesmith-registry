@@ -131,7 +131,8 @@ func (w *writing) dropLogLine(location string) {
 }
 
 // A kill between the row of the second write and the mark of the first: the
-// scan after the next start serves the newer blob and marks the older one.
+// next start and every scan after it serve the newer blob and mark the older
+// one.
 func TestAScanMarksTheBlobAKillLeftLive(t *testing.T) {
 	for _, c := range walkOrders {
 		t.Run(c.name, func(t *testing.T) {
@@ -186,15 +187,25 @@ func TestABlobWithoutItsLogLineIsTheLaterOne(t *testing.T) {
 	w.expectServed(second, first, reasonReplaced)
 }
 
-// A delete after the next start marks the blob of the row; the older live
-// blob is the one whose mark was lost. A scan of the write store must not
-// bring the deleted path back.
+// forgetWaiting drops every mark that waits, as a kill did before a start
+// repaired the write store (repairAtStart), while the server runs on.
+func (w *writing) forgetWaiting() {
+	w.srv.writes.marks.mu.Lock()
+	defer w.srv.writes.marks.mu.Unlock()
+	w.srv.writes.marks.waiting, w.srv.writes.marks.count = nil, 0
+}
+
+// A delete marks the blob of the row; the older live blob is the one whose
+// mark was lost. A scan of the write store must not bring the deleted path
+// back. A start repairs such a blob (TestAStartRepairsTwoLiveBlobsOfAPath),
+// so the loss of the mark is made inside the process.
 func TestAScanKeepsAPathDeletedAfterTheStart(t *testing.T) {
 	for _, step := range []time.Duration{time.Millisecond, 0} {
 		t.Run(step.String(), func(t *testing.T) {
 			w := startIngestWithIDs(t, lowID, highID)
 			first, second := w.replaceAfter(step)
-			w.restart(true)
+			w.forgetWaiting()
+			w.srv.writes.failMarks(nil)
 			removed, err := w.srv.erase(w.repo("demo-raw"), "docs/a.txt")
 			if err != nil || removed == nil || removed.Location != second.asset.Location {
 				t.Fatalf("%+v %v", removed, err)

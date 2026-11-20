@@ -3,6 +3,7 @@ package release
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"strings"
 	"testing"
 	"time"
@@ -40,8 +41,8 @@ func (d *deadlines) Restart(ctx context.Context, unit string) error {
 }
 
 func TestRestartWaitsForTheDrain(t *testing.T) {
-	for text, want := range map[string]time.Duration{"": 3720 * time.Second,
-		`, "drain_seconds": 300`: 300*time.Second + DefaultRestartTimeout} {
+	for text, want := range map[string]time.Duration{"": (3720 + UnitStartSeconds) * time.Second,
+		`, "drain_seconds": 300`: (300+UnitStartSeconds)*time.Second + DefaultRestartTimeout} {
 		r := newRig(t, "0.1.0")
 		r.config(text)
 		d := &deadlines{fakeService: r.svc}
@@ -69,9 +70,10 @@ func (d *stopDeadlines) Stop(ctx context.Context, unit string) error {
 }
 
 // Without drain_seconds the bound of a restart and of a stop is the highest
-// drain time plus two minutes; with the key it is that value plus two.
+// drain time, the start of the unit and two minutes; with the key it is that
+// value, the start and two minutes.
 func TestStopWaitsForTheDrain(t *testing.T) {
-	for text, want := range map[string]time.Duration{"": 3720 * time.Second, `, "drain_seconds": 300`: 420 * time.Second} {
+	for text, want := range map[string]time.Duration{"": (3720 + UnitStartSeconds) * time.Second, `, "drain_seconds": 300`: (420 + UnitStartSeconds) * time.Second} {
 		sr := newSchemaRig(t, schemaN+1)
 		sr.config(text)
 		d := &stopDeadlines{schemaService: sr.svc}
@@ -82,5 +84,14 @@ func TestStopWaitsForTheDrain(t *testing.T) {
 		if len(d.left) != 1 || d.left[0] > want || d.left[0] < want-5*time.Second {
 			t.Fatalf("%q: stop time %v, want %v", text, d.left, want)
 		}
+	}
+}
+
+// The error of LoadUpdateConfig wraps the error of the open, so a reader can
+// tell a file it may not read from a file that is not there (finding R3-10).
+func TestLoadUpdateConfigWrapsTheOpenError(t *testing.T) {
+	_, err := LoadUpdateConfig(t.TempDir())
+	if !errors.Is(err, ErrConfig) || !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("error %v", err)
 	}
 }

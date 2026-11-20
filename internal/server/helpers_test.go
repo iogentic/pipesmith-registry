@@ -17,14 +17,18 @@ import (
 	"testing"
 	"time"
 
+	adminrules "github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/blobwrite"
+	"github.com/iogentic/pipesmith-registry/internal/catalog"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/proxy"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 	"github.com/iogentic/pipesmith-registry/internal/scan"
 	"github.com/iogentic/pipesmith-registry/internal/stores"
+	"github.com/iogentic/pipesmith-registry/internal/tasks"
 	"github.com/iogentic/pipesmith-registry/internal/testkit"
 )
 
@@ -123,10 +127,29 @@ type appOptions struct {
 	// writes switches writes on; writeOptions fix the clock and ids of the writer
 	writes       bool
 	writeOptions blobwrite.Options
-	// catalog is the catalog hook of the writes
-	catalog CatalogHook
+	// marksFault makes the delete marks fail from the start on
+	marksFault func(location, reason string) error
+	// catalog is the catalog hook of the writes, catalogFile the open
+	// catalog.sqlite of the data directory
+	catalog     CatalogHook
+	catalogFile *catalog.Catalog
+	// upstream switches requests to remotes on (decision 5.1 of the phase 5
+	// plan); routing are the routing rules of the start, proxyState the
+	// table proxy_state and upstreamConfig the clock and the limits of the
+	// proxies
+	upstream       bool
+	routing        *model.Routing
+	proxyState     proxy.StateStore
+	upstreamConfig proxy.Config
 	// secure is Options.Secure
 	secure func(*http.Request) bool
+	// installRoot and trustRule are Options.installRoot and Options.TrustRule
+	installRoot func() (string, string)
+	trustRule   func(root, key string) error
+	// tasks and taskRuns are Options.Tasks and Options.TaskRuns; startApp
+	// starts the registry as Serve does
+	tasks    *tasks.Registry
+	taskRuns TaskRuns
 }
 
 func prepare(t *testing.T, base string, storeCfgs []config.StoreConfig, opts appOptions) *config.Config {
@@ -190,9 +213,16 @@ func startApp(t *testing.T, base string, cfg *config.Config, opts appOptions) *a
 		t.Fatal(err)
 	}
 	cfg.Port = main.Addr().(*net.TCPAddr).Port
-	srv, err := New(cfg, ports, Options{AccessLog: a.access, Security: opts.security, HostNames: opts.hostNames,
-		Writes: opts.writes, writeOptions: opts.writeOptions, Catalog: opts.catalog, Secure: opts.secure})
+	// a Security of the tests that keeps a state is the identity store too
+	identity, _ := opts.security.(adminrules.IdentityStore)
+	srv, err := New(cfg, ports, Options{AccessLog: a.access, Security: opts.security, Identity: identity, HostNames: opts.hostNames,
+		Writes: opts.writes, writeOptions: opts.writeOptions, marksFault: opts.marksFault, Catalog: opts.catalog, CatalogFile: opts.catalogFile, Upstream: opts.upstream, Routing: opts.routing,
+		ProxyState: opts.proxyState, upstreamConfig: opts.upstreamConfig, Secure: opts.secure, Tasks: opts.tasks, TaskRuns: opts.taskRuns,
+		installRoot: opts.installRoot, TrustRule: opts.trustRule})
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := srv.startTasks(); err != nil {
 		t.Fatal(err)
 	}
 	a.srv = srv

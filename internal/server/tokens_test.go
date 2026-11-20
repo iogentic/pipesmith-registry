@@ -354,7 +354,8 @@ func TestDockerChallenge(t *testing.T) {
 	main := a.addr()
 	for _, host := range []string{"localhost:" + portNumber, "127.0.0.1:" + portNumber, "LOCALHOST:" + portNumber, "registry.example.com"} {
 		got := challenge(t, a.on("demo-docker", "GET", "/v2/", "Host", host, "X-Forwarded-Host", "evil.example.com"))
-		if want := `Bearer realm="http://` + host + `/v2/token",service="Pipesmith Registry"`; got != want {
+		// the realm names the host in lower case (review 3-63)
+		if want := `Bearer realm="http://` + strings.ToLower(host) + `/v2/token",service="Pipesmith Registry"`; got != want {
 			t.Errorf("Host %s: %q, want %q", host, got, want)
 		}
 	}
@@ -385,6 +386,26 @@ func TestDockerChallenge(t *testing.T) {
 	// a browser keeps the challenge of the session (N13)
 	if got := a.on("demo-docker", "GET", "/v2/", "Cookie", "other=1").header.Get("WWW-Authenticate"); got != sessionChallenge {
 		t.Errorf("browser: %q", got)
+	}
+}
+
+// The referrers route names the repository and pull in its challenge, like
+// the manifest route; a path of no call names no scope.
+func TestDockerChallengeOfTheReferrersRoute(t *testing.T) {
+	a := newTokenApp(t, tokenSnapshot(t))
+	_, portNumber, _ := strings.Cut(a.docker["demo-docker"].Listener.Addr().String(), ":")
+	host := "localhost:" + portNumber
+	realm := `Bearer realm="http://` + host + `/v2/token",service="Pipesmith Registry"`
+	digest := "sha256:" + strings.Repeat("ab", 32)
+	for path, want := range map[string]string{
+		"/v2/app/referrers/" + digest:      realm + `,scope="repository:app:pull"`,
+		"/v2/demo/app/referrers/" + digest: realm + `,scope="repository:demo/app:pull"`,
+		"/v2/app/manifests/1.0":            realm + `,scope="repository:app:pull"`,
+		"/v2/app/nothing/" + digest:        realm,
+	} {
+		if got := challenge(t, a.on("demo-docker", "GET", path, "Host", host)); got != want {
+			t.Errorf("%s: %q, want %q", path, got, want)
+		}
 	}
 }
 

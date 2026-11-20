@@ -8,7 +8,7 @@ import (
 
 // SchemaVersion is the version of the last step, the value of the schema row
 // of a file this binary writes.
-const SchemaVersion = 2
+const SchemaVersion = 4
 
 // steps are the schema steps of catalog.sqlite, numbered from 1. A further
 // table or column is the next step, and SchemaVersion follows it in the same
@@ -17,6 +17,8 @@ const SchemaVersion = 2
 var steps = []migrate.Step{
 	{Version: 1, Apply: schema1},
 	{Version: 2, Apply: schema2},
+	{Version: 3, Apply: schema3},
+	{Version: 4, Apply: schema4},
 }
 
 // schema1 holds what a scan fills: one row per store and path in blobs, the
@@ -50,6 +52,24 @@ var schema2 = statements(
 		" component_attributes TEXT)",
 	"CREATE UNIQUE INDEX IF NOT EXISTS imported_assets_path ON imported_assets (repo, path) WHERE path <> ''",
 	"CREATE INDEX IF NOT EXISTS imported_assets_blob ON imported_assets (blob_ref)",
+)
+
+// schema3 is the cache state of the proxies of phase 5 (section State of the
+// phase 5 plan, decision E3), with its accessors in proxy_state.go.
+var schema3 = statements(
+	"CREATE TABLE IF NOT EXISTS proxy_state (repo TEXT NOT NULL, path TEXT NOT NULL, checked_ms INTEGER, etag TEXT," +
+		" last_modified TEXT, not_found_until_ms INTEGER, PRIMARY KEY (repo, path)) WITHOUT ROWID",
+)
+
+// schema4 holds the usage figures of phase 7 (decisions L11 and L12 of the
+// phase 7 plan), with their accessors in usage.go: downloads per repository
+// and day, requests and bytes sent per day. Days are YYYY-MM-DD in UTC. No
+// column names a user or an address.
+var schema4 = statements(
+	"CREATE TABLE IF NOT EXISTS downloads (repo TEXT NOT NULL, day TEXT NOT NULL, count INTEGER NOT NULL,"+
+		" bytes INTEGER NOT NULL, PRIMARY KEY (repo, day)) WITHOUT ROWID",
+	"CREATE TABLE IF NOT EXISTS request_days (day TEXT PRIMARY KEY, requests INTEGER NOT NULL,"+
+		" bytes_sent INTEGER NOT NULL) WITHOUT ROWID",
 )
 
 func statements(list ...string) func(tx *sql.Tx) error {

@@ -32,9 +32,10 @@ func DecodeAssetID(id string) (string, string, bool) {
 	return repo, path, true
 }
 
-// assetXO is AssetXO. Values this server does not hold are null:
-// lastModified, lastDownloaded, uploader and uploaderIp. The checksum map
-// holds the SHA-1 of the index, the only digest it has.
+// assetXO is AssetXO. lastDownloaded is null: this server does not keep
+// it. The checksum map holds the SHA-1 of the index; uploader, uploaderIp,
+// lastModified and the other digests come from catalog.sqlite (Env.Details)
+// and are null or absent without it.
 type assetXO struct {
 	DownloadURL    string            `json:"downloadUrl"`
 	Path           string            `json:"path"`
@@ -55,7 +56,7 @@ type assetXO struct {
 // assetXO is the AssetXO of the winning row a of a path; requested is the
 // repository the id and the download address name, a.Repo the member that
 // holds it.
-func (env *Env) assetXO(requested, format string, a *index.Asset) assetXO {
+func (env *Env) assetXO(requested, format string, a *index.Asset) (assetXO, error) {
 	checksum := map[string]string{}
 	if a.SHA1 != nil && *a.SHA1 != "" {
 		checksum["sha1"] = strings.ToLower(*a.SHA1)
@@ -65,7 +66,7 @@ func (env *Env) assetXO(requested, format string, a *index.Asset) assetXO {
 		contentType = *a.ContentType
 	}
 	created := timestamp(time.UnixMilli(a.CreatedMS))
-	return assetXO{
+	xo := assetXO{
 		DownloadURL:   env.url(requested) + "/" + pathURL(a.Path),
 		Path:          a.Path,
 		ID:            AssetID(requested, a.Path),
@@ -77,6 +78,24 @@ func (env *Env) assetXO(requested, format string, a *index.Asset) assetXO {
 		BlobCreated:   &created,
 		BlobStoreName: a.Store,
 	}
+	if env.Details == nil {
+		return xo, nil
+	}
+	d, err := env.Details.Detail(a.Repo, a.Path, a.Store, a.CreatedMS)
+	if err != nil || d == nil {
+		return xo, err
+	}
+	xo.Uploader, xo.UploaderIP = d.Uploader, d.Address
+	if d.LastModifiedMS != nil {
+		modified := timestamp(time.UnixMilli(*d.LastModifiedMS))
+		xo.LastModified = &modified
+	}
+	for name, digest := range map[string]string{"md5": d.MD5, "sha256": d.SHA256, "sha512": d.SHA512} {
+		if digest != "" {
+			checksum[name] = strings.ToLower(digest)
+		}
+	}
+	return xo, nil
 }
 
 // Asset is GET /v1/assets/{id}: 422 for an id this server cannot have
@@ -98,7 +117,11 @@ func Asset(env *Env, id string) (Answer, error) {
 			return Answer{}, err
 		}
 		if a != nil {
-			return ok(env.assetXO(repo, r.Format, a))
+			xo, err := env.assetXO(repo, r.Format, a)
+			if err != nil {
+				return Answer{}, err
+			}
+			return ok(xo)
 		}
 	}
 	return refuse(http.StatusNotFound, "asset not found")

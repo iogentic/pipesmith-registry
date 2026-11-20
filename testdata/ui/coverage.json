@@ -1,0 +1,2438 @@
+{
+ "about": "Coverage of the contract of the interface (task 1 of the phase 6 plan), written by tools/ui_coverage.py; do not edit.",
+ "sources": {
+  "docs/ui/API.md": "7f0ac72b2c749335b1089bbe471985e10642f221ee98e6d7b07c7ba520508566",
+  "docs/ui/INVENTORY.md": "23a7a13cb9726a64394f1ab80e3e89863a300cad78c605c00e93970fb4b41580",
+  "tools/ui_coverage.py": "2946c38f3d51fab0ffc64fd8dc181dbc0bc6af3621b9a2da38b8f5c340b93334"
+ },
+ "digest": "7e38a4f690560ecf1e10a1e0be954a7a6ead4ae851520c3f0093e1becc2da43c",
+ "rows": [
+  {
+   "id": "S01",
+   "capture": "01",
+   "section": "Frame",
+   "status": "build",
+   "screens": [
+    "ui:S01"
+   ],
+   "groups": [
+    "session"
+   ]
+  },
+  {
+   "id": "S02",
+   "capture": "16",
+   "section": "Frame",
+   "status": "build",
+   "screens": [
+    "ui:S08"
+   ],
+   "groups": []
+  },
+  {
+   "id": "S03",
+   "capture": "38",
+   "section": "Frame",
+   "status": "build",
+   "screens": [
+    "ui:S08"
+   ],
+   "groups": []
+  },
+  {
+   "id": "S04",
+   "capture": "58",
+   "section": "Frame",
+   "status": "build",
+   "screens": [
+    "ui:S08"
+   ],
+   "groups": []
+  },
+  {
+   "id": "S05",
+   "capture": "65",
+   "section": "Frame",
+   "status": "build",
+   "screens": [
+    "ui:S08"
+   ],
+   "groups": []
+  },
+  {
+   "id": "S06",
+   "capture": "81",
+   "section": "Frame",
+   "status": "build",
+   "screens": [
+    "ui:S41",
+    "ui:S29"
+   ],
+   "groups": [
+    "account",
+    "security",
+    "session",
+    "tokens"
+   ]
+  },
+  {
+   "id": "S07",
+   "capture": "82",
+   "section": "Frame",
+   "status": "build",
+   "screens": [
+    "ui:S41"
+   ],
+   "groups": [
+    "account",
+    "session"
+   ]
+  },
+  {
+   "id": "S08",
+   "capture": "83",
+   "section": "Frame",
+   "status": "build",
+   "screens": [
+    "ui:S42"
+   ],
+   "groups": [
+    "status"
+   ]
+  },
+  {
+   "id": "S09",
+   "capture": "84",
+   "section": "Frame",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S10",
+   "capture": "02",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S02"
+   ],
+   "groups": [
+    "status",
+    "tasks"
+   ]
+  },
+  {
+   "id": "S11",
+   "capture": "03",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S03"
+   ],
+   "groups": [
+    "search",
+    "status"
+   ]
+  },
+  {
+   "id": "S12",
+   "capture": "04",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S03"
+   ],
+   "groups": [
+    "search",
+    "status"
+   ]
+  },
+  {
+   "id": "S13",
+   "capture": "05",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S03"
+   ],
+   "groups": [
+    "search",
+    "status"
+   ]
+  },
+  {
+   "id": "S14",
+   "capture": "06",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S03"
+   ],
+   "groups": [
+    "search",
+    "status"
+   ]
+  },
+  {
+   "id": "S15",
+   "capture": "07",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S03"
+   ],
+   "groups": [
+    "search",
+    "status"
+   ]
+  },
+  {
+   "id": "S16",
+   "capture": "08",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S03"
+   ],
+   "groups": [
+    "search",
+    "status"
+   ]
+  },
+  {
+   "id": "S17",
+   "capture": "09",
+   "section": "Browse and Search",
+   "status": "outside",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S18",
+   "capture": "10",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S03"
+   ],
+   "groups": [
+    "search",
+    "status"
+   ]
+  },
+  {
+   "id": "S19",
+   "capture": "11",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S04"
+   ],
+   "groups": [
+    "browse",
+    "status"
+   ]
+  },
+  {
+   "id": "S20",
+   "capture": "12",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S05"
+   ],
+   "groups": [
+    "browse",
+    "content"
+   ]
+  },
+  {
+   "id": "S21",
+   "capture": "13",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S05"
+   ],
+   "groups": [
+    "browse",
+    "content"
+   ]
+  },
+  {
+   "id": "S22",
+   "capture": "14",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S05"
+   ],
+   "groups": [
+    "browse",
+    "content"
+   ]
+  },
+  {
+   "id": "S23",
+   "capture": "15",
+   "section": "Browse and Search",
+   "status": "build",
+   "screens": [
+    "ui:S06",
+    "ui:S07"
+   ],
+   "groups": [
+    "content",
+    "status"
+   ]
+  },
+  {
+   "id": "S24",
+   "capture": "17",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S09"
+   ],
+   "groups": [
+    "repositories"
+   ]
+  },
+  {
+   "id": "S25",
+   "capture": "18",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S11"
+   ],
+   "groups": [
+    "blob-stores",
+    "cleanup-policies",
+    "repositories",
+    "routing-rules",
+    "status"
+   ]
+  },
+  {
+   "id": "S26",
+   "capture": "19",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S11"
+   ],
+   "groups": [
+    "blob-stores",
+    "cleanup-policies",
+    "repositories",
+    "routing-rules",
+    "status"
+   ]
+  },
+  {
+   "id": "S27",
+   "capture": "20",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S11"
+   ],
+   "groups": [
+    "blob-stores",
+    "cleanup-policies",
+    "repositories",
+    "routing-rules",
+    "status"
+   ]
+  },
+  {
+   "id": "S28",
+   "capture": "21",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S11"
+   ],
+   "groups": [
+    "blob-stores",
+    "cleanup-policies",
+    "repositories",
+    "routing-rules",
+    "status"
+   ]
+  },
+  {
+   "id": "S29",
+   "capture": "22",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S11"
+   ],
+   "groups": [
+    "blob-stores",
+    "cleanup-policies",
+    "repositories",
+    "routing-rules",
+    "status"
+   ]
+  },
+  {
+   "id": "S30",
+   "capture": "23",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S10"
+   ],
+   "groups": []
+  },
+  {
+   "id": "S31",
+   "capture": "24",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S11"
+   ],
+   "groups": [
+    "blob-stores",
+    "cleanup-policies",
+    "repositories",
+    "routing-rules",
+    "status"
+   ]
+  },
+  {
+   "id": "S32",
+   "capture": "28",
+   "section": "Repositories",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S33",
+   "capture": "29",
+   "section": "Repositories",
+   "status": "outside",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S34",
+   "capture": "30",
+   "section": "Repositories",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S35",
+   "capture": "32",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S16"
+   ],
+   "groups": [
+    "repositories",
+    "routing-rules"
+   ]
+  },
+  {
+   "id": "S36",
+   "capture": "34",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S17"
+   ],
+   "groups": [
+    "repositories",
+    "routing-rules"
+   ]
+  },
+  {
+   "id": "S37",
+   "capture": "35",
+   "section": "Repositories",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S38",
+   "capture": "36",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S17"
+   ],
+   "groups": [
+    "repositories",
+    "routing-rules"
+   ]
+  },
+  {
+   "id": "S39",
+   "capture": "37",
+   "section": "Repositories",
+   "status": "build",
+   "screens": [
+    "ui:S18"
+   ],
+   "groups": [
+    "routing-rules"
+   ]
+  },
+  {
+   "id": "S40",
+   "capture": "25",
+   "section": "Blob Stores",
+   "status": "build",
+   "screens": [
+    "ui:S12"
+   ],
+   "groups": [
+    "blob-stores"
+   ]
+  },
+  {
+   "id": "S41",
+   "capture": "26",
+   "section": "Blob Stores",
+   "status": "build",
+   "screens": [
+    "ui:S13"
+   ],
+   "groups": [
+    "blob-stores",
+    "repositories"
+   ]
+  },
+  {
+   "id": "S42",
+   "capture": "27",
+   "section": "Blob Stores",
+   "status": "build",
+   "screens": [
+    "ui:S13"
+   ],
+   "groups": [
+    "blob-stores",
+    "repositories"
+   ]
+  },
+  {
+   "id": "S43",
+   "capture": "31",
+   "section": "Cleanup Policies",
+   "status": "build",
+   "screens": [
+    "ui:S14"
+   ],
+   "groups": [
+    "cleanup-policies"
+   ]
+  },
+  {
+   "id": "S44",
+   "capture": "33",
+   "section": "Cleanup Policies",
+   "status": "build",
+   "screens": [
+    "ui:S15"
+   ],
+   "groups": [
+    "cleanup-policies",
+    "status"
+   ]
+  },
+  {
+   "id": "S45",
+   "capture": "39",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S19"
+   ],
+   "groups": [
+    "security"
+   ]
+  },
+  {
+   "id": "S46",
+   "capture": "40",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S21"
+   ],
+   "groups": [
+    "security"
+   ]
+  },
+  {
+   "id": "S47",
+   "capture": "41",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S23"
+   ],
+   "groups": [
+    "security"
+   ]
+  },
+  {
+   "id": "S48",
+   "capture": "42",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S20"
+   ],
+   "groups": [
+    "security"
+   ]
+  },
+  {
+   "id": "S49",
+   "capture": "43",
+   "section": "Security",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S50",
+   "capture": "44",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S22"
+   ],
+   "groups": [
+    "security"
+   ]
+  },
+  {
+   "id": "S51",
+   "capture": "45",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S22"
+   ],
+   "groups": [
+    "security"
+   ]
+  },
+  {
+   "id": "S52",
+   "capture": "46",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S24"
+   ],
+   "groups": [
+    "security",
+    "tokens"
+   ]
+  },
+  {
+   "id": "S53",
+   "capture": "47",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S24"
+   ],
+   "groups": [
+    "security",
+    "tokens"
+   ]
+  },
+  {
+   "id": "S54",
+   "capture": "48",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S25"
+   ],
+   "groups": [
+    "security"
+   ]
+  },
+  {
+   "id": "S55",
+   "capture": "49",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S26"
+   ],
+   "groups": [
+    "ldap"
+   ]
+  },
+  {
+   "id": "S56",
+   "capture": "50",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S28"
+   ],
+   "groups": [
+    "security"
+   ]
+  },
+  {
+   "id": "S57",
+   "capture": "51",
+   "section": "Security",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S58",
+   "capture": "52",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S27"
+   ],
+   "groups": [
+    "ldap"
+   ]
+  },
+  {
+   "id": "S59",
+   "capture": "53",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S27"
+   ],
+   "groups": [
+    "ldap"
+   ]
+  },
+  {
+   "id": "S60",
+   "capture": "54",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S27"
+   ],
+   "groups": [
+    "ldap"
+   ]
+  },
+  {
+   "id": "S61",
+   "capture": "55",
+   "section": "Security",
+   "status": "build",
+   "screens": [
+    "ui:S26"
+   ],
+   "groups": [
+    "ldap"
+   ]
+  },
+  {
+   "id": "S62",
+   "capture": "57",
+   "section": "Security",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S63",
+   "capture": "77",
+   "section": "Tasks",
+   "status": "build",
+   "screens": [
+    "ui:S38"
+   ],
+   "groups": [
+    "tasks"
+   ]
+  },
+  {
+   "id": "S64",
+   "capture": "78",
+   "section": "Tasks",
+   "status": "build",
+   "screens": [
+    "ui:S40"
+   ],
+   "groups": [
+    "tasks"
+   ]
+  },
+  {
+   "id": "S65",
+   "capture": "79",
+   "section": "Tasks",
+   "status": "build",
+   "screens": [
+    "ui:S39"
+   ],
+   "groups": [
+    "tasks"
+   ]
+  },
+  {
+   "id": "S66",
+   "capture": "80",
+   "section": "Tasks",
+   "status": "build",
+   "screens": [
+    "ui:S40"
+   ],
+   "groups": [
+    "tasks"
+   ]
+  },
+  {
+   "id": "S67",
+   "capture": "59",
+   "section": "Logging",
+   "status": "build",
+   "screens": [
+    "ui:S30"
+   ],
+   "groups": [
+    "logging"
+   ]
+  },
+  {
+   "id": "S68",
+   "capture": "60",
+   "section": "Logging",
+   "status": "build",
+   "screens": [
+    "ui:S31"
+   ],
+   "groups": [
+    "logs"
+   ]
+  },
+  {
+   "id": "S69",
+   "capture": "61",
+   "section": "Logging",
+   "status": "build",
+   "screens": [
+    "ui:S32"
+   ],
+   "groups": [
+    "logs"
+   ]
+  },
+  {
+   "id": "S70",
+   "capture": "62",
+   "section": "Status and Support",
+   "status": "build",
+   "screens": [
+    "ui:S33"
+   ],
+   "groups": [
+    "status"
+   ]
+  },
+  {
+   "id": "S71",
+   "capture": "63",
+   "section": "Status and Support",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S72",
+   "capture": "64",
+   "section": "Status and Support",
+   "status": "build",
+   "screens": [
+    "ui:S34"
+   ],
+   "groups": [
+    "system"
+   ]
+  },
+  {
+   "id": "S73",
+   "capture": "66",
+   "section": "System",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S74",
+   "capture": "67",
+   "section": "System",
+   "status": "build",
+   "screens": [
+    "ui:S35"
+   ],
+   "groups": [
+    "capabilities"
+   ]
+  },
+  {
+   "id": "S75",
+   "capture": "68",
+   "section": "System",
+   "status": "build",
+   "screens": [
+    "ui:S36"
+   ],
+   "groups": [
+    "capabilities"
+   ]
+  },
+  {
+   "id": "S76",
+   "capture": "69",
+   "section": "System",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S77",
+   "capture": "70",
+   "section": "System",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S78",
+   "capture": "71",
+   "section": "System",
+   "status": "left out",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S79",
+   "capture": "72",
+   "section": "System",
+   "status": "outside",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S80",
+   "capture": "73",
+   "section": "System",
+   "status": "build",
+   "screens": [
+    "ui:S37"
+   ],
+   "groups": [
+    "system"
+   ]
+  },
+  {
+   "id": "S81",
+   "capture": "74",
+   "section": "System",
+   "status": "outside",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S82",
+   "capture": "75",
+   "section": "System",
+   "status": "outside",
+   "screens": [],
+   "groups": []
+  },
+  {
+   "id": "S83",
+   "capture": "76",
+   "section": "System",
+   "status": "outside",
+   "screens": [],
+   "groups": []
+  }
+ ],
+ "requests": [
+  {
+   "request": "DELETE /api/cleanup-policies/{name}",
+   "group": "cleanup-policies",
+   "area": "cleanup-policies",
+   "screens": [
+    "ui:S15"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /api/logging/loggers/{name}",
+   "group": "logging",
+   "area": "logging",
+   "screens": [
+    "ui:S30"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /api/session",
+   "group": "session",
+   "area": null,
+   "screens": [
+    "Session Endpoints",
+    "Frame"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "DELETE /api/tasks/{id}",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S40"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /api/tokens/{id}",
+   "group": "tokens",
+   "area": "tokens",
+   "screens": [
+    "ui:S24",
+    "ui:S29"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "DELETE /service/rest/v1/assets/{id}",
+   "group": "content",
+   "area": "content",
+   "screens": [
+    "ui:S05"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /service/rest/v1/blobstores/{name}",
+   "group": "blob-stores",
+   "area": "blob-stores",
+   "screens": [
+    "ui:S13"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /service/rest/v1/capabilities/{id}",
+   "group": "capabilities",
+   "area": "capabilities",
+   "screens": [
+    "ui:S36"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /service/rest/v1/repositories/{name}",
+   "group": "repositories",
+   "area": "repositories",
+   "screens": [
+    "ui:S11"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /service/rest/v1/routing-rules/{name}",
+   "group": "routing-rules",
+   "area": "routing-rules",
+   "screens": [
+    "ui:S17"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /service/rest/v1/security/ldap/{name}",
+   "group": "ldap",
+   "area": "ldap",
+   "screens": [
+    "ui:S27"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /service/rest/v1/security/roles/{id}",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S22"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "DELETE /service/rest/v1/security/users/{userId}",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S24"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/areas",
+   "group": "session",
+   "area": null,
+   "screens": [
+    "Frame",
+    "Areas"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /api/asset/{repository}",
+   "group": "browse",
+   "area": null,
+   "screens": [
+    "ui:S05"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /api/blob-stores/{name}/deleted",
+   "group": "blob-stores",
+   "area": "blob-stores",
+   "screens": [
+    "ui:S13"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/browse/{repository}",
+   "group": "browse",
+   "area": null,
+   "screens": [
+    "ui:S05"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/capabilities/support",
+   "group": "capabilities",
+   "area": "capabilities",
+   "screens": [
+    "ui:S35",
+    "ui:S36"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /api/cleanup-policies",
+   "group": "cleanup-policies",
+   "area": "cleanup-policies",
+   "screens": [
+    "ui:S11",
+    "ui:S14"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /api/cleanup-policies/{name}",
+   "group": "cleanup-policies",
+   "area": "cleanup-policies",
+   "screens": [
+    "ui:S15"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/logging/loggers",
+   "group": "logging",
+   "area": "logging",
+   "screens": [
+    "ui:S30"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/logs",
+   "group": "logs",
+   "area": "logs",
+   "screens": [
+    "ui:S31"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/logs/{name}",
+   "group": "logs",
+   "area": "logs",
+   "screens": [
+    "ui:S32"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /api/metrics/downloads",
+   "group": "metrics",
+   "area": "metrics",
+   "screens": [
+    "ui:S43"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/metrics/requests",
+   "group": "metrics",
+   "area": "metrics",
+   "screens": [
+    "ui:S43"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/repositories",
+   "group": "browse",
+   "area": null,
+   "screens": [
+    "ui:S04"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/session",
+   "group": "session",
+   "area": null,
+   "screens": [
+    "Session Endpoints",
+    "ui:S41",
+    "Frame"
+   ],
+   "rows": 3
+  },
+  {
+   "request": "GET /api/status",
+   "group": "status",
+   "area": null,
+   "screens": [
+    "ui:S02",
+    "ui:S42"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /api/task-types",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S39",
+    "ui:S40"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /api/tasks/{id}",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S40"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /api/tokens",
+   "group": "tokens",
+   "area": "tokens",
+   "screens": [
+    "ui:S24",
+    "ui:S29"
+   ],
+   "rows": 3
+  },
+  {
+   "request": "GET /service/rest/beta/system/information",
+   "group": "system",
+   "area": "system",
+   "screens": [
+    "ui:S34"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/assets/{id}",
+   "group": "browse",
+   "area": null,
+   "screens": [
+    "ui:S05"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/blobstores",
+   "group": "blob-stores",
+   "area": null,
+   "screens": [
+    "ui:S11",
+    "ui:S12",
+    "ui:S13"
+   ],
+   "rows": 3
+  },
+  {
+   "request": "GET /service/rest/v1/blobstores/file/{name}",
+   "group": "blob-stores",
+   "area": null,
+   "screens": [
+    "ui:S13"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/blobstores/{name}/quota-status",
+   "group": "blob-stores",
+   "area": null,
+   "screens": [
+    "ui:S13"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/capabilities",
+   "group": "capabilities",
+   "area": "capabilities",
+   "screens": [
+    "ui:S35",
+    "ui:S36"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/formats/{format}/upload-specs",
+   "group": "content",
+   "area": "content",
+   "screens": [
+    "ui:S07"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/read-only",
+   "group": "system",
+   "area": null,
+   "screens": [
+    "ui:S37",
+    "Frame"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/repositories",
+   "group": "status",
+   "area": null,
+   "screens": [
+    "ui:S02",
+    "ui:S03",
+    "ui:S04",
+    "ui:S06",
+    "ui:S11",
+    "ui:S15"
+   ],
+   "rows": 6
+  },
+  {
+   "request": "GET /service/rest/v1/repositories/{name}",
+   "group": "repositories",
+   "area": null,
+   "screens": [
+    "ui:S11"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/repositories/{segment}/{type}/{name}",
+   "group": "repositories",
+   "area": null,
+   "screens": [
+    "ui:S11"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/repositorySettings",
+   "group": "repositories",
+   "area": null,
+   "screens": [
+    "ui:S09",
+    "ui:S13",
+    "ui:S16",
+    "ui:S17"
+   ],
+   "rows": 4
+  },
+  {
+   "request": "GET /service/rest/v1/routing-rules",
+   "group": "routing-rules",
+   "area": "routing-rules",
+   "screens": [
+    "ui:S11",
+    "ui:S16"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/routing-rules/{name}",
+   "group": "routing-rules",
+   "area": "routing-rules",
+   "screens": [
+    "ui:S17"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/search",
+   "group": "search",
+   "area": null,
+   "screens": [
+    "ui:S03"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/security/anonymous",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S25"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/security/ldap",
+   "group": "ldap",
+   "area": null,
+   "screens": [
+    "ui:S26"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/security/ldap/{name}",
+   "group": "ldap",
+   "area": null,
+   "screens": [
+    "ui:S27"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/security/privileges",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S19",
+    "ui:S22"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/security/privileges/{name}",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S20"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/security/realms/active",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S28",
+    "ui:S29"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/security/realms/available",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S25",
+    "ui:S28"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/security/roles",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S20",
+    "ui:S21",
+    "ui:S22",
+    "ui:S24"
+   ],
+   "rows": 5
+  },
+  {
+   "request": "GET /service/rest/v1/security/roles/{id}",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S22"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/security/user-sources",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S22",
+    "ui:S23"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/security/users",
+   "group": "security",
+   "area": null,
+   "screens": [
+    "ui:S23",
+    "ui:S24"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/status/check",
+   "group": "status",
+   "area": null,
+   "screens": [
+    "ui:S02",
+    "ui:S33"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/status/writable",
+   "group": "status",
+   "area": null,
+   "screens": [
+    "ui:S33"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/system/node",
+   "group": "system",
+   "area": "system",
+   "screens": [
+    "ui:S37"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "GET /service/rest/v1/tasks",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S02",
+    "ui:S38"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "GET /service/rest/v1/tasks/{id}",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S40"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/account/password",
+   "group": "account",
+   "area": "account",
+   "screens": [
+    "ui:S41"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/cleanup-policies",
+   "group": "cleanup-policies",
+   "area": "cleanup-policies",
+   "screens": [
+    "ui:S15"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/cleanup-policies/preview",
+   "group": "cleanup-policies",
+   "area": "cleanup-policies",
+   "screens": [
+    "ui:S15"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/ldap/clear-cache",
+   "group": "ldap",
+   "area": "ldap",
+   "screens": [
+    "ui:S26"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/ldap/verify-connection",
+   "group": "ldap",
+   "area": "ldap",
+   "screens": [
+    "ui:S27"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "POST /api/ldap/verify-login",
+   "group": "ldap",
+   "area": "ldap",
+   "screens": [
+    "ui:S27"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "POST /api/ldap/verify-user-mapping",
+   "group": "ldap",
+   "area": "ldap",
+   "screens": [
+    "ui:S27"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "POST /api/logging/reset",
+   "group": "logging",
+   "area": "logging",
+   "screens": [
+    "ui:S30"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/routing-rules/preview",
+   "group": "routing-rules",
+   "area": "routing-rules",
+   "screens": [
+    "ui:S18"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/routing-rules/test",
+   "group": "routing-rules",
+   "area": "routing-rules",
+   "screens": [
+    "ui:S17"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/session",
+   "group": "session",
+   "area": null,
+   "screens": [
+    "Session Endpoints",
+    "ui:S01"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "POST /api/tasks",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S40"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /api/tokens",
+   "group": "tokens",
+   "area": "tokens",
+   "screens": [
+    "ui:S29"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/blobstores/file",
+   "group": "blob-stores",
+   "area": "blob-stores",
+   "screens": [
+    "ui:S13"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/components",
+   "group": "content",
+   "area": "content",
+   "screens": [
+    "ui:S07"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/read-only/force-release",
+   "group": "system",
+   "area": "system",
+   "screens": [
+    "ui:S37"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/read-only/freeze",
+   "group": "system",
+   "area": "system",
+   "screens": [
+    "ui:S37"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/read-only/release",
+   "group": "system",
+   "area": "system",
+   "screens": [
+    "ui:S37"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/repositories/{name}/invalidate-cache",
+   "group": "repositories",
+   "area": "repositories",
+   "screens": [
+    "ui:S11"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/repositories/{name}/rebuild-index",
+   "group": "repositories",
+   "area": "repositories",
+   "screens": [
+    "ui:S11"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/repositories/{segment}/{type}",
+   "group": "repositories",
+   "area": "repositories",
+   "screens": [
+    "ui:S11"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/routing-rules",
+   "group": "routing-rules",
+   "area": "routing-rules",
+   "screens": [
+    "ui:S17"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/security/ldap",
+   "group": "ldap",
+   "area": "ldap",
+   "screens": [
+    "ui:S27"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/security/ldap/change-order",
+   "group": "ldap",
+   "area": "ldap",
+   "screens": [
+    "ui:S26"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/security/roles",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S22"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/security/users",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S24"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "POST /service/rest/v1/tasks/{id}/run",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S38",
+    "ui:S40"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "POST /service/rest/v1/tasks/{id}/stop",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S38",
+    "ui:S40"
+   ],
+   "rows": 2
+  },
+  {
+   "request": "PUT /api/account",
+   "group": "account",
+   "area": "account",
+   "screens": [
+    "ui:S41"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /api/cleanup-policies/{name}",
+   "group": "cleanup-policies",
+   "area": "cleanup-policies",
+   "screens": [
+    "ui:S15"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /api/logging/loggers/{name}",
+   "group": "logging",
+   "area": "logging",
+   "screens": [
+    "ui:S30"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /api/tasks/{id}",
+   "group": "tasks",
+   "area": "tasks",
+   "screens": [
+    "ui:S40"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/blobstores/file/{name}",
+   "group": "blob-stores",
+   "area": "blob-stores",
+   "screens": [
+    "ui:S13"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/capabilities/{id}",
+   "group": "capabilities",
+   "area": "capabilities",
+   "screens": [
+    "ui:S36"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/repositories/{segment}/{type}/{name}",
+   "group": "repositories",
+   "area": "repositories",
+   "screens": [
+    "ui:S11"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/routing-rules/{name}",
+   "group": "routing-rules",
+   "area": "routing-rules",
+   "screens": [
+    "ui:S17"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/security/anonymous",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S25"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/security/ldap/{name}",
+   "group": "ldap",
+   "area": "ldap",
+   "screens": [
+    "ui:S27"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/security/realms/active",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S28"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/security/roles/{id}",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S22"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/security/users/{userId}",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S24"
+   ],
+   "rows": 1
+  },
+  {
+   "request": "PUT /service/rest/v1/security/users/{userId}/change-password",
+   "group": "security",
+   "area": "security",
+   "screens": [
+    "ui:S24"
+   ],
+   "rows": 1
+  }
+ ],
+ "requestRows": 147,
+ "groups": {
+  "account": [
+   "POST /api/account/password",
+   "PUT /api/account"
+  ],
+  "blob-stores": [
+   "DELETE /service/rest/v1/blobstores/{name}",
+   "GET /api/blob-stores/{name}/deleted",
+   "GET /service/rest/v1/blobstores",
+   "GET /service/rest/v1/blobstores/file/{name}",
+   "GET /service/rest/v1/blobstores/{name}/quota-status",
+   "POST /service/rest/v1/blobstores/file",
+   "PUT /service/rest/v1/blobstores/file/{name}"
+  ],
+  "browse": [
+   "GET /api/asset/{repository}",
+   "GET /api/browse/{repository}",
+   "GET /api/repositories",
+   "GET /service/rest/v1/assets/{id}"
+  ],
+  "capabilities": [
+   "DELETE /service/rest/v1/capabilities/{id}",
+   "GET /api/capabilities/support",
+   "GET /service/rest/v1/capabilities",
+   "PUT /service/rest/v1/capabilities/{id}"
+  ],
+  "cleanup-policies": [
+   "DELETE /api/cleanup-policies/{name}",
+   "GET /api/cleanup-policies",
+   "GET /api/cleanup-policies/{name}",
+   "POST /api/cleanup-policies",
+   "POST /api/cleanup-policies/preview",
+   "PUT /api/cleanup-policies/{name}"
+  ],
+  "content": [
+   "DELETE /service/rest/v1/assets/{id}",
+   "GET /service/rest/v1/formats/{format}/upload-specs",
+   "POST /service/rest/v1/components"
+  ],
+  "ldap": [
+   "DELETE /service/rest/v1/security/ldap/{name}",
+   "GET /service/rest/v1/security/ldap",
+   "GET /service/rest/v1/security/ldap/{name}",
+   "POST /api/ldap/clear-cache",
+   "POST /api/ldap/verify-connection",
+   "POST /api/ldap/verify-login",
+   "POST /api/ldap/verify-user-mapping",
+   "POST /service/rest/v1/security/ldap",
+   "POST /service/rest/v1/security/ldap/change-order",
+   "PUT /service/rest/v1/security/ldap/{name}"
+  ],
+  "logging": [
+   "DELETE /api/logging/loggers/{name}",
+   "GET /api/logging/loggers",
+   "POST /api/logging/reset",
+   "PUT /api/logging/loggers/{name}"
+  ],
+  "logs": [
+   "GET /api/logs",
+   "GET /api/logs/{name}"
+  ],
+  "metrics": [
+   "GET /api/metrics/downloads",
+   "GET /api/metrics/requests"
+  ],
+  "repositories": [
+   "DELETE /service/rest/v1/repositories/{name}",
+   "GET /service/rest/v1/repositories/{name}",
+   "GET /service/rest/v1/repositories/{segment}/{type}/{name}",
+   "GET /service/rest/v1/repositorySettings",
+   "POST /service/rest/v1/repositories/{name}/invalidate-cache",
+   "POST /service/rest/v1/repositories/{name}/rebuild-index",
+   "POST /service/rest/v1/repositories/{segment}/{type}",
+   "PUT /service/rest/v1/repositories/{segment}/{type}/{name}"
+  ],
+  "routing-rules": [
+   "DELETE /service/rest/v1/routing-rules/{name}",
+   "GET /service/rest/v1/routing-rules",
+   "GET /service/rest/v1/routing-rules/{name}",
+   "POST /api/routing-rules/preview",
+   "POST /api/routing-rules/test",
+   "POST /service/rest/v1/routing-rules",
+   "PUT /service/rest/v1/routing-rules/{name}"
+  ],
+  "search": [
+   "GET /service/rest/v1/search"
+  ],
+  "security": [
+   "DELETE /service/rest/v1/security/roles/{id}",
+   "DELETE /service/rest/v1/security/users/{userId}",
+   "GET /service/rest/v1/security/anonymous",
+   "GET /service/rest/v1/security/privileges",
+   "GET /service/rest/v1/security/privileges/{name}",
+   "GET /service/rest/v1/security/realms/active",
+   "GET /service/rest/v1/security/realms/available",
+   "GET /service/rest/v1/security/roles",
+   "GET /service/rest/v1/security/roles/{id}",
+   "GET /service/rest/v1/security/user-sources",
+   "GET /service/rest/v1/security/users",
+   "POST /service/rest/v1/security/roles",
+   "POST /service/rest/v1/security/users",
+   "PUT /service/rest/v1/security/anonymous",
+   "PUT /service/rest/v1/security/realms/active",
+   "PUT /service/rest/v1/security/roles/{id}",
+   "PUT /service/rest/v1/security/users/{userId}",
+   "PUT /service/rest/v1/security/users/{userId}/change-password"
+  ],
+  "session": [
+   "DELETE /api/session",
+   "GET /api/areas",
+   "GET /api/session",
+   "POST /api/session"
+  ],
+  "status": [
+   "GET /api/status",
+   "GET /service/rest/v1/repositories",
+   "GET /service/rest/v1/status/check",
+   "GET /service/rest/v1/status/writable"
+  ],
+  "system": [
+   "GET /service/rest/beta/system/information",
+   "GET /service/rest/v1/read-only",
+   "GET /service/rest/v1/system/node",
+   "POST /service/rest/v1/read-only/force-release",
+   "POST /service/rest/v1/read-only/freeze",
+   "POST /service/rest/v1/read-only/release"
+  ],
+  "tasks": [
+   "DELETE /api/tasks/{id}",
+   "GET /api/task-types",
+   "GET /api/tasks/{id}",
+   "GET /service/rest/v1/tasks",
+   "GET /service/rest/v1/tasks/{id}",
+   "POST /api/tasks",
+   "POST /service/rest/v1/tasks/{id}/run",
+   "POST /service/rest/v1/tasks/{id}/stop",
+   "PUT /api/tasks/{id}"
+  ],
+  "tokens": [
+   "DELETE /api/tokens/{id}",
+   "GET /api/tokens",
+   "POST /api/tokens"
+  ]
+ },
+ "counts": {
+  "account": 2,
+  "blob-stores": 7,
+  "browse": 4,
+  "capabilities": 4,
+  "cleanup-policies": 6,
+  "content": 3,
+  "ldap": 10,
+  "logging": 4,
+  "logs": 2,
+  "metrics": 2,
+  "repositories": 8,
+  "routing-rules": 7,
+  "search": 1,
+  "security": 18,
+  "session": 4,
+  "status": 4,
+  "system": 6,
+  "tasks": 9,
+  "tokens": 3
+ },
+ "total": 104,
+ "served": {
+  "blob-stores": [
+   "DELETE /service/rest/v1/blobstores/{name}",
+   "GET /api/blob-stores/{name}/deleted",
+   "GET /service/rest/v1/blobstores",
+   "GET /service/rest/v1/blobstores/file/{name}",
+   "GET /service/rest/v1/blobstores/{name}/quota-status",
+   "POST /service/rest/v1/blobstores/file",
+   "PUT /service/rest/v1/blobstores/file/{name}"
+  ],
+  "browse": [
+   "GET /api/asset/{repository}",
+   "GET /api/browse/{repository}",
+   "GET /api/repositories",
+   "GET /service/rest/v1/assets/{id}"
+  ],
+  "capabilities": [
+   "DELETE /service/rest/v1/capabilities/{id}",
+   "GET /api/capabilities/support",
+   "GET /service/rest/v1/capabilities",
+   "PUT /service/rest/v1/capabilities/{id}"
+  ],
+  "content": [
+   "DELETE /service/rest/v1/assets/{id}",
+   "GET /service/rest/v1/formats/{format}/upload-specs",
+   "POST /service/rest/v1/components"
+  ],
+  "ldap": [
+   "DELETE /service/rest/v1/security/ldap/{name}",
+   "GET /service/rest/v1/security/ldap",
+   "GET /service/rest/v1/security/ldap/{name}",
+   "POST /api/ldap/clear-cache",
+   "POST /api/ldap/verify-connection",
+   "POST /api/ldap/verify-login",
+   "POST /api/ldap/verify-user-mapping",
+   "POST /service/rest/v1/security/ldap",
+   "POST /service/rest/v1/security/ldap/change-order",
+   "PUT /service/rest/v1/security/ldap/{name}"
+  ],
+  "logging": [
+   "DELETE /api/logging/loggers/{name}",
+   "GET /api/logging/loggers",
+   "POST /api/logging/reset",
+   "PUT /api/logging/loggers/{name}"
+  ],
+  "logs": [
+   "GET /api/logs",
+   "GET /api/logs/{name}"
+  ],
+  "metrics": [
+   "GET /api/metrics/downloads",
+   "GET /api/metrics/requests"
+  ],
+  "repositories": [
+   "DELETE /service/rest/v1/repositories/{name}",
+   "GET /service/rest/v1/repositories/{name}",
+   "GET /service/rest/v1/repositories/{segment}/{type}/{name}",
+   "GET /service/rest/v1/repositorySettings",
+   "POST /service/rest/v1/repositories/{name}/invalidate-cache",
+   "POST /service/rest/v1/repositories/{name}/rebuild-index",
+   "POST /service/rest/v1/repositories/{segment}/{type}",
+   "PUT /service/rest/v1/repositories/{segment}/{type}/{name}"
+  ],
+  "routing-rules": [
+   "DELETE /service/rest/v1/routing-rules/{name}",
+   "GET /service/rest/v1/routing-rules",
+   "GET /service/rest/v1/routing-rules/{name}",
+   "POST /api/routing-rules/preview",
+   "POST /api/routing-rules/test",
+   "POST /service/rest/v1/routing-rules",
+   "PUT /service/rest/v1/routing-rules/{name}"
+  ],
+  "search": [
+   "GET /service/rest/v1/search"
+  ],
+  "security": [
+   "DELETE /service/rest/v1/security/roles/{id}",
+   "DELETE /service/rest/v1/security/users/{userId}",
+   "GET /service/rest/v1/security/anonymous",
+   "GET /service/rest/v1/security/privileges",
+   "GET /service/rest/v1/security/privileges/{name}",
+   "GET /service/rest/v1/security/realms/active",
+   "GET /service/rest/v1/security/realms/available",
+   "GET /service/rest/v1/security/roles",
+   "GET /service/rest/v1/security/roles/{id}",
+   "GET /service/rest/v1/security/user-sources",
+   "GET /service/rest/v1/security/users",
+   "POST /service/rest/v1/security/roles",
+   "POST /service/rest/v1/security/users",
+   "PUT /service/rest/v1/security/anonymous",
+   "PUT /service/rest/v1/security/realms/active",
+   "PUT /service/rest/v1/security/roles/{id}",
+   "PUT /service/rest/v1/security/users/{userId}",
+   "PUT /service/rest/v1/security/users/{userId}/change-password"
+  ],
+  "session": [
+   "DELETE /api/session",
+   "GET /api/areas",
+   "GET /api/session",
+   "POST /api/session"
+  ],
+  "status": [
+   "GET /api/status",
+   "GET /service/rest/v1/repositories",
+   "GET /service/rest/v1/status/check",
+   "GET /service/rest/v1/status/writable"
+  ],
+  "system": [
+   "GET /service/rest/beta/system/information",
+   "GET /service/rest/v1/read-only",
+   "GET /service/rest/v1/system/node",
+   "POST /service/rest/v1/read-only/force-release",
+   "POST /service/rest/v1/read-only/freeze",
+   "POST /service/rest/v1/read-only/release"
+  ],
+  "tasks": [
+   "GET /service/rest/v1/tasks",
+   "GET /service/rest/v1/tasks/{id}",
+   "POST /service/rest/v1/tasks/{id}/run",
+   "POST /service/rest/v1/tasks/{id}/stop"
+  ]
+ },
+ "choices": [
+  {
+   "request": "DELETE /api/session",
+   "screen": "Session Endpoints",
+   "group": "session"
+  },
+  {
+   "request": "GET /api/areas",
+   "screen": "Frame",
+   "group": "session"
+  },
+  {
+   "request": "GET /api/asset/{repository}",
+   "screen": "ui:S05",
+   "group": "browse"
+  },
+  {
+   "request": "GET /api/browse/{repository}",
+   "screen": "ui:S05",
+   "group": "browse"
+  },
+  {
+   "request": "GET /api/repositories",
+   "screen": "ui:S04",
+   "group": "browse"
+  },
+  {
+   "request": "GET /api/session",
+   "screen": "Session Endpoints",
+   "group": "session"
+  },
+  {
+   "request": "GET /api/status",
+   "screen": "ui:S02",
+   "group": "status"
+  },
+  {
+   "request": "GET /service/rest/v1/assets/{id}",
+   "screen": "ui:S05",
+   "group": "browse"
+  },
+  {
+   "request": "GET /service/rest/v1/blobstores",
+   "screen": "ui:S12",
+   "group": "blob-stores"
+  },
+  {
+   "request": "GET /service/rest/v1/blobstores/file/{name}",
+   "screen": "ui:S13",
+   "group": "blob-stores"
+  },
+  {
+   "request": "GET /service/rest/v1/blobstores/{name}/quota-status",
+   "screen": "ui:S13",
+   "group": "blob-stores"
+  },
+  {
+   "request": "GET /service/rest/v1/read-only",
+   "screen": "ui:S37",
+   "group": "system"
+  },
+  {
+   "request": "GET /service/rest/v1/repositories",
+   "screen": "ui:S02",
+   "group": "status"
+  },
+  {
+   "request": "GET /service/rest/v1/repositories/{name}",
+   "screen": "ui:S11",
+   "group": "repositories"
+  },
+  {
+   "request": "GET /service/rest/v1/repositories/{segment}/{type}/{name}",
+   "screen": "ui:S11",
+   "group": "repositories"
+  },
+  {
+   "request": "GET /service/rest/v1/repositorySettings",
+   "screen": "ui:S09",
+   "group": "repositories"
+  },
+  {
+   "request": "GET /service/rest/v1/search",
+   "screen": "ui:S03",
+   "group": "search"
+  },
+  {
+   "request": "GET /service/rest/v1/security/anonymous",
+   "screen": "ui:S25",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/security/ldap",
+   "screen": "ui:S26",
+   "group": "ldap"
+  },
+  {
+   "request": "GET /service/rest/v1/security/ldap/{name}",
+   "screen": "ui:S27",
+   "group": "ldap"
+  },
+  {
+   "request": "GET /service/rest/v1/security/privileges",
+   "screen": "ui:S19",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/security/privileges/{name}",
+   "screen": "ui:S20",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/security/realms/active",
+   "screen": "ui:S28",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/security/realms/available",
+   "screen": "ui:S28",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/security/roles",
+   "screen": "ui:S20",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/security/roles/{id}",
+   "screen": "ui:S22",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/security/user-sources",
+   "screen": "ui:S22",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/security/users",
+   "screen": "ui:S23",
+   "group": "security"
+  },
+  {
+   "request": "GET /service/rest/v1/status/check",
+   "screen": "ui:S02",
+   "group": "status"
+  },
+  {
+   "request": "GET /service/rest/v1/status/writable",
+   "screen": "ui:S33",
+   "group": "status"
+  },
+  {
+   "request": "POST /api/session",
+   "screen": "Session Endpoints",
+   "group": "session"
+  }
+ ],
+ "contradictions": [
+  {
+   "id": "K1",
+   "source": "the plan of phase 6, section Screens; docs/ui/INVENTORY.md",
+   "text": "The plan takes S01 to S55 as the captures 01 to 55 and S56 to S83 as the captures 57 to 84. INVENTORY.md lists its rows by section, so under ruling U1 82 of the 83 ids name another capture than in the plan: S02 is capture 16 here and capture 02 in the plan."
+  },
+  {
+   "id": "K2",
+   "source": "docs/ui/INVENTORY.md, sections Frame and Screens",
+   "text": "Section Screens says that S29 has no capture, but the row of capture 81 (S06 here) builds it."
+  },
+  {
+   "id": "K3",
+   "source": "docs/ui/API.md, section Proposed Paths; internal/server route table",
+   "text": "The section lists the paths the server does not have yet, but 20 of its 36 requests are served: DELETE /api/logging/loggers/{name}, DELETE /api/session, GET /api/areas, GET /api/blob-stores/{name}/deleted, GET /api/capabilities/support, GET /api/logging/loggers, GET /api/logs, GET /api/logs/{name}, GET /api/metrics/downloads, GET /api/metrics/requests, GET /api/session, POST /api/ldap/clear-cache, POST /api/ldap/verify-connection, POST /api/ldap/verify-login, POST /api/ldap/verify-user-mapping, POST /api/logging/reset, POST /api/routing-rules/preview, POST /api/routing-rules/test, POST /api/session, PUT /api/logging/loggers/{name}."
+  },
+  {
+   "id": "K4",
+   "source": "docs/ui/API.md, section Areas; internal/server route table",
+   "text": "The section says that the server does not have GET /api/areas yet; the server answers it since commit 0923869 of 2026-11-12."
+  },
+  {
+   "id": "K5",
+   "source": "docs/ui/API.md, section Kinds; internal/ui/LOCAL_CHANGES.md",
+   "text": "The contract names the screens S01 to S45; internal/ui/web/js/routes.js adds S46, the viewer of Browse, which the contract does not list."
+  },
+  {
+   "id": "K6",
+   "source": "docs/ui/API.md, section Preview; internal/ui/LOCAL_CHANGES.md",
+   "text": "The section says that the probe of every served read leaves the browser; after the local change of js/preview.js and js/app.js no probe leaves it while GET /api/areas answers."
+  },
+  {
+   "id": "K7",
+   "source": "the plan of phase 6, section Screens; ruling U5",
+   "text": "The plan names the groups of a screen session, port, read, system, figures, content, repositories, stores, policies, rules, cache, security, account, logs and tasks. Under ruling U5 the groups are the areas of the refusals, so coverage.json uses other names (blob-stores, cleanup-policies, routing-rules, ldap, tokens, logging, capabilities, metrics) and session, status, search and browse for screens without an area."
+  },
+  {
+   "id": "K8",
+   "source": "internal/server/secure.go, refusalTable; ruling U5",
+   "text": "GET /api/areas names only the areas of the requests that are still refused. The areas of the requests served since are taken from the refusal table of commit 0923869, the first answer of the server to the contract at 1e6d884."
+  }
+ ]
+}

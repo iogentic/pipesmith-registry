@@ -1,0 +1,3 @@
+{"id":"0ca00000-0000-4000-8000-000000000001","version":1,"type":"baseurl","enabled":true,"notes":null,"properties":{"url":"https://registry.example.com/"},"_removed":[]}
+{"id":"0ca00000-0000-4000-8000-000000000002","version":1,"type":"demo.webhook","enabled":false,"notes":"Invented hook","properties":{"url":"https://hooks.example.com/demo"},"_removed":["properties.secret"]}
+{"id":"0ca00000-0000-4000-8000-000000000003","version":1,"type":"defaultrole","enabled":true,"notes":null,"properties":{"role":"demo-viewer"},"_removed":[]}

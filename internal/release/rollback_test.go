@@ -31,7 +31,8 @@ func TestRollbackPasses(t *testing.T) {
 		t.Fatalf("%d restarts, running %q", r.svc.restartCount(), r.svc.running)
 	}
 	lines := strings.Split(strings.TrimSpace(r.out.String()), "\n")
-	for i, prefix := range []string{"owner: ", "current: releases/0.2.0", "previous: releases/0.1.0", "schema: state.sqlite none, catalog.sqlite none",
+	for i, prefix := range []string{"owner: ", "current: releases/0.2.0", "previous: releases/0.1.0",
+		"checked: releases/0.1.0 holds no SHA256SUMS", "schema: state.sqlite none, catalog.sqlite none",
 		"switched: current -> releases/0.1.0, previous -> releases/0.2.0", "restarted: " + DefaultUnit, "healthy: "} {
 		if i >= len(lines) || !strings.HasPrefix(lines[i], prefix) {
 			t.Fatalf("line %d of the output, want %q:\n%s", i+1, prefix, r.out.String())

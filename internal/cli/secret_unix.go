@@ -23,7 +23,9 @@ var promptSignals = []syscall.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SI
 // askSecret writes the prompt and reads one line from the terminal in with
 // echo off. Keys typed before the prompt are dropped. The terminal settings
 // are restored before it returns, and on a signal of promptSignals during
-// the prompt before the process ends by that signal.
+// the prompt before the process ends by that signal. SIGTSTP during the
+// prompt turns echo on before the process stops, and the prompt goes on
+// with echo off after SIGCONT (review 3-18).
 func askSecret(in *os.File, prompt io.Writer) askFunc {
 	return func(text string) (string, error) {
 		if !isTerminal(in) {
@@ -35,11 +37,19 @@ func askSecret(in *os.File, prompt io.Writer) askFunc {
 			return "", err
 		}
 		restore := func() { _ = termios(fd, ioctlWriteTermios, &old) } // nothing is left to do if the terminal refuses
-		var guard terminalGuard
-		stop := watchPrompt(func() { guard.restore(restore) }, prompt)
-		defer stop()
 		quiet := old
 		quiet.Lflag &^= syscall.ECHO
+		var guard terminalGuard
+		pause := func(halt func()) {
+			if guard.pause(restore, func() error { return termios(fd, ioctlWriteTermios, &quiet) }, func() {
+				_, _ = fmt.Fprintln(prompt)
+				halt()
+			}) {
+				_, _ = fmt.Fprint(prompt, text)
+			}
+		}
+		stop := watchPrompt(func() { guard.restore(restore) }, pause, prompt)
+		defer stop()
 		changed, err := guard.change(func() error { return termios(fd, ioctlFlushTermios, &quiet) })
 		if err != nil {
 			return "", err
@@ -47,7 +57,7 @@ func askSecret(in *os.File, prompt io.Writer) askFunc {
 		if !changed {
 			select {} // a caught signal restored the terminal and ends the process
 		}
-		defer restore()
+		defer guard.restore(restore)
 		if err := dropQueuedInput(fd); err != nil {
 			return "", err
 		}
@@ -66,8 +76,9 @@ func askSecret(in *os.File, prompt io.Writer) askFunc {
 // terminal, the change does not run, so no signal between the start of the
 // watch and the change leaves echo off.
 type terminalGuard struct {
-	mu    sync.Mutex
-	ended bool
+	mu      sync.Mutex
+	ended   bool
+	changed bool
 }
 
 // change runs f unless a signal restored the terminal first; then it reports
@@ -78,7 +89,30 @@ func (g *terminalGuard) change(f func() error) (bool, error) {
 	if g.ended {
 		return false, nil
 	}
-	return true, f()
+	err := f()
+	g.changed = err == nil
+	return true, err
+}
+
+// pause runs off while the change holds, then halt, then on again unless a
+// restore ran meanwhile; it reports whether the prompt goes on. The lock is
+// not held during halt, so a signal that ends the process while it is
+// stopped still restores the terminal.
+func (g *terminalGuard) pause(off func(), on func() error, halt func()) bool {
+	g.mu.Lock()
+	held := g.changed && !g.ended
+	if held {
+		off()
+	}
+	g.mu.Unlock()
+	halt()
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if !held || g.ended {
+		return false
+	}
+	_ = on() // a refusal leaves echo on
+	return true
 }
 
 // restore runs f and keeps every later change from running.
@@ -93,12 +127,17 @@ func (g *terminalGuard) restore(f func()) {
 // start, until stop is called. A caught signal restores the terminal, ends
 // the prompt line and raises the signal again with its default action, so
 // the process ends as the signal would have ended it without the prompt.
-func watchPrompt(restore func(), prompt io.Writer) (stop func()) {
+// A caught SIGTSTP runs pause with the function that stops the process; pause
+// restores the terminal around it.
+func watchPrompt(restore func(), pause func(halt func()), prompt io.Writer) (stop func()) {
 	var catch []os.Signal
 	for _, sig := range promptSignals {
 		if !signal.Ignored(sig) {
 			catch = append(catch, sig)
 		}
+	}
+	if !signal.Ignored(syscall.SIGTSTP) {
+		catch = append(catch, syscall.SIGTSTP)
 	}
 	if len(catch) == 0 {
 		return func() {} // Notify without signals would catch every signal
@@ -106,13 +145,21 @@ func watchPrompt(restore func(), prompt io.Writer) (stop func()) {
 	caught, done := make(chan os.Signal, 1), make(chan struct{})
 	signal.Notify(caught, catch...)
 	go func() {
-		select {
-		case sig := <-caught:
-			restore()
-			_, _ = fmt.Fprintln(prompt)
-			s, _ := sig.(syscall.Signal) // os/signal delivers syscall.Signal on these systems
-			raise(s)
-		case <-done:
+		for {
+			select {
+			case sig := <-caught:
+				if sig == syscall.SIGTSTP {
+					pause(stopProcess)
+					continue
+				}
+				restore()
+				_, _ = fmt.Fprintln(prompt)
+				s, _ := sig.(syscall.Signal) // os/signal delivers syscall.Signal on these systems
+				raise(s)
+				return
+			case <-done:
+				return
+			}
 		}
 	}()
 	return func() {
@@ -132,6 +179,23 @@ func raise(sig syscall.Signal) {
 }
 
 const raiseWait = 5 * time.Second
+
+// stopProcess stops the process by SIGSTOP and returns once SIGCONT
+// arrives, or after stopWait. Once os/signal caught SIGTSTP, the runtime
+// keeps its own handler for it, so a SIGTSTP raised again would not stop the
+// process.
+func stopProcess() {
+	cont := make(chan os.Signal, 1)
+	signal.Notify(cont, syscall.SIGCONT)
+	defer signal.Stop(cont)
+	_ = syscall.Kill(syscall.Getpid(), syscall.SIGSTOP) // a refusal leaves the process running
+	select {
+	case <-cont:
+	case <-time.After(stopWait):
+	}
+}
+
+const stopWait = time.Second
 
 func termios(fd, request uintptr, attrs *syscall.Termios) error {
 	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, fd, request, uintptr(unsafe.Pointer(attrs))); errno != 0 {

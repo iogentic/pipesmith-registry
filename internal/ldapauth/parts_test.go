@@ -110,6 +110,42 @@ func TestGroupFilterEscapes(t *testing.T) {
 	}
 }
 
+// The old product stores the Active Directory rule LDAP_MATCHING_RULE_IN_CHAIN
+// in the member attribute and puts it into the group filter as is, which
+// makes the search follow nested groups.
+func TestGroupFilterInChainRule(t *testing.T) {
+	got := groupFilter("group", "member:1.2.840.113556.1.4.1941:", `CN=a\,b(x)*,OU=People,DC=example,DC=com`)
+	want := `(&(objectClass=group)(member:1.2.840.113556.1.4.1941:=CN=a\5c,b\28x\29\2a,OU=People,DC=example,DC=com))`
+	if got != want {
+		t.Fatalf("groupFilter = %q, want %q", got, want)
+	}
+	if _, err := ldap.CompileFilter(got); err != nil {
+		t.Fatalf("filter does not compile: %v", err)
+	}
+}
+
+func TestMemberAttribute(t *testing.T) {
+	for _, value := range []string{
+		"member", "uniqueMember", "memberUid", "2.5.4.31",
+		"member:1.2.840.113556.1.4.1941:", "uniqueMember:1.2.3.4:", "2.5.4.31:1.2.840.113556.1.4.1941:",
+	} {
+		if !memberAttribute.MatchString(value) {
+			t.Errorf("%q refused", value)
+		}
+	}
+	for _, value := range []string{
+		"", "member ", " member", "member :1.2.840.113556.1.4.1941:", "member: 1.2.840.113556.1.4.1941:",
+		"member:1.2.840.113556.1.4.1941: ", "member:(1.2.840.113556.1.4.1941):", "member:1.2.840.113556.1.4.1941:=x",
+		"member=x", "member:*:", "member*", "member:1.2.840.113556.1.4.1941", "member:", "member::",
+		"member:1.2.abc:", "member:a.2.3:", "member:1.2.840.113556.1.4.1941x:", "member:1941:", "member:1.2..3:", "member:.1.2:",
+		"member:dn:1.2.3:", "member)(x",
+	} {
+		if memberAttribute.MatchString(value) {
+			t.Errorf("%q accepted", value)
+		}
+	}
+}
+
 // N19: the first part of a group DN is a role name, the full DN is one too.
 func TestDynamicGroupNames(t *testing.T) {
 	got := dynamicGroupNames([]string{
@@ -117,7 +153,7 @@ func TestDynamicGroupNames(t *testing.T) {
 		`cn=Dev\2C Ops,ou=groups,dc=example,dc=com`,
 		"not a dn",
 		"cn=demo-admins,ou=groups,dc=example,dc=com",
-	})
+	}, nil)
 	want := []string{
 		"Dev, Ops",
 		`cn=Dev\2C Ops,ou=groups,dc=example,dc=com`,
@@ -128,7 +164,7 @@ func TestDynamicGroupNames(t *testing.T) {
 	if !slices.Equal(got, want) {
 		t.Fatalf("dynamicGroupNames = %q, want %q", got, want)
 	}
-	if got := dynamicGroupNames(nil); len(got) != 0 {
+	if got := dynamicGroupNames(nil, nil); len(got) != 0 {
 		t.Fatalf("no values give %q", got)
 	}
 }

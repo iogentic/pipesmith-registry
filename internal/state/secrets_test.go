@@ -182,3 +182,36 @@ func TestSecretWriteRefusesAnOpenFolder(t *testing.T) {
 		t.Fatalf("the file was written: %v", err)
 	}
 }
+
+func TestSecretDeleted(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "data")
+	path := state.LDAPSecretPath(dir, "demo-1")
+	if err := state.DeleteSecret(path); err != nil {
+		t.Fatalf("no folder: %v", err)
+	}
+	if err := state.WriteSecret(path, []byte(secretValue)); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.DeleteSecret(path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := state.ReadSecret(path); !errors.Is(err, state.ErrNoSecret) {
+		t.Fatalf("after the delete: %v", err)
+	}
+	if err := state.DeleteSecret(path); err != nil {
+		t.Fatalf("a second delete: %v", err)
+	}
+	// a folder others may write keeps its files
+	if err := state.WriteSecret(path, []byte(secretValue)); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(filepath.Dir(path), 0o777); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.DeleteSecret(path); err == nil {
+		t.Fatal("a delete in an open folder passed")
+	}
+	if _, err := os.Lstat(path); err != nil {
+		t.Fatalf("the file is gone: %v", err)
+	}
+}

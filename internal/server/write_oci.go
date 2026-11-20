@@ -64,7 +64,11 @@ func (s *Server) ociAction(method string, t *target) (action string, ok bool, er
 		switch {
 		case !isWrite:
 		case call.Kind == npm.WriteDistTag:
-			row, err := s.rp.index.Lookup(t.repo, call.Name)
+			target, err := s.writeTarget(t.repo) // the writable member of a group (decision 5.16)
+			if err != nil {
+				return "", false, err
+			}
+			row, err := s.rp.index.Lookup(target, call.Name)
 			if err != nil {
 				return "", false, err
 			}
@@ -94,8 +98,9 @@ func (s *Server) ociAction(method string, t *target) (action string, ok bool, er
 // path, the policies again, the blob, the row, the catalog hook and the
 // delete mark of the blob it replaced. digests are those of the bytes as far
 // as the caller knows them; the SHA-1 always comes from the source. addOnly
-// refuses a path that exists under the lock, as ingest does.
-func (s *Server) linkCopy(repo repos.Repo, path string, source *index.Asset, contentType string, digests stores.Digests, addOnly bool,
+// refuses a path that exists under the lock and editOnly one that is gone
+// there, as ingest does.
+func (s *Server) linkCopy(repo repos.Repo, path string, source *index.Asset, contentType string, digests stores.Digests, addOnly, editOnly bool,
 	subject *model.Subject, address string) (*ingestResult, error) {
 	if s.writes.writer == nil {
 		return nil, errors.New("writes are off")
@@ -108,7 +113,8 @@ func (s *Server) linkCopy(repo repos.Repo, path string, source *index.Asset, con
 		return nil, err
 	}
 	exempt := repo.Format == "docker" && settings.LatestRedeploy && policy.LatestTag(path)
-	in := ingestRequest{repo: repo, path: path}
+	// a proxy takes no client write, so a copy into one is the tag of a fetched manifest (ruling P5-3)
+	in := ingestRequest{repo: repo, path: path, fetch: repo.Type == "proxy"}
 	if _, err := s.checkWrite(&in, settings, exempt); err != nil {
 		return nil, err
 	}
@@ -118,8 +124,8 @@ func (s *Server) linkCopy(repo repos.Repo, path string, source *index.Asset, con
 	if err != nil {
 		return nil, err
 	}
-	if addOnly && row != nil {
-		return nil, editRefused()
+	if err := heldAction(row, addOnly, editOnly); err != nil {
+		return nil, err
 	}
 	uploader := s.uploader(subject)
 	attributes, err := s.bounds(repo.Name, path, stores.Attributes{Repo: repo.Name, Path: path, ContentType: contentType,

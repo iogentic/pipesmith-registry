@@ -444,9 +444,12 @@ func TestGuessesAtARememberedSuccessWhileTheDirectoryIsBusy(t *testing.T) {
 	}
 }
 
-// Finding 2 of review 6: a full table never drops a pair that is blocked
-// now. It drops an unblocked pair first and refuses a new pair while every
-// pair is blocked.
+// Finding 2 of review 6 kept every blocked pair in a full table and refused
+// a new pair while every pair was blocked. Limiter rule B (row 3-8 of
+// review 3) replaces that: the pair whose last failure is oldest leaves,
+// blocked or not, so a new pair always gets in unless every pair has a
+// check in flight. The budget per address keeps one address from cycling
+// the table (TestOneAddressCannotFillTheTable).
 func TestThrottleFullTable(t *testing.T) {
 	e := newEnv(t, fixture(t))
 	auth.SetMaxPairs(e.svc, 3)
@@ -463,33 +466,28 @@ func TestThrottleFullTable(t *testing.T) {
 		return e.signIn(user, password(t, user), addr)
 	}
 	fail("demo-admin", auth.FreeFailures)
+	e.clock.Add(time.Millisecond)
 	fail("demo-reader", auth.FreeFailures)
 	e.clock.Add(time.Second)
 	fail("demo-nobody", 1)
-	fail("demo-legacy-sha1", 1) // the table is full: demo-nobody leaves
-	for _, user := range []string{"demo-admin", "demo-reader"} {
-		if rec := right(user); rec.Code != http.StatusTooManyRequests {
-			t.Errorf("blocked pair %s after a new pair came in: %d", user, rec.Code)
-		}
+	fail("demo-legacy-sha1", 1) // the table is full: demo-admin, the oldest, leaves
+	if _, held := auth.PairFailures(e.svc, "demo-admin", addr); held {
+		t.Error("the oldest blocked pair stayed")
+	}
+	if rec := right("demo-reader"); rec.Code != http.StatusTooManyRequests {
+		t.Errorf("blocked pair demo-reader after a new pair came in: %d", rec.Code)
 	}
 	if n := auth.PairCount(e.svc); n != 3 {
 		t.Errorf("%d pairs, want 3", n)
 	}
-	fail("demo-legacy-sha1", auth.FreeFailures-1)
-	before := auth.HashRuns()
-	rec := right("demo-legacy-md5")
-	if rec.Code != http.StatusTooManyRequests || rec.Header().Get("Retry-After") != "2" {
-		t.Errorf("new pair while every pair is blocked: %d, Retry-After %q", rec.Code, rec.Header().Get("Retry-After"))
-	}
-	if auth.HashRuns() != before {
-		t.Error("a new pair ran a hash while every pair was blocked")
-	}
-	if n := auth.PairCount(e.svc); n != 3 {
-		t.Errorf("%d pairs, want 3", n)
-	}
-	e.clock.Add(3 * time.Second)
 	if rec := right("demo-legacy-md5"); rec.Code != http.StatusOK {
-		t.Errorf("new pair after the blocks ended: %d", rec.Code)
+		t.Errorf("new pair in a full table: %d", rec.Code)
+	}
+	if _, held := auth.PairFailures(e.svc, "demo-reader", addr); held {
+		t.Error("the oldest blocked pair stayed")
+	}
+	if n := auth.PairCount(e.svc); n != 2 {
+		t.Errorf("%d pairs after a success, want 2", n)
 	}
 }
 

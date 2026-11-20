@@ -192,6 +192,7 @@ func (s *Server) uploadComponent(w *recorder, req *request, _ []string) error {
 	if err != nil {
 		return s.restWriteFailed(w, req, err)
 	}
+	defer room.release()
 	subject, err := s.subjectOf(req)
 	if err != nil {
 		return err
@@ -202,6 +203,7 @@ func (s *Server) uploadComponent(w *recorder, req *request, _ []string) error {
 	if err != nil {
 		return s.uploadBodyFailed(w, req, repo, body, err)
 	}
+	room.release() // the form is read; the ingest of each file holds its own room
 	up := &upload{s: s, w: w, req: req, st: st, repo: repo, settings: settings, form: form, subject: subject, address: peerAddress(w)}
 	switch repo.Format {
 	case "npm":
@@ -254,7 +256,8 @@ type upload struct {
 	form     *uploadForm
 	subject  *model.Subject
 	address  string
-	answered bool // a refusal is written
+	answered bool            // a refusal is written
+	written  []*ingestResult // the blobs written so far, which a later failure takes back
 }
 
 // invalid answers the field errors of an upload.
@@ -306,13 +309,16 @@ func (u *upload) check(files []uploadFile) error {
 		}
 		total += size
 	}
-	if _, err := u.s.checkSpace(total, u.settings.FreeSpaceFloor); err != nil {
+	room, err := u.s.checkSpace(total, u.settings.FreeSpaceFloor)
+	if err != nil {
 		return u.failed("*", err)
 	}
+	room.release() // a check of the whole form; the ingest of each file holds its own room
 	return nil
 }
 
-// write writes the files through ingest, in their order. checked are files
+// write writes the files through ingest, in their order; when one fails,
+// the blobs this upload wrote before it are taken back (rollBack). checked are files
 // of the form that check took: under the lock of its path each asks edit
 // again when the path exists then and the caller holds add only (finding S3
 // of review 4); the checksum files a maven2 upload adds are not checked.
@@ -322,14 +328,19 @@ func (u *upload) write(files []uploadFile, checked bool) ([]*ingestResult, error
 	for _, f := range files {
 		body, size, err := f.open()
 		if err != nil {
+			u.s.rollBack(u.repo, u.written, err)
+			u.written = nil
 			return results, err
 		}
 		result, err := u.s.ingest(ingestRequest{repo: u.repo, path: f.path, body: body, size: size, addOnly: addOnly, subject: u.subject,
 			address: u.address})
 		if err != nil {
+			u.s.rollBack(u.repo, u.written, err)
+			u.written = nil
 			return results, u.failed(f.field, err)
 		}
 		results = append(results, result)
+		u.written = append(u.written, result)
 	}
 	return results, nil
 }

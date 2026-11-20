@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pipesmith Registry API",
-    "version": "0.1.3",
+    "version": "0.2.0",
     "description": "Pipesmith Registry serves the files of existing blob stores, with a JSON and REST API for its web interface. Every address in this document is relative to the main port of the server. A Docker repository also answers the registry API under /v2/ on a port of its own, and on the main port under /repository/<name>/v2/. With security on (the data directory holds state.sqlite) a client sends HTTP Basic credentials of a local or LDAP user, a user token as password, or a token in the header Authorization: Bearer; the web interface signs in through POST /api/session and then sends the session cookie. npm login and the Docker token route issue tokens; npm logout revokes one. Writes are off unless serve starts with --writes or config.json sets writes, and they need state.sqlite; while they are off a write below /repository/ answers 405 and a REST write answers 501 or 404. Operations marked with x-pipesmith-needs exist only with what it names: state.sqlite for security on, writes for writes on; without security no permission is checked. An operation of the tag Not Served answers 501 with the area it belongs to, after sign in; a method that a path does not list answers 405 with the header Allow. Permission strings are shown without the prefix that the imported data carries. Answer bodies are described in words in this version.",
     "license": {
       "name": "Apache License 2.0",
@@ -50,6 +50,10 @@
     {
       "name": "Tokens",
       "description": "npm login, whoami and logout, and Docker bearer tokens."
+    },
+    {
+      "name": "System",
+      "description": "Routing rules, capabilities, tasks, the read only mode and the system information."
     },
     {
       "name": "Not Served",
@@ -246,16 +250,16 @@
     "/api/blob-stores/{name}/deleted": {
       "get": {
         "tags": [
-          "Not Served"
+          "Blob Stores"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area blob-stores. After sign in the server answers 501 with the area.",
+        "summary": "Blobs of a store with the delete mark",
+        "description": "Counts the blobs of the file store that carry the delete mark, by a walk of its properties files.",
         "operationId": "get_api_blob_stores_name_deleted",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the blob store.",
             "required": true,
             "schema": {
               "type": "string"
@@ -263,14 +267,30 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "{name, blobCount, bytes}.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Blob store not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -281,10 +301,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "blob-stores"
+        "x-pipesmith-permission": "blobstores:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/browse/{repository}": {
@@ -378,20 +396,25 @@
     "/api/capabilities/support": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area capabilities. After sign in the server answers 501 with the area.",
+        "summary": "What this server does with each capability type",
         "operationId": "get_api_capabilities_support",
         "responses": {
+          "200": {
+            "description": "Object of {supported, reason} per capability type of kinds.json; a type missing from it is not supported.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -402,10 +425,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "capabilities"
+        "x-pipesmith-permission": "capabilities:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/cleanup-policies": {
@@ -747,6 +768,64 @@
         "x-pipesmith-caller": "The server streams two exports at a time and one per account; a further export that is not dry answers 429. A dry call takes no place."
       }
     },
+    "/api/figures": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Requests, traffic, CPU and memory over time",
+        "operationId": "get_api_figures",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "description": "Span of the series.",
+            "schema": {
+              "type": "string",
+              "default": "24h",
+              "enum": [
+                "24h",
+                "7d",
+                "30d"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{enabled, range, stepSeconds, from, to, points}; each point {time, requests, bytesSent, bytesReceived, cpuSeconds, memoryBytes} sums the samples of its step; enabled is false and points empty while the samples are off.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "{\"message\"}: a range other than 24h, 7d and 30d.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "atlas:read or metrics:read",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -768,20 +847,33 @@
     "/api/ldap/clear-cache": {
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area ldap. After sign in the server answers 501 with the area.",
+        "summary": "Forget cached sign ins",
+        "description": "Empties the credential cache, so that the next request of a directory user signs in at the directory again. The body is not read.",
         "operationId": "post_api_ldap_clear_cache",
         "responses": {
+          "204": {
+            "description": "The cache is empty."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -792,29 +884,66 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "ldap"
+        "x-pipesmith-permission": "ldap:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/ldap/verify-connection": {
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area ldap. After sign in the server answers 501 with the area.",
+        "summary": "Check the connection of an LDAP form",
+        "description": "Writes nothing and connects only to the host and port of the form. A blank authPassword of a form whose name a stored connection has takes the stored bind password, with the stored directory settings only; ldaps also trusts the stored CA file of that connection. A check reads at most 21 user entries, 1000 group entries a search and 1 MiB in all, and lasts at most 15 seconds. A directory the check cannot reach gives the one message the directory could not be reached; the detail goes to the server log. Connects, binds and reads the search base.",
         "operationId": "post_api_ldap_verify_connection",
         "responses": {
+          "200": {
+            "description": "{ok, message}; ok is false with the reason when the directory does not pass.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A required field is absent, a key is no field of the connection, a value has the wrong type or cannot be taken, or authPassword is missing for the scheme SIMPLE of a name no stored connection has.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller holds neither the permission to create nor the one to save a connection, a write of a session lacks the request token, or the stored bind password would bind with other directory settings than the stored ones and the caller does not hold the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -825,29 +954,66 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "ldap"
+        "x-pipesmith-permission": "ldap:create or ldap:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/ldap/verify-login": {
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area ldap. After sign in the server answers 501 with the area.",
+        "summary": "Sign one user in with an LDAP form",
+        "description": "The body is {connection, username, password}; connection is the form of the connection. Writes nothing and connects only to the host and port of the form. A blank authPassword of a form whose name a stored connection has takes the stored bind password, with the stored directory settings only; ldaps also trusts the stored CA file of that connection. A check reads at most 21 user entries, 1000 group entries a search and 1 MiB in all, and lasts at most 15 seconds. A directory the check cannot reach gives the one message the directory could not be reached; the detail goes to the server log. Signs the user in as a sign in of the server does.",
         "operationId": "post_api_ldap_verify_login",
         "responses": {
+          "200": {
+            "description": "{ok, message}; ok is false when the directory refuses the pair or does not answer.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A field of the connection, with connection. in front of its id, or a missing username or password.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller holds neither the permission to create nor the one to save a connection, a write of a session lacks the request token, or the stored bind password would bind with other directory settings than the stored ones and the caller does not hold the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -858,29 +1024,66 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "ldap"
+        "x-pipesmith-permission": "ldap:create or ldap:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/ldap/verify-user-mapping": {
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area ldap. After sign in the server answers 501 with the area.",
+        "summary": "List the users of an LDAP form",
+        "description": "Writes nothing and connects only to the host and port of the form. A blank authPassword of a form whose name a stored connection has takes the stored bind password, with the stored directory settings only; ldaps also trusts the stored CA file of that connection. A check reads at most 21 user entries, 1000 group entries a search and 1 MiB in all, and lasts at most 15 seconds. A directory the check cannot reach gives the one message the directory could not be reached; the detail goes to the server log. Searches the users of the user settings and reads the groups of each.",
         "operationId": "post_api_ldap_verify_user_mapping",
         "responses": {
+          "200": {
+            "description": "{ok, message, users}; users holds at most 20 entries {userId, name, email, groups}; ok is false when the search fails or finds nobody.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A required field is absent, a key is no field of the connection, a value has the wrong type or cannot be taken, or authPassword is missing for the scheme SIMPLE of a name no stored connection has.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller holds neither the permission to create nor the one to save a connection, a write of a session lacks the request token, or the stored bind password would bind with other directory settings than the stored ones and the caller does not hold the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -891,29 +1094,43 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "ldap"
+        "x-pipesmith-permission": "ldap:create or ldap:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/logging/loggers": {
       "get": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area logging. After sign in the server answers 501 with the area.",
+        "summary": "Loggers and their levels",
+        "description": "The level of a logger applies to its lines in server.log and to the log targets; standard error keeps INFO. The levels are the setting log_levels of state.sqlite and hold after a restart. No logger is added.",
         "operationId": "get_api_logging_loggers",
         "responses": {
+          "200": {
+            "description": "Array of {name, level, default}, sorted by name; level and default are DEBUG, INFO, WARN or ERROR.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The log files and levels of this server are not open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -924,40 +1141,76 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "logging"
+        "x-pipesmith-permission": "logging:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/logging/loggers/{name}": {
       "put": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area logging. After sign in the server answers 501 with the area.",
+        "summary": "Set the level of a logger",
+        "description": "The level of a logger applies to its lines in server.log and to the log targets; standard error keeps INFO. The levels are the setting log_levels of state.sqlite and hold after a restart. No logger is added.",
         "operationId": "put_api_logging_loggers_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of a logger of this server, as GET /api/logging/loggers lists it.",
             "required": true,
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "description": "{level}: DEBUG, INFO, WARN or ERROR.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "level"
+                ],
+                "properties": {
+                  "level": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
+          "204": {
+            "description": "The level is stored and applies."
+          },
+          "400": {
+            "description": "[{\"id\", \"message\"}]: id name for a name this server does not have, level for a level other than DEBUG, INFO, WARN and ERROR, * for a body that is not JSON.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The log files and levels of this server are not open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -968,23 +1221,21 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "logging"
+        "x-pipesmith-permission": "logging:update",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area logging. After sign in the server answers 501 with the area.",
+        "summary": "Put a logger back to its default",
+        "description": "The level of a logger applies to its lines in server.log and to the log targets; standard error keeps INFO. The levels are the setting log_levels of state.sqlite and hold after a restart. No logger is added.",
         "operationId": "delete_api_logging_loggers_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of a logger of this server, as GET /api/logging/loggers lists it.",
             "required": true,
             "schema": {
               "type": "string"
@@ -992,14 +1243,33 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The logger is at its default."
+          },
+          "400": {
+            "description": "[{\"id\", \"message\"}]: id name for a name this server does not have, level for a level other than DEBUG, INFO, WARN and ERROR, * for a body that is not JSON.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The log files and levels of this server are not open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1010,29 +1280,40 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "logging"
+        "x-pipesmith-permission": "logging:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/logging/reset": {
       "post": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area logging. After sign in the server answers 501 with the area.",
+        "summary": "Put every logger back to its default",
+        "description": "The level of a logger applies to its lines in server.log and to the log targets; standard error keeps INFO. The levels are the setting log_levels of state.sqlite and hold after a restart. No logger is added.",
         "operationId": "post_api_logging_reset",
         "responses": {
+          "204": {
+            "description": "Every logger is at its default."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The log files and levels of this server are not open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1043,29 +1324,43 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "logging"
+        "x-pipesmith-permission": "logging:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/logs": {
       "get": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area logs. After sign in the server answers 501 with the area.",
+        "summary": "Log files",
+        "description": "Only server.log, requests.log, requests-classic.log, audit.log, tasks.log and their rotated files <kind>-<day>.<n>.log and .log.gz are served; a link, a folder and every other name are not.",
         "operationId": "get_api_logs",
         "responses": {
+          "200": {
+            "description": "Array of {name, size, lastModified}, sorted by name; name is relative to the log directory, lastModified an ISO 8601 time in UTC. Empty while the files are off.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The log files and levels of this server are not open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1076,40 +1371,96 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "logs"
+        "x-pipesmith-permission": "logging:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/logs/{name}": {
       "get": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area logs. After sign in the server answers 501 with the area.",
+        "summary": "End of a log file, or the whole file",
+        "description": "Only server.log, requests.log, requests-classic.log, audit.log, tasks.log and their rotated files <kind>-<day>.<n>.log and .log.gz are served; a link, a folder and every other name are not. The end of a .log.gz file is the end of its lines after decompression; the download is the file as it is on disk.",
         "operationId": "get_api_logs_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of a log file as GET /api/logs lists it.",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bytes",
+            "in": "query",
+            "description": "Length of the end of the file.",
+            "schema": {
+              "type": "integer",
+              "default": 25600,
+              "enum": [
+                "25600",
+                "51200",
+                "102400"
+              ]
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "description": "1 answers the whole file as an attachment.",
             "schema": {
               "type": "string"
             }
           }
         ],
         "responses": {
+          "200": {
+            "description": "The last bytes of the file; with download=1 the whole file with Content-Disposition: attachment, as application/gzip for a .log.gz file.",
+            "content": {
+              "text/plain; charset=utf-8": {}
+            }
+          },
+          "400": {
+            "description": "A name with .., a leading slash, a slash or backslash, a control byte, a link, or another value of bytes or download.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No log file of that name, also for a name that is no log file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The log files and levels of this server are not open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1120,29 +1471,92 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "logs"
+        "x-pipesmith-permission": "logging:read",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Counters since the start",
+        "operationId": "get_api_metrics",
+        "responses": {
+          "200": {
+            "description": "{requests, bytesReceived, bytesSent, status, downloads, downloadBytes, flushFailures, logTargets}; status counts the answers per class 1xx to 5xx; each log target is {name, kind, queueDepth, queued, sent, dropped, failed, rejected, cut, attempts, errors}.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "atlas:read or metrics:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/metrics/downloads": {
       "get": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area metrics. After sign in the server answers 501 with the area.",
+        "summary": "Downloads per repository and day",
         "operationId": "get_api_metrics_downloads",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First day, YYYY-MM-DD in UTC; without it 29 days before to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last day, included, YYYY-MM-DD in UTC; without it today.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
+          "200": {
+            "description": "{from, to, rows}; one row {repository, day, count, bytes} per repository and day with downloads.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "{\"message\"}: a day that does not read, from after to, or more than 366 days.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -1153,29 +1567,56 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "metrics"
+        "x-pipesmith-permission": "atlas:read or metrics:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/metrics/requests": {
       "get": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area metrics. After sign in the server answers 501 with the area.",
+        "summary": "Requests per day",
         "operationId": "get_api_metrics_requests",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First day, YYYY-MM-DD in UTC; without it 29 days before to.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last day, included, YYYY-MM-DD in UTC; without it today.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
+          "200": {
+            "description": "{from, to, days}; one entry {day, requests, bytesOut} per day of the span, 0 for a day without requests.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "{\"message\"}: a day that does not read, from after to, or more than 366 days.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -1186,10 +1627,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "metrics"
+        "x-pipesmith-permission": "atlas:read or metrics:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/openapi.json": {
@@ -1251,20 +1690,42 @@
     "/api/routing-rules/preview": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area routing-rules. After sign in the server answers 501 with the area.",
+        "summary": "Verdict of the routing rules for one path",
+        "description": "The body is {scope, path}, scope all, group or proxy. Only repositories the caller may browse are listed, sorted by name; no content is read. A rule decides for a proxy only, so a hosted repository and a group have no rule and allow every path.",
         "operationId": "post_api_routing_rules_preview",
         "responses": {
+          "200": {
+            "description": "{items}; each item is {repository, type, format, rule, allowed}, rule null for a repository without a rule.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. An unknown key, a scope other than all, group and proxy, no path or one above 4096 characters, or a body above 65536 bytes.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The routing rules cannot be read now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1275,29 +1736,39 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "routing-rules"
+        "x-pipesmith-permission": "settings:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/routing-rules/test": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area routing-rules. After sign in the server answers 501 with the area.",
+        "summary": "Test one path against a routing rule",
+        "description": "The body is {mode, matchers, path}. The rule is tested as a request would be; a path without a leading / gets one. Nothing is stored.",
         "operationId": "post_api_routing_rules_test",
         "responses": {
+          "200": {
+            "description": "{allowed, matcher}; matcher is the index of the first matcher that matched, or null.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. An unknown key, a mode other than ALLOW and BLOCK, more than 100 matchers, a matcher above 1024 characters or that does not compile (at matchers[<index>]), no path or one above 4096 characters, or a body above 65536 bytes.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -1308,10 +1779,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "routing-rules"
+        "x-pipesmith-permission": "settings:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/scan": {
@@ -1966,6 +2435,43 @@
         "x-pipesmith-area": "tokens"
       }
     },
+    "/api/updates": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Update and signing state of the install root",
+        "description": "Read only. The install root is the one of the running binary, <root>/releases/<version>/pipesmith-registry beside the link <root>/current. The server never writes the trusted key.",
+        "operationId": "get_api_updates",
+        "responses": {
+          "200": {
+            "description": "{installed, message, binary}; when installed also root, config {path, found, error}, key {path, found, state, problem, sha256, hint} with state good, missing, refused or unchecked, check {ran, passed, message} of the owner and mode rule, and release {name, from, note}.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "atlas:read",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
     "/repository/{repository}/-/user/org.couchdb.user:{user}": {
       "put": {
         "tags": [
@@ -2362,6 +2868,14 @@
             "name": "last",
             "in": "query",
             "description": "Docker tag list below v2/: answer the tags after this one.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artifactType",
+            "in": "query",
+            "description": "Docker referrers below v2/: answer the referrers of this artifact type only, named in OCI-Filters-Applied.",
             "schema": {
               "type": "string"
             }
@@ -2809,6 +3323,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "artifactType",
+            "in": "query",
+            "description": "Docker referrers below v2/: answer the referrers of this artifact type only, named in OCI-Filters-Applied.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2983,23 +3505,28 @@
         "x-pipesmith-permission": "view of the repository (read below /repository/, browse below the browse route)"
       }
     },
-    "/service/rest/beta/system/information": {
+    "/service/rest/beta/status/check/cluster": {
       "get": {
         "tags": [
-          "Not Served"
+          "Status"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area system. After sign in the server answers 501 with the area.",
-        "operationId": "get_service_rest_beta_system_information",
+        "summary": "Health checks of every node",
+        "operationId": "get_service_rest_beta_status_check_cluster",
         "responses": {
+          "200": {
+            "description": "Array with one entry for this server, {nodeId, hostname, results}; results holds the checks of /v1/status/check as {healthy, message}.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -3010,10 +3537,97 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "system"
+        "x-pipesmith-permission": "atlas:read",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
+    "/service/rest/beta/status/check/{nodeId}": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Health checks of one node",
+        "operationId": "get_service_rest_beta_status_check_nodeId",
+        "parameters": [
+          {
+            "name": "nodeId",
+            "in": "path",
+            "description": "Id of the node, as GET /v1/system/node answers it.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{nodeId, hostname, results}, as one entry of the cluster checks.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "{\"message\"}: no node has this id.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "atlas:read",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
+    "/service/rest/beta/system/information": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Version, schemas, runtime and stores of the server",
+        "operationId": "get_service_rest_beta_system_information",
+        "responses": {
+          "200": {
+            "description": "Object of sections, each an object: version {version, go}, schema with the version of state.sqlite, index.sqlite and catalog.sqlite, runtime {started, uptimeSeconds}, stores with {kind, available, files, bytes} per store name, and update, empty in this version. No path, host, user or address.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "atlas:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/repository/browse/{repository}/{path}": {
@@ -3198,6 +3812,102 @@
           }
         ],
         "x-pipesmith-permission": "view of the repository (read below /repository/, browse below the browse route)"
+      }
+    },
+    "/service/rest/v1/assets": {
+      "get": {
+        "tags": [
+          "Browse"
+        ],
+        "summary": "Assets of a repository",
+        "description": "10 assets per page, ordered by directory and file name. A group lists each path once, with the asset of its first member that holds it.",
+        "operationId": "get_service_rest_v1_assets",
+        "parameters": [
+          {
+            "name": "repository",
+            "in": "query",
+            "description": "Name of the repository.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "continuationToken",
+            "in": "query",
+            "description": "Token of the next page from the answer before.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{items, continuationToken}; each item is an asset as one asset by id answers it.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A continuationToken of another listing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Repository not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The parameter repository is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "description": "The listing is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "view of the repository of the query parameter repository (browse)",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/assets/{id}": {
@@ -3402,20 +4112,59 @@
     "/service/rest/v1/blobstores/file": {
       "post": {
         "tags": [
-          "Not Served"
+          "Blob Stores"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area blob-stores. After sign in the server answers 501 with the area.",
+        "summary": "Create a file blob store",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The body is {name, path, softQuota}. The store is a record with a folder below the folder stores of the data directory; an absent path is stores/<name>, a relative one lies below stores/. The folder is made. New blobs still go into local-write.",
         "operationId": "post_service_rest_v1_blobstores_file",
         "responses": {
+          "204": {
+            "description": "The store is created."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. The name is not allowed, the path lies outside stores/ with its links resolved, holds files or is the path of another store, or the soft quota is not valid.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "A store of the name exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3426,10 +4175,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "blob-stores"
+        "x-pipesmith-permission": "blobstores:create",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/blobstores/file/{name}": {
@@ -3483,16 +4230,16 @@
       },
       "put": {
         "tags": [
-          "Not Served"
+          "Blob Stores"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area blob-stores. After sign in the server answers 501 with the area.",
+        "summary": "Save the quota of a file blob store",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The body is {path, softQuota}. The path is fixed; a null soft quota removes it.",
         "operationId": "put_service_rest_v1_blobstores_file_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the blob store.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3500,14 +4247,53 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The store is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. Another path, or a soft quota that is not valid.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Blob store not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3518,25 +4304,23 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "blob-stores"
+        "x-pipesmith-permission": "blobstores:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/blobstores/{name}": {
       "delete": {
         "tags": [
-          "Not Served"
+          "Blob Stores"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area blob-stores. After sign in the server answers 501 with the area.",
+        "summary": "Delete a blob store",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The record goes; the folder and its files stay.",
         "operationId": "delete_service_rest_v1_blobstores_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the blob store.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3544,14 +4328,47 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The store is deleted."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Blob store not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A repository names the store, or it is local-write or a store that config.json attaches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3562,10 +4379,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "blob-stores"
+        "x-pipesmith-permission": "blobstores:delete",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/blobstores/{name}/quota-status": {
@@ -3621,20 +4436,25 @@
     "/service/rest/v1/capabilities": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area capabilities. After sign in the server answers 501 with the area.",
+        "summary": "Capabilities",
         "operationId": "get_service_rest_v1_capabilities",
         "responses": {
+          "200": {
+            "description": "Array of {id, type, notes, enabled, properties}, sorted by id; properties is an object of strings.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -3645,25 +4465,23 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "capabilities"
+        "x-pipesmith-permission": "capabilities:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/capabilities/{id}": {
       "put": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area capabilities. After sign in the server answers 501 with the area.",
+        "summary": "Save notes, properties and enabled of a capability",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is {id, type, notes, enabled, properties}; an absent field keeps the stored value, id and type cannot change. A capability of the type defaultrole that is enabled sets the role the realm DefaultRole gives every signed in user. Nothing creates a capability.",
         "operationId": "put_service_rest_v1_capabilities_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the capability.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3671,14 +4489,60 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The capability is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. Another id or type, an unknown key, a property key that names a secret, enabled switched on for a type without effect, or a missing or unknown role of an enabled defaultrole capability.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the save sets a default role whose permissions the caller does not all hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Capability not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3689,23 +4553,21 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "capabilities"
+        "x-pipesmith-permission": "capabilities:update",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area capabilities. After sign in the server answers 501 with the area.",
+        "summary": "Delete a capability",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. An enabled defaultrole capability takes its role from the default role.",
         "operationId": "delete_service_rest_v1_capabilities_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the capability.",
             "required": true,
             "schema": {
               "type": "string"
@@ -3713,14 +4575,37 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The capability is deleted."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Capability not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3731,13 +4616,105 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "capabilities"
+        "x-pipesmith-permission": "capabilities:delete",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/components": {
+      "get": {
+        "tags": [
+          "Browse"
+        ],
+        "summary": "Components of a repository",
+        "description": "10 components per page, in the order and shape of the search.",
+        "operationId": "get_service_rest_v1_components",
+        "parameters": [
+          {
+            "name": "repository",
+            "in": "query",
+            "description": "Name of the repository.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "continuationToken",
+            "in": "query",
+            "description": "Token of the next page from the answer before.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{items, continuationToken}; each item has id, repository, format, group, name, version and assets.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A continuationToken of another listing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Repository not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The parameter repository is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "description": "The listing is not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "view of the repository of the query parameter repository (browse)",
+        "x-pipesmith-needs": "state.sqlite"
+      },
       "post": {
         "tags": [
           "Content"
@@ -3887,6 +4864,81 @@
       }
     },
     "/service/rest/v1/components/{id}": {
+      "get": {
+        "tags": [
+          "Browse"
+        ],
+        "summary": "One component by id",
+        "operationId": "get_service_rest_v1_components_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Component id as the search and the listing give it.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{id, repository, format, group, name, version, assets}.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Component not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The component id is malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "description": "catalog.sqlite is behind the index; the message names the store to scan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "view of the repository of the id (browse)",
+        "x-pipesmith-needs": "state.sqlite"
+      },
       "delete": {
         "tags": [
           "Content"
@@ -4086,6 +5138,42 @@
         "x-pipesmith-needs": "state.sqlite, writes"
       }
     },
+    "/service/rest/v1/monthly-metrics": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Requests per month",
+        "operationId": "get_service_rest_v1_monthly_metrics",
+        "responses": {
+          "200": {
+            "description": "Array of the 12 months up to the current one, oldest first, each {requestCount, componentCount, metricDate, percentageChangeRequest, percentageChangeComponent}; componentCount is 0 and its change N/A.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "atlas:read",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
     "/service/rest/v1/read-only": {
       "get": {
         "tags": [
@@ -4095,7 +5183,7 @@
         "operationId": "get_service_rest_v1_read_only",
         "responses": {
           "200": {
-            "description": "{frozen, systemInitiated, summaryReason}; frozen is always true, with writes on as well.",
+            "description": "{frozen, systemInitiated, summaryReason}; the state lives in memory and a start releases it, so summaryReason says so. A server with writes off is not frozen; its summaryReason says that its content writes stay refused.",
             "content": {
               "application/json": {}
             }
@@ -4125,20 +5213,43 @@
     "/service/rest/v1/read-only/force-release": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area system. After sign in the server answers 501 with the area.",
+        "summary": "End a freeze the server set itself",
+        "description": "The read only mode lives in memory: a start of the server releases it. Each change empties the credential cache, as a change does. Only while systemInitiated is true.",
         "operationId": "post_service_rest_v1_read_only_force_release",
         "responses": {
+          "204": {
+            "description": "The freeze has ended."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "The server is not frozen, or a user froze it, which a release ends.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4149,29 +5260,50 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "system"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/read-only/freeze": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area system. After sign in the server answers 501 with the area.",
+        "summary": "Freeze the server",
+        "description": "The read only mode lives in memory: a start of the server releases it. Each change empties the credential cache, as a change does. A freeze waits up to 30 s for the changes that run, while new changes wait for it. While frozen every change answers 503 with the reason and the run of a task 409, except the release, the force release, the stop of a task, the session, the npm sign in and sign out, and the tests and previews. No scheduled run starts while frozen; a run that is going runs to its end.",
         "operationId": "post_service_rest_v1_read_only_freeze",
         "responses": {
+          "204": {
+            "description": "The server is frozen."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "Changes still ran after 30 s, so the server stays released and a change that came while the freeze waited runs then; or another freeze waits for the running changes already.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server is frozen already, or it has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4182,29 +5314,50 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "system"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/read-only/release": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area system. After sign in the server answers 501 with the area.",
+        "summary": "End a freeze of a user",
+        "description": "The read only mode lives in memory: a start of the server releases it. Each change empties the credential cache, as a change does.",
         "operationId": "post_service_rest_v1_read_only_release",
         "responses": {
+          "204": {
+            "description": "The freeze has ended."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "The server is not frozen, or it froze itself, which only a force release ends.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4215,10 +5368,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "system"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/repositories": {
@@ -4307,16 +5458,16 @@
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "Repositories"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area repositories. After sign in the server answers 501 with the area.",
+        "summary": "Delete a repository",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The repository goes offline first; then the rows of the index and the catalog go and every blob of the repository in local-write gets the delete mark; then the upstream secret and the record go together.",
         "operationId": "delete_service_rest_v1_repositories_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the repository.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4324,14 +5475,57 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The repository is deleted."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Repository not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A group names the repository, repositories.json of the host defines it, or a store of the old product holds files of it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The repository holds blobs in local-write and the store is not open, or the index stayed busy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4342,25 +5536,23 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "repositories"
+        "x-pipesmith-permission": "administration of the repository (delete)",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/repositories/{name}/invalidate-cache": {
       "post": {
         "tags": [
-          "Not Served"
+          "Repositories"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area repositories. After sign in the server answers 501 with the area.",
+        "summary": "Invalidate the cache of a proxy or group",
+        "description": "The next request for each cached path asks the remote again, and the not found marks are cleared. For a group the cache of every proxy member is invalidated, groups inside it included.",
         "operationId": "post_service_rest_v1_repositories_name_invalidate_cache",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of a proxy or group repository.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4368,14 +5560,40 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The cache is invalidated."
+          },
+          "400": {
+            "description": "The repository is neither a proxy nor a group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "Requests to remotes are off (the switch upstream), or the state of the proxies cannot be written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4386,25 +5604,23 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "repositories"
+        "x-pipesmith-permission": "administration of the repository (edit)",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/repositories/{name}/rebuild-index": {
       "post": {
         "tags": [
-          "Not Served"
+          "Repositories"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area repositories. After sign in the server answers 501 with the area.",
+        "summary": "Rebuild the maven metadata of a hosted repository",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. For a hosted maven2 repository maven-metadata.xml and its checksums are written again from its files. Any other repository answers 204 and nothing is done.",
         "operationId": "post_service_rest_v1_repositories_name_rebuild_index",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the repository.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4412,14 +5628,47 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The metadata is written, or there is nothing to do."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Repository not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The repository takes no write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "Writes are off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4430,25 +5679,23 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "repositories"
+        "x-pipesmith-permission": "administration of the repository (edit)",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/repositories/{segment}/{type}": {
       "post": {
         "tags": [
-          "Not Served"
+          "Repositories"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area repositories. After sign in the server answers 501 with the area.",
+        "summary": "Create a repository",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The body is the settings of the contract: name, online, storage, and the sections of the format and type. The repository is a record of state.sqlite. A hosted or proxy repository names local-write in storage.blobStoreName. The upstream password or token of a proxy goes into secrets/remote/<name>, never into the record or an answer. A Docker port is set on the host with repos port; docker.httpPort and docker.httpsPort are null. The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, the view privileges of its whole format when it is the first of the format, and the view read permission of every member a group adds. Without the full permission set the remote host of a proxy must resolve to public addresses only, and the proxy never dials a closed address.",
         "operationId": "post_service_rest_v1_repositories_segment_type",
         "parameters": [
           {
             "name": "segment",
             "in": "path",
-            "description": "Format segment of the address.",
+            "description": "maven, npm, docker or raw.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4457,7 +5704,7 @@
           {
             "name": "type",
             "in": "path",
-            "description": "Type of the object.",
+            "description": "hosted, proxy or group.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4465,14 +5712,70 @@
           }
         ],
         "responses": {
+          "201": {
+            "description": "The repository is created."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A field is not valid: the name, the store, the remote address or host, a member, a Docker port, the authentication, a placement or limit set on the host, or a value this server does not offer.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The new repository would give the caller a permission it does not hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A repository of the name exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
           "501": {
-            "$ref": "#/components/responses/NotServed"
+            "description": "The format or the type is not one of this server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4483,10 +5786,9 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "repositories"
+        "x-pipesmith-permission": "administration of any repository of the format of the path (add)",
+        "x-pipesmith-caller": "The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, the view privileges of its whole format when it is the first of the format, and the view read permission of every member a group adds. Without the full permission set the remote host of a proxy must resolve to public addresses only, and the proxy never dials a closed address.",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/repositories/{segment}/{type}/{name}": {
@@ -4559,16 +5861,16 @@
       },
       "put": {
         "tags": [
-          "Not Served"
+          "Repositories"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area repositories. After sign in the server answers 501 with the area.",
+        "summary": "Save a repository",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The body is the settings of the contract; the name cannot change. Without httpClient.authentication the stored authentication and secret stay; the type none removes both. Without the full permission set a new remote host must resolve to public addresses only; a member a group adds needs its view read permission.",
         "operationId": "put_service_rest_v1_repositories_segment_type_name",
         "parameters": [
           {
             "name": "segment",
             "in": "path",
-            "description": "Format segment of the address.",
+            "description": "maven, npm, docker or raw.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4577,7 +5879,7 @@
           {
             "name": "type",
             "in": "path",
-            "description": "Type of the object.",
+            "description": "hosted, proxy or group.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4586,7 +5888,7 @@
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the repository.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4594,14 +5896,70 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The repository is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A field is not valid, or the body names another name.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "A member the group adds needs a permission the caller does not hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found as this format and type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "repositories.json of the host defines the repository.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4612,10 +5970,9 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "repositories"
+        "x-pipesmith-permission": "administration of the repository (edit)",
+        "x-pipesmith-caller": "Without the full permission set a new remote host must resolve to public addresses only; a member a group adds needs its view read permission.",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/repositorySettings": {
@@ -4666,20 +6023,35 @@
     "/service/rest/v1/routing-rules": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area routing-rules. After sign in the server answers 501 with the area.",
+        "summary": "Routing rules",
         "operationId": "get_service_rest_v1_routing_rules",
         "responses": {
+          "200": {
+            "description": "Array of {name, description, mode, matchers}, sorted by name; mode is ALLOW or BLOCK.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server keeps no routing rules.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4690,27 +6062,54 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "routing-rules"
+        "x-pipesmith-permission": "settings:read",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area routing-rules. After sign in the server answers 501 with the area.",
+        "summary": "Create a routing rule",
+        "description": "Works with security on, writes on or off. A change is used from the next request on. The body is {name, description, mode, matchers}, at most 65536 bytes.",
         "operationId": "post_service_rest_v1_routing_rules",
         "responses": {
+          "204": {
+            "description": "The rule is created."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A name outside the pattern, an unknown key, a mode other than ALLOW and BLOCK, no matcher or more than 100, a matcher above 1024 characters or that does not compile (at matchers[<index>]), or a body above 65536 bytes (at *).",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "A rule of the name exists, letter case aside.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server keeps no routing rules.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4721,25 +6120,22 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "routing-rules"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/routing-rules/{name}": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area routing-rules. After sign in the server answers 501 with the area.",
+        "summary": "One routing rule",
         "operationId": "get_service_rest_v1_routing_rules_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the routing rule.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4747,14 +6143,40 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "{name, description, mode, matchers}.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Routing rule not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server keeps no routing rules.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4765,23 +6187,21 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "routing-rules"
+        "x-pipesmith-permission": "settings:read",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "put": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area routing-rules. After sign in the server answers 501 with the area.",
+        "summary": "Save a routing rule",
+        "description": "Works with security on, writes on or off. A change is used from the next request on. The body is {name, description, mode, matchers}, at most 65536 bytes; the name cannot change.",
         "operationId": "put_service_rest_v1_routing_rules_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the routing rule.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4789,14 +6209,43 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The rule is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A name outside the pattern, an unknown key, a mode other than ALLOW and BLOCK, no matcher or more than 100, a matcher above 1024 characters or that does not compile (at matchers[<index>]), or a body above 65536 bytes (at *). Another name in the body.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Routing rule not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server keeps no routing rules.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4807,23 +6256,21 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "routing-rules"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area routing-rules. After sign in the server answers 501 with the area.",
+        "summary": "Delete a routing rule",
+        "description": "Works with security on, writes on or off. A change is used from the next request on.",
         "operationId": "delete_service_rest_v1_routing_rules_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the routing rule.",
             "required": true,
             "schema": {
               "type": "string"
@@ -4831,14 +6278,47 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The rule is deleted."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Routing rule not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A repository names the rule; the message names every one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server keeps no routing rules.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4849,10 +6329,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "routing-rules"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/search": {
@@ -5009,6 +6487,15 @@
             }
           },
           {
+            "name": "timeout",
+            "in": "query",
+            "description": "Seconds a page may take, a whole number from 1 to 120; 120 without it.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
             "name": "md5",
             "in": "query",
             "description": "Not served yet: answers 501 with the area search.",
@@ -5105,14 +6592,6 @@
             }
           },
           {
-            "name": "timeout",
-            "in": "query",
-            "description": "Not served yet: answers 501 with the area search.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "gavec",
             "in": "query",
             "description": "Not served yet: answers 501 with the area search.",
@@ -5189,6 +6668,673 @@
         "x-pipesmith-needs": "state.sqlite"
       }
     },
+    "/service/rest/v1/search/assets": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search assets",
+        "description": "The parameters of the component search. 50 assets per page, ordered by repository, directory and file name. An asset that belongs to no component matches no search. An unknown repository, and one the caller may not browse, give an empty list.",
+        "operationId": "get_service_rest_v1_search_assets",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Words that each occur in group, name, version or path; * is a wildcard; case is ignored.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "repository",
+            "in": "query",
+            "description": "Name of a repository; a group searches its members.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Format of the repositories.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "description": "Group of the component.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Name of the component.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "Version of the component.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "sha1",
+            "in": "query",
+            "description": "SHA-1 of an asset.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.groupId",
+            "in": "query",
+            "description": "Maven group id.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.artifactId",
+            "in": "query",
+            "description": "Maven artifact id.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.baseVersion",
+            "in": "query",
+            "description": "Maven base version.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.extension",
+            "in": "query",
+            "description": "Extension of a Maven file.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.classifier",
+            "in": "query",
+            "description": "Classifier of a Maven file.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "docker.imageName",
+            "in": "query",
+            "description": "Docker image name.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "docker.imageTag",
+            "in": "query",
+            "description": "Docker image tag.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "npm.scope",
+            "in": "query",
+            "description": "npm scope; a leading @ is dropped.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "continuationToken",
+            "in": "query",
+            "description": "Token of the next page from the answer before.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "description": "Seconds a page may take, a whole number from 1 to 120; 120 without it.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "md5",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sha256",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sha512",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "npm.author",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "npm.description",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "npm.keywords",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "npm.license",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docker.layerId",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docker.contentDigest",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "prerelease",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gavec",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lastBlobUpdated",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{items, continuationToken}; each item is an asset as one asset by id answers it.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "Unknown, repeated or too long parameter, a value that is no UTF-8 or holds a NUL byte, or a continuationToken of another search.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "501": {
+            "description": "A parameter this server does not answer yet; the area is search.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The search is not ready, or a page took longer than two minutes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "search:read",
+        "x-pipesmith-caller": "An unknown repository, and one the caller may not browse, give an empty list.",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
+    "/service/rest/v1/search/assets/download": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Download the one asset that matches",
+        "description": "The parameters of the asset search without continuationToken.",
+        "operationId": "get_service_rest_v1_search_assets_download",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Words that each occur in group, name, version or path; * is a wildcard; case is ignored.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "repository",
+            "in": "query",
+            "description": "Name of a repository; a group searches its members.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "Format of the repositories.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "description": "Group of the component.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Name of the component.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "description": "Version of the component.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "sha1",
+            "in": "query",
+            "description": "SHA-1 of an asset.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.groupId",
+            "in": "query",
+            "description": "Maven group id.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.artifactId",
+            "in": "query",
+            "description": "Maven artifact id.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.baseVersion",
+            "in": "query",
+            "description": "Maven base version.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.extension",
+            "in": "query",
+            "description": "Extension of a Maven file.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "maven.classifier",
+            "in": "query",
+            "description": "Classifier of a Maven file.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "docker.imageName",
+            "in": "query",
+            "description": "Docker image name.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "docker.imageTag",
+            "in": "query",
+            "description": "Docker image tag.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "npm.scope",
+            "in": "query",
+            "description": "npm scope; a leading @ is dropped.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "description": "Seconds a page may take, a whole number from 1 to 120; 120 without it.",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          },
+          {
+            "name": "md5",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sha256",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sha512",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "npm.author",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "npm.description",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "npm.keywords",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "npm.license",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docker.layerId",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "docker.contentDigest",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "prerelease",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gavec",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lastBlobUpdated",
+            "in": "query",
+            "description": "Not served yet: answers 501 with the area search.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to the downloadUrl of the one asset that matches."
+          },
+          "400": {
+            "description": "More than one asset matches, a continuationToken, or a parameter the search refuses.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No asset matches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "501": {
+            "description": "A parameter this server does not answer yet; the area is search.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The search is not ready, or it took longer than two minutes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "search:read",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
     "/service/rest/v1/security/anonymous": {
       "get": {
         "tags": [
@@ -5226,20 +7372,69 @@
       },
       "put": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Save anonymous access",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is {enabled, userId, realmName}.",
         "operationId": "put_service_rest_v1_security_anonymous",
         "responses": {
+          "200": {
+            "description": "{enabled, userId, realmName} as saved.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. The userId is not allowed, or the realmName is no realm this server builds.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or access turned on would give requests without credentials a permission the caller does not hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The userId names a user that signs in: a local user with a password or a directory user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5250,10 +7445,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/ldap": {
@@ -5293,20 +7486,66 @@
       },
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area ldap. After sign in the server answers 501 with the area.",
+        "summary": "Create an LDAP connection",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is the connection of the contract: name, protocol, host, port, searchBase, authScheme, authUsername, authPassword, the timeouts and the user and group settings. id, order and caFile of the body are not read. A scheme with a bind needs authPassword, which goes into the secret file of the connection. Needs the full permission set besides the permission of the operation, since a directory decides the roles of its users.",
         "operationId": "post_service_rest_v1_security_ldap",
         "responses": {
+          "201": {
+            "description": "The connection is created; the answer has no body."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A required field is absent, a key is no field of the connection, a value has the wrong type or cannot be taken, the scheme is DIGEST_MD5 or CRAM_MD5, useTrustStore is true, or authPassword is missing or empty for the scheme SIMPLE.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change decides the directory and the caller does not hold the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A connection with the name exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5317,29 +7556,64 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "ldap"
+        "x-pipesmith-permission": "ldap:create",
+        "x-pipesmith-caller": "Needs the full permission set besides the permission of the operation, since a directory decides the roles of its users.",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/ldap/change-order": {
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area ldap. After sign in the server answers 501 with the area.",
+        "summary": "Order the LDAP connections",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is the list of the names of every connection in the new order. A change of the order needs the full permission set; the stored order again passes.",
         "operationId": "post_service_rest_v1_security_ldap_change_order",
         "responses": {
+          "204": {
+            "description": "The order is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. The list is no list of names, or does not name every connection once; at *.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change decides the directory and the caller does not hold the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5350,10 +7624,9 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "ldap"
+        "x-pipesmith-permission": "ldap:update",
+        "x-pipesmith-caller": "A change of the order needs the full permission set; the stored order again passes.",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/ldap/{name}": {
@@ -5407,16 +7680,16 @@
       },
       "put": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area ldap. After sign in the server answers 501 with the area.",
+        "summary": "Save an LDAP connection",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is the connection of the contract: name, protocol, host, port, searchBase, authScheme, authUsername, authPassword, the timeouts and the user and group settings. id, order and caFile of the body are not read. The body may carry a new name; the id stays. Without authPassword the stored bind password stays; an empty one is refused for a scheme with a bind, and so is none while the connection has no stored bind password. A save to a scheme without a bind removes the stored one. A save that changes the address, the search base, a user or a group setting needs the full permission set.",
         "operationId": "put_service_rest_v1_security_ldap_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the connection.",
             "required": true,
             "schema": {
               "type": "string"
@@ -5424,14 +7697,70 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The connection is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A required field is absent, a key is no field of the connection, a value has the wrong type or cannot be taken, the scheme is DIGEST_MD5 or CRAM_MD5, useTrustStore is true, or authPassword is missing or empty for the scheme SIMPLE.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change decides the directory and the caller does not hold the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LDAP connection not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another connection has the new name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5442,23 +7771,22 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "ldap"
+        "x-pipesmith-permission": "ldap:update",
+        "x-pipesmith-caller": "A save that changes the address, the search base, a user or a group setting needs the full permission set.",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area ldap. After sign in the server answers 501 with the area.",
+        "summary": "Delete an LDAP connection",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The secret file of the connection is removed with it. Needs the full permission set besides the permission of the operation, since a directory decides the roles of its users.",
         "operationId": "delete_service_rest_v1_security_ldap_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the connection.",
             "required": true,
             "schema": {
               "type": "string"
@@ -5466,14 +7794,44 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The connection is deleted."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change decides the directory and the caller does not hold the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "LDAP connection not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5484,10 +7842,9 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "ldap"
+        "x-pipesmith-permission": "ldap:delete",
+        "x-pipesmith-caller": "Needs the full permission set besides the permission of the operation, since a directory decides the roles of its users.",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/privileges": {
@@ -5613,20 +7970,66 @@
       },
       "put": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Save the active realms",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is the list of active realm ids in their order.",
         "operationId": "put_service_rest_v1_security_realms_active",
         "responses": {
+          "204": {
+            "description": "The order is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. The list is empty, names an empty, unknown or repeated realm, or DefaultRole without a default role; at *.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the list makes DefaultRole active while the caller does not hold every permission of the default role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The list leaves out the realm of the local users while an active local user holds the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5637,10 +8040,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/realms/available": {
@@ -5739,20 +8140,69 @@
       },
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Create a role",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is RoleXORequest: {id, name, description, privileges, roles}; privileges and roles are lists of ids.",
         "operationId": "post_service_rest_v1_security_roles",
         "responses": {
+          "200": {
+            "description": "The role as GET answers it.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. The id is not allowed, or a privilege or a contained role does not exist or contains the role.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change would give a role or a user a permission the caller does not hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A role with the id exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5763,10 +8213,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "roles:create",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/roles/{id}": {
@@ -5820,16 +8268,16 @@
       },
       "put": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Save a role",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is RoleXORequest; its id, when it names one, is the id of the path.",
         "operationId": "put_service_rest_v1_security_roles_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the role.",
             "required": true,
             "schema": {
               "type": "string"
@@ -5837,14 +8285,60 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The role is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A built in or read only role (at *), another id, or a privilege or contained role that does not exist.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change would give a role or a user a permission the caller does not hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Role not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5855,23 +8349,21 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "roles:update",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Delete a role",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it.",
         "operationId": "delete_service_rest_v1_security_roles_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the role.",
             "required": true,
             "schema": {
               "type": "string"
@@ -5879,14 +8371,53 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The role is deleted."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A built in or read only role, at *.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Role not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A user, a role mapping, a role, the anonymous user or the default role holds the role; the message names the first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5897,10 +8428,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "roles:delete",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/user-sources": {
@@ -5994,20 +8523,69 @@
       },
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Create a local user",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is ApiCreateUser: {userId, firstName, lastName, emailAddress, password, status, roles}. The password is never answered.",
         "operationId": "post_service_rest_v1_security_users",
         "responses": {
+          "200": {
+            "description": "The user as GET users lists it, without a password.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. The userId is not allowed, a role does not exist, the status is unknown, or the password is empty, longer than 1024 bytes or holds a control character.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change would give a role or a user a permission the caller does not hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A user with the id exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6018,19 +8596,17 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "users:create",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/users/{userId}": {
       "put": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Save a user",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is the whole ApiUser; its source picks the user, the local one when it names none. A user of another source takes its roles only. A save of the own user keeps its roles unless the caller holds every action on users.",
         "operationId": "put_service_rest_v1_security_users_userId",
         "parameters": [
           {
@@ -6044,14 +8620,70 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The user is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. Another userId, an unknown status, or a role that does not exist.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change would give a role or a user a permission the caller does not hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The names, mail or status of a directory user change, or no active local user would keep the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6062,17 +8694,16 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "users:update",
+        "x-pipesmith-caller": "A save of the own user keeps its roles unless the caller holds every action on users.",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Delete a user",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The own user cannot be deleted.",
         "operationId": "delete_service_rest_v1_security_users_userId",
         "parameters": [
           {
@@ -6083,17 +8714,64 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "realm",
+            "in": "query",
+            "description": "Realm of the user as the interface sends it, the realm of the local users or of the directory, or the source name default or LDAP; the local source when absent.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
+          "204": {
+            "description": "The user is deleted."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. The realm names no source of users, at realm.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A directory user, the own user, the user anonymous access names, or the last active local user with the full permission set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6104,19 +8782,18 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "users:delete",
+        "x-pipesmith-caller": "The own user cannot be deleted.",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/security/users/{userId}/change-password": {
       "put": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area security. After sign in the server answers 501 with the area.",
+        "summary": "Set the password of a local user",
+        "description": "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it. The body is the new password as it is, text/plain.",
         "operationId": "put_service_rest_v1_security_users_userId_change_password",
         "parameters": [
           {
@@ -6130,14 +8807,70 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The password is set."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. The password is empty, longer than 1024 bytes or holds a control character.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, a write of a session lacks the request token, or the change would give a role or a user a permission the caller does not hold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The user belongs to another source.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6148,10 +8881,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "security"
+        "x-pipesmith-permission": "userschangepw:create",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/status": {
@@ -6217,7 +8948,7 @@
             "description": "Empty body: writes are on and the write store takes a write now."
           },
           "503": {
-            "description": "Empty body: writes are off, a folder of the write store cannot be written, or the delete mark of a replaced blob waits to be tried again."
+            "description": "Empty body: writes are off, the server is frozen, the data directory or a folder of the write store cannot be written, or the delete mark of a replaced blob waits to be tried again."
           }
         },
         "x-pipesmith-permission": "public"
@@ -6226,20 +8957,25 @@
     "/service/rest/v1/system/node": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area system. After sign in the server answers 501 with the area.",
+        "summary": "Node id",
         "operationId": "get_service_rest_v1_system_node",
         "responses": {
+          "200": {
+            "description": "{nodeId}: a lower case UUID, written at the first start into the file node-id of the data directory and kept in state.sqlite; the status checks name the node with it.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -6250,29 +8986,43 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "system"
+        "x-pipesmith-permission": "settings:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/tasks": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "Tasks",
+        "description": "Every stored task on one page, sorted by id. A task whose type this server does not run is listed with the reason as its message.",
         "operationId": "get_service_rest_v1_tasks",
         "responses": {
+          "200": {
+            "description": "{items, continuationToken}; continuationToken is null, and each item is {id, name, type, message, currentState, lastRunResult, nextRun, lastRun, schedule}: type is the task type, currentState WAITING or RUNNING, lastRunResult OK, FAILED, CANCELED, INTERRUPTED or null, nextRun and lastRun UTC times or null, schedule the schedule type, message the reason a task cannot run or the message of its last run, at most 1024 characters, or null.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6283,25 +9033,22 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/tasks/{id}": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "One task",
         "operationId": "get_service_rest_v1_tasks_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the task.",
             "required": true,
             "schema": {
               "type": "string"
@@ -6309,14 +9056,40 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "{id, name, type, message, currentState, lastRunResult, nextRun, lastRun, schedule}: type is the task type, currentState WAITING or RUNNING, lastRunResult OK, FAILED, CANCELED, INTERRUPTED or null, nextRun and lastRun UTC times or null, schedule the schedule type, message the reason a task cannot run or the message of its last run, at most 1024 characters, or null.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Task not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6327,25 +9100,23 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/tasks/{id}/run": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "Run a task now",
+        "description": "Works with security on, writes on or off. Every run and stop empties the credential cache, as a change does.",
         "operationId": "post_service_rest_v1_tasks_id_run",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the task.",
             "required": true,
             "schema": {
               "type": "string"
@@ -6353,14 +9124,57 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The run has started."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Task not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "The task is disabled; the message gives the reason, a type this server does not run among them.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task is running already, or the server is frozen.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The scheduler has not started or is closed, or the server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6371,25 +9185,23 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:start",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/service/rest/v1/tasks/{id}/stop": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "Stop the run of a task",
+        "description": "Works with security on, writes on or off. Every run and stop empties the credential cache, as a change does. The run ends as CANCELED once its work returns.",
         "operationId": "post_service_rest_v1_tasks_id_stop",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the task.",
             "required": true,
             "schema": {
               "type": "string"
@@ -6397,14 +9209,47 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The run is told to stop."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Task not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task is not running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6415,10 +9260,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:stop",
+        "x-pipesmith-needs": "state.sqlite"
       }
     }
   },

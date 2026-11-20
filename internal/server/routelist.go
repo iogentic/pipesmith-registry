@@ -1,6 +1,7 @@
 package server
 
 import (
+	"cmp"
 	"regexp"
 	"regexp/syntax"
 	"slices"
@@ -18,7 +19,7 @@ import (
 
 // RouteInfo is one entry of the table, in the order of the table.
 type RouteInfo struct {
-	Table       string   `json:"table"`   // security, refusals or step 2
+	Table       string   `json:"table"`   // security, proxies, stores, writes, refusals or step 2
 	Pattern     string   `json:"pattern"` // the regular expression of the decoded path
 	Methods     []string `json:"methods"`
 	Rule        string   `json:"rule"`                  // a key of RouteRules
@@ -60,6 +61,8 @@ var RouteRules = map[string]string{
 	"asset":       "a subject that holds nexus:repository-view:<format>:<repository of the asset id>:<action>",
 	"client":      "nexus:repository-view:<format>:<repository>:<action>; without credentials the rights of the anonymous user while anonymous access is on",
 	"content":     "a subject that holds nexus:repository-view:<format>:<repository of the id, or of the query parameter repository>:<action>",
+	"create":      "a subject that holds nexus:repository-admin:<format of the segment>:*:add",
+	"listing":     "a subject that holds nexus:repository-view:<format>:<repository of the id, or of the query parameter repository>:browse",
 }
 
 // RoutePlaceholders explain the placeholders of the examples.
@@ -71,7 +74,8 @@ var RoutePlaceholders = map[string]string{
 }
 
 var ruleNames = map[ruleKind]string{rulePublic: "public", ruleSignedIn: "signed-in", ruleApp: "application", ruleView: "view",
-	ruleAdmin: "admin", ruleAssetID: "asset", ruleClient: "client", ruleContent: "content"}
+	ruleAdmin: "admin", ruleAssetID: "asset", ruleClient: "client", ruleContent: "content", ruleCreate: "create",
+	ruleListing: "listing"}
 
 // hint is what the pattern and the rule of an entry do not say and its
 // handler checks: the format of the repository of a group and what other
@@ -107,9 +111,12 @@ func Routes(writes bool) []RouteInfo {
 		name string
 		list []route
 	}
-	parts := []part{{"security", secureRoutes}, {"refusals", slices.Concat(routesOf(writeRefusals), refusalRoutes)}, {"step 2", routes}}
+	parts := []part{{"security", slices.Concat(secureRoutes, identityRoutes)}, {"system", systemRoutes}, {"status", statusAreaRoutes}, {"figures", figureRoutes}, {"logs", logRoutes}, {"proxies", proxyRoutes}, {"stores", storeRoutes},
+		{"refusals", slices.Concat(routesOf(writeRefusals), refusalRoutes)},
+		{"step 2", routes}}
 	if writes {
-		parts = []part{{"security", secureRoutes}, {"writes", contentWriteRoutes}, {"refusals", refusalRoutes}, {"step 2", routes}}
+		parts = []part{{"security", slices.Concat(secureRoutes, identityRoutes)}, {"system", systemRoutes}, {"status", statusAreaRoutes}, {"figures", figureRoutes}, {"logs", logRoutes}, {"proxies", proxyRoutes}, {"stores", storeRoutes}, {"writes", contentWriteRoutes}, {"refusals", refusalRoutes},
+			{"step 2", routes}}
 	}
 	var out []RouteInfo
 	for _, p := range parts {
@@ -121,18 +128,20 @@ func Routes(writes bool) []RouteInfo {
 }
 
 func routeInfo(table string, rt route, writes bool) RouteInfo {
-	info := RouteInfo{Table: table, Pattern: rt.pattern.String(), Methods: slices.Clone(rt.methods), Rule: ruleNames[rt.rule.kind]}
+	info := RouteInfo{Table: table, Pattern: rt.Pattern.String(), Methods: slices.Clone(rt.Methods), Rule: ruleNames[rt.Rule.kind]}
 	groups := map[int]string{}
 	query := ""
-	switch rt.rule.kind {
+	switch rt.Rule.kind {
 	case ruleApp:
-		info.Permissions = slices.Clone(rt.rule.permissions)
+		info.Permissions = slices.Clone(rt.Rule.permissions)
 	case ruleView:
-		info.Action, groups[rt.rule.group] = rt.rule.action, "{repository}"
+		info.Action, groups[rt.Rule.group] = rt.Rule.action, "{repository}"
 	case ruleAdmin:
-		info.Action, groups[rt.rule.group] = "read", "{repository}"
+		info.Action, groups[rt.Rule.group] = cmp.Or(rt.Rule.action, "read"), "{repository}"
 	case ruleAssetID:
-		info.Action, groups[rt.rule.group] = "browse", "{asset}"
+		info.Action, groups[rt.Rule.group] = "browse", "{asset}"
+	case ruleCreate:
+		info.Action = "add"
 	case ruleClient:
 		// allowClient: browse below the browse route, read below /repository/;
 		// with writes on a write below /repository/ asks the action of
@@ -140,9 +149,9 @@ func routeInfo(table string, rt route, writes bool) RouteInfo {
 		info.Action = "read"
 		if strings.HasPrefix(info.Pattern, "^"+regexp.QuoteMeta(browsePrefix)) {
 			info.Action = "browse"
-		} else if writes && slices.ContainsFunc(rt.methods, writeMethod) {
+		} else if writes && slices.ContainsFunc(rt.Methods, writeMethod) {
 			info.Action, info.Actions = "add", map[string]MethodAction{}
-			for _, method := range rt.methods {
+			for _, method := range rt.Methods {
 				info.Actions[method] = MethodAction{"add", "edit"}
 				if method == "DELETE" {
 					info.Actions[method] = MethodAction{"delete", "delete"}
@@ -150,12 +159,12 @@ func routeInfo(table string, rt route, writes bool) RouteInfo {
 			}
 		}
 		groups[1] = "{repository}/{path}"
-	case ruleContent:
+	case ruleContent, ruleListing:
 		// allowContent: the repository of the id in the path, or of the
 		// query parameter repository of an upload
-		info.Action = rt.rule.action
-		if rt.rule.group > 0 {
-			groups[rt.rule.group] = "{asset}"
+		info.Action = rt.Rule.action
+		if rt.Rule.group > 0 {
+			groups[rt.Rule.group] = "{asset}"
 		} else {
 			query = "?repository={repository}"
 		}
@@ -169,7 +178,7 @@ func routeInfo(table string, rt route, writes bool) RouteInfo {
 			groups[group] = text
 		}
 	}
-	info.Examples = examplesOf(rt.pattern, groups)
+	info.Examples = examplesOf(rt.Pattern, groups)
 	for i := range info.Examples {
 		info.Examples[i] += query
 	}

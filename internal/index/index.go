@@ -18,6 +18,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
 	"net/url"
 	"os"
@@ -193,6 +194,32 @@ func open(path string, prepare func(*Index) error) (*Index, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return nil, err
 	}
+	created, err := createPrivate(path)
+	if err != nil {
+		return nil, err
+	}
+	ix, err := openFile(path, prepare)
+	if err != nil && created {
+		_ = os.Remove(path) // cleanup of the empty file this call made; the open error is returned
+	}
+	return ix, err
+}
+
+// createPrivate creates an empty index file of mode 0600 when there is none
+// (finding sa-21): SQLite gives the WAL and SHM side files the mode of the
+// file. It reports whether it created the file.
+func createPrivate(path string) (bool, error) {
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- the index file of the data directory the operator configured.
+	switch {
+	case err == nil:
+		return true, f.Close()
+	case errors.Is(err, fs.ErrExist):
+		return false, nil
+	}
+	return false, err
+}
+
+func openFile(path string, prepare func(*Index) error) (*Index, error) {
 	busy := fmt.Sprintf("busy_timeout(%d)", busyTimeoutMS)
 	writerDSN, err := dsn(path, url.Values{"_pragma": {busy, "synchronous(NORMAL)"}, "_txlock": {"immediate"}})
 	if err != nil {
@@ -797,16 +824,23 @@ func busy(err error) bool {
 // Best effort: while another write of this index runs, the call returns at
 // once and the row stays; while another process writes the file, it waits
 // 250 ms and gives up. The running scan or the next request removes it.
-func (ix *Index) Drop(repo, path, store string) (err error) {
+func (ix *Index) Drop(repo, path, store string) error {
+	_, err := ix.DropRow(repo, path, store)
+	return err
+}
+
+// DropRow is Drop that reports whether it removed the row, so that the
+// caller removes the side data of the row with it (catalog.Drop) only then.
+func (ix *Index) DropRow(repo, path, store string) (dropped bool, err error) {
 	if !addressable(path) || !ix.writeMu.TryLock() {
-		return nil
+		return false, nil
 	}
 	defer ix.writeMu.Unlock()
 	if ix.closed.Load() {
-		return ErrClosed
+		return false, ErrClosed
 	}
 	if _, err := ix.writer.ExecContext(bg, fmt.Sprintf("PRAGMA busy_timeout = %d", dropBusyTimeoutMS)); err != nil {
-		return err
+		return false, err
 	}
 	defer func() {
 		if _, restore := ix.writer.ExecContext(bg, fmt.Sprintf("PRAGMA busy_timeout = %d", busyTimeoutMS)); restore != nil && err == nil {
@@ -814,13 +848,14 @@ func (ix *Index) Drop(repo, path, store string) (err error) {
 		}
 	}()
 	err = ix.transaction(func(tx *sql.Tx) error {
-		_, err := dropRow(tx, repo, path, store)
+		removed, err := dropRow(tx, repo, path, store)
+		dropped = removed != nil
 		return err
 	})
 	if busy(err) {
-		return nil
+		return false, nil
 	}
-	return err
+	return dropped && err == nil, err
 }
 
 // rowOf is the row of a path in the files table of one store, nil for none.
@@ -1052,6 +1087,45 @@ func (ix *Index) DeleteWithin(repo, path, store string, wait time.Duration, befo
 }
 
 // Reads
+
+// RepoRows are every row of a repository in every store, sorted by store
+// and path (decision A7 of the phase 6 plan: the delete of a repository).
+func (ix *Index) RepoRows(repo string) ([]Asset, error) {
+	var out []Asset
+	err := ix.read(func(tx *sql.Tx) error {
+		list, err := storeList(tx)
+		if err != nil {
+			return err
+		}
+		for _, s := range list {
+			rows, err := tx.QueryContext(bg, "SELECT parent, name, location, size, sha1, content_type, created_ms FROM "+filesTable(s.id)+ // #nosec G202 -- the table name is filesTable of an integer store id; every value is a placeholder.
+				" WHERE repo = ? ORDER BY parent, name", repo)
+			if err != nil {
+				return err
+			}
+			for rows.Next() {
+				var parent, name string
+				var sha1, contentType sql.NullString
+				a := Asset{Repo: repo, Store: s.name}
+				if err := rows.Scan(&parent, &name, &a.Location, &a.Size, &sha1, &contentType, &a.CreatedMS); err != nil {
+					rows.Close()
+					return err
+				}
+				a.Path = name
+				if parent != "" {
+					a.Path = parent + "/" + name
+				}
+				a.SHA1, a.ContentType = optional(sha1), optional(contentType)
+				out = append(out, a)
+			}
+			if err := rows.Close(); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return out, err
+}
 
 // Lookup is the winning row of a path over all stores, nil when no store
 // has it or the path is empty, starts or ends with "/".

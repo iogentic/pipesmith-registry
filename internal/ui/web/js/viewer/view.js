@@ -20,6 +20,9 @@ export const GUIDE_LEVELS = 64;
 // its character in an isolate and shows its name; above the bound a control is drawn as BIDI_REST.
 export const BIDI_MARKS = 1000;
 export const BIDI_REST = "\u25af";
+// Find marks drawn on one row at most: around the current match when it is on the row, else the first
+// ones. The count and the steps of the find still cover every match.
+export const FIND_MARKS = 1000;
 const BIDI = /[\u202a-\u202e\u2066-\u2069]/g;
 
 const GRAMMARS = {
@@ -86,12 +89,22 @@ export function mountViewer(host, doc) {
   if (reason) wrapButton.setAttribute("aria-describedby", reasonId);
   const collapseAll = button("Collapse all", { attrs: { disabled: !folds.list.length } });
   const expandAll = button("Expand all", { attrs: { disabled: !folds.list.length } });
+  // Two parts: the find field with its steps and count, and the other tools. On a narrow screen each
+  // part is one row and the second one scrolls sideways.
+  const more = h(
+    "div",
+    { class: "vmore" },
+    h("div", { class: "vgroup" }, caseLabel),
+    h("div", { class: "vgroup" }, gotoInput, gotoButton),
+    h("div", { class: "vgroup" }, collapseAll, expandAll, wrapButton, reason, copyButton)
+  );
+  // A control of the row that scrolls sideways comes fully into it when it gets the focus.
+  more.addEventListener("focusin", (event) => event.target.scrollIntoView({ block: "nearest", inline: "nearest" }));
   const tools = h(
     "div",
     { class: "vtools", role: "toolbar", "aria-label": "Viewer tools" },
-    h("div", { class: "vgroup" }, findInput, prevButton, nextButton, caseLabel, count),
-    h("div", { class: "vgroup" }, gotoInput, gotoButton),
-    h("div", { class: "vgroup" }, collapseAll, expandAll, wrapButton, reason, copyButton)
+    h("div", { class: "vgroup vfindbar" }, findInput, prevButton, nextButton, count),
+    more
   );
   const info = h("p", { class: "vinfo", role: "status" });
   const list = h("div", { class: "viewer-rows" });
@@ -117,6 +130,16 @@ export function mountViewer(host, doc) {
     return marks.some((m) => m[0] === line && m[1] === start);
   }
 
+  // The indexes of the matches of a line that its row draws, at most FIND_MARKS of them. The indexes
+  // of one line follow each other, so the current match sits at current minus the first index.
+  function drawnMatches(number) {
+    const all = matchesByLine.get(number) || [];
+    if (all.length <= FIND_MARKS) return all;
+    const at = current >= all[0] && current <= all[all.length - 1] ? current - all[0] : 0;
+    const from = Math.max(0, Math.min(at - (FIND_MARKS >> 1), all.length - FIND_MARKS));
+    return all.slice(from, from + FIND_MARKS);
+  }
+
   // The text of a line in segments: cut at every token edge and every match edge, so that each
   // segment carries the class of its token and of a match. A line longer than LONG_LINE has no token
   // segments; it is one text node, or cut at the edges of its matches only.
@@ -124,7 +147,7 @@ export function mountViewer(host, doc) {
     const textOf = lines[number - 1];
     const el = h("span", { class: "vcode" });
     const long = textOf.length > LONG_LINE;
-    const found = (matchesByLine.get(number) || []).map((i) => [matches[i][1], matches[i][2], i === current]);
+    const found = drawnMatches(number).map((i) => [matches[i][1], matches[i][2], i === current]);
     const controls = [];
     for (const m of textOf.matchAll(BIDI)) controls.push(m.index);
     const marked = new Set(controls.slice(0, BIDI_MARKS));
@@ -164,7 +187,7 @@ export function mountViewer(host, doc) {
       }
       el.append(
         piece(a, b, {
-          class: [token && `t-${token[2]}`, token && token[0] === a && isMarked(number, a) && "vmark", match && "vfound", match && match[2] && "vcurrent"],
+          class: [token && `t-${token[2]}`, token && isMarked(number, token[0]) && "vmark", match && "vfound", match && match[2] && "vcurrent"],
           dataset: { c: a }
         })
       );
@@ -232,12 +255,15 @@ export function mountViewer(host, doc) {
     if (held && !held.isConnected) refocus(held.closest(".vrow").dataset.line, held.classList.contains("vellipsis"));
   }
 
-  // Sets the mark class on the drawn tokens of marks in place, so that a click keeps a selection.
+  // Sets the mark class on the drawn tokens of marks in place, so that a click keeps a selection. A
+  // find match can cut a token into several segments; each of them carries the mark.
   function paintMarks() {
     for (const el of list.querySelectorAll(".vmark")) el.classList.remove("vmark");
-    for (const [line, start] of marks) {
-      const el = list.querySelector(`.vrow[data-line="${Number(line)}"] .vcode > span[data-c="${Number(start)}"]`);
-      if (el) el.classList.add("vmark");
+    for (const [line, start, end] of marks) {
+      for (const el of list.querySelectorAll(`.vrow[data-line="${Number(line)}"] .vcode > span[data-c]`)) {
+        const c = Number(el.dataset.c);
+        if (c >= start && c < end) el.classList.add("vmark");
+      }
     }
   }
 

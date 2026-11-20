@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/iogentic/pipesmith-registry/internal/authz"
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -122,4 +123,10 @@ func CheckLDAPSave(s *model.Snapshot, stored model.LDAPServer, sentID, sentName 
 		}
 	}
 	return list.err()
+}
+
+// Taken reports a name of names equal to name without regard to letter
+// case (ruling ST14).
+func Taken(names []string, name string) bool {
+	return slices.ContainsFunc(names, func(n string) bool { return strings.EqualFold(n, name) })
 }

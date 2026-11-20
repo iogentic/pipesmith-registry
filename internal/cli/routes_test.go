@@ -28,7 +28,10 @@ func TestRoutesCommand(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &doc); err != nil {
 		t.Fatalf("routes --json is no JSON: %v", err)
 	}
-	if len(doc.Routes) != len(server.Routes(false)) || len(doc.Placeholders) == 0 || len(doc.Rules) != 8 {
+	// every rule kind of the table is described, the create rule of the
+	// repository writes among them
+	if len(doc.Routes) != len(server.Routes(false)) || len(doc.Placeholders) == 0 || len(doc.Rules) != len(server.RouteRules) ||
+		doc.Rules["create"] == "" {
 		t.Fatalf("%d routes, %d placeholders, %d rules", len(doc.Routes), len(doc.Placeholders), len(doc.Rules))
 	}
 	code, out, _ = run(t, "routes")

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/blobwrite"
+	"github.com/iogentic/pipesmith-registry/internal/catalog"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
@@ -27,15 +28,23 @@ func writeStoreRoot(dataDir string) string {
 }
 
 // writePath is the write state of one server: the writer of the write
-// store, nil while writes are off, and what the ingest needs beside it.
+// store, nil while writes and upstream are off, and what the ingest needs
+// beside it.
 type writePath struct {
-	writer    *blobwrite.Writer
+	writer *blobwrite.Writer
+	// clients is the switch writes: client writes are on. With upstream on
+	// and writes off the writer is open for the proxies and client writes
+	// keep every answer of writes off (decision P5-2 of the phase 5 session).
+	clients   bool
 	store     *stores.BlobStore                // the write store, attached with writes on and off; nil for none
 	catalog   CatalogHook                      // Options.Catalog
+	file      *catalog.Catalog                 // Options.CatalogFile, which the scans of the write store fill; nil: each scan opens it
 	freeSpace func(dir string) (uint64, error) // the free bytes of a file system; tests replace it
 	locks     pathLocks                        // one write of a path of a repository at a time
+	space     spaceHeld                        // the bytes the bodies in flight hold of the free space (checkSpace)
 	marks     marks                            // the delete marks (marks.go)
 	deleted   deletedTimes                     // the creation times of deleted blobs (marks.go)
+	metadata  metadataGate                     // a metadata rebuild against a deploy of its metadata (write_rebuild.go)
 	// late is the write store that a server without writes attached after
 	// its start (readPath.attachLate), so that a scan of it keeps the rule
 	// of its write order.
@@ -64,11 +73,19 @@ func openWrites(cfg *config.Config, opts Options) (*writePath, stores.Store, err
 	if opts.Writes && opts.Security == nil {
 		return nil, nil, errors.New("writes need state.sqlite: without security every caller is anonymous, and an anonymous write is never allowed (decision E4)")
 	}
-	store, writer, err := openWriteStore(cfg, opts.Writes, opts.writeOptions)
+	if opts.Upstream && opts.Security == nil {
+		return nil, nil, errors.New("upstream needs state.sqlite: without security every caller is anonymous, and an anonymous request would make the proxies ask their remotes and write blobs (decision P5-2)")
+	}
+	switched := "writes are"
+	if !opts.Writes {
+		switched = "upstream is"
+	}
+	store, writer, err := openWriteStore(cfg, opts.Writes || opts.Upstream, switched, opts.writeOptions)
 	if err != nil {
 		return nil, nil, err
 	}
-	wp := &writePath{writer: writer, store: store, catalog: opts.Catalog, freeSpace: freeBytes}
+	wp := &writePath{writer: writer, clients: opts.Writes, store: store, catalog: opts.Catalog, file: opts.CatalogFile, freeSpace: freeBytes}
+	wp.marks.fault = opts.marksFault
 	if store == nil {
 		return wp, nil, nil
 	}
@@ -90,7 +107,7 @@ func (wp *writePath) writable() bool {
 // writableBy is writable with the access check of the file system given;
 // tests give one that refuses, because root writes in spite of the modes.
 func (wp *writePath) writableBy(access func(path string, mode uint32) error) bool {
-	if wp.writer == nil {
+	if wp.writer == nil || !wp.clients {
 		return false
 	}
 	for _, dir := range wp.writeDirs() {
@@ -117,21 +134,22 @@ func (wp *writePath) close() error {
 }
 
 // openWriteStore gives the write store of the data directory. With writes
-// on it is made in the layout of the old product when it is missing and
-// opened by its one writer, which holds the lock of W12. With writes off a
-// write store that exists is attached read only, so that what was written
-// earlier is served; one that does not exist is not made. A store of
-// config.json with the same name keeps its place while writes are off and
-// stops a start with writes on.
-func openWriteStore(cfg *config.Config, on bool, opts blobwrite.Options) (*stores.BlobStore, *blobwrite.Writer, error) {
+// or upstream on it is made in the layout of the old product when it is
+// missing and opened by its one writer, which holds the lock of W12. With
+// both off a write store that exists is attached read only, so that what
+// was written earlier is served; one that does not exist is not made. A
+// store of config.json with the same name keeps its place while both are off
+// and stops a start with either on; switched names the switch for the
+// refusal.
+func openWriteStore(cfg *config.Config, on bool, switched string, opts blobwrite.Options) (*stores.BlobStore, *blobwrite.Writer, error) {
 	name, root := repos.DefaultWriteStore, writeStoreRoot(cfg.DataDir)
 	if !on {
 		s, err := ExistingWriteStore(cfg)
 		return s, nil, err
 	}
 	if slices.ContainsFunc(cfg.Stores, func(sc config.StoreConfig) bool { return sc.Name == name }) {
-		return nil, nil, fmt.Errorf("store %s of %s has the name of the write store of this server; remove it before writes are switched on",
-			name, cfg.ConfigPath())
+		return nil, nil, fmt.Errorf("store %s of %s has the name of the write store of this server; remove it before %s switched on",
+			name, cfg.ConfigPath(), switched)
 	}
 	if err := blobwrite.Create(root, time.Now()); err != nil {
 		return nil, nil, err
@@ -164,30 +182,40 @@ func ExistingWriteStore(cfg *config.Config) (*stores.BlobStore, error) {
 	return stores.NewBlobStore(name, root)
 }
 
-// scanUnindexed scans the write store at the start of a server with writes
-// on when the index does not know the store while the store holds blobs: an
-// index.sqlite that was lost and built again from the stores of config.json
-// alone holds no row of a written path, every such path would answer 404,
-// and ALLOW_ONCE would take a second write of it (finding S1 of review 4).
-// The scan runs before the server takes a request. An index that knows the
-// store, also with no row of it, is not scanned again.
-func (wp *writePath) scanUnindexed(ix *index.Index) error {
+// repairAtStart scans the write store at the start of a server whose writer
+// is open, before the server takes a request (Repair at start, plan 0.2.0).
+// The scan of the write store serves the blob of each path that was written
+// last and gives every older live blob of the path its delete mark: a kill
+// between the row of a write and the mark of the blob it replaced, or a mark
+// that waited in the memory of the process before (marks.go), leaves such a
+// blob. A mark that fails here waits as every other one.
+//
+// An index that does not know the store while the store holds blobs was
+// lost and built again from the stores of config.json alone: every written
+// path would answer 404, and ALLOW_ONCE would take a second write of it
+// (finding S1 of review 4). A failed scan then stops the start. When the
+// index knows the store, a failed scan is logged and the start goes on with
+// the rows the index holds; the next scan of the store repairs it.
+func (wp *writePath) repairAtStart(ix *index.Index) error {
 	stats, err := ix.StoreStats()
 	if err != nil {
 		return err
 	}
-	for _, stat := range stats {
-		if stat.Store == wp.writer.Name() {
-			return nil
-		}
-	}
+	known := slices.ContainsFunc(stats, func(stat index.StoreStat) bool { return stat.Store == wp.writer.Name() })
 	if !holdsBlobs(wp.writer.Root()) {
 		return nil
 	}
-	logAt(slogInfo, serverLogger, "the index holds no row of store %s; the store is scanned before writes start", wp.writer.Name())
+	if !known {
+		logAt(slogInfo, serverLogger, "the index holds no row of store %s; the store is scanned before writes start", wp.writer.Name())
+	}
 	result, err := wp.scanStore(wp.store, ix, nil)
 	if err != nil {
-		return fmt.Errorf("the scan of store %s before writes start failed: %w", wp.writer.Name(), err)
+		if !known {
+			return fmt.Errorf("the scan of store %s before writes start failed: %w", wp.writer.Name(), err)
+		}
+		logAt(slogWarn, serverLogger, "the scan of store %s before writes start failed: %v; its live blobs are repaired by the next scan of it",
+			wp.writer.Name(), err)
+		return nil
 	}
 	logAt(slogInfo, serverLogger, "scan %s: live=%d deleted=%d copies=%d no_bytes=%d unparsable=%d seconds=%.2f", result.Store, result.Live,
 		result.Deleted, result.Copies, result.NoBytes, result.Unparsable, result.Seconds)

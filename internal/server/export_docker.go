@@ -68,8 +68,12 @@ type storedManifest struct {
 
 // readManifest is the manifest of image under ref, as the registry read
 // path answers it: the first member whose bytes answer the reference; by
-// digest only when they hash to it. Nil when no member has it.
+// digest only when they hash to it. Nil when no member has it, and for a
+// name or reference outside the grammar of the read path.
 func (s *Server) readManifest(st *state, members []repos.Repo, image, ref string) (*storedManifest, error) {
+	if call, err := docker.ParseV2(image + "/manifests/" + ref); err != nil || call == nil || call.Kind != "manifest" {
+		return nil, nil
+	}
 	path := "v2/" + image + "/manifests/" + ref
 	for _, member := range members {
 		asset, f, size, err := s.rp.open(st, member.Name, path)
@@ -122,6 +126,10 @@ func (s *Server) exportImage(w *recorder, req *request, er *exportRequest) error
 		return exportRefusal(w, req, http.StatusNotFound,
 			fmt.Sprintf("the form oci exports one image: path names a manifest, v2/<image>/manifests/<tag or digest>, not %q", er.folder))
 	}
+	if _, err := docker.ParseV2(image + "/manifests/" + ref); err != nil {
+		// the refusal of the registry read path, which answers no such manifest
+		return exportRefusal(w, req, http.StatusBadRequest, err.Error(), [2]any{"path", er.folder})
+	}
 	top, err := s.readManifest(st, members, image, ref)
 	if err != nil {
 		return err
@@ -156,7 +164,7 @@ func (s *Server) exportImage(w *recorder, req *request, er *exportRequest) error
 		chosen = nil
 		for _, d := range doc.Manifests {
 			p := d.platform()
-			if p == "" {
+			if p == "" || !docker.IsDigest(d.Digest) {
 				continue
 			}
 			m, known := read[d.Digest]
@@ -272,7 +280,7 @@ func (s *Server) exportImage(w *recorder, req *request, er *exportRequest) error
 	out, done := s.stallBound(w)
 	err = export.WriteOCI(out, export.Image{Manifest: chosen.data, MediaType: chosen.mediaType, Name: name, Blobs: blobs})
 	done()
-	s.exportLog(er, len(blobs)+1, tally.Bytes(), started, err)
+	s.exportLog(er, len(blobs)+1, tally.Bytes(), 0, started, err)
 	endStream(err)
 	return nil
 }

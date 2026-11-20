@@ -48,17 +48,45 @@ func FormatsOf(dataDir string, ix *index.Index) (Formats, error) {
 type Scan struct {
 	dir, store string
 	c          *Catalog
+	own        bool // the scan opened c and closes it
 	fill       *Fill
 	err        error
 }
 
 // StartScan opens the catalog beside the index for a scan of store.
 func StartScan(ix *index.Index, store string) *Scan {
-	s := &Scan{dir: filepath.Dir(ix.Path()), store: store}
+	s := &Scan{dir: filepath.Dir(ix.Path()), store: store, own: true}
 	if s.c, s.err = Open(s.dir); s.err == nil {
 		s.fill, s.err = s.c.Begin(store)
 	}
 	return s
+}
+
+// StartScanIn is StartScan with the catalog the caller holds open, the one
+// opening of a serving process; Finish leaves it open. A nil c is StartScan.
+func StartScanIn(c *Catalog, ix *index.Index, store string) *Scan {
+	if c == nil {
+		return StartScan(ix, store)
+	}
+	s := &Scan{dir: filepath.Dir(ix.Path()), store: store, c: c}
+	s.fill, s.err = c.Begin(store)
+	return s
+}
+
+// Choose hands over the blob the arbiter of the store kept for a path, ""
+// for none (Fill.Choose).
+func (s *Scan) Choose(repo, path, location string) {
+	if s.err == nil {
+		s.fill.Choose(repo, path, location)
+	}
+}
+
+// Hold takes the writer of the catalog once the walk has handed over its
+// last entry and before the index commits them (Fill.Hold).
+func (s *Scan) Hold() {
+	if s.err == nil {
+		s.err = s.fill.Hold()
+	}
 }
 
 // Add hands over one entry the index took.
@@ -88,7 +116,7 @@ func (s *Scan) Finish(ix *index.Index, written bool) {
 	if s.fill != nil {
 		_ = s.fill.Discard() // after Commit it does nothing; the staging file of a failed fill is left to removeStale
 	}
-	if s.c != nil {
+	if s.c != nil && s.own {
 		if err := s.c.Close(); err != nil && s.err == nil {
 			s.err = err
 		}

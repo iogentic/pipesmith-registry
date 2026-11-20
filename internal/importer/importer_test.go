@@ -64,6 +64,7 @@ func wantIdentity() *model.Snapshot {
 			Source: "default", Roles: []string{role}, PasswordHash: shiro1(id, passwords[id])}
 	}
 	return &model.Snapshot{
+		CleanupPolicies: []model.CleanupPolicy{}, Tasks: []model.Task{}, Capabilities: []model.Capability{},
 		Users: []model.User{
 			user("admin", "Ada", "Admin", "active", "nx-admin"),
 			user("locked.user", "Lou", "Locked", "locked", "demo-viewer"),
@@ -117,6 +118,7 @@ func wantIdentity() *model.Snapshot {
 func wantContent(t *testing.T) *model.Snapshot {
 	storage := `"storage":{"blobStoreName":"demo-files","strictContentTypeValidation":true`
 	return &model.Snapshot{
+		CleanupPolicies: wantPolicies(), Tasks: wantTasks(), Capabilities: wantCapabilities(),
 		Users: []model.User{}, Roles: []model.Role{}, Privileges: []model.Privilege{}, RoleMappings: []model.RoleMapping{},
 		LDAP: []model.LDAPServer{}, Realms: []string{},
 		BlobStores: []model.BlobStore{
@@ -207,7 +209,8 @@ func TestReadContentExport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if export.Set != "content" || !slices.Equal(export.Kinds, []state.Kind{state.KindBlobStores, state.KindRepositories}) {
+	if export.Set != "content" || !slices.Equal(export.Kinds, []state.Kind{state.KindBlobStores, state.KindRepositories,
+		state.KindCleanupPolicies, state.KindTasks, state.KindCapabilities}) {
 		t.Fatalf("set %q kinds %v", export.Set, export.Kinds)
 	}
 	same(t, export.Snapshot, wantContent(t))
@@ -275,6 +278,7 @@ func TestIdentityImportLeavesRepositories(t *testing.T) {
 	want := wantIdentity()
 	content := wantContent(t)
 	want.BlobStores, want.Repositories = content.BlobStores, content.Repositories
+	want.CleanupPolicies, want.Tasks, want.Capabilities = content.CleanupPolicies, content.Tasks, content.Capabilities
 	same(t, loadState(t, cfg), want)
 }
 
@@ -492,10 +496,7 @@ func TestImportSettingsSnapshot(t *testing.T) {
 	if len(a) == 0 || !bytes.Equal(a, b) {
 		t.Fatalf("repositories.json differs from import-settings\n%s\n%s", b, a)
 	}
-	data, err := os.ReadFile(state.Path(cfg.DataDir))
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := stateFiles(t, cfg.DataDir)
 	if bytes.Contains(data, []byte("settings-secret-1")) || bytes.Contains(data, []byte("old.example.com")) {
 		t.Fatal("state.sqlite holds the proxy password or the url of the old server")
 	}

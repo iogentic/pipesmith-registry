@@ -1,6 +1,7 @@
 // S46 Viewer: the files of a repository read only, the tree on the left and the source on the right
 // (docs/plans/browse-tools.md, leg V1). The open file or folder is kept in the address as ?path=.
-// A binary file shows a short card with Download and a link to its detail in Browse.
+// A binary file shows a short card with Download and a link to its detail in Browse; a file without
+// a download address shows a card of its own.
 
 import { h, replace } from "../../dom.js";
 import { api } from "../../api.js";
@@ -55,7 +56,7 @@ export async function render(ctx) {
   let viewer = null;
   let run = 0;
 
-  const tree = createFileTree({ repository: name, onFile: (node) => openFile(node.path), onFolder: (node) => openFolder(node.path) });
+  const tree = createFileTree({ repository: name, onFile: (node) => openFile(node.path) });
   const treePanel = h("section", { class: "panel vtree-panel", id: "viewer-tree", "aria-labelledby": "viewer-tree-title" }, h("h2", { id: "viewer-tree-title", class: "visually-hidden", text: "Folders and files" }), tree.element);
   const screen = h("div", { class: "vscreen" }, treePanel, source);
 
@@ -102,7 +103,8 @@ export async function render(ctx) {
     );
   }
 
-  function card(info, size) {
+  // The card of a file the viewer does not show: a binary file, or one without a download address.
+  function card(info, size, binary = true) {
     unmount();
     replace(
       source,
@@ -110,7 +112,9 @@ export async function render(ctx) {
         "div",
         { class: "vcard" },
         head(info),
-        notice("info", "Binary file", "The first bytes of this file hold a NUL byte, so the viewer does not show it as text. Download it, or see its detail in Browse."),
+        binary
+          ? notice("info", "Binary file", "The first bytes of this file hold a NUL byte, so the viewer does not show it as text. Download it, or see its detail in Browse.")
+          : notice("info", "No download address", "The server gives no download address for this file, so the viewer cannot read it. See its detail in Browse."),
         facts(
           [
             ["Size", typeof size === "number" ? `${bytes(size)} (${number(size)} bytes)` : null],
@@ -144,7 +148,7 @@ export async function render(ctx) {
     }
     if (mine !== run) return;
     if (!info.download_url) {
-      card(info, info.size);
+      card(info, info.size, false);
       return;
     }
     let result;

@@ -50,9 +50,46 @@ export class HeadingFolds {
   }
 }
 
-// Inline code in a line: a run of backticks up to the next run of the same length, and, where
-// plus is set, text between two plus signs.
+const PLUS = /\+[^+\s][^+]*\+/y;
+
+// Inline code in a line: a run of backticks up to the next run of exactly its length, and, where
+// plus is set, text between two plus signs. A run without such a closer stays text. Each length
+// keeps a cursor into its runs that only moves forward, so a line scans in linear time.
 export function inlineCode(r, start, line, plus) {
-  const pattern = plus ? /(`+)[^`]*?\1|\+[^+\s][^+]*\+/g : /(`+)[^`]*?\1/g;
-  for (let m = pattern.exec(line); m; m = pattern.exec(line)) r.token(start + m.index, start + m.index + m[0].length, "code");
+  const runs = new Map(); // length to the offsets of its runs, ascending
+  for (let i = line.indexOf("`"); i >= 0; ) {
+    let j = i;
+    while (line[j] === "`") j += 1;
+    if (!runs.has(j - i)) runs.set(j - i, { at: [], next: 0 });
+    runs.get(j - i).at.push(i);
+    i = line.indexOf("`", j);
+  }
+  let i = 0;
+  while (i < line.length) {
+    const c = line[i];
+    if (c === "`") {
+      let j = i;
+      while (line[j] === "`") j += 1;
+      const same = runs.get(j - i);
+      while (same.next < same.at.length && same.at[same.next] <= i) same.next += 1;
+      if (same.next < same.at.length) {
+        const stop = same.at[same.next] + (j - i);
+        r.token(start + i, start + stop, "code");
+        i = stop;
+      } else {
+        i = j;
+      }
+      continue;
+    }
+    if (plus && c === "+") {
+      PLUS.lastIndex = i;
+      const m = PLUS.exec(line);
+      if (m) {
+        r.token(start + i, start + i + m[0].length, "code");
+        i += m[0].length;
+        continue;
+      }
+    }
+    i += 1;
+  }
 }

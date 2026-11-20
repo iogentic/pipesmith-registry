@@ -119,6 +119,10 @@ func leaks(v any, path string, keys []string, created Kind, found *[]string) {
 	}
 }
 
+// SecretKey reports whether one key holds a secret word or is the last key
+// of a secret field of the table.
+func SecretKey(key string) bool { return secretKey([]string{key}) }
+
 // secretKey reports whether the keys from the top end with the path of a
 // field of the table, or the last key holds a secret word.
 func secretKey(keys []string) bool {

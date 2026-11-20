@@ -29,12 +29,21 @@ import (
 	"sync"
 	"time"
 
+	adminrules "github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/blobwrite"
+	"github.com/iogentic/pipesmith-registry/internal/catalog"
 	"github.com/iogentic/pipesmith-registry/internal/config"
+	"github.com/iogentic/pipesmith-registry/internal/logs"
+	"github.com/iogentic/pipesmith-registry/internal/metrics"
 	"github.com/iogentic/pipesmith-registry/internal/model"
+	"github.com/iogentic/pipesmith-registry/internal/node"
+	"github.com/iogentic/pipesmith-registry/internal/proxy"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 	"github.com/iogentic/pipesmith-registry/internal/rest"
+	rtable "github.com/iogentic/pipesmith-registry/internal/route"
+	statefile "github.com/iogentic/pipesmith-registry/internal/state"
+	"github.com/iogentic/pipesmith-registry/internal/tasks"
 	"github.com/iogentic/pipesmith-registry/internal/ui"
 )
 
@@ -69,6 +78,11 @@ type Options struct {
 	// its screens, the refusals of the rest of its contract and the rule of
 	// every route. Nil answers as in step 2.
 	Security model.Security
+	// Identity is the state the identity writes of the area security change
+	// (leg 6-identity): load, Update, the data directory and the reset of the
+	// credential cache. It counts only with Security; nil answers those
+	// writes with 503.
+	Identity adminrules.IdentityStore
 	// HostNames are the names a Host header may carry besides localhost,
 	// 127.0.0.1 and [::1]: lower case, an IPv6 address in brackets, no port.
 	HostNames []string
@@ -89,8 +103,39 @@ type Options struct {
 	// Catalog is the catalog hook of every write and delete (decision E5);
 	// nil does nothing.
 	Catalog CatalogHook
+	// CatalogFile is catalog.sqlite of the data directory, opened once by
+	// the process (leg F1b). With it the writes keep their rows through it
+	// when Catalog is nil, every scan of the job fills it, and the read path
+	// and the delete of a repository remove their rows from it. Without it a
+	// scan opens the file for itself.
+	CatalogFile *catalog.Catalog
+	// Upstream switches requests to remotes on (decision 5.1 of the phase 5
+	// plan): a proxy of the formats raw and maven2 asks its remote for what
+	// it does not hold and stores it in the write store, which is made and
+	// opened as with writes on, while client writes follow Writes alone
+	// (decision P5-2 of the phase 5 session). It needs Security.
+	Upstream bool
+	// ProxyState is the table proxy_state the proxies keep their checks and
+	// their not found marks in (decision P5-5); nil keeps none.
+	ProxyState proxy.StateStore
+	// Routing are the routing rules of state.sqlite and the rule each
+	// repository names (decision 5.15, ruling P5-4); nil for none.
+	Routing *model.Routing
 	// writeOptions fix the clock and the blob ids of the writer in tests.
 	writeOptions blobwrite.Options
+	// marksFault makes the delete marks fail from the start on in tests
+	// (writePath.failMarks).
+	marksFault func(location, reason string) error
+	// TrustRule is the owner and mode rule of update (rootRule and keyRule
+	// of internal/release) for a reader that is not the owner of the root;
+	// GET /api/updates reports its answer. Nil leaves the check out, and the
+	// page says so.
+	TrustRule func(root, key string) error
+	// installRoot gives the install root and the path of the binary in
+	// tests; nil reads them from the running executable (updates.go).
+	installRoot func() (root, binary string)
+	// upstreamConfig fixes the clock and the limits of the proxies in tests.
+	upstreamConfig proxy.Config
 	// Secure reports a request that reached a reverse proxy of
 	// trusted_proxies over TLS (auth.TrustedProxies.Secure); nil trusts no
 	// proxy.
@@ -99,10 +144,35 @@ type Options struct {
 	// the warning of forwarded headers from a peer that is no trusted proxy
 	// (auth.ForwardedWarner.Check). Nil sees none.
 	Forwarded func(*http.Request)
+	// Tasks are the stored tasks on their scheduler (leg 6-system, ruling
+	// SB1); Serve starts it once the server is built, and its owner closes
+	// it. It counts only with Security; nil answers the tasks with 503.
+	Tasks *tasks.Registry
+	// TaskRuns reads the last run of each task for the answers of the
+	// tasks; nil shows none.
+	TaskRuns TaskRuns
+	// TasksClose bounds how long Close waits for the runs of Tasks to end
+	// (ruling KN10); 0 for 10 s.
+	TasksClose time.Duration
+}
+
+// TaskRuns reads the last run of each task, by task id, and of one task
+// alone (statefile.Store.LastRuns and LastRun).
+type TaskRuns interface {
+	LastRuns() (map[string]statefile.TaskRun, error)
+	LastRun(taskID string) (statefile.TaskRun, bool, error)
 }
 
 // Server is the http.Handler of every listener of one server process.
 type Server struct {
+	requests func(logs.Request) // the sink of the request records (record.go); nil writes none
+
+	audit func(logs.AuditEvent) error // the sink of the audit lines (audit.go); nil writes none
+
+	figures    *metrics.Recorder                    // the counters and daily counts (figures.go); nil counts nothing
+	logging    logView                              // the log files and logger levels of the log routes (logs_routes.go)
+	dataAccess func(path string, mode uint32) error // the access check of the data directory (status_area.go); nil is syscall.Access
+
 	rp          *readPath
 	dockerPorts map[int]string // listening port -> Docker repository
 	accessMu    sync.Mutex
@@ -113,6 +183,7 @@ type Server struct {
 	port        int // the main port; POST /api/scan is guarded with it
 	job         *scanJob
 	sec         model.Security           // nil: security off
+	identity    adminrules.IdentityStore // Options.Identity, with security on
 	ui          *ui.Handler              // the interface, with security on
 	manual      *ui.Handler              // the manual below /manual/, in both modes
 	catalog     *rest.Catalog            // the search, with security on
@@ -121,8 +192,22 @@ type Server struct {
 	forwarded   func(*http.Request)      // Options.Forwarded
 	exports     *exports                 // the export of a folder (export.go)
 
-	writes *writePath // the write path of phase 4 (writestore.go, ingest.go)
-	oci    ociWrites  // the Docker upload sessions of the writes (write_oci.go)
+	writes  *writePath      // the write path of phase 4 (writestore.go, ingest.go)
+	oci     ociWrites       // the Docker upload sessions of the writes (write_oci.go)
+	proxies *proxy.Proxies  // the proxies of phase 5 (upstream.go); nil while upstream is off
+	routes  *liveRouting    // the routing rules of the proxies, live with security (upstream.go)
+	started time.Time       // the start of the server, for the system information
+	tasks   *tasks.Registry // Options.Tasks, with security on
+	runs    TaskRuns        // Options.TaskRuns, with security on
+	// tasksClose is Options.TasksClose
+	tasksClose time.Duration
+	// readOnly is the read only mode in memory, with security on (ruling
+	// SB2); a start releases it
+	readOnly *adminrules.ReadOnlyMode
+	node     string // the node id of the data directory (package node)
+
+	trust       func(root, key string) error // Options.TrustRule
+	installRoot func() (root, binary string) // the install root of GET /api/updates (updates.go)
 }
 
 // New opens the index and attaches the stores of cfg. dockerPorts maps a
@@ -133,13 +218,14 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 	if err != nil {
 		return nil, err
 	}
-	rp, err := newReadPath(cfg, dockerPorts, writeStore, snapshotOf(opts.Security))
+	routes := newLiveRouting(opts.Routing, routingSourceOf(opts))
+	rp, err := newReadPath(cfg, dockerPorts, writeStore, snapshotOf(opts.Security), routes)
 	if err != nil {
 		_ = writes.close() // the error of the set up is the one returned
 		return nil, err
 	}
 	if writes.writer != nil {
-		if err := writes.scanUnindexed(rp.index); err != nil {
+		if err := writes.repairAtStart(rp.index); err != nil {
 			_ = rp.index.Close() // the error of the scan is the one returned
 			_ = writes.close()
 			return nil, err
@@ -159,9 +245,26 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 	}
 	s := &Server{rp: rp, dockerPorts: ports, access: opts.AccessLog, hostNames: slices.Clone(opts.HostNames), marker: "/" + hex.EncodeToString(token) + "/",
 		escape: hex.EncodeToString(token) + "~", trusted: newTrustedHosts(forwardedAllowIPs()), port: cfg.Port,
-		job: newScanJob(rp.index, takeOver), writes: writes, secure: opts.Secure, forwarded: opts.Forwarded,
-		exports: newExports(opts)}
+		job: newScanJob(rp.index, takeOver), writes: writes, proxies: openUpstream(cfg, opts), routes: routes,
+		secure: opts.Secure, forwarded: opts.Forwarded, exports: newExports(opts), started: time.Now(),
+		trust: opts.TrustRule, installRoot: opts.installRoot}
+	if s.installRoot == nil {
+		s.installRoot = runningRoot
+	}
 	s.job.runFor = writes.scanRunnerFor
+	if opts.CatalogFile != nil {
+		// leg F1b: the one opening of catalog.sqlite follows the writes and fills at every scan
+		s.job.run = scanIn(opts.CatalogFile)
+		rp.dropped = opts.CatalogFile.Drop
+		if writes.catalog == nil {
+			writes.catalog = catalogHook{file: opts.CatalogFile, format: rp.formatOf}
+		}
+	}
+	if s.node, err = node.ID(cfg.DataDir); err != nil {
+		_ = rp.index.Close() // the error of the set up is the one returned
+		_ = writes.close()
+		return nil, err
+	}
 	if s.manual, err = ui.NewManual(); err != nil {
 		_ = rp.index.Close() // the error of the set up is the one returned
 		_ = writes.close()
@@ -177,6 +280,13 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 			return nil, err
 		}
 		s.sec = opts.Security
+		s.identity = opts.Identity
+		s.tasks, s.runs, s.tasksClose = opts.Tasks, opts.TaskRuns, opts.TasksClose
+		s.readOnly = adminrules.NewReadOnlyMode(time.Now)
+		if s.tasks != nil {
+			// ruling SB8: no scheduled run starts while frozen
+			s.tasks.PauseWhile(s.readOnly.Frozen)
+		}
 	}
 	return s, nil
 }
@@ -186,6 +296,10 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 // file and gives the lock of the write store back. A scan that does not stop
 // within scanStopTimeout keeps the index open until the process exits.
 func (s *Server) Close() error {
+	s.closeTasks() // ruling KN10: the runs end before the stores close
+	if s.proxies != nil {
+		s.proxies.Close()
+	}
 	s.oci.endAll()
 	err := s.writes.close()
 	if !s.job.stop(scanStopTimeout) {
@@ -229,6 +343,10 @@ type request struct {
 	subject    *model.Subject
 	subjectErr error
 	resolved   bool
+
+	// via is the group a write came through to its writable member
+	// (upstream_write.go); nil for none
+	via *repos.Repo
 }
 
 func (req *request) params() queryValues {
@@ -276,6 +394,7 @@ func localPort(r *http.Request) int {
 // ServeHTTP answers one request: host guard first, then the routing of the
 // Docker ports, then the routes.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer s.track(&w, &r)()
 	if r.ContentLength != 0 {
 		// net/http reads a body the handler leaves before it sends the
 		// answer, with no time limit. The answer goes first, as in uvicorn,
@@ -364,12 +483,15 @@ func (s *Server) fail(w *recorder, req *request, err error) {
 	writeBody(w, req, http.StatusInternalServerError, [][2]string{{"Content-Type", textType}}, []byte("Internal Server Error"))
 }
 
-type route struct {
-	pattern *regexp.Regexp
-	methods []string
-	rule    rule // applied with security on only
-	handle  func(s *Server, w *recorder, req *request, match []string) error
-}
+// handler answers a request a route took, with the submatches of its pattern.
+type handler = func(s *Server, w *recorder, req *request, match []string) error
+
+// route is an entry of the route table (internal/route). Its rule is applied
+// with security on only.
+type route = rtable.Entry[rule, handler]
+
+// routeTable is a table of routes in the order they are matched.
+type routeTable = rtable.Table[rule, handler]
 
 // The routes of the Python application, in their order. A pattern matches
 // the decoded path as Starlette matches it: "$" also before a final
@@ -378,20 +500,20 @@ type route struct {
 // plan; the client path needs the view permission of the repository it
 // names, and the scan needs every right (T8).
 var routes = []route{
-	{regexp.MustCompile(`^/\n?$`), []string{"GET"}, public, (*Server).page},
-	{regexp.MustCompile(`^/api/health\n?$`), []string{"GET"}, public, (*Server).health},
-	{regexp.MustCompile(`^/api/status\n?$`), []string{"GET"}, public, (*Server).apiStatus},
-	{regexp.MustCompile(`^/api/openapi\.json\n?$`), []string{"GET"}, public, (*Server).openAPI},
-	{regexp.MustCompile(`^/api/repositories\n?$`), []string{"GET"}, signedIn, (*Server).apiRepositories},
-	{regexp.MustCompile(`^/api/browse/([^/]+)\n?$`), []string{"GET"}, view(1, "browse"), (*Server).apiBrowse},
-	{regexp.MustCompile(`^/api/asset/([^/]+)\n?$`), []string{"GET"}, view(1, "browse"), (*Server).asset},
-	{regexp.MustCompile(`^/api/export/([^/]+)\n?$`), []string{"GET"}, view(1, "read"), (*Server).exportRoute},
-	{regexp.MustCompile(`^/api/scan\n?$`), []string{"POST"}, perm("nexus:*"), (*Server).apiScan},
-	{regexp.MustCompile(`^/service/rest/v1/status\n?$`), []string{"GET"}, public, (*Server).status},
-	{regexp.MustCompile(`^/service/rest/v1/status/writable\n?$`), []string{"GET"}, public, (*Server).writable},
-	{regexp.MustCompile(`^/repository/(.*)\n?$`), []string{"GET", "HEAD"}, client, (*Server).repository},
-	{regexp.MustCompile(`^/repository/(.*)\n?$`), []string{"PUT", "POST", "DELETE", "PATCH"}, client, (*Server).write},
-	{regexp.MustCompile(`^/service/rest/repository/browse/(.*)\n?$`), []string{"GET", "HEAD"}, client, (*Server).browse},
+	entry(regexp.MustCompile(`^/\n?$`), []string{"GET"}, public, (*Server).page),
+	entry(regexp.MustCompile(`^/api/health\n?$`), []string{"GET"}, public, (*Server).health),
+	entry(regexp.MustCompile(`^/api/status\n?$`), []string{"GET"}, public, (*Server).apiStatus),
+	entry(regexp.MustCompile(`^/api/openapi\.json\n?$`), []string{"GET"}, public, (*Server).openAPI),
+	entry(regexp.MustCompile(`^/api/repositories\n?$`), []string{"GET"}, signedIn, (*Server).apiRepositories),
+	entry(regexp.MustCompile(`^/api/browse/([^/]+)\n?$`), []string{"GET"}, view(1, "browse"), (*Server).apiBrowse),
+	entry(regexp.MustCompile(`^/api/asset/([^/]+)\n?$`), []string{"GET"}, view(1, "browse"), (*Server).asset),
+	entry(regexp.MustCompile(`^/api/export/([^/]+)\n?$`), []string{"GET"}, view(1, "read"), (*Server).exportRoute),
+	entry(regexp.MustCompile(`^/api/scan\n?$`), []string{"POST"}, perm("nexus:*"), (*Server).apiScan),
+	entry(regexp.MustCompile(`^/service/rest/v1/status\n?$`), []string{"GET"}, public, (*Server).status),
+	entry(regexp.MustCompile(`^/service/rest/v1/status/writable\n?$`), []string{"GET"}, public, (*Server).writable),
+	entry(regexp.MustCompile(`^/repository/(.*)\n?$`), []string{"GET", "HEAD"}, client, (*Server).repository),
+	entry(regexp.MustCompile(`^/repository/(.*)\n?$`), []string{"PUT", "POST", "DELETE", "PATCH"}, client, (*Server).write),
+	entry(regexp.MustCompile(`^/service/rest/repository/browse/(.*)\n?$`), []string{"GET", "HEAD"}, client, (*Server).browse),
 }
 
 func (s *Server) route(w *recorder, req *request) error {
@@ -404,44 +526,52 @@ func (s *Server) route(w *recorder, req *request) error {
 		s.manual.Serve(w, req.r, req.path)
 		return nil
 	}
-	var partial *route
-	for i := range table {
-		rt := &table[i]
-		match := rt.pattern.FindStringSubmatch(req.path)
-		if match == nil {
-			continue
-		}
-		if slices.Contains(rt.methods, req.r.Method) {
-			if s.sec != nil {
-				if allowed, err := s.allow(w, req, rt.rule, match); err != nil || !allowed {
-					return err
-				}
-			}
-			return rt.handle(s, w, req, match)
-		}
-		if partial == nil {
-			partial = rt
-		}
-	}
-	if partial != nil {
-		writeBody(w, req, http.StatusMethodNotAllowed, [][2]string{{"Content-Type", jsonType},
-			{"Allow", strings.Join(partial.methods, ", ")}}, []byte(`{"detail":"Method Not Allowed"}`))
-		return nil
+	if served, err := s.dispatch(table, w, req); served {
+		return err
 	}
 	if req.path != "/" {
 		toggled := req.path + "/"
 		if strings.HasSuffix(req.path, "/") {
 			toggled = strings.TrimRight(req.path, "/")
 		}
-		for i := range table {
-			if table[i].pattern.MatchString(toggled) {
-				s.redirectSlashes(w, req, toggled)
-				return nil
-			}
+		if table.Matches(toggled) {
+			s.redirectSlashes(w, req, toggled)
+			return nil
 		}
 	}
 	unknownRoute(w, req)
 	return nil
+}
+
+// dispatch answers the request with the first entry of the table that takes
+// its path and method, its rule applied with security on, or with 405 when
+// only other methods take the path. served is false when no pattern matched,
+// and for a request of keptMisses with writes off.
+func (s *Server) dispatch(table *routeTable, w *recorder, req *request) (served bool, err error) {
+	rt, match, allow := table.Match(req.r.Method, req.path)
+	defer s.auditRequest(w, req, rt, &err)()
+	if rt != nil {
+		if s.sec != nil {
+			if allowed, err := s.allow(w, req, rt.Rule, match); err != nil || !allowed {
+				return true, err
+			}
+			end, refused := s.freezeGate(w, req)
+			if refused {
+				return true, nil
+			}
+			defer end()
+		}
+		return true, rt.Handle(s, w, req, match)
+	}
+	if allow != nil {
+		if s.sec != nil && !s.writes.clients && keptMiss(req) {
+			return false, nil
+		}
+		writeBody(w, req, http.StatusMethodNotAllowed, [][2]string{{"Content-Type", jsonType},
+			{"Allow", strings.Join(allow, ", ")}}, []byte(`{"detail":"Method Not Allowed"}`))
+		return true, nil
+	}
+	return false, nil
 }
 
 // redirectSlashes is the 307 of Starlette's router to the path with or
@@ -554,10 +684,11 @@ func (s *Server) status(w *recorder, req *request, _ []string) error {
 
 // writable is GET /v1/status/writable: 503, as in 0.1.1, while writes are
 // off; with writes on 200 while the write store takes a write and 503 when
-// it does not (writePath.writable).
+// it does not (writePath.writable) or the data directory takes no file, and
+// 503 while the read only mode is frozen (ruling SB7).
 func (s *Server) writable(w *recorder, req *request, _ []string) error {
 	status := http.StatusServiceUnavailable
-	if s.writes.writable() {
+	if s.writes.writable() && s.dataWritable() && (s.readOnly == nil || !s.readOnly.State().Frozen) {
 		status = http.StatusOK
 	}
 	writeBody(w, req, status, nil, nil)
@@ -651,7 +782,32 @@ func (s *Server) files(w *recorder, req *request, st *state, repo repos.Repo, me
 		redirect(w, req, prefix, repo.Name, "")
 		return nil
 	}
+	if files && repo.Type == "proxy" && proxy.Fetches(repo.Format) && access != "npm" {
+		return s.proxyFile(w, req, st, repo, members, t, prefix)
+	}
+	if repo.Type == "group" {
+		// the routing rules of the proxy members, then the members that ask
+		// their remote (upstream_group.go)
+		var err error
+		if members, _, err = s.routedMembers(repo, members, routedPath(t)); err != nil {
+			writeText(w, req, http.StatusServiceUnavailable, routingRefusal)
+			return nil
+		}
+		if files && !t.directory && access != "npm" && s.fetchingAny(members) {
+			return s.groupFile(w, req, st, repo, members, t, prefix)
+		}
+	}
 	if access == "npm" && files {
+		if repo.Type == "proxy" {
+			if done, err := s.proxyNpm(w, req, st, repo, t); done || err != nil {
+				return err // the routing rule, or the fetch of an npm proxy (upstream_npm.go)
+			}
+		}
+		if repo.Type == "group" && s.fetchingAny(members) {
+			if done, err := s.groupNpm(w, req, st, members, t); done || err != nil {
+				return err
+			}
+		}
 		answered, err := s.npm(w, req, st, repo, members, t)
 		if err != nil || answered {
 			return err

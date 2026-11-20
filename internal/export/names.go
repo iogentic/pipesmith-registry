@@ -27,8 +27,10 @@ func (e *BadNameError) Error() string {
 // CheckEntryName refuses a name that could lead out of the folder an
 // archive is unpacked in, or that a tool reads in another way than it is
 // written: an empty, "." or ".." segment, a leading "/" or a trailing one, a
-// backslash, a drive letter as the first segment, a control character, and
-// bytes that are no UTF-8.
+// backslash, a drive letter as the first segment, a control character,
+// bytes that are no UTF-8, and what Windows reads in another way: a segment
+// that ends with a dot or a space, a colon, a device name, and a direction
+// character, which a file manager shows as a reversed name.
 func CheckEntryName(name string) error {
 	refuse := func(reason string) error { return &BadNameError{Name: name, Reason: reason} }
 	if !utf8.ValidString(name) {
@@ -51,10 +53,42 @@ func CheckEntryName(name string) error {
 			return refuse("it holds an empty, '.' or '..' segment")
 		}
 	}
-	if first := segments[0]; len(first) == 2 && first[1] == ':' && (first[0]|0x20) >= 'a' && (first[0]|0x20) <= 'z' {
+	if first := segments[0]; len(first) >= 2 && first[1] == ':' && (first[0]|0x20) >= 'a' && (first[0]|0x20) <= 'z' {
 		return refuse("it starts with a drive letter")
 	}
+	for _, segment := range segments {
+		switch {
+		case strings.HasSuffix(segment, ".") || strings.HasSuffix(segment, " "):
+			return refuse("a segment ends with a dot or a space, which Windows drops")
+		case strings.Contains(segment, ":"):
+			return refuse("it holds a colon, which Windows reads as a drive or a stream")
+		case reservedOnWindows(segment):
+			return refuse("a segment is a device name of Windows")
+		case strings.ContainsFunc(segment, func(r rune) bool { return unicode.Is(unicode.Bidi_Control, r) }):
+			return refuse("it holds a direction character")
+		}
+	}
 	return nil
+}
+
+// reservedOnWindows reports a segment that Windows opens as a device: CON,
+// PRN, AUX, NUL, CONIN$, CONOUT$, COM and LPT with a digit or a superscript
+// one to three, in any case, also with an extension or spaces before it.
+func reservedOnWindows(segment string) bool {
+	stem, _, _ := strings.Cut(segment, ".")
+	stem = strings.ToUpper(strings.TrimRight(stem, " "))
+	switch stem {
+	case "CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$":
+		return true
+	}
+	for _, prefix := range []string{"COM", "LPT"} {
+		if rest, ok := strings.CutPrefix(stem, prefix); ok {
+			if r, size := utf8.DecodeRuneInString(rest); size == len(rest) && (r >= '0' && r <= '9' || r == '¹' || r == '²' || r == '³') {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // safeName keeps letters, digits, ".", "_" and "-" of ASCII; every other

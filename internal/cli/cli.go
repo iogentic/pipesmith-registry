@@ -24,7 +24,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/auth"
+	"github.com/iogentic/pipesmith-registry/internal/catalog"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/datafs"
 	"github.com/iogentic/pipesmith-registry/internal/docker"
@@ -33,6 +35,7 @@ import (
 	"github.com/iogentic/pipesmith-registry/internal/notify"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 	"github.com/iogentic/pipesmith-registry/internal/pystr"
+	"github.com/iogentic/pipesmith-registry/internal/release"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 	"github.com/iogentic/pipesmith-registry/internal/scan"
 	"github.com/iogentic/pipesmith-registry/internal/server"
@@ -75,13 +78,20 @@ Repositories
   repos port <name> <port|none>        set or clear the Docker port of a repository in
                                        config.json; it wins over the port of the settings
                                        import and takes effect at the next start
+  repos remote-secret <name>           read the secret of the sign in of a proxy at its remote
+                                       from standard input into secrets/remote/<name> of the
+                                       data directory, mode 0600; nothing of it is printed
+  repos write-settings <name> [--write-policy ALLOW|ALLOW_ONCE|DENY] [--max-body-bytes N]
+                       [--free-space-floor-bytes N] [--write-store local-write]
+                                       show, or set, the write settings of a hosted repository
+                                       in its record in state.sqlite
   import-settings <file>               write repositories.json from a repository
                                        settings export; credentials are not taken over
   docker-check <name>                  read every stored manifest of a Docker repository and
                                        list the blobs and manifests they name that are not
                                        in the index; exit code 1 when one is missing
 
-` + stateHelpBody + identityHelpBody + mavenHelpBody + updateHelpBody + `Settings
+` + stateHelpBody + identityHelpBody + mavenHelpBody + updateHelpBody + logTargetHelpBody + `Settings
   config [--get KEY | --check | --json | --docker-ports]
                                        show the configuration, one value, or its problems;
                                        --docker-ports prints "<port> <repository>" for each
@@ -133,7 +143,7 @@ func Main(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	c := &command{ns: ns, out: stdout, err: stderr}
-	code, err := c.run()
+	code, err := c.audited()
 	if err != nil {
 		var usage *usageError
 		if errors.As(err, &usage) {
@@ -191,10 +201,14 @@ func buildParser() *parser {
 	serve.add(&action{dest: "port", options: []string{"--port"}, convert: parseIntArg, typeName: "int"})
 	serve.add(&action{dest: "bind", options: []string{"--bind"}})
 	serve.add(&action{dest: "server_names", options: []string{"--server-names"}})
+	serve.add(&action{dest: "log_dir", options: []string{"--log-dir"}, metavar: "DIR"})
 	serve.add(&action{dest: "ask_ldap_password", options: []string{"--ask-ldap-password"}, nargs: "0", flag: true})
 	serve.add(&action{dest: "tls_cert", options: []string{"--tls-cert"}, metavar: "FILE"})
 	serve.add(&action{dest: "tls_key", options: []string{"--tls-key"}, metavar: "FILE"})
 	serve.add(&action{dest: "writes", options: []string{"--writes"}, nargs: "0", flag: true})
+	serve.add(&action{dest: "upstream", options: []string{"--upstream"}, nargs: "0", flag: true})
+	serve.add(&action{dest: "export_max_files", options: []string{"--export-max-files"}, metavar: "N", convert: parseIntArg, typeName: "int"})
+	serve.add(&action{dest: "export_max_bytes", options: []string{"--export-max-bytes"}, metavar: "N", convert: parseIntArg, typeName: "int"})
 	serve.defaults["run"] = "cmd_serve"
 
 	store := sub(commands, "store", "store")
@@ -225,7 +239,19 @@ func buildParser() *parser {
 	port.add(&action{dest: "name"})
 	port.add(&action{dest: "port", metavar: "<port|none>", convert: portOrNone})
 	port.defaults["run"] = "cmd_repos_port"
-	reposCommand.add(&action{dest: "repos_command", nargs: "parser", choices: []string{"port"}, commands: reposCommands})
+	secret := sub(reposCommands, "repos remote-secret", "remote-secret")
+	secret.add(&action{dest: "name"})
+	secret.defaults["run"] = "cmd_repos_remote_secret"
+	writeSettings := sub(reposCommands, "repos write-settings", "write-settings")
+	writeSettings.add(&action{dest: "name"})
+	writeSettings.add(&action{dest: "write_policy", options: []string{"--write-policy"}, choices: writePolicies})
+	writeSettings.add(&action{dest: "max_body_bytes", options: []string{"--max-body-bytes"}, metavar: "BYTES", convert: byteCount})
+	writeSettings.add(&action{dest: "free_space_floor_bytes", options: []string{"--free-space-floor-bytes"}, metavar: "BYTES",
+		convert: byteCount})
+	writeSettings.add(&action{dest: "write_store", options: []string{"--write-store"}, metavar: "STORE"})
+	writeSettings.defaults["run"] = "cmd_repos_write_settings"
+	reposCommand.add(&action{dest: "repos_command", nargs: "parser", choices: []string{"port", "remote-secret", "write-settings"},
+		commands: reposCommands})
 
 	check := sub(commands, "docker-check", "docker-check")
 	check.add(&action{dest: "name"})
@@ -238,6 +264,7 @@ func buildParser() *parser {
 	addIdentityCommands(commands, sub)
 	addMavenCommands(commands, sub)
 	addUpdateCommands(commands, sub)
+	addLogTargetCommands(commands, sub)
 
 	configCommand := sub(commands, "config", "config")
 	get := configCommand.add(&action{dest: "get", options: []string{"--get"}, metavar: "KEY"})
@@ -251,7 +278,7 @@ func buildParser() *parser {
 
 	top.add(&action{dest: "command", nargs: "parser", required: true,
 		choices: slices.Concat([]string{"serve", "store", "scan", "repos", "docker-check", "import-settings"},
-			stateCommandNames, identityCommandNames, mavenCommandNames, updateCommandNames, []string{"config", "version"}),
+			stateCommandNames, identityCommandNames, mavenCommandNames, updateCommandNames, logTargetCommandNames, []string{"config", "version"}),
 		commands: commands})
 	return top
 }
@@ -270,6 +297,8 @@ type command struct {
 	ns  *namespace
 	out io.Writer
 	err io.Writer
+
+	shipping shipping // the log targets of serve, for its figures (figures.go)
 }
 
 func (c *command) print(format string, args ...any) {
@@ -297,6 +326,10 @@ func (c *command) run() (int, error) {
 		return c.repos()
 	case "cmd_repos_port":
 		return c.reposPort()
+	case "cmd_repos_remote_secret":
+		return c.reposRemoteSecret()
+	case "cmd_repos_write_settings":
+		return c.reposWriteSettings()
 	case "cmd_docker_check":
 		return c.dockerCheck()
 	case "cmd_import_settings":
@@ -315,6 +348,8 @@ func (c *command) run() (int, error) {
 		return c.rollback()
 	case "cmd_schema":
 		return c.schema()
+	case "cmd_log_target_list", "cmd_log_target_add", "cmd_log_target_remove", "cmd_log_target_test":
+		return c.logTarget()
 	case "cmd_config":
 		return c.config()
 	case "cmd_version":
@@ -375,6 +410,10 @@ func (c *command) serve() (int, error) {
 	if c.ns.values["writes"] == true {
 		writes = true
 	}
+	upstream, err := c.upstream(cfg)
+	if err != nil {
+		return 1, err
+	}
 	port := big.NewInt(int64(cfg.Port))
 	if value, ok := c.ns.values["port"].(*big.Int); ok {
 		port = value
@@ -410,7 +449,11 @@ func (c *command) serve() (int, error) {
 	if listeners.IsReserved(cfg.Port) {
 		return 1, refuse("port %d is reserved on this machine; use --port N", cfg.Port)
 	}
-	tlsConfig, certFile, err := c.listenerTLS(cfg)
+	tlsConfig, certFile, keyFile, err := c.listenerTLS(cfg)
+	if err != nil {
+		return 1, err
+	}
+	maxFiles, maxBytes, err := c.exportBounds(cfg)
 	if err != nil {
 		return 1, err
 	}
@@ -432,33 +475,94 @@ func (c *command) serve() (int, error) {
 		// decision E4: without state.sqlite every caller is anonymous
 		return 1, refuse("writes need state.sqlite with the users who may write; import them first (import), then start with writes on")
 	}
+	if upstream && sec == nil {
+		// decision P5-2: as for writes
+		return 1, refuse("upstream needs state.sqlite with the users of this server; import them first (import), then start with upstream on")
+	}
 	defer closeSecurity(sec)
 	if tlsConfig != nil {
 		slog.Info("TLS on every listener with the certificate "+certFile, "logger", listenersLogger)
+		if warning := keyFileWarning(keyFile); warning != "" {
+			securityLog.Warn(warning) // owner choice 3-25: a warning, no refusal
+		}
 	} else if !slices.Contains(config.LocalBinds(), cfg.Bind) {
 		// hardening line 14 of the phase 3 plan
 		securityLog.Warn(fmt.Sprintf("bind address %s is not local and TLS is off: Basic credentials and session cookies cross "+
 			"the network in clear text; give --tls-cert and --tls-key, or bind to loopback behind a reverse proxy on this host "+
 			"that ends TLS", cfg.Bind))
 	}
+	if !slices.Contains(config.LocalBinds(), cfg.Bind) && len(proxies) == 0 {
+		// review 3-20, option D as a warning that refuses nothing
+		securityLog.Warn(fmt.Sprintf("bind address %s is not local and trusted_proxies is empty: behind a reverse proxy every "+
+			"client has the address of the proxy for the sign in limiter, so wrong passwords from one client can block a name "+
+			"for all, and the session cookie gets no Secure flag; set trusted_proxies in config.json to the address of the proxy",
+			cfg.Bind))
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), stopSignals...)
 	defer stop()
 	defer catchContinue()()
 	opts := server.ServeOptions{AccessLog: c.err, Security: sec, HostNames: hostNames, Notify: notify.FromEnv(os.Getenv), Writes: writes,
-		TLS: tlsConfig, Secure: auth.TrustedProxies(proxies).Secure}
+		TLS: tlsConfig, Secure: auth.TrustedProxies(proxies).Secure, ExportMaxFiles: maxFiles, ExportMaxBytes: maxBytes, TrustRule: release.CheckTrust}
+	if store, ok := sec.(admin.IdentityStore); ok {
+		// leg 6-identity: the writes of the area security change this state
+		opts.Identity = store
+	}
 	if sec != nil {
 		// review D1: one warning per peer that sends forwarded headers and is no trusted proxy
 		opts.Forwarded = auth.NewForwardedWarner(proxies, securityLog, time.Now).Check
+		// ruling P5-4: the routing rules of state.sqlite, read with the rest of its state
+		if opts.Routing, err = routingOf(cfg.DataDir); err != nil {
+			return 1, err
+		}
 	}
+	// leg 6-system: the stored tasks on their scheduler, which Serve starts and which closes before the state file
+	if opts.Tasks, opts.TaskRuns, err = taskRegistry(sec); err != nil {
+		return 1, err
+	}
+	defer closeTasks(opts.Tasks)
+	opts.TasksClose = tasksClose // ruling KN10: the server waits for the runs as long as closeTasks
+	if writes || upstream {
+		// leg F1b: one opening of catalog.sqlite per process, which the
+		// writes keep and every scan fills; decision P5-5: the proxies keep
+		// their checks in it
+		file, err := catalog.Open(cfg.DataDir)
+		if err != nil {
+			return 1, err
+		}
+		defer file.Close()
+		opts.CatalogFile = file
+		if upstream {
+			opts.Upstream, opts.ProxyState = true, file
+		}
+	}
+	defer c.logFiles(cfg, &opts)()
+	defer c.figures(cfg, &opts)()
 	if err := server.Serve(ctx, cfg, opts); err != nil {
 		return 1, err
 	}
 	return 0, nil
 }
 
+// exportBounds are the bounds of one export (call B18): the serve options,
+// else export_max_files and export_max_bytes of config.json; 0 takes the
+// default of the server.
+func (c *command) exportBounds(cfg *config.Config) (int64, int64, error) {
+	bounds := []int64{cfg.ExportMaxFiles, cfg.ExportMaxBytes}
+	for i, option := range []string{"export_max_files", "export_max_bytes"} {
+		if value, ok := c.ns.values[option].(*big.Int); ok {
+			n, err := config.ExportBound("--"+strings.ReplaceAll(option, "_", "-"), value)
+			if err != nil {
+				return 0, 0, refuse("%s", err)
+			}
+			bounds[i] = n
+		}
+	}
+	return bounds[0], bounds[1], nil
+}
+
 // someoneSignsIn reports whether state.sqlite of dataDir holds someone who
 // can sign in, the condition of a network bind: a local user that signs in
-// with a password (signInUser) while the realm of the local users is
+// with a password (admin.SignInUser) while the realm of the local users is
 // active, or an LDAP connection while the LDAP realm is active. Without the
 // file nobody can.
 func someoneSignsIn(dataDir string) (bool, error) {
@@ -476,7 +580,7 @@ func someoneSignsIn(dataDir string) (bool, error) {
 	}
 	if slices.Contains(snap.Realms, auth.RealmLocal) {
 		for _, u := range snap.Users {
-			if signsInWithPassword(u) {
+			if admin.SignsInWithPassword(u) {
 				return true, nil
 			}
 		}
@@ -491,7 +595,7 @@ const listenersLogger = "pipesmith_registry.listeners"
 // plan): the files of --tls-cert and --tls-key, else tls_cert and tls_key of
 // config.json, read once at start. Without both files it is nil and the
 // listeners speak plain HTTP.
-func (c *command) listenerTLS(cfg *config.Config) (*tls.Config, string, error) {
+func (c *command) listenerTLS(cfg *config.Config) (*tls.Config, string, string, error) {
 	certFile, keyFile := cfg.TLSCert, cfg.TLSKey
 	if value, ok := c.text("tls_cert"); ok {
 		certFile = value
@@ -500,7 +604,21 @@ func (c *command) listenerTLS(cfg *config.Config) (*tls.Config, string, error) {
 		keyFile = value
 	}
 	tlsConfig, err := loadTLS(certFile, keyFile)
-	return tlsConfig, certFile, err
+	return tlsConfig, certFile, keyFile, err
+}
+
+// keyFileWarning is the warning for a TLS key file that the group or others
+// may read or write, empty for any other file.
+func keyFileWarning(keyFile string) string {
+	info, err := os.Stat(keyFile)
+	if err != nil {
+		return "" // loadTLS read it a moment ago; a file gone since gives no mode to judge
+	}
+	if perm := info.Mode().Perm(); perm&0o077 != 0 {
+		return fmt.Sprintf("the TLS key file %s has mode %04o, so the group or others may read or write it; chmod 600 %s",
+			keyFile, perm, keyFile)
+	}
+	return ""
 }
 
 // loadTLS reads a certificate and its key; one file alone is refused.

@@ -83,6 +83,8 @@ type Writer struct {
 	markMu     sync.Mutex // one delete mark at a time
 	lockMu     sync.Mutex
 	lock       *os.File // the open content/tmp with the lock of W12; nil once closed
+	heldMu     sync.Mutex
+	held       map[string]int // the work files of content/tmp that running uploads hold (ruling KN15)
 
 	after func(Step)       // tests: called after each step
 	fault func(Step) error // tests: an error in place of a step
@@ -236,13 +238,27 @@ type upload struct {
 	size               int64
 	digests            stores.Digests
 	done               bool
+	unhold             func()             // gives the work files back; nil once given
+	prepared           *stores.Attributes // the attributes of Prepare; nil before it
+	created            int64              // the creation time Prepare wrote
 }
 
 // newUpload names the work files of a blob as the old product names them:
 // the blob id and a second random id.
 func (w *Writer) newUpload(id string, at time.Time) *upload {
 	work := stores.ContentDir + "/" + TmpDir + "/tmp$" + id + "." + randomUUID()
-	return &upload{w: w, id: id, drawn: at, tmpBytes: w.file(work + stores.BytesSuffix), tmpProps: w.file(work + stores.PropertiesSuffix)}
+	u := &upload{w: w, id: id, drawn: at, tmpBytes: w.file(work + stores.BytesSuffix), tmpProps: w.file(work + stores.PropertiesSuffix)}
+	bytesHeld, propsHeld := w.Hold(filepath.Base(u.tmpBytes)), w.Hold(filepath.Base(u.tmpProps))
+	u.unhold = func() { bytesHeld(); propsHeld() }
+	return u
+}
+
+// release gives the work files of the upload back.
+func (u *upload) release() {
+	if u.unhold != nil {
+		u.unhold()
+		u.unhold = nil
+	}
 }
 
 // Upload streams body into a work file in content/tmp while it computes
@@ -334,7 +350,29 @@ func (u *upload) cleanup() error {
 		}
 	}
 	u.placedProps, u.placedBytes = "", ""
+	u.release()
 	return errors.Join(errs...)
+}
+
+// Prepare writes and syncs the properties work file of the attributes, so
+// that Commit with the same attributes only renames and appends the log
+// line. The creation time is taken here.
+func (u *upload) Prepare(a stores.Attributes) error {
+	if u.done || u.prepared != nil {
+		return errors.New("the upload is committed, discarded or prepared")
+	}
+	if err := checkAttributes(a); err != nil {
+		return err
+	}
+	data, created, err := u.properties(a)
+	if err != nil {
+		return err
+	}
+	if err := u.w.step(StepProperties, func() error { return writeSynced(u.tmpProps, data) }); err != nil {
+		return err
+	}
+	u.prepared, u.created = &a, created
+	return nil
 }
 
 func (u *upload) Commit(a stores.Attributes) (stores.Written, error) {
@@ -344,7 +382,11 @@ func (u *upload) Commit(a stores.Attributes) (stores.Written, error) {
 	if err := checkAttributes(a); err != nil {
 		return stores.Written{}, err
 	}
-	written, err := u.commit(a)
+	var written stores.Written
+	err := errors.New("the attributes differ from those of Prepare")
+	if u.prepared == nil || *u.prepared == a {
+		written, err = u.commit(a)
+	}
 	u.done = true
 	if err != nil {
 		if cleanErr := u.cleanup(); cleanErr != nil {
@@ -368,12 +410,10 @@ func (u *upload) commit(a stores.Attributes) (stores.Written, error) {
 	return u.finish(a, dir)
 }
 
-// finish writes the properties file next to the placed bytes file and the
-// line of the reconciliation log. The creation time is taken here, after
-// the upload.
-func (u *upload) finish(a stores.Attributes, dir string) (stores.Written, error) {
-	w := u.w
-	at := w.now()
+// properties is the properties file of the attributes and its creation
+// time, which is taken here, after the upload.
+func (u *upload) properties(a stores.Attributes) ([]byte, int64, error) {
+	at := u.w.now()
 	created := at.UnixMilli()
 	if a.NotBefore != 0 && created < a.NotBefore {
 		created = a.NotBefore + 1
@@ -396,13 +436,25 @@ func (u *upload) finish(a stores.Attributes, dir string) (stores.Written, error)
 		items[createdByIPKey] = a.CreatedByIP
 	}
 	data, err := Properties(items, at)
-	if err != nil {
-		return stores.Written{}, err
+	return data, created, err
+}
+
+// finish places the properties file next to the placed bytes file, after
+// it writes it unless Prepare did, and the line of the reconciliation log.
+func (u *upload) finish(a stores.Attributes, dir string) (stores.Written, error) {
+	w := u.w
+	created := u.created
+	if u.prepared == nil {
+		data, at, err := u.properties(a)
+		if err != nil {
+			return stores.Written{}, err
+		}
+		if err := w.step(StepProperties, func() error { return writeSynced(u.tmpProps, data) }); err != nil {
+			return stores.Written{}, err
+		}
+		created = at
 	}
-	if err := w.step(StepProperties, func() error { return writeSynced(u.tmpProps, data) }); err != nil {
-		return stores.Written{}, err
-	}
-	err = w.step(StepRenameProperties, func() error {
+	err := w.step(StepRenameProperties, func() error {
 		final := w.file(dir + "/" + u.id + stores.PropertiesSuffix)
 		if err := os.Rename(u.tmpProps, final); err != nil {
 			return err
@@ -418,6 +470,7 @@ func (u *upload) finish(a stores.Attributes, dir string) (stores.Written, error)
 	}
 	// The blob is complete: no clean up may remove it now.
 	u.placedProps, u.placedBytes = "", ""
+	u.release()
 	sha := u.digests.SHA1
 	entry := stores.Entry{Repo: a.Repo, Path: a.Path, Size: u.size, SHA1: &sha, CreatedMS: created,
 		Location: dir + "/" + u.id + stores.BytesSuffix}

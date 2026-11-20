@@ -88,6 +88,11 @@ export function scan(text) {
       let depth = 0;
       while (j < n) {
         const c = text.charCodeAt(j);
+        if (depth > 0 && text.startsWith("<!--", j)) {
+          const close = text.indexOf("-->", j + 4);
+          j = close < 0 ? n : close + 3;
+          continue;
+        }
         if (c === 34 || c === 39) {
           const close = text.indexOf(text[j], j + 1);
           j = close < 0 ? n : close + 1;

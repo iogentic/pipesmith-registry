@@ -133,7 +133,17 @@ type runner struct {
 	base   string
 	ix     *index.Index
 	stores map[string]stores.Store
+	skips  bool         // the case is one of skippedNumbers
+	last   *scan.Result // the result of the last scan that ended
 }
+
+// skippedNumbers are the cases where the reference ends a scan at a
+// properties file with a number that does not fit, and this server logs the
+// file, counts it unparsable and goes on (sa-31). The vector keeps the
+// reference; the runner expects the counts of the scan before, with one more
+// unparsable file. The steps after it hold for both: the rows of the scan
+// before stay and the file has none.
+var skippedNumbers = map[string]bool{"extra_walk_fails_keeps_rows": true, "extra_overflow_keeps_rows": true}
 
 func (r *runner) path(rel string) string {
 	return filepath.Join(r.base, rel)
@@ -247,6 +257,17 @@ func (r *runner) run(s step) {
 		if !slices.Equal(calls, want.Progress) && !(len(calls) == 0 && len(want.Progress) == 0) {
 			t.Errorf("%s: progress %v, want %v", label, calls, want.Progress)
 		}
+		if r.skips && want.Error != nil && (want.Error.Class == "OverflowError" ||
+			want.Error.Class == "ValueError" && strings.Contains(want.Error.Message, "integer string conversion")) {
+			if err != nil {
+				t.Fatalf("%s: %v, want the file skipped", label, err)
+			}
+			if r.last == nil || got.Live != r.last.Live || got.Unparsable != r.last.Unparsable+1 || got.Deleted != r.last.Deleted {
+				t.Errorf("%s: result %+v, want the counts of %+v with one more unparsable file", label, got, r.last)
+			}
+			r.last = &got
+			return
+		}
 		if want.Error != nil {
 			r.checkError(label, err, want.Error.Class, want.Error.Message)
 			return
@@ -254,6 +275,7 @@ func (r *runner) run(s step) {
 		if err != nil {
 			t.Fatalf("%s: %v", label, err)
 		}
+		r.last = &got
 		if got.Store != want.Store || got.Live != want.Live || got.Deleted != want.Deleted || got.Copies != want.Copies ||
 			got.NoBytes != want.NoBytes || got.Unparsable != want.Unparsable || got.Seconds < 0 {
 			t.Errorf("%s: result %+v, want %+v", label, got, *want)
@@ -373,7 +395,7 @@ func TestVectorCases(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			r := &runner{t: t, base: base, stores: map[string]stores.Store{}}
+			r := &runner{t: t, base: base, stores: map[string]stores.Store{}, skips: skippedNumbers[c.Name]}
 			for _, s := range c.Steps {
 				r.run(s)
 			}
@@ -468,5 +490,67 @@ func TestHintRanks(t *testing.T) {
 	if len(got.Hints) != len(want) || got.Hints["demo-a"] != "npm" || got.Hints["demo-b"] != "docker" ||
 		got.Hints["demo-d"] != "docker" {
 		t.Fatalf("hints %v, want %v", got.Hints, want)
+	}
+}
+
+// windowStore lists its entries when the walk starts and then runs first,
+// as a write that lands right after the first directory read of a walk.
+type windowStore struct {
+	fakeStore
+	first func()
+}
+
+func (w *windowStore) Entries(counts *stores.ScanCounts, yield func(stores.Entry) error) error {
+	listed := slices.Clone(w.entries)
+	w.first()
+	for _, e := range listed {
+		counts.Live++
+		if err := yield(e); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// A write that creates a path right after the first read of a walk keeps
+// its row: the walk starts only once the scan holds the index, so the write
+// waits for the scan and lands after it (N1).
+func TestWriteAfterTheFirstReadKeepsItsRow(t *testing.T) {
+	ix, err := index.Open(filepath.Join(t.TempDir(), "index.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ix.Close()
+	old := stores.Entry{Repo: "demo-raw", Path: "a.txt", Size: 1, CreatedMS: 1, Location: "demo-raw/a.txt"}
+	created := stores.Entry{Repo: "demo-raw", Path: "new/b.txt", Size: 2, CreatedMS: 2, Location: "demo-raw/new/b.txt"}
+	done := make(chan error, 1)
+	waited := false
+	store := &windowStore{fakeStore: fakeStore{root: t.TempDir(), entries: []stores.Entry{old}}}
+	store.first = func() {
+		go func() {
+			_, err := ix.PutAfter("fake", 10*time.Second, func() (stores.Entry, error) { return created, nil })
+			done <- err
+		}()
+		select {
+		case err := <-done:
+			done <- err
+		case <-time.After(300 * time.Millisecond):
+			waited = true
+		}
+	}
+	if _, err := scan.Run(store, ix, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatalf("the write failed: %v", err)
+	}
+	if !waited {
+		t.Error("the write did not wait for the scan")
+	}
+	if asset, err := ix.Lookup("demo-raw", "new/b.txt"); err != nil || asset == nil {
+		t.Fatalf("the row of the write is gone: %v %v", asset, err)
+	}
+	if asset, err := ix.Lookup("demo-raw", "a.txt"); err != nil || asset == nil {
+		t.Fatalf("the row of the walk is gone: %v %v", asset, err)
 	}
 }

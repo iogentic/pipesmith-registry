@@ -125,3 +125,63 @@ func TestReadPublishPassesErrorsOn(t *testing.T) {
 type failingWriter struct{ err error }
 
 func (f failingWriter) Write([]byte) (int, error) { return 0, f.err }
+
+// The values outside the data of attachments are bounded too: 16 MiB of
+// small values decode to about 300 MiB of heap (N4). A document of
+// maxPublishValues values is taken, one more is refused.
+func TestReadPublishBoundsTheValues(t *testing.T) {
+	values := func(n int) string { // the value of x, its array and n-1 commas
+		return `{"x": [` + strings.Repeat("1,", n-2) + `1]}`
+	}
+	document, _, _, err := collect(t, strings.NewReader(values(maxPublishValues)))
+	if err != nil {
+		t.Fatalf("%d values: %v", maxPublishValues, err)
+	}
+	if x, _ := document.Get("x"); len(x.([]any)) != maxPublishValues-1 {
+		t.Fatalf("x holds %d values", len(x.([]any)))
+	}
+	_, _, _, err = collect(t, strings.NewReader(values(maxPublishValues+1)))
+	var refusal *Refusal
+	if !errors.As(err, &refusal) || !strings.Contains(refusal.Message, "values besides the data") {
+		t.Fatalf("%d values: %v", maxPublishValues+1, err)
+	}
+}
+
+// A document above the bound is refused once the reader has read the bound
+// and one buffer more, not after the whole body.
+func TestReadPublishStopsAtTheBound(t *testing.T) {
+	read := &countingReader{r: io.MultiReader(strings.NewReader(`{"readme": "`),
+		io.LimitReader(repeatReader('r'), 4*MaxPublishDocument))}
+	_, _, _, err := collect(t, read)
+	var refusal *Refusal
+	if !errors.As(err, &refusal) || !strings.Contains(refusal.Message, "bytes besides the data") {
+		t.Fatalf("%v", err)
+	}
+	if read.n > MaxPublishDocument+readBuffer {
+		t.Fatalf("the reader read %d bytes, the bound is %d", read.n, MaxPublishDocument)
+	}
+	if read.n < MaxPublishDocument {
+		t.Fatalf("the reader stopped after %d bytes, before the bound", read.n)
+	}
+}
+
+type countingReader struct {
+	r io.Reader
+	n int
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += n
+	return n, err
+}
+
+// repeatReader is an endless run of one byte.
+type repeatReader byte
+
+func (b repeatReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = byte(b)
+	}
+	return len(p), nil
+}

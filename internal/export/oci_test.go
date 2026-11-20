@@ -84,7 +84,7 @@ func TestWriteOCILayout(t *testing.T) {
 	order := []string{"blobs/sha256/" + strings.TrimPrefix(image.Blobs[0].Digest, "sha256:"),
 		"blobs/sha256/" + strings.TrimPrefix(image.Blobs[1].Digest, "sha256:"),
 		"blobs/sha256/" + strings.TrimPrefix(image.Blobs[2].Digest, "sha256:"),
-		"blobs/sha256/" + strings.TrimPrefix(manifestDigest, "sha256:"), "oci-layout", "index.json"}
+		"blobs/sha256/" + strings.TrimPrefix(manifestDigest, "sha256:"), "manifest.json", "oci-layout", "index.json"}
 	if strings.Join(names, " ") != strings.Join(order, " ") {
 		t.Fatalf("members %q, want %q", names, order)
 	}
@@ -97,8 +97,8 @@ func TestWriteOCILayout(t *testing.T) {
 	var layout struct {
 		ImageLayoutVersion string `json:"imageLayoutVersion"`
 	}
-	if err := json.Unmarshal(rows[4].data, &layout); err != nil || layout.ImageLayoutVersion != "1.0.0" {
-		t.Fatalf("oci-layout %q", rows[4].data)
+	if err := json.Unmarshal(rows[5].data, &layout); err != nil || layout.ImageLayoutVersion != "1.0.0" {
+		t.Fatalf("oci-layout %q", rows[5].data)
 	}
 	var index struct {
 		SchemaVersion int    `json:"schemaVersion"`
@@ -110,11 +110,11 @@ func TestWriteOCILayout(t *testing.T) {
 			Annotations map[string]string `json:"annotations"`
 		} `json:"manifests"`
 	}
-	if err := json.Unmarshal(rows[5].data, &index); err != nil {
+	if err := json.Unmarshal(rows[6].data, &index); err != nil {
 		t.Fatal(err)
 	}
 	if index.SchemaVersion != 2 || index.MediaType != "application/vnd.oci.image.index.v1+json" || len(index.Manifests) != 1 {
-		t.Fatalf("index.json %s", rows[5].data)
+		t.Fatalf("index.json %s", rows[6].data)
 	}
 	d := index.Manifests[0]
 	if d.Digest != manifestDigest || d.Size != int64(len(image.Manifest)) || d.MediaType != image.MediaType {
@@ -191,5 +191,34 @@ func TestFullImageName(t *testing.T) {
 		if got := FullImageName(name); got != want {
 			t.Errorf("FullImageName(%q) = %q, want %q", name, got, want)
 		}
+	}
+}
+
+// A blob digest is "sha256:" and 64 digits of lower hex, checked before the
+// first byte, since the digest names the member blobs/sha256/<digest>.
+func TestWriteOCIRefusesADigestOutsideTheGrammar(t *testing.T) {
+	for _, digest := range []string{
+		"sha256:" + strings.Repeat("A", 64),
+		"sha256:" + strings.Repeat("0", 61) + "/..",
+		"sha256:../../../../" + strings.Repeat("0", 52),
+		"sha256:" + strings.Repeat("0", 63) + "g",
+		"sha256:" + strings.Repeat("0", 63),
+		"sha512:" + strings.Repeat("0", 64),
+	} {
+		image, _ := testImage()
+		image.Blobs[0].Digest = digest
+		var out bytes.Buffer
+		var bad *DigestError
+		if err := WriteOCI(&out, image); !errors.As(err, &bad) || bad.Digest != digest {
+			t.Errorf("%q: err %v, want a DigestError", digest, err)
+		}
+		if out.Len() != 0 {
+			t.Errorf("%q: %d bytes written before the refusal", digest, out.Len())
+		}
+	}
+	// the positive twin: a digest of lower hex passes
+	image, _ := testImage()
+	if err := WriteOCI(io.Discard, image); err != nil {
+		t.Fatal(err)
 	}
 }

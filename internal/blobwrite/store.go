@@ -251,6 +251,37 @@ func (w *Writer) inside(location string) (string, error) {
 	return real, nil
 }
 
+// RemoveLoose removes a bytes file without its properties file, which a
+// kill between the rename of the bytes and the rename of the properties of
+// a write leaves (N2). The caller holds the index for the whole walk, so no
+// write of this writer is between those two renames. Only a file the writer
+// names so is removed: content/yyyy/MM/dd/HH/mm/<blob id>.bytes.
+func (w *Writer) RemoveLoose(location string) error {
+	if err := w.open(); err != nil {
+		return err
+	}
+	dir, name := path.Split(location)
+	id, ok := strings.CutSuffix(name, stores.BytesSuffix)
+	if !ok || !validID(id) || !dateDir.MatchString(strings.TrimSuffix(dir, "/")) || path.Clean(location) != location {
+		return fmt.Errorf("%s is no bytes file this writer names", location)
+	}
+	file, err := w.inside(location)
+	if err != nil {
+		return err
+	}
+	props := strings.TrimSuffix(file, stores.BytesSuffix) + stores.PropertiesSuffix
+	if _, err := os.Lstat(props); !errors.Is(err, fs.ErrNotExist) {
+		if err == nil {
+			return fmt.Errorf("%s has its properties", location)
+		}
+		return err
+	}
+	if err := os.Remove(file); err != nil {
+		return err
+	}
+	return syncDir(filepath.Dir(file))
+}
+
 // MarkDeleted writes what the old product writes for a deleted blob (W5):
 // when the directory of the current minute is not the one of the blob, a
 // copy of the properties there with originalLocation, the date of the
@@ -314,6 +345,7 @@ func (w *Writer) replace(rel string, items map[string]string, at time.Time) erro
 		return err
 	}
 	work := w.file(stores.ContentDir + "/" + TmpDir + "/tmp$" + randomUUID() + "." + randomUUID() + stores.PropertiesSuffix)
+	defer w.Hold(filepath.Base(work))()
 	if err := writeSynced(work, data); err != nil {
 		return err
 	}

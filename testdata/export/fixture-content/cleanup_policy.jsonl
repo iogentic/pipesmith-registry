@@ -1,0 +1,3 @@
+{"name":"demo-age","notes":"Invented: components older than 30 days","format":"maven2","mode":"delete","criteria":{"lastBlobUpdatedDays":30},"_removed":[]}
+{"name":"demo-mixed","notes":null,"format":"ALL_FORMATS","mode":"delete","criteria":{"lastDownloadedDays":60,"regex":".*-SNAPSHOT.*"},"_removed":[]}
+{"name":"demo-unused","notes":"Invented: never downloaded in 90 days","format":"npm","mode":"delete","criteria":{"lastDownloadedDays":90},"_removed":[]}

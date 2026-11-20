@@ -21,6 +21,12 @@ type Settings struct {
 	TokenFile string // a plain file name below <data directory>/secrets/; empty without a token
 	Limits    Limits
 	Timeouts  Timeouts
+	// Stage bounds the whole fetch stage, every request included
+	// (timeouts.stage_seconds).
+	Stage time.Duration
+	// Candidates bounds the versions above the running one whose
+	// completeness the stage asks for (limits.candidates).
+	Candidates int
 }
 
 // Limits are the size caps of the downloaded files (U12).
@@ -34,11 +40,22 @@ var (
 	defaultTimeouts = Timeouts{Dial: 10 * time.Second, Header: 30 * time.Second, Total: 1800 * time.Second}
 )
 
+// Defaults and bound of the stage settings.
+const (
+	defaultStage      = time.Hour
+	defaultCandidates = 10
+	maxCandidates     = 1000
+)
+
 // Bounds of a setting: a cap of at most 16 GiB, a timeout of at most a day.
 const (
 	maxCap     = 16 << 30
 	maxSeconds = 24 * 60 * 60
 )
+
+// checkedCap is the size of SHA256SUMS and of the bundle that the release
+// check accepts, maxFile of internal/release; their caps go no higher.
+const checkedCap = 1 << 20
 
 var tokenFileName = regexp.MustCompile(`^[A-Za-z0-9_-][A-Za-z0-9._-]*$`)
 
@@ -68,7 +85,8 @@ func ParseSettings(cfg *release.UpdateConfig) (*Settings, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s: channel.server: %v", ErrSettings, cfg.Path, err)
 	}
-	s := &Settings{Server: server, Owner: *doc.Owner, Limits: defaultLimits, Timeouts: defaultTimeouts}
+	s := &Settings{Server: server, Owner: *doc.Owner, Limits: defaultLimits, Timeouts: defaultTimeouts,
+		Stage: defaultStage, Candidates: defaultCandidates}
 	if doc.TokenFile != nil {
 		s.TokenFile = *doc.TokenFile
 		if !tokenFileName.MatchString(s.TokenFile) || s.TokenFile == "." || s.TokenFile == ".." {
@@ -84,7 +102,12 @@ func ParseSettings(cfg *release.UpdateConfig) (*Settings, error) {
 	}
 	limits := map[string]*int64{"sums_bytes": &s.Limits.Sums, "bundle_bytes": &s.Limits.Bundle,
 		"binary_bytes": &s.Limits.Binary, "bill_bytes": &s.Limits.Bill}
+	candidates := int64(defaultCandidates)
 	if err := numbers(cfg, "limits", maxCap, func(key string, n int64) bool {
+		if key == "candidates" {
+			candidates = n
+			return true
+		}
 		p, ok := limits[key]
 		if ok {
 			*p = n
@@ -93,8 +116,17 @@ func ParseSettings(cfg *release.UpdateConfig) (*Settings, error) {
 	}); err != nil {
 		return nil, err
 	}
+	if candidates > maxCandidates {
+		return nil, fmt.Errorf("%w: %s: limits.candidates is %d, want a whole number from 1 to %d", ErrSettings, cfg.Path, candidates, maxCandidates)
+	}
+	s.Candidates = int(candidates)
+	for key, n := range map[string]int64{"sums_bytes": s.Limits.Sums, "bundle_bytes": s.Limits.Bundle} {
+		if n > checkedCap {
+			return nil, fmt.Errorf("%w: %s: limits.%s is %d; the release check accepts at most %d bytes", ErrSettings, cfg.Path, key, n, checkedCap)
+		}
+	}
 	timeouts := map[string]*time.Duration{"dial_seconds": &s.Timeouts.Dial, "header_seconds": &s.Timeouts.Header,
-		"total_seconds": &s.Timeouts.Total}
+		"total_seconds": &s.Timeouts.Total, "stage_seconds": &s.Stage}
 	if err := numbers(cfg, "timeouts", maxSeconds, func(key string, n int64) bool {
 		p, ok := timeouts[key]
 		if ok {

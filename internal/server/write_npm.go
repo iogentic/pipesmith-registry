@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -206,20 +207,23 @@ func nowISO() string {
 // as the old product names its work files, so a start of the server
 // removes one that a stop left (W2).
 type spoolFile struct {
-	path  string
-	f     *os.File
-	size  int64
-	limit int64
-	room  *storeRoom // the room of the store, which the spools of one body share
+	path    string
+	f       *os.File
+	size    int64
+	limit   int64
+	room    *storeRoom // the room of the store, which the spools of one body share
+	release func()     // ends the hold of the work file for the task of old work files (ruling KN15)
 }
 
 func (s *Server) newSpool(limit int64, room *storeRoom) (*spoolFile, error) {
 	path := workFileIn(s.writes.writer.Root(), newUUID())
+	release := s.writes.writer.Hold(filepath.Base(path))
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- content/tmp of the write store and a name of two UUIDs.
 	if err != nil {
+		release()
 		return nil, err
 	}
-	return &spoolFile{path: path, f: f, limit: limit, room: room}, nil
+	return &spoolFile{path: path, f: f, limit: limit, room: room, release: release}, nil
 }
 
 func (sp *spoolFile) Write(p []byte) (int, error) {
@@ -246,6 +250,7 @@ func (sp *spoolFile) remove() {
 	if err := os.Remove(sp.path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		logAt(slogWarn, serverLogger, "the work file %s of a publish is not removed: %v", sp.path, err)
 	}
+	sp.release()
 }
 
 // npmPut is PUT /<name>: a publish when the document carries an
@@ -255,6 +260,7 @@ func (s *Server) npmPut(w *recorder, req *request, st *state, repo repos.Repo, s
 	if err != nil {
 		return s.npmFailed(w, req, err)
 	}
+	defer room.release()
 	var tarball *spoolFile
 	defer func() {
 		if tarball != nil {
@@ -280,6 +286,7 @@ func (s *Server) npmPut(w *recorder, req *request, st *state, repo repos.Repo, s
 		}
 		return s.npmFailed(w, req, err)
 	}
+	room.release() // the body is read; the ingest of the tarball holds its own room
 	if len(attachments) == 0 {
 		return s.npmDeprecate(w, req, st, repo, call, document)
 	}
@@ -309,7 +316,7 @@ func (s *Server) npmPut(w *recorder, req *request, st *state, repo repos.Repo, s
 	if err != nil {
 		return err
 	}
-	rev, err := s.publishVersion(repo, call.Name, stored, document, published, data, tarball.size, subject, address)
+	rev, err := s.publishVersionAs(repo, addressed(req, repo), call.Name, stored, document, published, data, tarball.size, subject, address)
 	if err != nil {
 		return s.npmFailed(w, req, err)
 	}
@@ -330,7 +337,15 @@ func (s *Server) npmPut(w *recorder, req *request, st *state, repo repos.Repo, s
 // only is refused with 403 before the tarball (finding S3 of review 4).
 func (s *Server) publishVersion(repo repos.Repo, name string, stored, document *pyjson.Object, published *npm.Published, tarball io.Reader,
 	size int64, subject *model.Subject, address string) (string, error) {
-	addOnly := !s.mayEdit(subject, repo)
+	return s.publishVersionAs(repo, repo, name, stored, document, published, tarball, size, subject, address)
+}
+
+// publishVersionAs is publishVersion with the repository whose permission
+// it asks: the group a publish came through (decision 5.16 of the phase 5
+// plan), else the repository itself.
+func (s *Server) publishVersionAs(repo, rights repos.Repo, name string, stored, document *pyjson.Object, published *npm.Published,
+	tarball io.Reader, size int64, subject *model.Subject, address string) (string, error) {
+	addOnly := !s.mayEdit(subject, rights)
 	if addOnly {
 		row, err := s.rp.index.Lookup(repo.Name, name)
 		if err != nil {
@@ -409,7 +424,7 @@ func (s *Server) npmDeprecate(w *recorder, req *request, st *state, repo repos.R
 		npmNotFound(w, req)
 		return nil
 	}
-	if !s.mayEdit(subject, repo) {
+	if !s.mayEdit(subject, addressed(req, repo)) {
 		return s.npmFailed(w, req, editRefused()) // the document appeared while the request came in
 	}
 	if revChanged(w, req, stored, npm.Rev(update)) {
@@ -589,7 +604,7 @@ func (s *Server) npmPutTag(w *recorder, req *request, st *state, repo repos.Repo
 		npmNotFound(w, req)
 		return nil
 	}
-	if !s.mayEdit(subject, repo) {
+	if !s.mayEdit(subject, addressed(req, repo)) {
 		return s.npmFailed(w, req, editRefused()) // the document appeared while the request came in
 	}
 	changed, err := npm.SetTag(stored, call.Tag, version, nowISO())
@@ -620,7 +635,7 @@ func (s *Server) npmDropTag(w *recorder, req *request, st *state, repo repos.Rep
 		npmNotFound(w, req)
 		return nil
 	}
-	if !s.mayEdit(subject, repo) {
+	if !s.mayEdit(subject, addressed(req, repo)) {
 		return s.npmFailed(w, req, editRefused()) // the document appeared while the request came in
 	}
 	changed, err := npm.DropTag(stored, call.Tag, nowISO())

@@ -129,20 +129,26 @@ func (s *Server) putManifest(w *recorder, req *request, repo repos.Repo, setting
 		digestRow, digests = &result.asset, result.digests
 	}
 	if tagPath != "" && !sameBytes(tagRow, data) {
-		// a tag that another push made meanwhile asks edit (finding S3 of review 4)
-		addOnly := !s.mayEdit(subject, repo)
+		// a tag that another push made meanwhile asks edit (finding S3 of review 4),
+		// one that a delete removed meanwhile asks add
+		addOnly := !s.mayEdit(subject, addressed(req, repo))
+		editOnly := !s.mayAdd(subject, addressed(req, repo))
 		if digestRow.Store == s.writes.writer.Name() {
-			_, err = s.linkCopy(repo, tagPath, digestRow, mediaType, digests, addOnly, subject, address)
+			_, err = s.linkCopy(repo, tagPath, digestRow, mediaType, digests, addOnly, editOnly, subject, address)
 		} else {
 			_, err = s.ingest(ingestRequest{repo: repo, path: tagPath, body: bytes.NewReader(data), size: int64(len(data)),
-				contentType: mediaType, addOnly: addOnly, subject: subject, address: address})
+				contentType: mediaType, addOnly: addOnly, editOnly: editOnly, subject: subject, address: address})
 		}
 		if err != nil {
 			return s.dockerFailed(w, req, err)
 		}
 	}
-	writeBody(w, req, http.StatusCreated, [][2]string{{"Location", dockerBase(req, repo) + "/" + call.Name + "/manifests/" + digest},
-		{docker.DigestHeader, digest}, {docker.APIVersionHeader, docker.APIVersion}}, nil)
+	headers := [][2]string{{"Location", dockerBase(req, repo) + "/" + call.Name + "/manifests/" + digest},
+		{docker.DigestHeader, digest}, {docker.APIVersionHeader, docker.APIVersion}}
+	if target := docker.SubjectOf(data); target != "" {
+		headers = append(headers, [2]string{docker.SubjectHeader, target}) // the subject is not looked up (W11)
+	}
+	writeBody(w, req, http.StatusCreated, headers, nil)
 	return nil
 }
 
@@ -209,7 +215,10 @@ func (s *Server) tagsOfBytes(repo repos.Repo, name string, row *index.Asset) ([]
 }
 
 // erasePaths erases every path, after checking that none lies in a read
-// only store.
+// only store. It is no transaction (note N5 of the 0.2.0 plan): it stops at
+// the first path that fails, the paths before it stay deleted, and a
+// warning says where it stopped. The same delete again finishes it, since a
+// path that is gone already is skipped.
 func (s *Server) erasePaths(repo repos.Repo, paths []string) error {
 	held, err := s.heldRows(repo.Name, paths)
 	if err != nil {
@@ -218,8 +227,12 @@ func (s *Server) erasePaths(repo repos.Repo, paths []string) error {
 	if held != nil {
 		return readOnlyRefusal(repo.Name, held)
 	}
-	for _, path := range paths {
+	for i, path := range paths {
 		if _, err := s.erase(repo, path); err != nil {
+			if i > 0 {
+				logAt(slogWarn, serverLogger, "the delete of %d paths of %s stopped at %s after %d of %d: %v; the paths before it are deleted, the delete again finishes it",
+					len(paths), repo.Name, path, i, len(paths), err)
+			}
 			return err
 		}
 	}

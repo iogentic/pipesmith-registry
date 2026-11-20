@@ -400,3 +400,68 @@ func errString(err error) string {
 	}
 	return err.Error()
 }
+
+// The users of a connection, as the check of the user mapping lists them:
+// every entry of the user search below ou=people, sorted by id, each with
+// the groups a sign in gives it.
+func TestLiveUsers(t *testing.T) {
+	d := liveDirectory(t, liveServer(t))
+	members, more, err := d.Users(context.Background(), 20)
+	if err != nil || more {
+		t.Fatalf("Users: %v, more %v", err, more)
+	}
+	var ids []string
+	groups := map[string][]string{}
+	for _, m := range members {
+		ids = append(ids, m.User.ID)
+		groups[m.User.ID] = m.Groups
+		if m.User.Source != "LDAP" || m.User.Status != "active" || m.User.PasswordHash != "" {
+			t.Errorf("user %#v", m.User)
+		}
+	}
+	want := []string{"demo-ldap-admin", "demo-ldap-contractor", "demo-ldap-nobody", "demo-ldap-odd,(x)*", "demo-ldap-reader",
+		"demo-ldap-twin", "demo-ldap-twin"}
+	if !slices.Equal(ids, want) {
+		t.Fatalf("users %q, want %q", ids, want)
+	}
+	wantGroups(t, "admin", groups["demo-ldap-admin"], "demo-admins", "demo-readers")
+	wantGroups(t, "reader", groups["demo-ldap-reader"], "demo-readers", "demo-team")
+	wantGroups(t, "contractor", groups["demo-ldap-contractor"])
+	// a limit below the count shows that many and reports more
+	members, more, err = d.Users(context.Background(), 3)
+	if err != nil || !more || len(members) != 3 {
+		t.Fatalf("limit 3: %d users, more %v, %v", len(members), more, err)
+	}
+	// the user filter narrows the list
+	s := liveServer(t)
+	s.UserLDAPFilter = "mail=*@example.org"
+	members, _, err = liveDirectory(t, s).Users(context.Background(), 20)
+	if err != nil || len(members) != 1 || members[0].User.ID != "demo-ldap-contractor" {
+		t.Fatalf("with the filter: %+v %v", members, err)
+	}
+	// a wrong bind password is a failure of the directory
+	t.Setenv(ldapauth.PasswordVariable(s.ID), "")
+	wrong, err := ldapauth.New(liveServer(t), "wrong-bind-pass")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := wrong.Users(context.Background(), 20); !errors.Is(err, ldapauth.ErrUnavailable) {
+		t.Fatalf("a wrong bind password: %v", err)
+	}
+}
+
+// The bounds of a check against the container: the fixture directory is
+// within them.
+func TestLiveUsersWithCheckBounds(t *testing.T) {
+	d := liveDirectory(t, liveServer(t), ldapauth.WithCheckBounds())
+	members, more, err := d.Users(context.Background(), 20)
+	if err != nil || more || len(members) != 7 {
+		t.Fatalf("Users with bounds: %d, more %v, %v", len(members), more, err)
+	}
+	if _, err := d.Check(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, groups, err := d.Login(context.Background(), "demo-ldap-admin", fixturePasswords["demo-ldap-admin"]); err != nil || len(groups) != 2 {
+		t.Fatalf("Login with bounds: %v %v", groups, err)
+	}
+}

@@ -15,7 +15,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/catalog"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
@@ -32,6 +34,12 @@ type Index interface {
 	StoreStats() ([]index.StoreStat, error)
 }
 
+// AssetDetails gives the side data of the blob a store holds for a path
+// (catalog.Catalog.Detail); nil for none.
+type AssetDetails interface {
+	Detail(repo, path, store string, createdMS int64) (*catalog.AssetDetail, error)
+}
+
 // Store is one store the read path attaches.
 type Store struct {
 	Name, Kind, Root string
@@ -45,17 +53,36 @@ type Env struct {
 	Repositories *repos.Repositories // the repositories the read path serves
 	Index        Index
 	Catalog      *Catalog // the search reads it; nil answers 503
-	Stores       []Store
+	// Details is catalog.sqlite of the data directory while the process
+	// holds it open (leg F1b): the asset answers take uploader, address,
+	// digests and last modified time from it. nil leaves them null.
+	Details AssetDetails
+	// Components is the same opening of catalog.sqlite: a component is
+	// found by id from its rows instead of a walk of the repository. nil
+	// walks.
+	Components ComponentSource
+	// CatalogBehind names the first store whose rows the catalog does not
+	// hold as the index does (catalog.Catalog.Behind), "" when it is
+	// current (R10). nil counts as current.
+	CatalogBehind func() (string, error)
+	Stores        []Store
 	// Permits reports whether the subject of the request holds a permission.
 	Permits func(permission string) bool
 	// Base is scheme and host of the request, for the url fields.
 	Base string
+	// deadline, when set, ends a search before its timeout (a test).
+	deadline time.Time
+	// StoresRoot is the folder of the stores created over REST,
+	// <data>/stores (admin.StoresDir); empty for none.
+	StoresRoot string
 }
 
 // Answer is a JSON answer of the old product's shape.
 type Answer struct {
 	Status int
 	Body   any
+	// Location, when set, makes the answer a redirect without a body.
+	Location string
 }
 
 // JSON is the body as the server sends it.
@@ -124,4 +151,19 @@ func nonNil(list []string) []string {
 		return []string{}
 	}
 	return list
+}
+
+// searchContext bounds a search by timeout, within the request.
+func (env *Env) searchContext(timeout time.Duration) (context.Context, context.CancelFunc) {
+	if !env.deadline.IsZero() {
+		return context.WithDeadline(env.Context, env.deadline)
+	}
+	return context.WithTimeout(env.Context, timeout)
+}
+
+// withDeadline runs fn with a copy of env whose searches end at deadline.
+func (env *Env) withDeadline(deadline time.Time, fn func(*Env) (Answer, error)) (Answer, error) {
+	e := *env
+	e.deadline = deadline
+	return fn(&e)
 }

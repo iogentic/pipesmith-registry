@@ -15,6 +15,9 @@ const (
 	MaxDrainSeconds     = 3600
 )
 
+// UnitStartSeconds is TimeoutStartSec of release/pipesmith-registry.service.
+const UnitStartSeconds = 900
+
 var drainNumber = regexp.MustCompile(`^[1-9][0-9]{0,3}$`)
 
 // readDrain reads drain_seconds of update.json: the drain time the unit
@@ -34,12 +37,13 @@ func (c *UpdateConfig) readDrain(values map[string]json.RawMessage) error {
 }
 
 // restartTimeout is the time a restart or a stop may take: the drain time of
-// the running server plus DefaultRestartTimeout. Without drain_seconds the
-// unit may set any drain time, so the highest one counts.
+// the running server, the start of the unit and DefaultRestartTimeout.
+// Without drain_seconds the unit may set any drain time, so the highest one
+// counts.
 func (c *UpdateConfig) restartTimeout() time.Duration {
 	drain := MaxDrainSeconds
 	if c.drainGiven {
 		drain = c.DrainSeconds
 	}
-	return time.Duration(drain)*time.Second + DefaultRestartTimeout
+	return time.Duration(drain+UnitStartSeconds)*time.Second + DefaultRestartTimeout
 }

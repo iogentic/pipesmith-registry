@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"crypto/ecdsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
@@ -22,7 +23,12 @@ func verifySignature(trustedKey string, sums, bundle []byte) error {
 	if err != nil {
 		return err
 	}
-	err = release.VerifyBundle(key, sums, bundle)
+	return verifyWith(key, sums, bundle)
+}
+
+// verifyWith is verifySignature with the key read already.
+func verifyWith(key *ecdsa.PublicKey, sums, bundle []byte) error {
+	err := release.VerifyBundle(key, sums, bundle)
 	if err != release.ErrSignature { // nil, or a refusal that names its cause already
 		return err
 	}

@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -185,6 +186,22 @@ type runner struct {
 	base    string
 	stores  map[string]stores.Store
 	touched map[string]bool
+	skips   bool // the case is one of skippedNumbers
+}
+
+// skippedNumbers are the cases where the reference ends a walk at a
+// properties file with a number that does not fit, and this server logs the
+// file, counts it unparsable and goes on (sa-31). The vector keeps the
+// reference; the runner expects no error, the entries of the vector, which
+// the reference yielded before the file, and one more unparsable file.
+var skippedNumbers = map[string]bool{
+	"extra_blob_store_digit_limit": true, "extra_blob_store_digit_limit_deleted": true, "extra_blob_store_overflow": true,
+}
+
+// numberError reports the error of a properties number that does not fit.
+func numberError(want *pyError) bool {
+	return want != nil && (want.Class == "ValueError" && strings.Contains(want.Message, "integer string conversion") ||
+		want.Class == "OverflowError")
 }
 
 func (r *runner) sub(text string) string {
@@ -497,7 +514,12 @@ func (r *runner) run(s step) {
 		}
 		got, err := collect(st, counts)
 		want := r.result(s)
-		if want.Error != nil {
+		skipped := r.skips && numberError(want.Error)
+		if skipped {
+			if err != nil {
+				t.Errorf("%s: %v, want the file skipped", label, err)
+			}
+		} else if want.Error != nil {
 			r.checkError(label, err, want.Error)
 		} else if err != nil {
 			t.Errorf("%s: %v", label, err)
@@ -508,14 +530,32 @@ func (r *runner) run(s step) {
 			if c == nil {
 				t.Fatalf("%s: no counts in the vector", label)
 			}
+			unparsable := c.Unparsable
+			if skipped {
+				unparsable++
+			}
 			if *counts != (stores.ScanCounts{Live: c.Live, Deleted: c.Deleted, Copies: c.Copies, NoBytes: c.NoBytes,
-				Unparsable: c.Unparsable}) {
+				Unparsable: unparsable}) {
 				t.Errorf("%s: counts %+v, want %+v", label, *counts, *c)
 			}
 		}
 	case "index":
 		got, err := collect(r.stores[s.Store], nil)
 		want := r.result(s)
+		if r.skips && numberError(want.Error) {
+			if err != nil {
+				t.Errorf("%s: %v, want the file skipped", label, err)
+			}
+			for _, e := range got {
+				if e.Repo == "demo-raw" && e.Path == "big.txt" {
+					t.Errorf("%s: the entry of the skipped file is listed: %+v", label, e)
+				}
+			}
+			if len(got) == 0 {
+				t.Errorf("%s: no entries, want the ones beside the skipped file", label)
+			}
+			return
+		}
 		if want.Error != nil {
 			r.checkError(label, err, want.Error)
 			return
@@ -582,11 +622,16 @@ func TestVectorCases(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			r := &runner{t: t, base: base, stores: map[string]stores.Store{}, touched: map[string]bool{}}
+			r := &runner{t: t, base: base, stores: map[string]stores.Store{}, touched: map[string]bool{}, skips: skippedNumbers[c.Name]}
 			for _, s := range c.Steps {
 				r.run(s)
 			}
 		})
+	}
+	for name := range skippedNumbers {
+		if !slices.ContainsFunc(v.Cases, func(c vectorCase) bool { return c.Name == name }) {
+			t.Errorf("skipped number case %s is not in the vectors", name)
+		}
 	}
 	if reference != 25 {
 		t.Fatalf("%d reference cases, want 25 (22 test functions, three of them for two kinds)", reference)

@@ -63,3 +63,6 @@ func lockDir(dir string, busy error) (func(), error) {
 // textBusy reports a start of a file that another process still holds open
 // for writing, such as a child forked while the copy was open.
 func textBusy(err error) bool { return errors.Is(err, syscall.ETXTBSY) }
+
+// openNonblock opens a FIFO without waiting for a writer.
+const openNonblock = syscall.O_NONBLOCK

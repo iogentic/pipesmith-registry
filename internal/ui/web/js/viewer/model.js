@@ -164,15 +164,47 @@ export function rowOf(visible, line) {
   return low;
 }
 
-// Every match of a plain text query in the lines, as [line, start, end], line by line and left to
-// right, without overlap. Without the case switch both sides are compared in lower case.
+const NOT_ASCII = /[^\x00-\x7f]/;
+
+// The lower case of a text, one code point at a time, and for each unit of it the start and end of
+// the code point of the text it comes from. Lower case can change the length of a letter ("İ"
+// gives two units), so offsets into the lower case copy are mapped back through from and to. An
+// ASCII text keeps its length and gets no map.
+export function lowerMap(text) {
+  if (!NOT_ASCII.test(text)) return { text: text.toLowerCase(), from: null, to: null };
+  const parts = [];
+  const from = [];
+  const to = [];
+  for (let i = 0; i < text.length; ) {
+    const n = text.codePointAt(i) > 0xffff ? 2 : 1;
+    const low = text.slice(i, i + n).toLowerCase();
+    parts.push(low);
+    for (let k = 0; k < low.length; k += 1) {
+      from.push(i);
+      to.push(i + n);
+    }
+    i += n;
+  }
+  return { text: parts.join(""), from, to };
+}
+
+// Every match of a plain text query in the lines, as [line, start, end] in offsets of the line,
+// line by line and left to right, without overlap. Without the case switch both sides are compared
+// in lower case, one code point at a time.
 export function findAll(lines, query, matchCase) {
   const out = [];
   if (!query) return out;
-  const needle = matchCase ? query : query.toLowerCase();
+  const needle = matchCase ? query : lowerMap(query).text;
   for (let i = 0; i < lines.length; i += 1) {
-    const hay = matchCase ? lines[i] : lines[i].toLowerCase();
-    for (let at = hay.indexOf(needle); at >= 0; at = hay.indexOf(needle, at + needle.length)) out.push([i + 1, at, at + needle.length]);
+    const hay = matchCase ? { text: lines[i], from: null, to: null } : lowerMap(lines[i]);
+    let last = 0;
+    for (let at = hay.text.indexOf(needle); at >= 0; at = hay.text.indexOf(needle, at + needle.length)) {
+      const start = hay.from ? hay.from[at] : at;
+      const end = hay.to ? hay.to[at + needle.length - 1] : at + needle.length;
+      if (start < last) continue;
+      out.push([i + 1, start, end]);
+      last = end;
+    }
   }
   return out;
 }

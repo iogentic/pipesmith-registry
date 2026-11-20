@@ -360,3 +360,44 @@ func TestTokenOfANameInTwoDirectories(t *testing.T) {
 		t.Errorf("a directory after the one that holds the name does not answer: %+v %v", s, err)
 	}
 }
+
+// Review 3-40: an npm or user token of a directory user is bound to the
+// directory entry it was issued for, so a name the directory gives anew to
+// another entry signs nobody in with the old token. A token that carries no
+// binding, as one issued before release 0.2.0 or before the start of the
+// process, is bound at its first use. A locked or disabled account is
+// refused by the lookup of the directory (package ldapauth).
+func TestTokenOfADirectoryUserIsBoundToItsEntry(t *testing.T) {
+	d := ldapDirectory()
+	d.setEntry("demo-ldap-person", "entryUUID:demo-entry-1")
+	e, store := newStoreEnv(t, tokenSnapshot(t), d)
+	npm := npmLogin(t, e, "demo-ldap-person", ldapPassword).Text
+	older := ldapToken(t, e, store, auth.KindUser, "demo-ldap-person") // no binding, as before 0.2.0
+	e.clock.Add(auth.ReloadInterval)
+	signsIn := func(token string) bool {
+		s, err := subjectOf(e, bearer(token))
+		return err == nil && s != nil && s.User.ID == "demo-ldap-person"
+	}
+	if !signsIn(npm) || !signsIn(older) {
+		t.Fatal("the tokens of the entry they were issued for")
+	}
+	d.setEntry("demo-ldap-person", "entryUUID:demo-entry-2")
+	e.clock.Add(auth.CredentialTime)
+	if signsIn(npm) || signsIn(older) {
+		t.Fatalf("a token signs in the entry that holds the name now: npm %v, older %v", signsIn(npm), signsIn(older))
+	}
+	if !strings.Contains(e.logs.String(), "another directory entry") {
+		t.Errorf("no warning about the token of another entry: %q", e.logs.String())
+	}
+	// a token without a binding is bound to the entry of its first use
+	later := ldapToken(t, e, store, auth.KindNpm, "demo-ldap-person")
+	e.clock.Add(auth.ReloadInterval)
+	if !signsIn(later) || !signsIn(npmLogin(t, e, "demo-ldap-person", ldapPassword).Text) {
+		t.Fatal("tokens of the entry that holds the name now")
+	}
+	d.setEntry("demo-ldap-person", "entryUUID:demo-entry-1")
+	e.clock.Add(auth.CredentialTime)
+	if signsIn(later) {
+		t.Error("the token bound at its first use signs in another entry")
+	}
+}

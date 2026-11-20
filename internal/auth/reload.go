@@ -57,6 +57,12 @@ func (s *Service) refresh() *view {
 	return s.view()
 }
 
+// MarkStale makes the next request read the generation of the store, and
+// load the identity state again when it changed, before the reload interval
+// ends (ruling I13). An identity write of this process calls it after its
+// commit, so the request after the answer of the write sees the change.
+func (s *Service) MarkStale() { s.next.Store(0) }
+
 // reload installs the view of a snapshot loaded again when the generation
 // changed. It empties the credential cache and the answers of the
 // directories for the users of tokens, and checks every live session
@@ -84,6 +90,7 @@ func (s *Service) reload() {
 	if s.dirsFor != nil {
 		dirs = s.dirsFor(snap.LDAP)
 	}
+	s.loadInstallKey()
 	v := newView(snap, gen, dirs)
 	s.cur.Store(v)
 	s.creds.clear()

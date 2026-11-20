@@ -33,8 +33,8 @@ import (
 
 // CatalogHook keeps the side data of one asset row (seam Catalog hook,
 // decision E5): every write calls Put once its row is in the index, every
-// delete calls Delete once its row is gone. Nil does nothing until leg F1b
-// sets internal/catalog. An error of the hook is logged and fails nothing:
+// delete calls Delete once its row is gone. Nil does nothing; serve sets
+// the hook of internal/catalog (catalog_hook.go, leg F1b). An error of the hook is logged and fails nothing:
 // the catalog is side data that a scan of the store fills again.
 type CatalogHook interface {
 	Put(asset index.Asset, digests stores.Digests, uploader, address string) error
@@ -51,6 +51,7 @@ const (
 	ruleReadOnlyStore = "read-only-store" // 409: a store of the old product holds the path
 	ruleWriteStore    = "write-store"     // 409: the repository names a store this server does not write
 	ruleEdit          = "edit"            // 403: the path exists under its lock, and the caller holds add, not edit
+	ruleAdd           = "add"             // 403: the path is gone under its lock, and the caller holds edit, not add
 	ruleBusy          = "busy"            // 503: the index stayed busy longer than the write may wait for it
 )
 
@@ -65,6 +66,32 @@ func (s *Server) mayEdit(subject *model.Subject, repo repos.Repo) bool {
 // before the body, from the rows of that moment (finding S3 of review 4).
 func editRefused() error {
 	return writeRefused(http.StatusForbidden, ruleEdit, "%s", repositoryRefusal)
+}
+
+// mayAdd reports a caller who holds add of the view permission of a
+// repository, which a write of a path the repository does not hold asks.
+func (s *Server) mayAdd(subject *model.Subject, repo repos.Repo) bool {
+	return s.sec == nil || s.sec.Permits(subject, rest.ViewPermission(repo.Format, repo.Name, "add"))
+}
+
+// addRefused is the 403 of a write by a caller who holds edit and not add,
+// of a path that a delete removed before the lock of the write: the route
+// asked edit before the body, from the row of that moment.
+func addRefused() error {
+	return writeRefused(http.StatusForbidden, ruleAdd, "%s", repositoryRefusal)
+}
+
+// heldAction refuses a write whose path, as the lock finds it, asks an
+// action the caller does not hold: edit for a path that exists, add for one
+// that does not.
+func heldAction(row *index.Asset, addOnly, editOnly bool) error {
+	if addOnly && row != nil {
+		return editRefused()
+	}
+	if editOnly && row == nil {
+		return addRefused()
+	}
+	return nil
 }
 
 // A write holds the lock of its path while it waits for the write lock of
@@ -150,7 +177,9 @@ type ingestRequest struct {
 	digests     map[string]string // the digests the request gives by algorithm (md5, sha1, sha256, sha512), hex
 	contentType string            // the content type to store; "" takes policy.ContentType
 	exempt      bool              // the write policy lets the path through again, beside the exemptions of policy
+	fetch       bool              // a fetch of a proxy (ruling P5-3 of the phase 5 session): no write policy applies, so a stale path is replaced
 	addOnly     bool              // the caller holds add and not edit: a path that exists under the lock is refused (editRefused)
+	editOnly    bool              // the caller holds edit and not add: a path that is gone under the lock is refused (addRefused)
 	subject     *model.Subject    // the caller; nil for the anonymous user
 	address     string            // the address of the client, stored as created-by-ip
 }
@@ -237,7 +266,7 @@ func (s *Server) checkWrite(in *ingestRequest, settings repos.WriteSettings, exe
 	if err != nil {
 		return nil, err
 	}
-	if err := policy.Write(settings.WritePolicy, row != nil, exempt); err != nil {
+	if err := policy.Write(settings.WritePolicy, row != nil, exempt); err != nil && !in.fetch {
 		return nil, refusalOf(err)
 	}
 	if in.repo.Format == "maven2" {
@@ -278,45 +307,103 @@ func (s *Server) bounds(repo, path string, a stores.Attributes) (stores.Attribut
 }
 
 // checkSpace refuses a body the write store has no room for: the floor of
-// the repository stays free. It returns the room above the floor, which
-// bounds the stream of a body that declares no length (storeRoom).
+// the repository stays free, and so do the bytes that the other bodies in
+// flight hold (spaceHeld). It returns the room above them, which bounds the
+// stream of a body that declares no length (storeRoom), and holds a
+// declared length until the room is released.
 func (s *Server) checkSpace(size, floor int64) (*storeRoom, error) {
 	free, err := s.writes.freeSpace(s.writes.writer.Root())
 	if err != nil {
 		return nil, err
 	}
 	floor = max(floor, 0)
-	need := uint64(floor) + uint64(max(size, 0)) // #nosec G115 -- both are at least zero.
+	size = max(size, 0)
+	held := &s.writes.space
+	held.mu.Lock()
+	defer held.mu.Unlock()
+	need := uint64(floor) + uint64(size) + uint64(held.bytes) // #nosec G115 -- all three are at least zero.
 	if free < need {
 		return nil, writeRefused(http.StatusInsufficientStorage, ruleNoSpace, "store %s has %d bytes free; the write needs %d with the free space it must leave",
 			s.writes.writer.Name(), free, need)
 	}
-	left := int64(math.MaxInt64)
+	limit := int64(math.MaxInt64)
 	if free-uint64(floor) < uint64(math.MaxInt64) { // #nosec G115 -- floor is at least zero and at most free here.
-		left = int64(free - uint64(floor)) // #nosec G115 -- below MaxInt64, as just checked.
+		limit = int64(free - uint64(floor)) // #nosec G115 -- below MaxInt64, as just checked.
 	}
-	return &storeRoom{left: left, refusal: writeRefused(http.StatusInsufficientStorage, ruleNoSpace,
+	left := limit
+	if limit < math.MaxInt64 {
+		left -= held.bytes
+	}
+	held.bytes += size
+	return &storeRoom{left: left, limit: limit, held: held, reserved: size, refusal: writeRefused(http.StatusInsufficientStorage, ruleNoSpace,
 		"the body passes the %d bytes that store %s has free above the %d bytes a write must leave", left, s.writes.writer.Name(), floor)}, nil
 }
 
+// spaceHeld counts the bytes that the bodies in flight hold of the free
+// space of the write store: each its declared length, and what a body
+// without one has read so far. The free space is measured once per body, so
+// without it bodies that run at the same time would each see the same room
+// (row Bodies in parallel of the 0.2.0 plan). A body holds its bytes until
+// it ends, so the bytes it wrote count twice meanwhile, once measured and
+// once held: a refusal may come early, never late.
+type spaceHeld struct {
+	mu    sync.Mutex
+	bytes int64
+}
+
+// inFlight is the bytes held now.
+func (h *spaceHeld) inFlight() int64 {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.bytes
+}
+
 // storeRoom is what a body may still bring into the write store: the room
-// above the floor of its repository, measured once before the body (W14). A
-// body without a declared length passed checkSpace with no size to add to
-// the floor, so its stream stops with the refusal 507 once it passes the
-// room (finding S2 and assessment A5 of review 4). Bodies that run at the
-// same time each have the room they found, as with a declared length.
+// above the floor of its repository and the bytes of the other bodies in
+// flight, measured once before the body (W14). A body without a declared
+// length passed checkSpace with no size to add to the floor, so its stream
+// stops with the refusal 507 once it passes the room, or once all bodies in
+// flight together pass the room above the floor (finding S2 and assessment
+// A5 of review 4). The holder of a room releases it once the body is
+// written or refused.
 type storeRoom struct {
-	left    int64
-	refusal error
+	left     int64      // the bytes this body may still read
+	limit    int64      // the room above the floor, as measured, which the bodies in flight share
+	held     *spaceHeld // the bytes of the bodies in flight; nil once released, and for a room of its own
+	reserved int64      // the bytes this body holds in held
+	taken    int64      // the bytes this body read
+	refusal  error
 }
 
 // take counts n more bytes of the body; past the room it is the refusal.
 func (r *storeRoom) take(n int64) error {
 	r.left -= n
+	r.taken += n
+	if r.held != nil && r.taken > r.reserved {
+		r.held.mu.Lock()
+		r.held.bytes += r.taken - r.reserved
+		over := r.held.bytes > r.limit
+		r.held.mu.Unlock()
+		r.reserved = r.taken
+		if over {
+			r.left = min(r.left, -1)
+		}
+	}
 	if r.left < 0 {
 		return r.refusal
 	}
 	return nil
+}
+
+// release gives the bytes the body holds back; a second call does nothing.
+func (r *storeRoom) release() {
+	if r == nil || r.held == nil {
+		return
+	}
+	r.held.mu.Lock()
+	r.held.bytes -= r.reserved
+	r.held.mu.Unlock()
+	r.held, r.reserved = nil, 0
 }
 
 // reader is a body whose read fails with the refusal of the room once the
@@ -429,6 +516,7 @@ func (s *Server) ingest(in ingestRequest) (*ingestResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer room.release()
 	body := bufio.NewReaderSize(room.reader(in.body), policy.HeadBytes)
 	head, err := body.Peek(policy.HeadBytes)
 	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, bufio.ErrBufferFull) {
@@ -463,13 +551,19 @@ func (s *Server) ingest(in ingestRequest) (*ingestResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	if in.addOnly && row != nil {
-		return nil, editRefused()
+	if err := heldAction(row, in.addOnly, in.editOnly); err != nil {
+		return nil, err
 	}
 	uploader := s.uploader(in.subject)
 	attributes, err := s.bounds(in.repo.Name, in.path, stores.Attributes{Repo: in.repo.Name, Path: in.path, ContentType: contentType,
 		CreatedBy: uploader, CreatedByIP: in.address})
 	if err != nil {
+		return nil, err
+	}
+	// The sync of the properties file goes before the wait for the index, so
+	// that the write lock of the index covers the renames and the syncs of
+	// their directory only (the drop of the small write rate, 0.2.0).
+	if err := upload.Prepare(attributes); err != nil {
 		return nil, err
 	}
 	var written stores.Written
@@ -533,11 +627,13 @@ func (s *Server) erase(repo repos.Repo, path string) (*index.Asset, error) {
 	}
 	// The mark comes once the index takes the delete, so that a busy index
 	// leaves the blob as it was.
+	marked := false
 	removed, err := s.rp.index.DeleteWithin(repo.Name, path, rows[0].Store, indexWaitOf(), func() error {
 		if err := s.writes.mark(rows[0].Location, reasonDeleted); err != nil {
 			return err
 		}
 		s.writes.noteDeleted(repo.Name, path, rows[0].CreatedMS)
+		marked = true
 		return nil
 	})
 	if errors.Is(err, index.ErrBusy) {
@@ -545,6 +641,12 @@ func (s *Server) erase(repo repos.Repo, path string) (*index.Asset, error) {
 	}
 	if err != nil {
 		return nil, err
+	}
+	if removed == nil && marked {
+		// A scan of the write store took the row away while the delete
+		// waited for the index (note N5 of the 0.2.0 plan); the blob carries
+		// the mark now, so the delete took place.
+		removed = &rows[0]
 	}
 	if s.writes.catalog != nil {
 		if err := s.writes.catalog.Delete(repo.Name, path); err != nil {

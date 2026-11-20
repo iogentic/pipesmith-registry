@@ -44,7 +44,9 @@ func fromMS(v int64) time.Time { return time.UnixMilli(v).UTC() }
 
 // AddToken writes a new token row, then revokes the oldest rows of the same
 // user, source and kind beyond keep, in the order of their issue (decision
-// N10 of the phase 3 plan). It returns the public halves it revoked.
+// N10 of the phase 3 plan). The order of issue is the rowid, not the created
+// time, so a clock that steps back never revokes the row just written. It
+// returns the public halves it revoked.
 func (st *Store) AddToken(t model.Token, keep int) ([]string, error) {
 	switch {
 	case t.Public == "", t.Kind == "", t.UserID == "", t.Source == "":
@@ -59,7 +61,7 @@ func (st *Store) AddToken(t model.Token, keep int) ([]string, error) {
 			return fmt.Errorf("token %s: %w", t.Public, err)
 		}
 		rows, err := tx.QueryContext(bg, "SELECT public FROM tokens WHERE user_id = ? AND source = ? AND kind = ?"+
-			" ORDER BY created DESC, rowid DESC LIMIT -1 OFFSET ?", t.UserID, t.Source, t.Kind, keep)
+			" ORDER BY rowid DESC LIMIT -1 OFFSET ?", t.UserID, t.Source, t.Kind, keep)
 		if err != nil {
 			return err
 		}

@@ -55,6 +55,26 @@ func FileVersion(path string) (int, error) {
 	return version(db, path, "schema file")
 }
 
+// CopyRequest is the suffix of the file beside a data file by which the
+// update asks for the copy of that file before its migration: the update
+// checked the space for it and counts on the copy for its way back.
+const CopyRequest = ".copy-required"
+
+// CopyRule is the value for Options.CopyWhen of catalog.sqlite: the copy is
+// written when <file>.copy-required is a regular file, whatever the free
+// space; a copy that does not fit then fails and the file does not migrate.
+// Without the request SpareCopy decides.
+func CopyRule(free func(dir string) (uint64, error)) func(file string) bool {
+	spare := SpareCopy(free)
+	return func(file string) bool {
+		if info, err := os.Lstat(file + CopyRequest); err == nil && info.Mode().IsRegular() {
+			slog.Info(fmt.Sprintf("%s migrates after a copy: the update asked for it with %s", file, filepath.Base(file+CopyRequest)))
+			return true
+		}
+		return spare(file)
+	}
+}
+
 // SpareCopy is a value for Options.CopyWhen: a copy is written when the free
 // space of the folder of the file, as free reports it, is at least twice the
 // size of the file. It logs one line either way.

@@ -1,13 +1,18 @@
 package cli
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/iogentic/pipesmith-registry/internal/importer"
+	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 	"github.com/iogentic/pipesmith-registry/internal/state"
 )
@@ -65,9 +70,12 @@ func TestStateCommandUsage(t *testing.T) {
 }
 
 type shown struct {
-	Schema                int            `json:"schema"`
-	Counts                map[string]int `json:"counts"`
-	UsersWithPasswordHash int            `json:"usersWithPasswordHash"`
+	Schema                int               `json:"schema"`
+	CleanupPolicies       []json.RawMessage `json:"cleanupPolicies"`
+	Tasks                 []json.RawMessage `json:"tasks"`
+	Capabilities          []json.RawMessage `json:"capabilities"`
+	Counts                map[string]int    `json:"counts"`
+	UsersWithPasswordHash int               `json:"usersWithPasswordHash"`
 	Users                 []struct {
 		ID    string   `json:"userId"`
 		Roles []string `json:"roles"`
@@ -192,5 +200,256 @@ func TestImportStateCommand(t *testing.T) {
 	defs, err := repos.LoadDefinitions(filepath.Join(dir, "repositories.json"))
 	if err != nil || len(defs) != 2 {
 		t.Fatalf("repositories.json: %v %v", defs, err)
+	}
+}
+
+// state show counts the cleanup policies, tasks and capabilities and lists
+// them (ruling S8).
+func TestStateShowCountsTheKindsOfStep5(t *testing.T) {
+	dir := dataDir(t)
+	st, err := state.Create(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = errors.Join(
+		st.PutCleanupPolicy(model.CleanupPolicy{Name: "demo-policy", Format: "raw", Origin: model.OriginLocal}),
+		st.PutTask(model.Task{ID: "demo-task", Name: "Demo", TypeID: "demo.type", Origin: model.OriginLocal,
+			Schedule: model.TaskSchedule{Type: "manual"}}),
+		st.PutTask(model.Task{ID: "demo-task-2", Name: "Demo 2", TypeID: "demo.type", Origin: model.OriginImport,
+			Schedule: model.TaskSchedule{Type: "manual"}, ImportedState: map[string]string{"enabled": "true"}}),
+		st.PutCapability(model.Capability{ID: "demo-capability", TypeID: "demo.type", Origin: model.OriginImport}),
+		st.Close())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, text := show(t)
+	for kind, want := range map[string]int{"cleanup_policies": 1, "tasks": 2, "capabilities": 1} {
+		if got, ok := s.Counts[kind]; !ok || got != want {
+			t.Errorf("count of %s: %d (named %v), want %d", kind, got, ok, want)
+		}
+	}
+	if len(s.CleanupPolicies) != 1 || len(s.Tasks) != 2 || len(s.Capabilities) != 1 ||
+		!strings.Contains(text, `"typeId": "demo.type"`) || !strings.Contains(text, `"origin": "import"`) {
+		t.Fatalf("state show lists\n%s", text)
+	}
+}
+
+const (
+	taskCanary       = "CANARY-CLI-TASK-TOKEN-5e71"
+	capabilityCanary = "CANARY-CLI-CAPABILITY-KEY-0f3a"
+)
+
+// canaryContent is the content fixture with a secret property in the job
+// data of demo-manual and in the properties of the capability baseurl, as an
+// export program that removed nothing would write them.
+func canaryContent(t *testing.T) string {
+	t.Helper()
+	return contentWith(t, map[string]func(row map[string]any){
+		"qrtz_job_details.jsonl": func(row map[string]any) {
+			if row["job_name"] == "demo-manual" {
+				row["job_data"].(map[string]any)["apiToken"] = taskCanary
+			}
+		},
+		"capability_storage_item.jsonl": func(row map[string]any) {
+			if row["type"] == "baseurl" {
+				row["properties"].(map[string]any)["accessKey"] = capabilityCanary
+			}
+		},
+	})
+}
+
+// contentWith is a copy of the content fixture whose rows of each file named
+// went through its edit, with the digests of the manifest set again.
+func contentWith(t *testing.T, edits map[string]func(row map[string]any)) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), "export")
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := os.ReadDir(fixtureContent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		data, err := os.ReadFile(filepath.Join(fixtureContent, e.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, e.Name()), data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sums := map[string]string{}
+	for file, edit := range edits {
+		data, err := os.ReadFile(filepath.Join(dir, file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []byte
+		for _, line := range strings.Split(strings.TrimSuffix(string(data), "\n"), "\n") {
+			dec := json.NewDecoder(strings.NewReader(line))
+			dec.UseNumber()
+			var row map[string]any
+			if err := dec.Decode(&row); err != nil {
+				t.Fatal(err)
+			}
+			edit(row)
+			text, err := json.Marshal(row)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out = append(append(out, text...), '\n')
+		}
+		if err := os.WriteFile(filepath.Join(dir, file), out, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		sums[file] = fmt.Sprintf("%x", sha256.Sum256(out))
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&m); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range m["files"].([]any) {
+		entry := f.(map[string]any)
+		if sum, ok := sums[entry["file"].(string)]; ok {
+			entry["sha256"] = sum
+		}
+	}
+	if data, err = json.Marshal(m); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "manifest.json"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+// The import of the content set reports the policies, tasks and
+// capabilities with what an administrator must know; a secret property
+// reaches no output: not the import report, not state show, not an error,
+// not state.sqlite (ruling S7). Its secret file holds it.
+func TestImportKeepsSecretPropertiesOutOfEveryOutput(t *testing.T) {
+	dir := dataDir(t)
+	export := canaryContent(t)
+	code, out, errOut := run(t, "import", export)
+	if code != 0 {
+		t.Fatalf("import: %d %s", code, errOut)
+	}
+	for _, want := range []string{"cleanup policies 3, tasks 5 imported, all paused, capabilities 3",
+		"note: imported tasks arrive paused",
+		"note: cleanup policy demo-mixed is kept and never runs; criteria this server does not know: regex",
+		"note: task demo-stricter keeps its schedule as stored, which this server does not take: cron: ",
+		"note: task demo-monthly keeps its schedule as stored, which this server does not take: monthDays: 999",
+		"note: " + importer.CronNote + ": demo-cron, demo-stricter",
+		"not imported: demo-unreadable",
+		"secret properties kept in secret files of secrets/: capability 0ca00000-0000-4000-8000-000000000001 accessKey," +
+			" task demo-manual apiToken",
+		"enter them again: capability 0ca00000-0000-4000-8000-000000000002 secret, task demo-weekly remotePassword"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the import report lacks %q:\n%s", want, out)
+		}
+	}
+	_, shown := show(t)
+	if !strings.Contains(shown, "/srv/backup/demo") || !strings.Contains(shown, `"triggerState": "PAUSED"`) {
+		t.Fatalf("state show lacks the task rows:\n%s", shown)
+	}
+	stateBytes := stateFiles(t, dir)
+	secret, err := state.ReadSecret(state.PropertySecretPath(dir, state.SecretKindTask, "demo-manual", "apiToken"))
+	if err != nil || string(secret) != taskCanary {
+		t.Fatalf("the secret file of apiToken: %v", err)
+	}
+
+	// an import that fails at the secret files names the file, not the value
+	failing := filepath.Join(t.TempDir(), "failing")
+	if err := os.MkdirAll(failing, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(failing, state.SecretsDir), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	failCode, failOut, failErr := run(t, "import", export, "--data", failing)
+	if failCode == 0 || !strings.Contains(failErr, state.SecretsDir) {
+		t.Fatalf("an import into a data directory whose secrets is a file: %d %q", failCode, failErr)
+	}
+	for name, text := range map[string]string{"import report": out + errOut, "state show": shown,
+		"state.sqlite": string(stateBytes), "failed import": failOut + failErr} {
+		for _, canary := range []string{taskCanary, capabilityCanary} {
+			if strings.Contains(text, canary) {
+				t.Errorf("%s holds the secret %s", name, canary)
+			}
+		}
+	}
+}
+
+// A cleanup policy without a criterion is listed with the reason no
+// criterion, and the summary of the tasks counts the stored rows of origin
+// import and names the local tasks kept over the import (ruling S14).
+func TestImportReportCountsStoredTasksAndNamesPoliciesWithoutCriterion(t *testing.T) {
+	dir := dataDir(t)
+	st, err := state.Create(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = errors.Join(st.PutTask(model.Task{ID: "demo-cron", Name: "Local", TypeID: "demo.local", Origin: model.OriginLocal,
+		Schedule: model.TaskSchedule{Type: "manual"}, Properties: map[string]string{}}), st.Close())
+	if err != nil {
+		t.Fatal(err)
+	}
+	export := contentWith(t, map[string]func(row map[string]any){
+		"cleanup_policy.jsonl": func(row map[string]any) {
+			if row["name"] == "demo-age" {
+				row["criteria"] = map[string]any{}
+			}
+		},
+	})
+	code, out, errOut := run(t, "import", export)
+	if code != 0 {
+		t.Fatalf("import: %d %s", code, errOut)
+	}
+	for _, want := range []string{"cleanup policies 3, tasks 4 imported, all paused, local tasks kept: demo-cron, capabilities 3",
+		"note: cleanup policy demo-age is kept and never runs; no criterion",
+		"note: cleanup policy demo-mixed is kept and never runs; criteria this server does not know: regex"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the import report lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "tasks 5") {
+		t.Errorf("the report counts the task kept out:\n%s", out)
+	}
+}
+
+// stateFiles are the bytes of state.sqlite and, when it exists, of its
+// write-ahead log, where a row written last may still wait.
+func stateFiles(t *testing.T, dataDir string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(state.Path(dataDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	log, err := os.ReadFile(state.Path(dataDir) + "-wal")
+	if err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	return append(data, log...)
+}
+
+// The canary check of the import reads the write-ahead log too.
+func TestStateFilesReadTheLog(t *testing.T) {
+	dir := dataDir(t)
+	if code, _, errOut := run(t, "import", fixtureContent); code != 0 {
+		t.Fatalf("import: %d %s", code, errOut)
+	}
+	if err := os.WriteFile(state.Path(dir)+"-wal", []byte("CANARY-IN-THE-LOG"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	data := stateFiles(t, dir)
+	if !strings.Contains(string(data), "CANARY-IN-THE-LOG") || !strings.Contains(string(data), "SQLite format 3") {
+		t.Fatal("the bytes lack the write-ahead log or state.sqlite")
 	}
 }

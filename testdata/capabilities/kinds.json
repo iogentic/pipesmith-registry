@@ -1,0 +1,21 @@
+{
+ "note": "The capability types this server knows and the function classes of docs/plans/phase-6-administration.md, section Capabilities, each with its treatment, whether it has an effect in this server and the reason (ruling SY6 of leg 6-system). The types are those of the content fixture (testdata/export/fixture-content); the type ids of a real install are an owner point, so the classes carry none. A type not listed is unknown: a save that changes a type to it is refused, a stored one is kept (R6). internal/admin holds a Go copy, and a test fails when the two differ. GET /api/capabilities/support answers each type with supported equal to effect and this reason.",
+ "types": [
+  {"type": "baseurl", "class": "base address", "treatment": "no effect", "effect": false,
+   "reason": "The addresses in answers come from the address of each request; this server keeps no base address."},
+  {"type": "defaultrole", "class": "default role", "treatment": "setting", "effect": true,
+   "reason": "While enabled, its property role is the role that the realm DefaultRole gives every signed in user."},
+  {"type": "demo.webhook", "class": "call of an outside service", "treatment": "no effect", "effect": false,
+   "reason": "This server calls no outside service."}
+ ],
+ "classes": [
+  {"class": "audit switch", "treatment": "setting", "effect": false, "reason": "Stored; its effect is built and tested in phase 7."},
+  {"class": "interface settings", "treatment": "setting", "effect": false,
+   "reason": "Stored; the idle timeout of an interface session stays the 30 minutes of N7 of the phase 3 plan until the type id is known."},
+  {"class": "node identity", "treatment": "read only", "effect": false, "reason": "The node id is read only."},
+  {"class": "scheduler", "treatment": "read only", "effect": false, "reason": "The scheduler is always on."},
+  {"class": "health check configuration", "treatment": "no effect", "effect": false, "reason": "Decision P12 of the plans."},
+  {"class": "fetch of remote welcome content", "treatment": "no effect", "effect": false, "reason": "This server calls no outside service."},
+  {"class": "upgrade helper", "treatment": "no effect", "effect": false, "reason": "Updates are phase 8."}
+ ]
+}

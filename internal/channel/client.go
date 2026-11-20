@@ -19,6 +19,7 @@ var (
 	ErrShort    = errors.New("shorter than its Content-Length")
 	ErrRedirect = errors.New("redirect refused")
 	ErrToken    = errors.New("channel token")
+	ErrDeadline = errors.New("stage deadline")
 )
 
 const maxRedirects = 3
@@ -32,6 +33,9 @@ type dialFunc func(ctx context.Context, network, addr string) (net.Conn, error)
 type client struct {
 	http  *http.Client
 	total time.Duration
+	// stage ends with the deadline of the whole fetch stage, stageLimit long.
+	stage      context.Context
+	stageLimit time.Duration
 }
 
 func newClient(set *Settings, token string, dial dialFunc, tlsConfig *tls.Config) *client {
@@ -52,6 +56,7 @@ func newClient(set *Settings, token string, dial dialFunc, tlsConfig *tls.Config
 	}
 	return &client{
 		total: set.Timeouts.Total,
+		stage: context.Background(),
 		http: &http.Client{
 			Transport:     &tokenTransport{base: transport, server: set.Server, token: token},
 			CheckRedirect: checkRedirect,
@@ -70,12 +75,23 @@ func origin(u *url.URL) string {
 
 func checkRedirect(req *http.Request, via []*http.Request) error {
 	if from, to := origin(via[0].URL), origin(req.URL); from != to {
-		return fmt.Errorf("%w: %s answered with a redirect to %s", ErrRedirect, from, to)
+		return fmt.Errorf("%w: %s answered with a redirect to %s", ErrRedirect, from, bounded(to))
 	}
 	if len(via) > maxRedirects {
 		return fmt.Errorf("%w: more than %d redirects", ErrRedirect, maxRedirects)
 	}
 	return nil
+}
+
+// maxShown bounds a text of the forge in a message.
+const maxShown = 100
+
+// bounded is text quoted, cut after maxShown bytes with its length named.
+func bounded(text string) string {
+	if len(text) <= maxShown {
+		return strconv.Quote(text)
+	}
+	return fmt.Sprintf("%s... (%d bytes)", strconv.Quote(text[:maxShown]), len(text))
 }
 
 // tokenAllowed reports whether a token may go to u: over https, or to a
@@ -103,7 +119,7 @@ func (t *tokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // get sends a GET; the caller closes the body and then calls done.
 func (c *client) get(target string) (*http.Response, func(), error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.total)
+	ctx, cancel := context.WithTimeout(c.stage, c.total)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
 		cancel()
@@ -111,7 +127,7 @@ func (c *client) get(target string) (*http.Response, func(), error) {
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		err = plain(ctx, err)
+		err = c.plain(ctx, err)
 		cancel()
 		return nil, nil, err
 	}
@@ -120,15 +136,22 @@ func (c *client) get(target string) (*http.Response, func(), error) {
 
 // plain drops the address a url.Error carries, which can be the target of a
 // redirect, and names a timeout.
-func plain(ctx context.Context, err error) error {
+func (c *client) plain(ctx context.Context, err error) error {
 	var ue *url.Error
 	if errors.As(err, &ue) {
 		err = ue.Err
+	}
+	if c.stage.Err() != nil {
+		return c.deadline()
 	}
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		return fmt.Errorf("no complete answer within the total timeout: %w", ctx.Err())
 	}
 	return err
+}
+
+func (c *client) deadline() error {
+	return fmt.Errorf("%w: the fetch stage did not end within %v (timeouts.stage_seconds)", ErrDeadline, c.stageLimit)
 }
 
 // copyCapped writes the body of a 200 answer to w: a Content-Length above
@@ -150,12 +173,16 @@ func (c *client) copyCapped(target string, limit int64, w io.Writer) (int64, htt
 	}
 	n, err := io.Copy(w, io.LimitReader(resp.Body, limit+1))
 	switch {
+	case err != nil && c.stage.Err() != nil:
+		return n, nil, c.deadline()
 	case n > limit:
 		return n, nil, fmt.Errorf("%w: more than %d bytes", ErrTooLarge, limit)
+	case errors.Is(err, io.ErrUnexpectedEOF) && resp.ContentLength < 0:
+		return n, nil, fmt.Errorf("%w: the answer has none and ended after %d bytes, before its last chunk", ErrShort, n)
 	case errors.Is(err, io.ErrUnexpectedEOF), err == nil && resp.ContentLength >= 0 && n != resp.ContentLength:
 		return n, nil, fmt.Errorf("%w: %d of %d bytes", ErrShort, n, resp.ContentLength)
 	case err != nil:
-		return n, nil, plain(resp.Request.Context(), err)
+		return n, nil, c.plain(resp.Request.Context(), err)
 	}
 	return n, resp.Header, nil
 }

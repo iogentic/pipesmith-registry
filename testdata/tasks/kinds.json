@@ -1,0 +1,62 @@
+{
+ "note": "The task kinds of docs/plans/phase-6-administration.md, section Task Kinds, each with its treatment (leg 6-kinds, rulings KN1 to KN4). types are the rows with a type id: the four ids of the content fixture (testdata/export/fixture-content/qrtz_job_details.jsonl) and the ids of this server, marked own; a built type carries its fields in the shape of the task type list of the contract. classes are the kinds without a known id, with the number of kinds of the capture each holds; their ids are an owner point. A stored task of a type not listed here stays disabled as not known. internal/tasks holds a Go copy, and a test fails when the two differ.",
+ "types": [
+  {"id": "blobstore.compact", "class": "compaction of a store", "treatment": "later", "leg": "6-cleanup"},
+  {"id": "db.backup", "class": "backup of state.sqlite", "treatment": "build",
+   "type": {"id": "db.backup", "name": "Back up the state file",
+    "description": "Copies state.sqlite while the server runs into a new file in a directory outside the data directory.",
+    "fields": [
+     {"id": "location", "label": "Directory", "type": "string", "required": true, "default": null}
+    ]}},
+  {"id": "repository.cleanup", "class": "cleanup run over all policies", "treatment": "later", "leg": "6-cleanup"},
+  {"id": "repository.maven.remove-snapshots", "class": "removal of maven2 snapshots", "treatment": "later", "leg": "6-cleanup"},
+  {"id": "maven.rebuild-metadata", "own": true, "class": "rebuild of maven2 metadata", "treatment": "build",
+   "type": {"id": "maven.rebuild-metadata", "name": "Rebuild Maven metadata",
+    "description": "Writes the maven-metadata.xml files and their checksums of a hosted Maven repository again from the files it holds.",
+    "fields": [
+     {"id": "repositoryName", "label": "Repository", "type": "repository", "required": true, "default": null},
+     {"id": "groupId", "label": "Group id", "type": "string", "required": false, "default": null},
+     {"id": "artifactId", "label": "Artifact id", "type": "string", "required": false, "default": null},
+     {"id": "baseVersion", "label": "Base version", "type": "string", "required": false, "default": null}
+    ]}},
+  {"id": "blobstore.rescan", "own": true, "class": "rescan of a store, which replaces the browse rebuild", "treatment": "build",
+   "type": {"id": "blobstore.rescan", "name": "Rescan blob store",
+    "description": "Reads every file of a blob store again and rebuilds its part of the index, the catalog and its counts.",
+    "fields": [
+     {"id": "blobStoreName", "label": "Blob store", "type": "blobstore", "required": true, "default": null}
+    ]}},
+  {"id": "docker.upload-purge", "own": true, "class": "removal of stale docker upload sessions", "treatment": "build",
+   "type": {"id": "docker.upload-purge", "name": "Purge Docker uploads",
+    "description": "Ends the Docker upload sessions that had no request for longer than the given hours and removes their work files.",
+    "fields": [
+     {"id": "repositoryName", "label": "Repository", "type": "repository", "required": true, "default": "*"},
+     {"id": "olderThanHours", "label": "Older than (hours)", "type": "number", "required": true, "default": 24}
+    ]}},
+  {"id": "blobstore.work-files", "own": true, "class": "removal of temporary and orphaned files of a store", "treatment": "build",
+   "type": {"id": "blobstore.work-files", "name": "Remove old work files",
+    "description": "Removes the work files below content/tmp of a store of this server that are older than the given hours and that no running upload holds.",
+    "fields": [
+     {"id": "blobStoreName", "label": "Blob store", "type": "blobstore", "required": true, "default": null},
+     {"id": "olderThanHours", "label": "Older than (hours)", "type": "number", "required": true, "default": 24}
+    ]}}
+ ],
+ "classes": [
+  {"class": "rebuild of the catalog, which replaces the search rebuild", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.rescan"},
+  {"class": "recount of a store", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.rescan"},
+  {"class": "removal of unused maven2 snapshots", "count": 1, "treatment": "later", "leg": "6-cleanup"},
+  {"class": "removal of unused components", "count": 1, "treatment": "later", "leg": "6-cleanup"},
+  {"class": "rebuild of npm metadata", "count": 1, "treatment": "disabled", "reason": "not built in this release"},
+  {"class": "removal of unused docker manifests and layers", "count": 1, "treatment": "disabled", "reason": "not built in this release"},
+  {"class": "repair of maven2 base versions", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.rescan"},
+  {"class": "reconcile of npm search data", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.rescan"},
+  {"class": "compaction scheduling by expiry", "count": 1, "treatment": "later", "leg": "6-cleanup"},
+  {"class": "kinds of a format without assets", "count": 6, "treatment": "disabled", "reason": "the format holds no asset in this server"},
+  {"class": "removal of orphaned keys", "count": 1, "treatment": "disabled", "reason": "a token row is removed with its user"},
+  {"class": "malware scan", "count": 1, "treatment": "disabled", "reason": "decision P12 of the plans"},
+  {"class": "migration of cloud stores", "count": 1, "treatment": "disabled", "reason": "this server keeps file stores only"},
+  {"class": "publish and unpublish of the maven2 search index", "count": 2, "treatment": "disabled", "reason": "this server keeps no maven2 search index"},
+  {"class": "repair plan kinds", "count": 2, "treatment": "disabled", "reason": "the area is not in use"},
+  {"class": "script execution", "count": 1, "treatment": "disabled", "reason": "this server runs no script"},
+  {"class": "health check reports of proxies", "count": 1, "treatment": "disabled", "reason": "decision P12 of the plans"}
+ ]
+}

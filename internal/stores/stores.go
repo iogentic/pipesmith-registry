@@ -164,11 +164,35 @@ func (b *base) Root() string { return b.root }
 
 // Open opens a location of an entry, read only.
 func (b *base) Open(location string) (*os.File, error) {
+	return b.openWithin(location, b.realRoot)
+}
+
+// openWithin opens the regular file of a location whose real path lies
+// inside limit, a real folder of the root. The file is opened through an
+// os.Root of limit, so a link put in place after the check cannot lead out
+// of it.
+func (b *base) openWithin(location, limit string) (*os.File, error) {
 	real, err := b.resolve(location)
 	if err != nil {
 		return nil, err
 	}
-	return os.Open(real) // #nosec G304 -- resolve gave the real path of a regular file inside the resolved store root.
+	if !within(real, limit) || real == limit {
+		return nil, notFound("%s is outside its folder %s", repr(location), repr(limit))
+	}
+	root, err := os.OpenRoot(limit)
+	if err != nil {
+		return nil, notFound("no file at %s", repr(location))
+	}
+	defer root.Close()
+	f, err := root.Open(strings.TrimPrefix(real[len(limit):], "/"))
+	if err != nil {
+		return nil, notFound("no file at %s", repr(location))
+	}
+	if info, err := f.Stat(); err != nil || !info.Mode().IsRegular() {
+		_ = f.Close() // a read only file that is no regular file; the refusal counts
+		return nil, notFound("%s is not a regular file", repr(location))
+	}
+	return f, nil
 }
 
 // resolve is the real path of a regular file inside the root.
@@ -243,6 +267,13 @@ type Marked struct {
 // in the order of the walk; a nil marked makes it Entries. A copy of the
 // properties of a marked blob (originalLocation) is not given.
 func (s *BlobStore) Walk(counts *ScanCounts, yield func(Entry) error, marked func(Marked) error) error {
+	return s.WalkLoose(counts, yield, marked, nil)
+}
+
+// WalkLoose is Walk that also gives loose the location of every bytes file
+// without its properties file, content/<...>/<stem>.bytes, after the blobs
+// of its directory; a nil loose makes it Walk.
+func (s *BlobStore) WalkLoose(counts *ScanCounts, yield func(Entry) error, marked func(Marked) error, loose func(location string) error) error {
 	if counts == nil {
 		counts = &ScanCounts{}
 	}
@@ -309,6 +340,22 @@ func (s *BlobStore) Walk(counts *ScanCounts, yield func(Entry) error, marked fun
 				}
 			}
 		}
+		if loose == nil {
+			continue
+		}
+		for _, name := range names {
+			stem, ok := strings.CutSuffix(name, BytesSuffix)
+			if !ok || files[stem+PropertiesSuffix] {
+				continue
+			}
+			location := ContentDir + "/" + name
+			if rel != "" {
+				location = ContentDir + "/" + rel + "/" + name
+			}
+			if err := loose(location); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -326,7 +373,10 @@ func (s *BlobStore) entry(propertiesPath, rel, stem string, hasBytes bool, count
 	var props *blobprops.BlobProps
 	if len(data) <= MaxPropertiesBytes {
 		if props, err = blobprops.Parse(data); err != nil {
-			return nil, err
+			// The reference ends the scan here (sa-31); this server skips the file.
+			warn("cannot read %s: a number in it has too many digits; skipped", propertiesPath)
+			counts.Unparsable++
+			return nil, nil
 		}
 	}
 	switch {
@@ -345,15 +395,17 @@ func (s *BlobStore) entry(propertiesPath, rel, stem string, hasBytes bool, count
 	case !hasBytes:
 		counts.NoBytes++
 		return nil, nil
+	case props.Overflow:
+		// The reference ends the scan here (sa-31); this server skips the file.
+		warn("cannot read %s: size or creationTime does not fit in 64 bits; skipped", propertiesPath)
+		counts.Unparsable++
+		return nil, nil
 	}
 	counts.Live++
 	e := entryOf(props, rel, stem)
 	// The Python index cannot bind these values and fails the scan there.
 	if !utf8.ValidString(e.Location) {
 		return nil, encodeError(e.Location)
-	}
-	if props.Overflow {
-		return nil, &Error{Class: "OverflowError", Message: "Python int too large to convert to SQLite INTEGER"}
 	}
 	return &e, nil
 }
@@ -409,6 +461,18 @@ func NewDirectoryStore(name, root string, repos []string, manifest, cacheDir *st
 }
 
 func (s *DirectoryStore) Kind() string { return KindDirectory }
+
+// Open opens a location of an entry, read only. The location of an entry
+// is "<repo>/<path>"; its real path must lie inside the folder of that
+// repository, so a link in one repository does not open a file of another
+// one (sa-22). Any other spelling is held to the root only.
+func (s *DirectoryStore) Open(location string) (*os.File, error) {
+	segments := strings.Split(location, "/")
+	if len(segments) < 2 || slices.ContainsFunc(segments, func(seg string) bool { return seg == "" || seg == "." || seg == ".." }) {
+		return s.base.Open(location)
+	}
+	return s.openWithin(location, pyJoin(s.realRoot, segments[0]))
+}
 
 // Repos is the limit to top level names, nil for none.
 func (s *DirectoryStore) Repos() []string { return s.repos }
@@ -505,7 +569,7 @@ func (s *DirectoryStore) walk(repo string, counts *ScanCounts, lookup ManifestLo
 				path = rel + "/" + name
 			}
 			itemPath := pyJoin(directory, name)
-			info := s.fileStat(item, itemPath)
+			info := s.fileStat(item, itemPath, repo)
 			if info == nil {
 				if item.Type().IsDir() {
 					subdirs = append(subdirs, path)
@@ -554,8 +618,8 @@ func (s *DirectoryStore) walk(repo string, counts *ScanCounts, lookup ManifestLo
 }
 
 // fileStat is the stat of a regular file, or of a file link whose target
-// is inside the root; nil for anything else.
-func (s *DirectoryStore) fileStat(item os.DirEntry, itemPath string) fs.FileInfo {
+// is inside the folder of its repository; nil for anything else.
+func (s *DirectoryStore) fileStat(item os.DirEntry, itemPath, repo string) fs.FileInfo {
 	if item.Type()&fs.ModeSymlink == 0 {
 		if !item.Type().IsRegular() {
 			return nil
@@ -567,7 +631,7 @@ func (s *DirectoryStore) fileStat(item os.DirEntry, itemPath string) fs.FileInfo
 		return info
 	}
 	real, err := realpath(purePath(itemPath), true)
-	if err != nil || !within(real, s.realRoot) {
+	if err != nil || !within(real, pyJoin(s.realRoot, repo)) {
 		return nil
 	}
 	info, err := os.Stat(real)

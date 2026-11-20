@@ -1,19 +1,24 @@
 package server
 
 import (
+	"cmp"
 	"errors"
 	"net"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	adminrules "github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 	"github.com/iogentic/pipesmith-registry/internal/rest"
+	rtable "github.com/iogentic/pipesmith-registry/internal/route"
 	"github.com/iogentic/pipesmith-registry/internal/stores"
 	"github.com/iogentic/pipesmith-registry/internal/version"
 )
@@ -56,20 +61,28 @@ const (
 	ruleAssetID           // a subject with the browse permission of the repository of the asset id
 	ruleClient            // the client read path: the view permission of the repository in the path (T7, review 6)
 	ruleContent           // a REST write: the view permission of the repository of the id or of the query, with the action (rest_write.go)
+	ruleCreate            // a create of a repository: the administration permission of the format of the segment in the path, any repository, add (stores.go)
+	ruleListing           // a REST read of one repository: the browse permission of the repository of the id or of the query (allowContent)
 )
 
 type rule struct {
 	kind        ruleKind
 	permissions []string // ruleApp: any of them
 	group       int      // ruleView, ruleAdmin, ruleAssetID: the match group of the repository or id
-	action      string   // ruleView: browse or read
+	action      string   // ruleView: browse or read; ruleAdmin: empty for read, or edit
 }
 
 var (
-	public   = rule{kind: rulePublic}
-	signedIn = rule{kind: ruleSignedIn}
-	client   = rule{kind: ruleClient}
+	// browseQueried is the browse permission of the repository the query
+	// parameter repository names: the listings of one repository.
+	browseQueried = rule{kind: ruleListing, action: "browse"}
+	public        = rule{kind: rulePublic}
+	signedIn      = rule{kind: ruleSignedIn}
+	client        = rule{kind: ruleClient}
 )
+
+// Empty is true for the zero rule, which the route table refuses (route.New).
+func (r rule) Empty() bool { return r.kind == ruleNone }
 
 func perm(permissions ...string) rule { return rule{kind: ruleApp, permissions: permissions} }
 
@@ -79,9 +92,15 @@ func admin(group int) rule { return rule{kind: ruleAdmin, group: group} }
 
 func exact(path string) *regexp.Regexp { return regexp.MustCompile("^" + path + "$") }
 
+// entry is a route of the table, in the order pattern, methods, rule,
+// handler.
+func entry(pattern *regexp.Regexp, methods []string, r rule, handle handler) route {
+	return route{Pattern: pattern, Methods: methods, Rule: r, Handle: handle}
+}
+
 // get is a GET route of internal/rest.
 func get(path string, r rule, handle func(s *Server, w *recorder, req *request, match []string) error) route {
-	return route{pattern: exact(path), methods: []string{"GET"}, rule: r, handle: handle}
+	return route{Pattern: exact(path), Methods: []string{"GET"}, Rule: r, Handle: handle}
 }
 
 // plain wraps a function of internal/rest that needs no path value.
@@ -114,7 +133,7 @@ const (
 // before those of step 2. The permission of each read is the one the
 // contract names for its screen.
 var secureRoutes = []route{
-	{exact("/api/session"), []string{"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}, public, (*Server).session},
+	entry(exact("/api/session"), []string{"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}, public, (*Server).session),
 	get(restBase+"/repositories", signedIn, plain(rest.Repositories)),
 	get(restBase+"/repositories/"+segment, view(1, "browse"), named(rest.Repository)),
 	get(restBase+"/repositories/"+segment+"/"+segment+"/"+segment, admin(3), func(s *Server, w *recorder, req *request, m []string) error {
@@ -124,7 +143,12 @@ var secureRoutes = []route{
 	}),
 	get(restBase+"/repositorySettings", signedIn, plain(rest.RepositorySettings)),
 	get(restBase+"/search", perm("nexus:search:read"), queried(rest.Search)),
+	get(restBase+"/search/assets", perm("nexus:search:read"), queried(rest.SearchAssets)),
+	get(restBase+"/search/assets/download", perm("nexus:search:read"), queried(rest.SearchAssetsDownload)),
 	get(restBase+"/assets/"+segment, rule{kind: ruleAssetID, group: 1}, named(rest.Asset)),
+	get(restBase+"/assets", browseQueried, queried(rest.Assets)),
+	get(restBase+"/components", browseQueried, queried(rest.Components)),
+	get(restBase+"/components/"+segment, rule{kind: ruleListing, group: 1, action: "browse"}, named(rest.ComponentByID)),
 	get(restBase+"/blobstores", perm("nexus:blobstores:read"), plain(rest.BlobStores)),
 	get(restBase+"/blobstores/file/"+segment, perm("nexus:blobstores:read"), named(rest.FileBlobStore)),
 	get(restBase+"/blobstores/"+segment+"/quota-status", perm("nexus:blobstores:read"), named(rest.QuotaStatus)),
@@ -140,15 +164,87 @@ var secureRoutes = []route{
 	get(restBase+"/security/ldap", perm("nexus:ldap:read"), plain(rest.LDAPServers)),
 	get(restBase+"/security/ldap/"+segment, perm("nexus:ldap:read"), named(rest.LDAPServer)),
 	get(restBase+"/status/check", perm("nexus:atlas:read"), plain(rest.StatusChecks)),
-	get(restBase+"/read-only", perm(settingsRead), plain(func(*rest.Env) (rest.Answer, error) { return rest.ReadOnly(), nil })),
+	entry(exact("/api/updates"), []string{"GET"}, perm("nexus:atlas:read"), (*Server).apiUpdates),
+	get(restBase+"/read-only", perm(settingsRead), func(s *Server, w *recorder, req *request, _ []string) error {
+		return s.restAnswer(w, req, func(*rest.Env, url.Values) (rest.Answer, error) {
+			return rest.ReadOnly(s.readOnly.State(), !s.writes.clients), nil
+		})
+	}),
 	get("/api/areas", signedIn, func(s *Server, w *recorder, req *request, _ []string) error {
-		return s.restAnswer(w, req, func(*rest.Env, url.Values) (rest.Answer, error) { return rest.Areas(s.refusedList()), nil })
+		return s.restAnswer(w, req, func(*rest.Env, url.Values) (rest.Answer, error) {
+			return rest.Areas(s.readOnly.State(), !s.writes.clients, s.refusedList()), nil
+		})
 	}),
 	// the routes of tokens (tokens.go), more specific than /repository/(.*)
-	{exact(repositoryPrefix + segment + `/-/user/org\.couchdb\.user:(.+)`), []string{"PUT"}, public, (*Server).npmLogin},
-	{exact(repositoryPrefix + segment + `/-/whoami`), []string{"GET"}, public, (*Server).npmWhoami},
-	{exact(repositoryPrefix + segment + npmTokenPath + `(.+)`), []string{"DELETE"}, public, (*Server).npmLogout},
-	{exact(repositoryPrefix + segment + `/v2/token`), []string{"GET"}, public, (*Server).dockerToken},
+	entry(npmLoginPattern, []string{"PUT"}, public, (*Server).npmLogin),
+	entry(exact(repositoryPrefix+segment+`/-/whoami`), []string{"GET"}, public, (*Server).npmWhoami),
+	entry(npmLogoutPattern, []string{"DELETE"}, public, (*Server).npmLogout),
+	entry(exact(repositoryPrefix+segment+`/v2/token`), []string{"GET"}, public, (*Server).dockerToken),
+}
+
+// The sign in and sign out of npm, which the read only mode lets through.
+var (
+	npmLoginPattern  = exact(repositoryPrefix + segment + `/-/user/org\.couchdb\.user:(.+)`)
+	npmLogoutPattern = exact(repositoryPrefix + segment + npmTokenPath + `(.+)`)
+)
+
+// unfrozen are the writes the read only mode lets through (ruling SB2): the
+// session, the sign in and sign out of npm, the end of a freeze, the stop
+// of a task (ruling SB8), and the tests and previews, which change nothing.
+var unfrozen = []*regexp.Regexp{
+	exact("/api/session"), npmLoginPattern, npmLogoutPattern,
+	exact(restBase + "/read-only/(release|force-release)"), exact(restBase + "/tasks/" + segment + "/stop"),
+	exact("/api/routing-rules/(test|preview)"), exact("/api/cleanup-policies/preview"),
+	exact("/api/ldap/verify-(connection|user-mapping|login)"),
+}
+
+// taskRunPattern is the run of a task, which the read only mode refuses
+// with 409 (ruling SB2).
+var taskRunPattern = exact(restBase + "/tasks/" + segment + "/run")
+
+const frozenRun = "the server is frozen, so no task starts; release the freeze first"
+
+var freezePattern = exact(restBase + "/read-only/freeze")
+
+// noEnd is the end of a request that holds no part of the read only mode.
+func noEnd() {}
+
+// freezeGate holds the read only mode shared for a write until end is
+// called (ruling SB9), and answers a write while the mode is frozen: 409
+// for the run of a task, 503 with the reason for every other change, in
+// the shape of its path. The writes of unfrozen and the freeze itself pass
+// without a hold. refused true means the answer is written.
+func (s *Server) freezeGate(w *recorder, req *request) (end func(), refused bool) {
+	if s.readOnly == nil || !writeMethod(req.r.Method) {
+		return noEnd, false
+	}
+	for _, p := range unfrozen {
+		if p.MatchString(req.path) {
+			return noEnd, false
+		}
+	}
+	var state adminrules.ReadOnlyState
+	if freezePattern.MatchString(req.path) {
+		if state = s.readOnly.State(); !state.Frozen {
+			return noEnd, false
+		}
+	} else {
+		var ok bool
+		if end, state, ok = s.readOnly.Begin(req.r.Context()); ok {
+			return end, false
+		}
+	}
+	switch {
+	case taskRunPattern.MatchString(req.path):
+		s.message(w, req, http.StatusConflict, frozenRun+". "+state.Reason)
+	case req.dockerRepo != "" || dockerTarget(req):
+		dockerError(w, req, http.StatusServiceUnavailable, "UNAVAILABLE", state.Reason, nil)
+	case strings.HasPrefix(req.path, repositoryPrefix):
+		writeText(w, req, http.StatusServiceUnavailable, state.Reason)
+	default:
+		s.message(w, req, http.StatusServiceUnavailable, state.Reason)
+	}
+	return nil, true
 }
 
 // A refusal is a request of the contract this server does not serve yet: a
@@ -181,56 +277,37 @@ var writeRefusals = []refusalDecl{
 	refusal(restBase+"/formats/upload-specs", "content", "GET"),
 }
 
+// keptMisses are the requests that keep the 404 of 0.1.1 with writes off
+// although another method takes their path: the component delete, which
+// docs/ui/API.md does not name, on the path of the read of a component.
+var keptMisses = []struct {
+	method  string
+	pattern *regexp.Regexp
+}{{"DELETE", exact(restBase + "/components/" + segment)}}
+
+// keptMiss tells whether the request is one of keptMisses.
+func keptMiss(req *request) bool {
+	for _, m := range keptMisses {
+		if req.r.Method == m.method && m.pattern.MatchString(req.path) {
+			return true
+		}
+	}
+	return false
+}
+
 // refusalTable holds the other requests of docs/ui/API.md at the taken
 // commit of the interface (1e6d884).
 var refusalTable = []refusalDecl{
-	refusal(restBase+"/repositories/{segment}/{type}", "repositories", "POST"),
-	refusal(restBase+"/repositories/{segment}/{type}/{name}", "repositories", "PUT"),
-	refusal(restBase+"/repositories/{name}", "repositories", "DELETE"),
-	refusal(restBase+"/repositories/{name}/(rebuild-index|invalidate-cache)", "repositories", "POST"),
 	refusal("/api/cleanup-policies", "cleanup-policies", "GET", "POST"),
 	refusal("/api/cleanup-policies/preview", "cleanup-policies", "POST"),
 	refusal("/api/cleanup-policies/{name}", "cleanup-policies", "GET", "PUT", "DELETE"),
-	refusal(restBase+"/routing-rules", "routing-rules", "GET", "POST"),
-	refusal(restBase+"/routing-rules/{name}", "routing-rules", "GET", "PUT", "DELETE"),
-	refusal("/api/routing-rules/(test|preview)", "routing-rules", "POST"),
-	refusal(restBase+"/blobstores/file", "blob-stores", "POST"),
-	refusal(restBase+"/blobstores/file/{name}", "blob-stores", "PUT"),
-	refusal(restBase+"/blobstores/{name}", "blob-stores", "DELETE"),
-	refusal("/api/blob-stores/{name}/deleted", "blob-stores", "GET"),
-	refusal(restBase+"/security/roles", "security", "POST"),
-	refusal(restBase+"/security/roles/{id}", "security", "PUT", "DELETE"),
-	refusal(usersBase, "security", "POST"),
-	refusal(usersBase+"/{userId}", "security", "PUT", "DELETE"),
-	refusal(usersBase+"/{userId}/change-password", "security", "PUT"),
-	refusal(restBase+"/security/anonymous", "security", "PUT"),
-	refusal(restBase+"/security/realms/active", "security", "PUT"),
-	refusal(restBase+"/security/ldap", "ldap", "POST"),
-	refusal(restBase+"/security/ldap/change-order", "ldap", "POST"),
-	refusal(restBase+"/security/ldap/{name}", "ldap", "PUT", "DELETE"),
-	refusal("/api/ldap/(clear-cache|verify-connection|verify-user-mapping|verify-login)", "ldap", "POST"),
 	refusal("/api/tokens", "tokens", "GET", "POST"),
 	refusal("/api/tokens/{id}", "tokens", "DELETE"),
 	refusal("/api/account", "account", "PUT"),
 	refusal("/api/account/password", "account", "POST"),
-	refusal("/api/logging/loggers", "logging", "GET"),
-	refusal("/api/logging/loggers/{name}", "logging", "PUT", "DELETE"),
-	refusal("/api/logging/reset", "logging", "POST"),
-	refusal("/api/logs", "logs", "GET"),
-	refusal("/api/logs/{name+}", "logs", "GET"),
-	refusal("/service/rest/beta/system/information", "system", "GET"),
-	refusal(restBase+"/capabilities", "capabilities", "GET"),
-	refusal(restBase+"/capabilities/{id}", "capabilities", "PUT", "DELETE"),
-	refusal("/api/capabilities/support", "capabilities", "GET"),
-	refusal(restBase+"/system/node", "system", "GET"),
-	refusal(restBase+"/read-only/(freeze|release|force-release)", "system", "POST"),
-	refusal(restBase+"/tasks", "tasks", "GET"),
-	refusal(restBase+"/tasks/{id}", "tasks", "GET"),
-	refusal(restBase+"/tasks/{id}/(run|stop)", "tasks", "POST"),
 	refusal("/api/tasks", "tasks", "POST"),
 	refusal("/api/tasks/{id}", "tasks", "GET", "PUT", "DELETE"),
 	refusal("/api/task-types", "tasks", "GET"),
-	refusal("/api/metrics/(requests|downloads)", "metrics", "GET"),
 }
 
 // templatePart finds the variable parts of a refusal template.
@@ -283,8 +360,8 @@ func (d refusalDecl) paths() []string {
 
 func (d refusalDecl) route() route {
 	area := d.area
-	return route{pattern: d.pattern(), methods: d.methods, rule: signedIn,
-		handle: func(s *Server, w *recorder, req *request, _ []string) error {
+	return route{Pattern: d.pattern(), Methods: d.methods, Rule: signedIn,
+		Handle: func(s *Server, w *recorder, req *request, _ []string) error {
 			return s.writeAnswer(w, req, rest.NotImplemented(area, req.r.Method+" "+req.path))
 		}}
 }
@@ -324,23 +401,31 @@ var (
 // table while writes are on, with the REST writes in place of their
 // refusals.
 var (
-	securedRoutes = slices.Concat(secureRoutes, routesOf(writeRefusals), refusalRoutes, routes)
-	writingRoutes = slices.Concat(secureRoutes, contentWriteRoutes, refusalRoutes, routes)
+	securedRoutes = slices.Concat(secureRoutes, identityRoutes, systemRoutes, statusAreaRoutes, figureRoutes, logRoutes, proxyRoutes, storeRoutes, routesOf(writeRefusals), refusalRoutes, routes)
+	writingRoutes = slices.Concat(secureRoutes, identityRoutes, systemRoutes, statusAreaRoutes, figureRoutes, logRoutes, proxyRoutes, storeRoutes, contentWriteRoutes, refusalRoutes, routes)
 )
 
-func (s *Server) table() []route {
+// The three tables of the server, built once (internal/route refuses an
+// entry without rule): security off, security on, security on with writes.
+var (
+	plainTable   = rtable.MustNew(routes)
+	securedTable = rtable.MustNew(securedRoutes)
+	writingTable = rtable.MustNew(writingRoutes)
+)
+
+func (s *Server) table() *routeTable {
 	switch {
 	case s.sec == nil:
-		return routes
-	case s.writes.writer != nil:
-		return writingRoutes
+		return plainTable
+	case s.writes.clients:
+		return writingTable
 	}
-	return securedRoutes
+	return securedTable
 }
 
 // refusedList is the list of GET /api/areas.
 func (s *Server) refusedList() []rest.Refused {
-	if s.writes.writer != nil {
+	if s.writes.clients {
 		return refused
 	}
 	return refusedWritesOff
@@ -350,6 +435,7 @@ func (s *Server) refusedList() []rest.Refused {
 func (s *Server) subjectOf(req *request) (*model.Subject, error) {
 	if !req.resolved {
 		req.subject, req.subjectErr = s.sec.Subject(req.r)
+		noteSubject(req.r, req.subject)
 		req.resolved = true
 	}
 	return req.subject, req.subjectErr
@@ -372,6 +458,10 @@ func writeMethod(method string) bool {
 var restHeaders = [][2]string{{"Content-Type", jsonType}, {"X-Content-Type-Options", "nosniff"}, {"Cache-Control", "no-store"}}
 
 func (s *Server) writeAnswer(w *recorder, req *request, a rest.Answer) error {
+	if a.Location != "" {
+		writeBody(w, req, a.Status, [][2]string{{"Location", a.Location}}, nil)
+		return nil
+	}
 	data, err := a.JSON()
 	if err != nil {
 		return err
@@ -560,10 +650,12 @@ func (s *Server) allow(w *recorder, req *request, r rule, match []string) (bool,
 	switch r.kind {
 	case ruleSignedIn:
 		return true, nil
-	case ruleContent:
+	case ruleContent, ruleListing:
 		return s.allowContent(w, req, subject, r, match)
 	case ruleApp:
 		needed = r.permissions
+	case ruleCreate:
+		needed = []string{rest.AdminPermission(cmp.Or(adminrules.FormatOfSegment(match[r.group]), match[r.group]), "*", "add")}
 	case ruleView, ruleAdmin, ruleAssetID:
 		name, action := match[r.group], r.action
 		if r.kind == ruleAssetID {
@@ -578,7 +670,10 @@ func (s *Server) allow(w *recorder, req *request, r rule, match []string) (bool,
 			return false, err
 		}
 		if r.kind == ruleAdmin {
-			needed = []string{rest.AdminPermission(format, name, "read")}
+			if action == "" {
+				action = "read"
+			}
+			needed = []string{rest.AdminPermission(format, name, action)}
 		} else {
 			needed = []string{rest.ViewPermission(format, name, action)}
 		}
@@ -590,7 +685,7 @@ func (s *Server) allow(w *recorder, req *request, r rule, match []string) (bool,
 			return true, nil
 		}
 	}
-	if r.kind == ruleApp {
+	if r.kind == ruleApp || r.kind == ruleCreate {
 		s.message(w, req, http.StatusForbidden, "this needs the permission "+strings.Join(needed, " or "))
 	} else {
 		s.message(w, req, http.StatusForbidden, repositoryRefusal)
@@ -618,7 +713,10 @@ func (s *Server) staleCookie(req *request, err error) bool {
 // credentials (decision E4), and the Docker token of the anonymous subject
 // is none. Else a nil subject holds the rights of the anonymous user while
 // anonymous access is on and is asked for credentials when they do not
-// suffice. The Docker base /v2/ of a Docker port needs sign in only. A path
+// suffice. The Docker base /v2/ of a Docker port needs sign in only, and a
+// nil subject is asked for credentials there unless the anonymous user may
+// pull from the repository (row 4-15 of review 4), so docker login checks
+// its password where the repository forces Basic. A path
 // that names no repository goes on to the handler, whose answer names none.
 func (s *Server) allowClient(w *recorder, req *request, subject *model.Subject) (bool, error) {
 	if subject == nil && !s.sec.AnonymousEnabled() {
@@ -634,9 +732,13 @@ func (s *Server) allowClient(w *recorder, req *request, subject *model.Subject) 
 		return true, nil
 	}
 	if req.dockerRepo != "" && t.path == "v2" {
+		if subject == nil && !s.sec.DockerAccess(req.dockerRepo).AnonymousPull {
+			s.unauthorized(w, req, true)
+			return false, nil
+		}
 		return true, nil
 	}
-	if s.writes.writer != nil && prefix == repositoryPrefix {
+	if s.writes.clients && prefix == repositoryPrefix {
 		if action, err = s.writeAction(req.r.Method, t); err != nil {
 			return false, err
 		}
@@ -689,7 +791,7 @@ func (s *Server) restEnv(req *request) (*rest.Env, error) {
 		list = append(list, rest.Store{Name: sc.Name, Kind: sc.Kind, Root: sc.Root, Available: store != nil && !stores.LooksUnmounted(store)})
 	}
 	subject := req.subject
-	return &rest.Env{
+	env := &rest.Env{
 		Context:      req.r.Context(),
 		Snapshot:     s.sec.Snapshot(),
 		Repositories: st.repositories,
@@ -697,11 +799,42 @@ func (s *Server) restEnv(req *request) (*rest.Env, error) {
 		Catalog:      s.catalog,
 		Stores:       list,
 		Permits:      func(p string) bool { return s.sec.Permits(subject, p) },
-		Base:         req.scheme + "://" + req.r.Host,
-	}, nil
+		Base:         baseURL(req),
+		StoresRoot:   filepath.Join(s.rp.cfg.DataDir, adminrules.StoresDir),
+	}
+	if s.writes.file != nil {
+		env.Details = s.writes.file // leg F1b: the side data of the writes
+		env.Components = s.writes.file
+		env.CatalogBehind = func() (string, error) {
+			stats, err := s.rp.index.StoreStats()
+			if err != nil {
+				return "", err
+			}
+			return s.writes.file.Behind(stats)
+		}
+	}
+	return env, nil
 }
 
+// Limits of the REST reads (task 12 of the phase 1c plan): the query string
+// of a request, and the time the answer may take to compute and send. The
+// search ends after its timeout of at most two minutes; the write deadline
+// gives the answer one more minute to reach a slow client and then frees
+// the connection.
+const (
+	maxRESTQuery   = 8192
+	restWriteLimit = 3 * time.Minute
+)
+
 func (s *Server) restAnswer(w *recorder, req *request, build func(env *rest.Env, q url.Values) (rest.Answer, error)) error {
+	if len(req.query) > maxRESTQuery {
+		s.message(w, req, http.StatusBadRequest, "the query string is longer than "+strconv.Itoa(maxRESTQuery)+" bytes")
+		return nil
+	}
+	rc := http.NewResponseController(w.ResponseWriter)
+	if rc.SetWriteDeadline(time.Now().Add(restWriteLimit)) == nil {
+		defer func() { _ = rc.SetWriteDeadline(time.Time{}) }() // the next request of the connection starts without one
+	}
 	q, err := url.ParseQuery(req.query)
 	if err != nil {
 		s.message(w, req, http.StatusBadRequest, "the query string cannot be read")

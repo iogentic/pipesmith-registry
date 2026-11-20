@@ -5,6 +5,7 @@ import { api } from "../api.js";
 import { bytes, number, formatName, typeName, time } from "../format.js";
 import { pageHead, loading, linkButton } from "../ui/page.js";
 import { mark, problem } from "../ui/notice.js";
+import { figureCards } from "../ui/figures.js";
 
 function stat(label, value, sub) {
   return h("div", { class: "card" }, h("div", { class: "stat-label", text: label }), h("div", { class: "stat", text: value }), sub ? h("p", { text: sub }) : null);
@@ -153,6 +154,7 @@ export async function render(ctx) {
     s && s.scan ? scanCard(s) : null
   ]);
   if (ctx.can("nexus:atlas:read")) fill(grid, api.statusChecks(), [["Health checks"]], (checks) => [checks ? checksCard(checks) : null]);
+  if (ctx.can("nexus:atlas:read")) figureCards(grid);
   fill(grid, status, [["Blob stores", "wide-card"]], (s) => [
     s && Array.isArray(s.stores) && s.stores.length ? storesCard(s, ctx.can("nexus:blobstores:read")) : null
   ]);

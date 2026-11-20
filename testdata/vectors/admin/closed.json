@@ -1,0 +1,174 @@
+{
+ "family": "closed",
+ "note": "Ruling ST11 of leg 6-stores: the addresses of a closed network, the set kindOf of internal/proxy/inner.go names: loopback 127.0.0.0/8 and ::1, the unspecified address and 0.0.0.0/8, link local 169.254.0.0/16 and fe80::/10, private 10/8, 172.16/12, 192.168/16 and fc00::/7, the shared address space 100.64.0.0/10, the site local fec0::/10, and multicast 224.0.0.0/4 and ff00::/8; an IPv4 address inside IPv6 counts as that IPv4 address. The public rows are the edges of those ranges and the documentation ranges; none is ever dialled.",
+ "cases": [
+  {
+   "address": "127.0.0.1",
+   "closed": true
+  },
+  {
+   "address": "127.255.255.254",
+   "closed": true
+  },
+  {
+   "address": "::1",
+   "closed": true
+  },
+  {
+   "address": "::ffff:127.0.0.1",
+   "closed": true
+  },
+  {
+   "address": "0.0.0.0",
+   "closed": true
+  },
+  {
+   "address": "0.1.2.3",
+   "closed": true
+  },
+  {
+   "address": "::",
+   "closed": true
+  },
+  {
+   "address": "::ffff:0.0.0.0",
+   "closed": true
+  },
+  {
+   "address": "169.254.169.254",
+   "closed": true
+  },
+  {
+   "address": "169.254.0.1",
+   "closed": true
+  },
+  {
+   "address": "fe80::1",
+   "closed": true
+  },
+  {
+   "address": "10.0.0.1",
+   "closed": true
+  },
+  {
+   "address": "10.255.255.255",
+   "closed": true
+  },
+  {
+   "address": "172.16.0.1",
+   "closed": true
+  },
+  {
+   "address": "172.31.255.255",
+   "closed": true
+  },
+  {
+   "address": "192.168.1.1",
+   "closed": true
+  },
+  {
+   "address": "::ffff:10.1.2.3",
+   "closed": true
+  },
+  {
+   "address": "fc00::1",
+   "closed": true
+  },
+  {
+   "address": "fd12:3456:789a::1",
+   "closed": true
+  },
+  {
+   "address": "100.64.0.1",
+   "closed": true
+  },
+  {
+   "address": "100.127.255.255",
+   "closed": true
+  },
+  {
+   "address": "fec0::1",
+   "closed": true
+  },
+  {
+   "address": "feff::1",
+   "closed": true
+  },
+  {
+   "address": "224.0.0.251",
+   "closed": true
+  },
+  {
+   "address": "239.1.2.3",
+   "closed": true
+  },
+  {
+   "address": "ff02::1",
+   "closed": true
+  },
+  {
+   "address": "ff05::1",
+   "closed": true
+  },
+  {
+   "address": "ff0e::1",
+   "closed": true
+  },
+  {
+   "address": "192.0.2.1",
+   "closed": false
+  },
+  {
+   "address": "198.51.100.7",
+   "closed": false
+  },
+  {
+   "address": "203.0.113.9",
+   "closed": false
+  },
+  {
+   "address": "2001:db8::1",
+   "closed": false
+  },
+  {
+   "address": "::ffff:192.0.2.1",
+   "closed": false
+  },
+  {
+   "address": "172.15.255.255",
+   "closed": false
+  },
+  {
+   "address": "172.32.0.0",
+   "closed": false
+  },
+  {
+   "address": "100.63.255.255",
+   "closed": false
+  },
+  {
+   "address": "100.128.0.0",
+   "closed": false
+  },
+  {
+   "address": "192.169.0.1",
+   "closed": false
+  },
+  {
+   "address": "1.0.0.1",
+   "closed": false
+  },
+  {
+   "address": "11.0.0.1",
+   "closed": false
+  },
+  {
+   "address": "223.255.255.255",
+   "closed": false
+  },
+  {
+   "address": "fbff::1",
+   "closed": false
+  }
+ ]
+}

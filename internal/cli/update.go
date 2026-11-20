@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -34,7 +35,7 @@ const updateHelpBody = `Updates
                                        the same for <root>/releases/<version>, the
                                        directory of the fetch stage; both forms take
                                        --no-catalog-backup
-  update --fetch [--version V] [--allow-downgrade] [--root DIR]
+  update --fetch [--version V [--allow-downgrade]] [--root DIR]
                                        download the highest complete version above
                                        the running one (or V) from the channel of
                                        <root>/update.json into <root>/releases/<version>
@@ -148,6 +149,8 @@ func (c *command) update() (int, error) {
 		return 2, &usageError{program + " update: give a release directory, --fetch or --switch <version>"}
 	case fetch && opts.NoCatalogBackup:
 		return 2, &usageError{program + " update: --no-catalog-backup needs a release directory or --switch"}
+	case fetch && opts.AllowDowngrade && !hasVersion:
+		return 2, &usageError{program + " update: --allow-downgrade with --fetch needs --version"}
 	case fetch:
 		return c.fetch()
 	}
@@ -215,9 +218,14 @@ func (c *command) fetch() (int, error) {
 			}
 		}
 	}
+	if c.ns.values["scheduled"] == true {
+		if code, err := c.endRecord(root, scheduled); err != nil {
+			return code, err
+		}
+	}
 	version, _ := c.text("fetch_version")
 	opts := channel.Options{Version: version, AllowDowngrade: c.ns.values["allow_downgrade"] == true}
-	f := &channel.Fetcher{Root: root, Out: c.out, DataDir: fetchDataDir}
+	f := &channel.Fetcher{Root: root, Out: c.out}
 	res, err := f.Fetch(opts)
 	if err != nil {
 		return 1, err
@@ -229,31 +237,86 @@ func (c *command) fetch() (int, error) {
 	case !scheduled:
 		fmt.Fprintln(c.out, "scheduled_switch: off, nothing restarted")
 		return 0, nil
-	case res.Nothing || res.Existed:
+	case res.Existed:
+		failed, mark, err := channel.SwitchFailed(root, res.Version)
+		if err != nil {
+			return 1, err
+		}
+		if failed {
+			return 1, fmt.Errorf("scheduled_switch: the switch to %s failed in an earlier run (%s); the timer does not try it again; run %s update --switch %s, or move %s/%s away so that a fetch stages it anew",
+				res.Version, mark, program, res.Version, release.ReleasesDir, res.Version)
+		}
+		due, err := channel.SwitchDue(root, res.Version)
+		if err != nil {
+			return 1, err
+		}
+		if !due {
+			fmt.Fprintln(c.out, "scheduled_switch: nothing staged in this run, nothing restarted")
+			return 0, nil
+		}
+		fmt.Fprintf(c.out, "scheduled_switch: %s was staged by an earlier scheduled run whose switch did not begin; trying it again\n", res.Version)
+	case res.Nothing:
 		fmt.Fprintln(c.out, "scheduled_switch: nothing staged in this run, nothing restarted")
 		return 0, nil
+	}
+	if !opts.AllowDowngrade {
+		now, err := release.Layout{Root: root}.ReadLink(release.CurrentLink)
+		if err != nil {
+			return 1, err
+		}
+		running, rerr := release.ParseVersion(now)
+		staged, serr := release.ParseVersion(res.Version)
+		if rerr == nil && serr == nil && staged.Compare(running) <= 0 {
+			if err := channel.ClearSwitchDue(root, res.Version); err != nil {
+				return 1, err
+			}
+			fmt.Fprintf(c.out, "scheduled_switch: current runs %s now, not lower than %s; nothing restarted\n", now, res.Version)
+			return 0, nil
+		}
 	}
 	fmt.Fprintf(c.out, "scheduled_switch: switching to %s\n", res.Version)
 	u, err := c.updater()
 	if err != nil {
 		return 1, err
 	}
-	if err := u.Switch(res.Version, release.UpdateOptions{AllowDowngrade: opts.AllowDowngrade}); err != nil {
+	if err := channel.MarkSwitchDue(root, res.Version); err != nil {
+		return 1, fmt.Errorf("scheduled_switch: the mark of the switch to %s was not written: %w", res.Version, err)
+	}
+	err = u.Switch(res.Version, release.UpdateOptions{AllowDowngrade: opts.AllowDowngrade})
+	if err != nil && (errors.Is(err, release.ErrLocked) || !u.SwitchBegan()) {
+		return 1, fmt.Errorf("%w; the switch to %s did not begin, the next scheduled run tries it again", err, res.Version)
+	}
+	if derr := channel.ClearSwitchDue(root, res.Version); derr != nil {
+		fmt.Fprintf(c.out, "warning: the mark of the switch to %s was not removed: %v\n", res.Version, derr)
+	}
+	if err != nil {
+		if merr := channel.MarkSwitchFailed(root, res.Version, err); merr != nil {
+			return 1, fmt.Errorf("%w; the mark of the failed switch was not written: %v", err, merr)
+		}
 		return 1, err
 	}
 	return 0, nil
 }
 
-// fetchDataDir is data_dir of update.json, else the data directory every
-// command resolves. Only the fetch stage takes it, for the token file; the
-// forms that switch and rollback need data_dir.
-func fetchDataDir(cfg *release.UpdateConfig) (string, error) {
-	if cfg.DataDir != "" {
-		return cfg.DataDir, nil
+// endRecord ends the record of a switch of a run that stopped before the
+// scheduled run does anything else (finding R3-2): with scheduled_switch the
+// run ends it as update does and exits with 1; without, it only names it and
+// exits with 1, as the timer then has no right to switch.
+func (c *command) endRecord(root string, scheduled bool) (int, error) {
+	path, found := release.PendingRecord(root)
+	if !found {
+		return 0, nil
 	}
-	data, err := config.Load("", nil)
+	if !scheduled {
+		return 1, fmt.Errorf("scheduled run: %s is the record of a switch of a run that stopped; the timer fetches nothing while it is there; run %s update --switch <version> or %s rollback by hand, which end it first",
+			path, program, program)
+	}
+	u, err := c.updater()
 	if err != nil {
-		return "", err
+		return 1, err
 	}
-	return data.DataDir, nil
+	if err := u.EndSwitch(); err != nil {
+		return 1, fmt.Errorf("scheduled run: %w", err)
+	}
+	return 0, nil
 }

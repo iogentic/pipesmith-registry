@@ -153,3 +153,58 @@ func TestTLSFiles(t *testing.T) {
 		t.Fatalf("ProcessItems at the defaults %v", items)
 	}
 }
+
+// export_max_files and export_max_bytes (call B18 of
+// docs/plans/browse-tools.md): whole numbers above 0, absent or at the
+// default of 20,000 files and 2 GiB they stay 0, the default of the server.
+func TestExportBoundsLoad(t *testing.T) {
+	cfg, err := config.Load(writeConfig(t, `{"export_max_files": 3, "export_max_bytes": 4096}`), config.Env(nil))
+	if err != nil || cfg.ExportMaxFiles != 3 || cfg.ExportMaxBytes != 4096 {
+		t.Fatalf("loaded %d %d %v", cfg.ExportMaxFiles, cfg.ExportMaxBytes, err)
+	}
+	items := cfg.ProcessItems()
+	if len(items) != 2 || items[0] != [2]any{"export_max_files", int64(3)} || items[1] != [2]any{"export_max_bytes", int64(4096)} {
+		t.Fatalf("ProcessItems %v", items)
+	}
+	for _, text := range []string{`{}`, `{"export_max_files": null, "export_max_bytes": null}`,
+		`{"export_max_files": 20000, "export_max_bytes": 2147483648}`} {
+		cfg, err := config.Load(writeConfig(t, text), config.Env(nil))
+		if err != nil || cfg.ExportMaxFiles != 0 || cfg.ExportMaxBytes != 0 || len(cfg.ProcessItems()) != 0 {
+			t.Errorf("%s: %d %d %v", text, cfg.ExportMaxFiles, cfg.ExportMaxBytes, err)
+		}
+	}
+	for _, key := range []string{"export_max_files", "export_max_bytes"} {
+		for _, value := range []string{`0`, `-1`, `1.5`, `"10"`, `true`, `[1]`, `9223372036854775808`} {
+			dir := writeConfig(t, `{"`+key+`": `+value+`}`)
+			_, err := config.Load(dir, config.Env(nil))
+			var pe *pyjson.Error
+			want := filepath.Join(dir, "config.json") + ": " + key + " is not a whole number above 0: "
+			if !errors.As(err, &pe) || pe.Class != "ValueError" || !strings.HasPrefix(pe.Message, want) {
+				t.Errorf("%s %s: %v, want %q", key, value, err, want)
+			}
+		}
+	}
+}
+
+func TestExportBoundsSave(t *testing.T) {
+	cfg := config.New(filepath.Join(t.TempDir(), "data"))
+	cfg.ExportMaxFiles, cfg.ExportMaxBytes = 500, 1<<20
+	if err := config.Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	want := "{\n  \"bind\": \"127.0.0.1\",\n  \"port\": 8793,\n  \"stores\": [],\n  \"docker_ports\": {},\n" +
+		"  \"export_max_files\": 500,\n  \"export_max_bytes\": 1048576\n}\n"
+	if data, err := os.ReadFile(cfg.ConfigPath()); err != nil || string(data) != want {
+		t.Fatalf("config.json %q %v, want %q", data, err, want)
+	}
+	loaded, err := config.Load(cfg.DataDir, config.Env(nil))
+	if err != nil || loaded.ExportMaxFiles != 500 || loaded.ExportMaxBytes != 1<<20 {
+		t.Fatalf("loaded %d %d %v", loaded.ExportMaxFiles, loaded.ExportMaxBytes, err)
+	}
+	cfg.ExportMaxBytes = -1
+	var pe *pyjson.Error
+	if err := config.Save(cfg); !errors.As(err, &pe) || pe.Class != "ValueError" ||
+		pe.Message != "export_max_bytes is not a whole number above 0: -1" {
+		t.Fatalf("save of a bad bound: %v", err)
+	}
+}

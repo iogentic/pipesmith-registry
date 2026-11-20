@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/docker"
+	"github.com/iogentic/pipesmith-registry/internal/logs/audit"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 )
@@ -48,27 +49,8 @@ func (s *Server) accessOf(name string) (string, error) {
 // passOn answers a request with the routes of step 2, their rules included,
 // as route does without the routes of this file.
 func (s *Server) passOn(w *recorder, req *request) error {
-	var partial *route
-	for i := range routes {
-		rt := &routes[i]
-		match := rt.pattern.FindStringSubmatch(req.path)
-		if match == nil {
-			continue
-		}
-		if slices.Contains(rt.methods, req.r.Method) {
-			if allowed, err := s.allow(w, req, rt.rule, match); err != nil || !allowed {
-				return err
-			}
-			return rt.handle(s, w, req, match)
-		}
-		if partial == nil {
-			partial = rt
-		}
-	}
-	if partial != nil {
-		writeBody(w, req, http.StatusMethodNotAllowed, [][2]string{{"Content-Type", jsonType},
-			{"Allow", strings.Join(partial.methods, ", ")}}, []byte(`{"detail":"Method Not Allowed"}`))
-		return nil
+	if served, err := s.dispatch(plainTable, w, req); served {
+		return err
 	}
 	unknownRoute(w, req)
 	return nil
@@ -129,6 +111,8 @@ func npmRefusal(w *recorder, req *request, err error, wrongPair string) (bool, e
 // the password. A good pair gets 201 with an npm token, the one answer that
 // shows it.
 func (s *Server) npmLogin(w *recorder, req *request, match []string) error {
+	audit.SetAction(req.r.Context(), "token.issue")
+	audit.SetObject(req.r.Context(), "repository", match[1])
 	if own, err := s.ownAccess(w, req, match[1], "npm"); !own || err != nil {
 		return err
 	}
@@ -149,6 +133,7 @@ func (s *Server) npmLogin(w *recorder, req *request, match []string) error {
 	if *body.Name != match[2] {
 		return npmAnswer(w, req, http.StatusBadRequest, npmStatus{Error: "the name of the body is not the name of the path"})
 	}
+	audit.SetSubject(req.r.Context(), audit.Unknown, "") // the service names the user of a good pair or a known name
 	tok, err := s.sec.NpmLogin(req.r, *body.Name, *body.Password)
 	if err != nil {
 		if answered, aerr := npmRefusal(w, req, err, "wrong user name or password"); answered {
@@ -207,6 +192,8 @@ func maskToken(path string) string {
 // holds (npm logout). The access line names the path without the token
 // (maskToken).
 func (s *Server) npmLogout(w *recorder, req *request, match []string) error {
+	audit.SetAction(req.r.Context(), "token.revoke")
+	audit.SetObject(req.r.Context(), "repository", match[1])
 	if own, err := s.ownAccess(w, req, match[1], "npm"); !own || err != nil {
 		return err
 	}
@@ -232,6 +219,7 @@ func (s *Server) dockerToken(w *recorder, req *request, match []string) error {
 	if own, err := s.ownAccess(w, req, match[1], "docker"); !own || err != nil {
 		return err
 	}
+	s.auditDockerToken(w, req, match[1])
 	tok, err := s.sec.DockerToken(req.r, match[1])
 	if err != nil {
 		var e *model.Error
@@ -266,8 +254,9 @@ func (s *Server) dockerToken(w *recorder, req *request, match []string) error {
 // dockerChallenge is the challenge of a 401 on a Docker route (N12): Bearer
 // with the token route of the same host when the repository lets a token
 // in, else Basic. The realm names only the host of the request, which
-// passed the host guard, and its scheme (hardening line 12); a request of
-// the registry API names its scope.
+// passed the host guard, in the form of requestHost, and its scheme
+// (hardening line 12); a Host whose port is no port number gets Basic. A
+// request of the registry API names its scope.
 func (s *Server) dockerChallenge(req *request) string {
 	repo, route := req.dockerRepo, "/v2/token"
 	if repo == "" {
@@ -277,8 +266,8 @@ func (s *Server) dockerChallenge(req *request) string {
 		}
 		repo, route = t.repo, repositoryPrefix+quote(t.repo, "")+"/v2/token"
 	}
-	host := latin1Strip(req.r.Host)
-	if !s.sec.DockerAccess(repo).Bearer || !localHost(host) && !namedHost(host, s.hostNames) {
+	host, canonical := requestHost(req.r.Host)
+	if !canonical || !s.sec.DockerAccess(repo).Bearer || !localHost(host) && !namedHost(host, s.hostNames) {
 		return basicChallenge
 	}
 	challenge := `Bearer realm="` + req.scheme + "://" + host + route + `",service="` + productName + `"`
@@ -322,10 +311,13 @@ func dockerScope(req *request, repo string) string {
 }
 
 // dockerName is the name of a path of the registry API below /v2/, the
-// upload routes included; "" for none and for a name a quoted value cannot
-// hold.
+// upload and referrers routes included; "" for none and for a name a quoted
+// value cannot hold.
 func dockerName(path string) string {
 	call, err := docker.ParseWrite(path)
+	if err == nil && call == nil {
+		call, err = docker.ParseReferrers(path)
+	}
 	if err != nil || call == nil || strings.ContainsAny(call.Name, `"\`) {
 		return ""
 	}

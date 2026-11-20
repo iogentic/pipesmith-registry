@@ -1,0 +1,11 @@
+{
+  "about": "The six paths of the status area (task 7.22 of the phase 7 plan) and the fields of their answers. internal/server/status_area_test.go checks the served answers against this file; tests/rest/test_status_area.py checks it against the REST description of the old product when PSR_REST_ORACLE names one.",
+  "paths": {
+    "/v1/status": {"answer": "empty", "statuses": [200]},
+    "/v1/status/writable": {"answer": "empty", "statuses": [200, 503]},
+    "/v1/status/check": {"answer": "map", "fields": ["healthy", "message", "error", "details", "time", "duration", "timestamp"]},
+    "/beta/status/check/cluster": {"answer": "list", "fields": ["nodeId", "hostname", "results"], "result": ["healthy", "message"]},
+    "/beta/status/check/{nodeId}": {"answer": "object", "fields": ["nodeId", "hostname", "results"], "result": ["healthy", "message"], "statuses": [200, 404]},
+    "/v1/monthly-metrics": {"answer": "list", "fields": ["requestCount", "componentCount", "metricDate", "percentageChangeRequest", "percentageChangeComponent"]}
+  }
+}

@@ -30,6 +30,7 @@ var dockerCalls = map[string]struct {
 	"blob":         {map[string]bool{"DELETE": true}, "GET, HEAD, DELETE"},
 	"tags":         {map[string]bool{}, "GET, HEAD"},
 	"base":         {map[string]bool{}, "GET, HEAD"},
+	"referrers":    {map[string]bool{}, "GET, HEAD"},
 }
 
 // dockerWrite is the dispatch of writeDocker: a path outside v2/ keeps the
@@ -48,6 +49,9 @@ func (s *Server) dockerWrite(w *recorder, req *request, st *state, repo repos.Re
 		rest += "/"
 	}
 	call, err := docker.ParseWrite(rest)
+	if call == nil && err == nil {
+		call, err = docker.ParseReferrers(rest) // GET only, a 405 here
+	}
 	if err != nil {
 		var pathErr *docker.PathError
 		if errors.As(err, &pathErr) {
@@ -123,7 +127,7 @@ func (s *Server) dockerFailed(w *recorder, req *request, err error) error {
 		w.Header().Set("Connection", "close") // the rest of the body is not read
 	case ruleNoSpace:
 		code = "BLOB_UPLOAD_INVALID"
-	case ruleReadOnlyStore, ruleWriteStore, ruleEdit:
+	case ruleReadOnlyStore, ruleWriteStore, ruleEdit, ruleAdd:
 		code = "DENIED"
 	case ruleBusy:
 		code = "UNAVAILABLE"

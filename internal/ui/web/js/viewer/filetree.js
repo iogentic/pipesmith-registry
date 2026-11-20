@@ -12,8 +12,9 @@ import { toastProblem } from "../ui/notice.js";
 
 const PAGE = 200;
 
-// repository: the name. onFile(node) and onFolder(node) are called when an entry is activated.
-export function createFileTree({ repository, onFile, onFolder }) {
+// repository: the name. onFile(node) is called when a file is activated. Activating a folder opens or
+// closes it and leaves the selection, and so the open file, as it is, the same as ArrowRight.
+export function createFileTree({ repository, onFile }) {
   const list = h("ul", { class: "tree vtree", "aria-label": `Folders and files of ${repository}` });
   const nodes = new Map();
   const root = { path: "", name: repository, isDir: true, parent: null, list, loaded: false, expanded: true, more: false, offset: 0, moreRow: null, button: null };
@@ -114,9 +115,7 @@ export function createFileTree({ repository, onFile, onFolder }) {
   async function activate(node) {
     if (node.isDir) {
       if (node.expanded) collapse(node);
-      else if (!(await expand(node))) return;
-      select(node);
-      if (onFolder) onFolder(node);
+      else await expand(node);
       return;
     }
     select(node);

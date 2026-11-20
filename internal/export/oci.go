@@ -54,7 +54,8 @@ func FullImageName(name string) string {
 }
 
 // WriteOCI writes the image as a tar in OCI image layout: every blob below
-// blobs/sha256/, the manifest last of them, then oci-layout, then
+// blobs/sha256/, the manifest last of them, then manifest.json for docker
+// load on an engine without OCI support, then oci-layout, then
 // index.json with one descriptor of the manifest. A named image carries its
 // reference in org.opencontainers.image.ref.name and its full name in
 // io.containerd.image.name. Each blob is hashed while it is copied; a blob
@@ -70,6 +71,9 @@ func WriteOCI(w io.Writer, image Image) error {
 		}
 	}
 	if err := writeMember(tw, blobPath(manifestDigest), image.Manifest); err != nil {
+		return err
+	}
+	if err := writeDockerManifest(tw, image); err != nil {
 		return err
 	}
 	if err := writeMember(tw, "oci-layout", []byte(`{"imageLayoutVersion":"1.0.0"}`)); err != nil {
@@ -92,6 +96,21 @@ func WriteOCI(w io.Writer, image Image) error {
 	return tw.Close()
 }
 
+// sha256Digest reports whether digest is "sha256:" and 64 digits of lower
+// hex.
+func sha256Digest(digest string) bool {
+	hexPart, ok := strings.CutPrefix(digest, "sha256:")
+	if !ok || len(hexPart) != 64 {
+		return false
+	}
+	for i := 0; i < len(hexPart); i++ {
+		if c := hexPart[i]; (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
 func blobPath(digest string) string {
 	return "blobs/sha256/" + strings.TrimPrefix(digest, "sha256:")
 }
@@ -109,7 +128,7 @@ func writeMember(tw *tar.Writer, name string, data []byte) error {
 }
 
 func writeBlob(tw *tar.Writer, b Blob) error {
-	if !strings.HasPrefix(b.Digest, "sha256:") || len(b.Digest) != len("sha256:")+64 {
+	if !sha256Digest(b.Digest) {
 		return &DigestError{Digest: b.Digest, Got: "no sha256 digest"}
 	}
 	in, size, err := b.Open()

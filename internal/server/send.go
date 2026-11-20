@@ -300,6 +300,7 @@ func send(w http.ResponseWriter, req *request, b *body, extra [][2]string) error
 	}
 	h.Set("Content-Length", strconv.FormatInt(length, 10))
 	setExtra()
+	markDownload(req, status, start)
 	if req.head {
 		b.close()
 		w.WriteHeader(status)

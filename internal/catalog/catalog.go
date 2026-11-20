@@ -20,7 +20,9 @@
 // failed. A file of a newer schema is refused and kept.
 //
 // One writer connection in WAL mode, foreign keys on, a busy timeout; readers
-// use a pool of their own.
+// use a pool of their own. Writes of one opening run one at a time, and each
+// waits for the one before it at most as long as the busy timeout, as a
+// write of another opening waits in SQLite.
 package catalog
 
 import (
@@ -32,7 +34,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sync"
+	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/migrate"
 	_ "modernc.org/sqlite" // the driver "sqlite"
@@ -50,6 +52,14 @@ const (
 
 var bg = context.Background()
 
+// writeWait is how long a write waits for the write before it; a variable
+// so that a test can shorten it.
+var writeWait = busyTimeoutMS * time.Millisecond
+
+// ErrBusy is the error of a write that waited writeWait for the write
+// before it.
+var ErrBusy = errors.New("catalog: another write held the catalog file longer than the busy timeout")
+
 // Catalog is one open catalog file. It is safe for use by several goroutines;
 // writes run one at a time.
 type Catalog struct {
@@ -57,7 +67,8 @@ type Catalog struct {
 	dataDir string
 	writer  *sql.DB
 	readers *sql.DB
-	writeMu sync.Mutex
+	// writing holds a token while a write runs (lock, unlock)
+	writing chan struct{}
 }
 
 // Path is the catalog file of a data directory.
@@ -117,7 +128,7 @@ func connect(path string, steps []migrate.Step) (c *Catalog, err error) {
 	if err != nil {
 		return nil, err
 	}
-	c = &Catalog{path: path, dataDir: filepath.Dir(path)}
+	c = &Catalog{path: path, dataDir: filepath.Dir(path), writing: make(chan struct{}, 1)}
 	if c.writer, err = sql.Open("sqlite", writerDSN); err != nil {
 		return nil, err
 	}
@@ -127,7 +138,7 @@ func connect(path string, steps []migrate.Step) (c *Catalog, err error) {
 		return nil, err
 	}
 	c.readers.SetMaxIdleConns(readerPool)
-	if _, err := migrate.Run(c.writer, path, steps, migrate.Options{Kind: "catalog file", Create: true, CopyWhen: migrate.SpareCopy(migrate.FreeSpace)}); err != nil {
+	if _, err := migrate.Run(c.writer, path, steps, migrate.Options{Kind: "catalog file", Create: true, CopyWhen: migrate.CopyRule(migrate.FreeSpace)}); err != nil {
 		_ = c.Close() // cleanup; the migration error is returned
 		return nil, err
 	}
@@ -154,10 +165,32 @@ func (c *Catalog) Close() error {
 // File is the path of the catalog file.
 func (c *Catalog) File() string { return c.path }
 
+// lock waits at most writeWait until no other write runs, and then holds
+// the writer until unlock.
+func (c *Catalog) lock() error {
+	timer := time.NewTimer(writeWait)
+	defer timer.Stop()
+	select {
+	case c.writing <- struct{}{}:
+		return nil
+	case <-timer.C:
+		return ErrBusy
+	}
+}
+
+func (c *Catalog) unlock() { <-c.writing }
+
 // write runs fn in one write transaction on the writer connection.
 func (c *Catalog) write(fn func(tx *sql.Tx) error) error {
-	c.writeMu.Lock()
-	defer c.writeMu.Unlock()
+	if err := c.lock(); err != nil {
+		return err
+	}
+	defer c.unlock()
+	return c.writeLocked(fn)
+}
+
+// writeLocked is write for a caller that holds the writer.
+func (c *Catalog) writeLocked(fn func(tx *sql.Tx) error) error {
 	tx, err := c.writer.BeginTx(bg, nil)
 	if err != nil {
 		return err

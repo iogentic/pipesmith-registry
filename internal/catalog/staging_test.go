@@ -185,3 +185,58 @@ func TestFillWithRunsOnTheDisk(t *testing.T) {
 		t.Fatalf("Add after Discard: %v", err)
 	}
 }
+
+// A key the arbiter of a store decided (Fill.Choose) gives the entry at the
+// location it chose, also an older one or one of a later run, and no entry
+// for a dropped key or a location no entry has; every other key keeps the
+// rule of the index. The runs lie on the disk, so the location passes
+// through them.
+func TestStagingTakesTheChoiceOfTheArbiter(t *testing.T) {
+	old := runEntries
+	runEntries = 7
+	t.Cleanup(func() { runEntries = old })
+	var entries []stores.Entry
+	for i := range 90 {
+		entries = append(entries, stores.Entry{Repo: "demo-raw", Path: fmt.Sprintf("docs/%02d.txt", i%30), Size: int64(i),
+			CreatedMS: int64(i / 30), Location: fmt.Sprintf("blob-%02d", i)})
+	}
+	s := &staging{dir: t.TempDir()}
+	for _, e := range entries {
+		if err := s.add(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	chosen := map[string]string{"docs/00.txt": "blob-00", "docs/01.txt": "blob-31", "docs/02.txt": "", "docs/03.txt": "blob-99"}
+	for path, location := range chosen {
+		if s.chosen == nil {
+			s.chosen = map[key]string{}
+		}
+		s.chosen[key{"demo-raw", path}] = location
+	}
+	m, err := s.source()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m.close()
+	got := map[string]int64{}
+	for {
+		b, err := m.next()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if b == nil {
+			break
+		}
+		got[b.path] = b.size
+	}
+	want := map[string]int64{}
+	for i := 60; i < 90; i++ {
+		want[fmt.Sprintf("docs/%02d.txt", i%30)] = int64(i)
+	}
+	want["docs/00.txt"], want["docs/01.txt"] = 0, 31
+	delete(want, "docs/02.txt")
+	delete(want, "docs/03.txt")
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("got  %v\nwant %v", got, want)
+	}
+}

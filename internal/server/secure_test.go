@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 	"github.com/iogentic/pipesmith-registry/internal/rest"
+	idstate "github.com/iogentic/pipesmith-registry/internal/state"
 	"github.com/iogentic/pipesmith-registry/internal/testkit"
 	"github.com/iogentic/pipesmith-registry/internal/ui"
 )
@@ -41,6 +43,15 @@ type fakeSecurity struct {
 	basic                map[string]*model.Subject // "user:password"
 	sessions             map[string]*model.Subject // cookie value
 	calls                []string                  // methods the session handler saw
+	// updates and resets count the writes of the identity store and the
+	// resets of the credential cache
+	updates, resets int
+	// dataDir is the data directory of the secret files; none unless a
+	// test sets it
+	dataDir string
+	// docker is the sign in of every Docker repository; the zero value
+	// forces Basic
+	docker model.DockerAccess
 }
 
 func subject(id string, session string, permissions ...string) *model.Subject {
@@ -120,13 +131,77 @@ func (f *fakeSecurity) SessionHandler() http.Handler {
 	})
 }
 
-func (f *fakeSecurity) Snapshot() *model.Snapshot { return f.snap }
+func (f *fakeSecurity) Snapshot() *model.Snapshot {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.snap
+}
 
-// The token methods of the fake: every Docker repository asks for Basic, a
+// The identity store of the fake (admin.IdentityStore): Update changes a
+// copy of the snapshot and installs it, as the reload of auth.Service
+// would; the data directory is none.
+func (f *fakeSecurity) Load() (*model.Snapshot, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return copySnapshot(f.snap), nil
+}
+
+func (f *fakeSecurity) Update(_ []idstate.Kind, fn func(*model.Snapshot) error) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	s := copySnapshot(f.snap)
+	if err := fn(s); err != nil {
+		return err
+	}
+	f.snap = s
+	f.updates++
+	return nil
+}
+
+func (f *fakeSecurity) DataDir() string { return f.dataDir }
+
+func (f *fakeSecurity) ResetCredentials() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.resets++
+}
+
+func (f *fakeSecurity) MarkStale() {}
+
+// writes are the counts of updates and resets.
+func (f *fakeSecurity) writes() (int, int) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.updates, f.resets
+}
+
+// copySnapshot copies the identity lists of a snapshot, so that a change of
+// the copy leaves the original.
+func copySnapshot(s *model.Snapshot) *model.Snapshot {
+	c := *s
+	c.Users = slices.Clone(s.Users)
+	for i := range c.Users {
+		c.Users[i].Roles = slices.Clone(c.Users[i].Roles)
+	}
+	c.Roles = slices.Clone(s.Roles)
+	for i := range c.Roles {
+		c.Roles[i].Privileges, c.Roles[i].Roles = slices.Clone(c.Roles[i].Privileges), slices.Clone(c.Roles[i].Roles)
+	}
+	c.RoleMappings = slices.Clone(s.RoleMappings)
+	for i := range c.RoleMappings {
+		c.RoleMappings[i].Roles = slices.Clone(c.RoleMappings[i].Roles)
+	}
+	c.Realms = slices.Clone(s.Realms)
+	c.LDAP = slices.Clone(s.LDAP)
+	return &c
+}
+
+// The token methods of the fake: every Docker repository asks for Basic
+// unless a test sets docker, a
 // known Basic pair gets an invented token that signs nobody in, and no
 // token can be revoked. The routes of tokens run against auth.Service in
 // tokens_test.go.
-func (f *fakeSecurity) DockerAccess(string) model.DockerAccess { return model.DockerAccess{} }
+func (f *fakeSecurity) DockerAccess(string) model.DockerAccess { return f.docker }
 
 func (f *fakeSecurity) DockerToken(r *http.Request, _ string) (model.IssuedToken, error) {
 	user, password, ok := r.BasicAuth()
@@ -426,7 +501,11 @@ var readRoutes = []struct {
 	{"/service/rest/v1/repositories/maven/hosted/demo-maven", "nexus:repository-admin:maven2:demo-maven:read", 403},
 	{"/service/rest/v1/repositorySettings", "nexus:repository-admin:maven2:demo-maven:read", 403},
 	{"/service/rest/v1/search?name=demo-lib", "nexus:search:read", 403},
+	{"/service/rest/v1/search/assets?name=demo-lib", "nexus:search:read", 403},
 	{"/service/rest/v1/assets/" + rest.AssetID("demo-maven", jarPath), "nexus:repository-view:maven2:demo-maven:browse", 403},
+	{"/service/rest/v1/assets?repository=demo-maven", "nexus:repository-view:maven2:demo-maven:browse", 403},
+	{"/service/rest/v1/components?repository=demo-maven", "nexus:repository-view:maven2:demo-maven:browse", 403},
+	{"/service/rest/v1/components/" + componentOfJar(), "nexus:repository-view:maven2:demo-maven:browse", 403},
 	{"/service/rest/v1/blobstores", "nexus:blobstores:read", 403},
 	{"/service/rest/v1/blobstores/file/store-a", "nexus:blobstores:read", 403},
 	{"/service/rest/v1/blobstores/store-a/quota-status", "nexus:blobstores:read", 403},
@@ -444,7 +523,9 @@ var readRoutes = []struct {
 	{"/service/rest/v1/security/ldap", "nexus:ldap:read", 403},
 	{"/service/rest/v1/security/ldap/corp", "nexus:ldap:read", 403},
 	{"/service/rest/v1/status/check", "nexus:atlas:read", 403},
+	{"/api/updates", "nexus:atlas:read", 403},
 	{"/service/rest/v1/read-only", "nexus:settings:read", 403},
+	{"/service/rest/v1/system/node", "nexus:settings:read", 403},
 	{"/api/repositories", "", 200},
 	{"/api/browse/demo-maven", "nexus:repository-view:maven2:demo-maven:browse", 403},
 	{"/api/asset/demo-maven?path=" + jarPath, "nexus:repository-view:maven2:demo-maven:browse", 403},
@@ -585,8 +666,9 @@ func TestReadsThroughTheServer(t *testing.T) {
 	if len(items) != 1 || items[0].(map[string]any)["repository"] != "demo-maven" {
 		t.Fatalf("%#v", page)
 	}
+	// ruling SB2: a server starts released
 	ro := a.send("GET", "/service/rest/v1/read-only", "basic", asAdmin).object(t)
-	if ro["frozen"] != true {
+	if ro["frozen"] != false || ro["systemInitiated"] != false {
 		t.Fatalf("%#v", ro)
 	}
 	ldap := a.send("GET", "/service/rest/v1/security/roles?source=LDAP", "basic", asAdmin)
@@ -606,77 +688,23 @@ var refusals = []struct{ method, target, area string }{
 	{"DELETE", "/service/rest/v1/assets/" + rest.AssetID("demo-maven", jarPath), "content"},
 	{"GET", "/service/rest/v1/formats/maven2/upload-specs", "content"},
 	{"POST", "/service/rest/v1/components?repository=demo-maven", "content"},
-	{"POST", "/service/rest/v1/repositories/maven/hosted", "repositories"},
-	{"PUT", "/service/rest/v1/repositories/maven/hosted/demo-maven", "repositories"},
-	{"DELETE", "/service/rest/v1/repositories/demo-maven", "repositories"},
-	{"POST", "/service/rest/v1/repositories/demo-maven/rebuild-index", "repositories"},
-	{"POST", "/service/rest/v1/repositories/demo-maven/invalidate-cache", "repositories"},
 	{"GET", "/api/cleanup-policies", "cleanup-policies"},
 	{"GET", "/api/cleanup-policies/weekly", "cleanup-policies"},
 	{"POST", "/api/cleanup-policies", "cleanup-policies"},
 	{"PUT", "/api/cleanup-policies/weekly", "cleanup-policies"},
 	{"DELETE", "/api/cleanup-policies/weekly", "cleanup-policies"},
 	{"POST", "/api/cleanup-policies/preview", "cleanup-policies"},
-	{"GET", "/service/rest/v1/routing-rules", "routing-rules"},
-	{"GET", "/service/rest/v1/routing-rules/block-all", "routing-rules"},
-	{"POST", "/service/rest/v1/routing-rules", "routing-rules"},
-	{"PUT", "/service/rest/v1/routing-rules/block-all", "routing-rules"},
-	{"DELETE", "/service/rest/v1/routing-rules/block-all", "routing-rules"},
-	{"POST", "/api/routing-rules/test", "routing-rules"},
-	{"POST", "/api/routing-rules/preview", "routing-rules"},
-	{"POST", "/service/rest/v1/blobstores/file", "blob-stores"},
-	{"PUT", "/service/rest/v1/blobstores/file/store-a", "blob-stores"},
-	{"DELETE", "/service/rest/v1/blobstores/store-a", "blob-stores"},
-	{"GET", "/api/blob-stores/store-a/deleted", "blob-stores"},
-	{"POST", "/service/rest/v1/security/roles", "security"},
-	{"PUT", "/service/rest/v1/security/roles/demo-administrators", "security"},
-	{"DELETE", "/service/rest/v1/security/roles/demo-administrators", "security"},
-	{"POST", usersPath, "security"},
-	{"PUT", usersPath + "/demo-admin", "security"},
-	{"DELETE", usersPath + "/demo-admin?realm=NexusAuthenticatingRealm", "security"},
-	{"PUT", usersPath + "/demo-admin/change-password", "security"},
-	{"PUT", "/service/rest/v1/security/anonymous", "security"},
-	{"PUT", "/service/rest/v1/security/realms/active", "security"},
-	{"POST", "/service/rest/v1/security/ldap", "ldap"},
-	{"PUT", "/service/rest/v1/security/ldap/corp", "ldap"},
-	{"DELETE", "/service/rest/v1/security/ldap/corp", "ldap"},
-	{"POST", "/service/rest/v1/security/ldap/change-order", "ldap"},
-	{"POST", "/api/ldap/clear-cache", "ldap"},
-	{"POST", "/api/ldap/verify-connection", "ldap"},
-	{"POST", "/api/ldap/verify-user-mapping", "ldap"},
-	{"POST", "/api/ldap/verify-login", "ldap"},
 	{"GET", "/api/tokens", "tokens"},
 	{"GET", "/api/tokens?userId=demo-admin", "tokens"},
 	{"POST", "/api/tokens", "tokens"},
 	{"DELETE", "/api/tokens/t-1", "tokens"},
 	{"PUT", "/api/account", "account"},
 	{"POST", "/api/account/password", "account"},
-	{"GET", "/api/logging/loggers", "logging"},
-	{"PUT", "/api/logging/loggers/pipesmith_registry.server", "logging"},
-	{"DELETE", "/api/logging/loggers/pipesmith_registry.server", "logging"},
-	{"POST", "/api/logging/reset", "logging"},
-	{"GET", "/api/logs", "logs"},
-	{"GET", "/api/logs/tasks/compact-1.log?bytes=25600", "logs"},
-	{"GET", "/service/rest/beta/system/information", "system"},
-	{"GET", "/service/rest/v1/capabilities", "capabilities"},
-	{"PUT", "/service/rest/v1/capabilities/c-1", "capabilities"},
-	{"DELETE", "/service/rest/v1/capabilities/c-1", "capabilities"},
-	{"GET", "/api/capabilities/support", "capabilities"},
-	{"GET", "/service/rest/v1/system/node", "system"},
-	{"POST", "/service/rest/v1/read-only/freeze", "system"},
-	{"POST", "/service/rest/v1/read-only/release", "system"},
-	{"POST", "/service/rest/v1/read-only/force-release", "system"},
-	{"GET", "/service/rest/v1/tasks", "tasks"},
-	{"GET", "/service/rest/v1/tasks/t-1", "tasks"},
-	{"POST", "/service/rest/v1/tasks/t-1/run", "tasks"},
-	{"POST", "/service/rest/v1/tasks/t-1/stop", "tasks"},
 	{"GET", "/api/tasks/t-1", "tasks"},
 	{"POST", "/api/tasks", "tasks"},
 	{"PUT", "/api/tasks/t-1", "tasks"},
 	{"DELETE", "/api/tasks/t-1", "tasks"},
 	{"GET", "/api/task-types", "tasks"},
-	{"GET", "/api/metrics/requests?from=2026-11-01&to=2026-11-12", "metrics"},
-	{"GET", "/api/metrics/downloads?from=2026-11-01&to=2026-11-12", "metrics"},
 }
 
 func TestContractRefusals(t *testing.T) {
@@ -708,9 +736,18 @@ func TestContractRefusals(t *testing.T) {
 		}
 	}
 	// docs/ui/API.md at 1e6d884 names 104 distinct requests (method and path,
-	// testdata/ui-contract-requests.txt); 31 are served, GET /api/areas
-	// among them, the other 73 are this list, GET /api/tokens twice
-	if len(refusals) != 74 {
+	// testdata/ui-contract-requests.txt); 85 are served, GET /api/areas,
+	// POST .../invalidate-cache, the nine writes of the area security, the
+	// five writes of the LDAP connections and the three checks of an LDAP
+	// form (identity.go), the four writes of the blob stores and the four
+	// of the repositories (stores.go), the system information, the four
+	// requests of the capabilities, the seven of the routing rules, the
+	// four of the tasks and the three changes of the read only mode
+	// (system.go), the two figures per day of S43 (figures_routes.go) and
+	// the six requests of the log files and logger levels (logs_routes.go)
+	// and the node id (node.go) among them, the other 19 are this list,
+	// GET /api/tokens twice
+	if len(refusals) != 20 {
 		t.Fatalf("%d refusals", len(refusals))
 	}
 }
@@ -784,9 +821,47 @@ func TestClientPathIsOpenWhenAnonymousIsOn(t *testing.T) {
 	}
 	status(t, a.send("GET", "/service/rest/repository/browse/demo-maven/"), 200)
 	status(t, a.send("PUT", "/repository/demo-maven/x.jar"), 405)
-	status(t, &answer{status: a.on("demo-docker", "GET", "/v2/").status}, 200)
+	// the Docker base of a repository that forces Basic asks (row 4-15)
+	status(t, &answer{status: a.on("demo-docker", "GET", "/v2/").status}, 401)
 	// anonymous access opens the client path, not the interface
 	status(t, a.send("GET", "/api/repositories"), 401)
+}
+
+// Row 4-15 of review 4: with anonymous access on, the Docker base /v2/ of a
+// Docker port answers a request without credentials with its challenge
+// where the anonymous user cannot pull, as where the repository forces
+// Basic, so docker login checks its password. A wrong password answers 401
+// too, a right one 200, and a repository that lets the anonymous pull in
+// answers 200 without credentials.
+func TestTheDockerBaseAsksWhereBasicIsForced(t *testing.T) {
+	sec := newFakeSecurity()
+	sec.anonymous = true
+	sec.anonymousPermissions = anonymousRights
+	a := newSecureApp(t, sec)
+	for _, path := range []string{"/v2/", "/v2"} {
+		r := a.on("demo-docker", "GET", path)
+		if r.status != 401 || r.header.Get("WWW-Authenticate") != basicChallenge || errorCode(t, r) != "UNAUTHORIZED" ||
+			r.header.Get("Docker-Distribution-Api-Version") != "registry/2.0" {
+			t.Errorf("%s without credentials: %s", path, r)
+		}
+	}
+	wrong := a.on("demo-docker", "GET", "/v2/", "Authorization", basicHeader("demo-admin:wrong"))
+	if wrong.status != 401 || wrong.header.Get("WWW-Authenticate") != basicChallenge || errorCode(t, wrong) != "UNAUTHORIZED" {
+		t.Errorf("a wrong password: %s", wrong)
+	}
+	status(t, &answer{status: a.on("demo-docker", "GET", "/v2/", "Authorization", basicHeader(asNobody)).status}, 200)
+	status(t, &answer{status: a.on("demo-docker", "GET", "/v2/", "Authorization", basicHeader(asAdmin)).status}, 200)
+	// a repository the anonymous user may pull from stays open at its base
+	pull := newFakeSecurity()
+	pull.anonymous = true
+	pull.anonymousPermissions = anonymousRights
+	pull.docker = model.DockerAccess{Bearer: true, AnonymousPull: true}
+	a = newSecureApp(t, pull)
+	open := a.on("demo-docker", "GET", "/v2/")
+	if open.status != 200 || string(open.body) != "{}" {
+		t.Errorf("anonymous pull on: %s", open)
+	}
+	status(t, &answer{status: a.on("demo-docker", "GET", "/v2/", "Authorization", basicHeader("demo-admin:wrong")).status}, 401)
 }
 
 // The client read path needs the view permission of the repository: read
@@ -900,7 +975,7 @@ func TestAnonymousHoldsTheRightsOfTheAnonymousUser(t *testing.T) {
 			t.Errorf("%s: %d %v %q", target, r.status, r.header, r.body)
 		}
 	}
-	status(t, &answer{status: a.on("demo-docker", "GET", "/v2/").status}, 200)
+	status(t, &answer{status: a.on("demo-docker", "GET", "/v2/").status}, 401)
 	docker := a.on("demo-docker", "GET", "/v2/app/manifests/1.0")
 	if docker.status != 401 || errorCode(t, docker) != "UNAUTHORIZED" {
 		t.Fatalf("%s", docker)
@@ -1077,10 +1152,10 @@ func TestFakeResolvesLikeTheService(t *testing.T) {
 func TestEverySecuredRouteHasARule(t *testing.T) {
 	seen := map[string]bool{}
 	for _, rt := range securedRoutes {
-		if rt.rule.kind == ruleNone {
-			t.Errorf("%s %v has no rule", rt.pattern, rt.methods)
+		if rt.Rule.kind == ruleNone {
+			t.Errorf("%s %v has no rule", rt.Pattern, rt.Methods)
 		}
-		key := rt.pattern.String() + " " + strings.Join(rt.methods, ",")
+		key := rt.Pattern.String() + " " + strings.Join(rt.Methods, ",")
 		if seen[key] {
 			t.Errorf("%s twice", key)
 		}
@@ -1088,12 +1163,18 @@ func TestEverySecuredRouteHasARule(t *testing.T) {
 	}
 	var kinds []string
 	for _, rt := range routes {
-		if rt.rule.kind == ruleNone {
-			kinds = append(kinds, rt.pattern.String())
+		if rt.Rule.kind == ruleNone {
+			kinds = append(kinds, rt.Pattern.String())
 		}
 	}
 	sort.Strings(kinds)
 	if len(kinds) > 0 {
 		t.Fatalf("routes of step 2 without a rule: %v", kinds)
 	}
+}
+
+// componentOfJar is the component id of jarPath in demo-maven.
+func componentOfJar() string {
+	id, _ := rest.ComponentID("demo-maven", "maven2", jarPath)
+	return id
 }

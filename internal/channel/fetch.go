@@ -9,6 +9,8 @@
 package channel
 
 import (
+	"context"
+	"crypto/ecdsa"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
@@ -93,9 +95,12 @@ func (f *Fetcher) platform() (string, string) {
 
 // stage is the state of one run.
 type stage struct {
-	hold    *release.Hold
-	set     *Settings
+	hold *release.Hold
+	set  *Settings
+	// key is the copy of the trusted key below releases/ that every check of
+	// this run reads, and pub the key it holds.
 	key     string
+	pub     *ecdsa.PublicKey
 	running release.Version
 	c       *client
 }
@@ -103,17 +108,26 @@ type stage struct {
 // Fetch runs the fetch stage.
 func (f *Fetcher) Fetch(opt Options) (*Result, error) {
 	hold, err := release.HoldReleases(f.Root)
+	if errors.Is(err, release.ErrFetching) {
+		if cause := openReleases(f.Root); cause != nil {
+			return nil, cause
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
 	defer hold.Release()
 	f.step("current: %s/%s", release.ReleasesDir, hold.Current)
-	s := &stage{hold: hold, key: hold.Config.TrustedKey}
-	if s.key == "" {
+	s := &stage{hold: hold}
+	if hold.Config.TrustedKey == "" {
 		return nil, fmt.Errorf("%w (trusted_key of %s); the fetch stage sends no request without it", release.ErrNoTrustedKey, hold.Config.Path)
 	}
-	if _, err := release.LoadTrustedKey(s.key); err != nil {
+	pem, err := readKey(hold.Config.TrustedKey)
+	if err != nil {
 		return nil, err
+	}
+	if s.pub, err = release.ParseTrustedKey(pem); err != nil {
+		return nil, fmt.Errorf("%w (%s)", err, hold.Config.TrustedKey)
 	}
 	if s.set, err = ParseSettings(hold.Config); err != nil {
 		return nil, err
@@ -121,6 +135,13 @@ func (f *Fetcher) Fetch(opt Options) (*Result, error) {
 	if s.running, err = release.ParseVersion(hold.Current); err != nil {
 		return nil, fmt.Errorf("%w: current points to %s/%s, which is not a version X.Y.Z", release.ErrVersion, release.ReleasesDir, hold.Current)
 	}
+	if err := f.removeLeftovers(hold.Layout); err != nil {
+		return nil, err
+	}
+	if s.key, err = keyCopy(hold.Layout, pem); err != nil {
+		return nil, err
+	}
+	defer os.Remove(s.key)
 	var named release.Version
 	if opt.Version != "" {
 		if named, err = release.ParseVersion(strings.TrimPrefix(opt.Version, "v")); err != nil {
@@ -135,6 +156,9 @@ func (f *Fetcher) Fetch(opt Options) (*Result, error) {
 		return nil, err
 	}
 	s.c = newClient(s.set, token, f.dial, f.tls)
+	ctx, cancel := context.WithTimeout(context.Background(), s.set.Stage)
+	defer cancel()
+	s.c.stage, s.c.stageLimit = ctx, s.set.Stage
 
 	versions, err := f.list(s)
 	if err != nil {
@@ -143,6 +167,7 @@ func (f *Fetcher) Fetch(opt Options) (*Result, error) {
 	if opt.Version != "" {
 		return f.named(s, versions, named)
 	}
+	asked := 0
 	for _, v := range versions {
 		if v.Compare(s.running) <= 0 {
 			break
@@ -151,6 +176,11 @@ func (f *Fetcher) Fetch(opt Options) (*Result, error) {
 		if done, err := f.staged(s, name); err != nil || done != nil {
 			return done, err
 		}
+		if asked == s.set.Candidates {
+			return nil, fmt.Errorf("%w: %d versions above %s are incomplete and more are listed at %s; the stage asks for at most %d (limits.candidates)",
+				ErrList, asked, s.running, s.set.Server.Redacted(), s.set.Candidates)
+		}
+		asked++
 		complete, err := f.complete(s, name)
 		if err != nil {
 			return nil, err
@@ -207,6 +237,92 @@ func (f *Fetcher) staged(s *stage, name string) (*Result, error) {
 	return &Result{Version: name, Dir: dir, Existed: true}, nil
 }
 
+// openReleases names a releases/ of root that does not exist or that this
+// process cannot open, which the lock of the fetch stage reports as another
+// fetch stage.
+func openReleases(root string) error {
+	dir := release.Layout{Root: root}.Releases()
+	d, err := os.Open(dir) // #nosec G304 -- releases/ of the install root.
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return fmt.Errorf("%w: %s does not exist; the first release is installed by hand below it", ErrStage, dir)
+	case err != nil:
+		return fmt.Errorf("%w: %s cannot be opened: %v", ErrStage, dir, err)
+	}
+	d.Close()
+	return nil
+}
+
+// readKey reads the trusted key file once, at most maxKey bytes.
+const maxKey = 1 << 20
+
+func readKey(path string) ([]byte, error) {
+	f, err := os.Open(path) // #nosec G304 -- the trusted key file the operator configured, checked by the trust rule.
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", release.ErrTrustedKey, err)
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, maxKey+1))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s: %v", release.ErrTrustedKey, path, err)
+	}
+	if len(data) > maxKey {
+		return nil, fmt.Errorf("%w: %s is larger than %d bytes", release.ErrTrustedKey, path, maxKey)
+	}
+	return data, nil
+}
+
+// keyCopy writes the key read at the start into releases/.fetch-key-*, a
+// file of the owner in a directory only the owner can write, so the checks
+// of this run do not open the configured path again.
+func keyCopy(l release.Layout, pem []byte) (string, error) {
+	f, err := os.CreateTemp(l.Releases(), keyCopyPrefix)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrStage, err)
+	}
+	_, err = f.Write(pem)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(f.Name())
+		return "", fmt.Errorf("%w: %v", ErrStage, err)
+	}
+	return f.Name(), nil
+}
+
+const keyCopyPrefix = ".fetch-key-"
+
+// removeLeftovers removes every releases/<version>.partial/ directory and
+// every copy of the key that a killed fetch left. The lock of releases/ is
+// held, so no fetch writes one.
+func (f *Fetcher) removeLeftovers(l release.Layout) error {
+	entries, err := os.ReadDir(l.Releases())
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrStage, err)
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), keyCopyPrefix) && e.Type().IsRegular() {
+			if err := os.Remove(filepath.Join(l.Releases(), e.Name())); err != nil {
+				return fmt.Errorf("%w: %v", ErrStage, err)
+			}
+			continue
+		}
+		name, ok := strings.CutSuffix(e.Name(), ".partial")
+		if !ok || !e.IsDir() {
+			continue
+		}
+		if _, err := release.ParseVersion(name); err != nil {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(l.Releases(), e.Name())); err != nil {
+			return fmt.Errorf("%w: %v", ErrStage, err)
+		}
+		f.step("removed: %s/%s, left by a fetch that did not end", release.ReleasesDir, e.Name())
+	}
+	return nil
+}
+
 // fetch downloads and checks version name and stages it.
 func (f *Fetcher) fetch(s *stage, name string) (*Result, error) {
 	l := s.hold.Layout
@@ -238,6 +354,9 @@ func (f *Fetcher) fetch(s *stage, name string) (*Result, error) {
 		os.RemoveAll(target)
 		return nil, fmt.Errorf("%w: %v", ErrStage, err)
 	}
+	if err := clearMark(f.Root, name); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrStage, err)
+	}
 	f.step("staged: %s/%s", release.ReleasesDir, name)
 	return &Result{Version: name, Dir: target}, nil
 }
@@ -252,7 +371,7 @@ func (f *Fetcher) download(s *stage, name, partial string) error {
 	if err != nil {
 		return err
 	}
-	if err := verifySignature(s.key, sums, bundle); err != nil {
+	if err := verifyWith(s.pub, sums, bundle); err != nil {
 		return err
 	}
 	f.step("signature: %s verified with the trusted key", release.SumsFile)

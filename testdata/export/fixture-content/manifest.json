@@ -19,7 +19,47 @@
       "columns": ["id","name","recipe_name","online","routing_rule_id","attributes"],
       "rows": 6,
       "removed": 2,
-      "sha256": "d802b0568cf258433d3764b3d9b3a940b6cbbd0bee59e26e4bc570497c5bda87"
+      "sha256": "281d290349fd9f5aad1c087855819afee8e4029aa55488ff43eb6f34d584382c"
+    },
+    {
+      "table": "REPOSITORY_ROUTING_RULE",
+      "file": "repository_routing_rule.jsonl",
+      "columns": ["id","name","mode","description","matchers"],
+      "rows": 3,
+      "removed": 0,
+      "sha256": "c617221f6c0b65c53cda9165528597ee5441f9bd3d48e442e02a390b3eecc98c"
+    },
+    {
+      "table": "CLEANUP_POLICY",
+      "file": "cleanup_policy.jsonl",
+      "columns": ["name","notes","format","mode","criteria"],
+      "rows": 3,
+      "removed": 0,
+      "sha256": "cc0f1b0adf0f3896db79b8ed5aa87d15bdaf91a6b84a0bc2684f5542b64e95e4"
+    },
+    {
+      "table": "CAPABILITY_STORAGE_ITEM",
+      "file": "capability_storage_item.jsonl",
+      "columns": ["id","version","type","enabled","notes","properties"],
+      "rows": 3,
+      "removed": 1,
+      "sha256": "a574503f5288e634ba1ccb11c372fd04f43d818efd84e4f0246ca8718e5e39e6"
+    },
+    {
+      "table": "QRTZ_JOB_DETAILS",
+      "file": "qrtz_job_details.jsonl",
+      "columns": ["job_name","job_group","description","job_class_name","job_data"],
+      "rows": 6,
+      "removed": 2,
+      "sha256": "c1d9818231e85834453f83d2ac79e16147eb5cfaaf675442a94f1cf010ee92ff"
+    },
+    {
+      "table": "QRTZ_TRIGGERS",
+      "file": "qrtz_triggers.jsonl",
+      "columns": ["trigger_name","trigger_group","job_name","job_group","trigger_state","trigger_type","job_data"],
+      "rows": 6,
+      "removed": 0,
+      "sha256": "7709994a0c0cf4675eee2eca28ccebc989b9225497e0f06ddfe7d242b14f5eeb"
     }
   ]
 }

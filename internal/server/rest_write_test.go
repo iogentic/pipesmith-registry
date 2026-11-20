@@ -924,9 +924,10 @@ func TestRESTDeleteComponent(t *testing.T) {
 }
 
 // With writes off the REST writes answer as 0.1.1: the 501 of their
-// refusal with security on, 404 for the component delete, which the
-// contract of the interface does not name, and every request 404 with
-// security off. The field list of every format answers like a refusal with
+// refusal with security on, the 404 of 0.1.1 for the component delete,
+// which the contract of the interface does not name, although the read of a
+// component serves its path since F2 (TestTheComponentDeleteKeepsThe404OfWritesOff),
+// and every request 404 with security off. The field list of every format answers like a refusal with
 // security on since 2026-11-19.
 func TestRESTWritesWithWritesOff(t *testing.T) {
 	notFound := `{"detail":"Not Found"}`
@@ -996,4 +997,28 @@ func TestRESTDeleteOfAMavenComponentRebuildsTheMetadata(t *testing.T) {
 	}
 	status(t, w.deleteREST(componentsPath+"/"+w.searchComponent("demo-releases", "demo-meta", "1.1.0"), asAdmin), 204)
 	status(t, w.fetch("demo-releases", metadataPath), 404)
+}
+
+// With writes off and security on, DELETE /v1/components/{id} keeps the 404
+// of 0.1.1, with or without credentials, alike to a path no route takes,
+// although the read of the component now takes the path; every other method
+// the path does not take still answers 405 with Allow GET.
+func TestTheComponentDeleteKeepsThe404OfWritesOff(t *testing.T) {
+	off := startWriting(t, newFakeSecurity(), false)
+	target := "/service/rest/v1/components/ZGVtby1yYXc6AAAAAAAAAAAAAAAAAAAAAA"
+	unknown := do(t, off.addr(), "DELETE", "/service/rest/v1/no-such-route", nil, "basic", asAdmin)
+	unknown.header.Del("Date")
+	for _, headers := range [][]string{nil, {"basic", asAdmin}} {
+		got := do(t, off.addr(), "DELETE", target, nil, headers...)
+		got.header.Del("Date")
+		if got.status != 404 || string(got.body) != `{"detail":"Not Found"}` || !reflect.DeepEqual(got.header, unknown.header) {
+			t.Errorf("DELETE with %v: %d %v %q, want the 404 of a path no route takes %v", headers, got.status, got.header, got.body, unknown.header)
+		}
+	}
+	for _, method := range []string{"PUT", "POST", "PATCH"} {
+		got := do(t, off.addr(), method, target, nil, "basic", asAdmin)
+		if got.status != 405 || got.header.Get("Allow") != "GET" {
+			t.Errorf("%s: %d Allow %q %q, want 405 with Allow GET", method, got.status, got.header.Get("Allow"), got.body)
+		}
+	}
 }

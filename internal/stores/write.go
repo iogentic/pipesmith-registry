@@ -72,10 +72,15 @@ type Upload interface {
 	Size() int64
 	// Digests are the digests of the body.
 	Digests() Digests
+	// Prepare writes and syncs the properties work file of the attributes
+	// and takes the creation time, so that a Commit with the same attributes
+	// syncs no file. A write calls it before it waits for the write lock of
+	// the index, under which Commit runs.
+	Prepare(a Attributes) error
 	// Commit makes the body a blob with the attributes: its bytes file, which
 	// the upload synced, and then its properties file in the directory of the
-	// current minute, and a line in the reconciliation log. On an error no
-	// file of it is left.
+	// current minute, and a line in the reconciliation log. After Prepare it
+	// refuses other attributes. On an error no file of it is left.
 	Commit(a Attributes) (Written, error)
 	// Discard removes the work file of an upload that is not committed.
 	Discard() error

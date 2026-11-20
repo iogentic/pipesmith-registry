@@ -7,6 +7,7 @@ import (
 	"crypto/sha1" // #nosec G505 -- the SHA-1 checksum file of maven-metadata.xml, not a security use.
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
@@ -298,6 +299,14 @@ func derivedPrefix(artifactID string) string {
 	return pluginWord.ReplaceAllString(mavenWord.ReplaceAllString(artifactID, ""), "")
 }
 
+// maxJarEntries and maxJarDirectory bound the central directory of a jar
+// that the rebuild reads for its plugin descriptor (N4): zip.NewReader holds
+// every entry of it in memory. A jar beyond either counts as no archive.
+var (
+	maxJarEntries   uint64 = 100_000
+	maxJarDirectory int64  = 32 << 20
+)
+
 // goalPrefix is the goalPrefix of the plugin descriptor in a jar, "" when
 // the jar has none or is no archive.
 func goalPrefix(src Source, jar string) (string, error) {
@@ -306,6 +315,10 @@ func goalPrefix(src Source, jar string) (string, error) {
 		return "", err
 	}
 	defer content.Close()
+	entries, directory, ok := jarDirectory(content, size)
+	if !ok || entries > maxJarEntries || directory > uint64(maxJarDirectory) { // #nosec G115 -- maxJarDirectory is a positive bound.
+		return "", nil // no archive this rebuild reads: the prefix of the artifact id
+	}
 	archive, err := zip.NewReader(content, size)
 	if err != nil {
 		return "", nil // no archive: the prefix of the artifact id
@@ -327,6 +340,68 @@ func goalPrefix(src Source, jar string) (string, error) {
 		return strings.TrimSpace(d.GoalPrefix), nil
 	}
 	return "", nil
+}
+
+// The end records of a zip archive (APPNOTE.TXT 4.3.14 to 4.3.16).
+const (
+	endSignature       = 0x06054b50
+	endLength          = 22
+	endSearch          = endLength + 0xffff // the record and its longest comment
+	end64Signature     = 0x06064b50
+	end64Length        = 56
+	locatorSignature   = 0x07064b50
+	locatorLength      = 20
+	end64NumberEntries = 32
+	end64DirectorySize = 40
+)
+
+// jarDirectory reads the end records of a zip archive, as zip.NewReader
+// finds them, and gives the number of entries and the size in bytes of its
+// central directory; ok is false for no archive. It reads at most the last
+// 65,557 bytes and one ZIP64 record.
+func jarDirectory(r io.ReaderAt, size int64) (entries, directory uint64, ok bool) {
+	tail := min(size, endSearch)
+	if tail < endLength {
+		return 0, 0, false
+	}
+	buf := make([]byte, tail)
+	if _, err := r.ReadAt(buf, size-tail); err != nil {
+		return 0, 0, false
+	}
+	at := -1
+	for i := len(buf) - endLength; i >= 0; i-- {
+		if binary.LittleEndian.Uint32(buf[i:]) == endSignature && int(binary.LittleEndian.Uint16(buf[i+20:]))+endLength+i <= len(buf) {
+			at = i
+			break
+		}
+	}
+	if at < 0 {
+		return 0, 0, false
+	}
+	record := buf[at:]
+	entries = uint64(binary.LittleEndian.Uint16(record[10:]))
+	directory = uint64(binary.LittleEndian.Uint32(record[12:]))
+	offset := binary.LittleEndian.Uint32(record[16:])
+	if entries != 0xffff && directory != 0xffffffff && offset != 0xffffffff {
+		return entries, directory, true
+	}
+	position := size - tail + int64(at) - locatorLength
+	if position < 0 {
+		return entries, directory, true
+	}
+	locator := make([]byte, locatorLength)
+	if _, err := r.ReadAt(locator, position); err != nil || binary.LittleEndian.Uint32(locator) != locatorSignature {
+		return entries, directory, true // no ZIP64 locator: zip.NewReader takes the record as it is
+	}
+	end64At := binary.LittleEndian.Uint64(locator[8:])
+	if end64At > uint64(size) { // #nosec G115 -- size is the length of a file, not negative.
+		return 0, 0, false
+	}
+	end64 := make([]byte, end64Length)
+	if _, err := r.ReadAt(end64, int64(end64At)); err != nil || binary.LittleEndian.Uint32(end64) != end64Signature { // #nosec G115 -- end64At is at most size.
+		return 0, 0, false
+	}
+	return binary.LittleEndian.Uint64(end64[end64NumberEntries:]), binary.LittleEndian.Uint64(end64[end64DirectorySize:]), true
 }
 
 type plugin struct{ name, prefix, artifactID string }

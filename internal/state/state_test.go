@@ -21,6 +21,7 @@ const testHash = "$shiro1$SHA-512$1024$c3RhdGUtdGVzdC1zYWx0IQ==$aW52ZW50ZWQtaGFz
 
 func sample() *model.Snapshot {
 	return &model.Snapshot{
+		CleanupPolicies: []model.CleanupPolicy{}, Tasks: []model.Task{}, Capabilities: []model.Capability{},
 		Users: []model.User{
 			{ID: "admin", FirstName: "Ada", LastName: "Example", Email: "admin@example.com", Status: "active",
 				Source: "default", Roles: []string{"nx-admin"}, PasswordHash: testHash},
@@ -145,8 +146,8 @@ func TestCreateModesAndSchemaRow(t *testing.T) {
 	if err := db.QueryRow("SELECT value FROM meta WHERE key = 'schema'").Scan(&version); err != nil {
 		t.Fatal(err)
 	}
-	if version != state.SchemaVersion || state.SchemaVersion != 2 {
-		t.Fatalf("schema row %d, constant %d; want 2", version, state.SchemaVersion)
+	if version != state.SchemaVersion || state.SchemaVersion != 5 {
+		t.Fatalf("schema row %d, constant %d; want 4", version, state.SchemaVersion)
 	}
 	var tables []string
 	rows, err := db.Query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
@@ -160,7 +161,8 @@ func TestCreateModesAndSchemaRow(t *testing.T) {
 		}
 		tables = append(tables, name)
 	}
-	want := "blob_stores ldap_servers meta privileges repositories role_privileges role_roles roles settings tokens user_roles users"
+	want := "blob_stores capabilities cleanup_policies imported_keys ldap_servers meta privileges repositories role_privileges role_roles roles" +
+		" routing_links routing_rules settings task_runs tasks tokens user_roles users"
 	if strings.Join(tables, " ") != want {
 		t.Fatalf("tables %v, want %s", tables, want)
 	}
@@ -198,7 +200,8 @@ func TestEmptyStateLoadsEmptyLists(t *testing.T) {
 	got := load(t, st)
 	want := &model.Snapshot{Users: []model.User{}, Roles: []model.Role{}, Privileges: []model.Privilege{},
 		RoleMappings: []model.RoleMapping{}, LDAP: []model.LDAPServer{}, Realms: []string{},
-		BlobStores: []model.BlobStore{}, Repositories: []model.Repository{}}
+		BlobStores: []model.BlobStore{}, Repositories: []model.Repository{}, CleanupPolicies: []model.CleanupPolicy{},
+		Tasks: []model.Task{}, Capabilities: []model.Capability{}}
 	same(t, got, want)
 }
 

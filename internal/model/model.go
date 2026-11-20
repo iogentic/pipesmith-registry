@@ -5,6 +5,8 @@
 package model
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"net/http"
 	"time"
 )
@@ -20,7 +22,11 @@ type User struct {
 	Roles     []string `json:"roles"`
 	// PasswordHash is the stored form of the old product. It never leaves
 	// the process: it has no JSON key and String leaves it out.
-	PasswordHash string `json:"-"`
+	PasswordHash string `json:"-" audit:"secret"`
+	// Entry names the directory entry of a directory user: its entryUUID or
+	// objectGUID, else its DN. Tokens are bound to it (review 3-40). It is
+	// no stored field and has no JSON key.
+	Entry string `json:"-"`
 }
 
 // String names the user without the hash, so %v and %+v cannot print it.
@@ -133,6 +139,25 @@ type Repository struct {
 	Attributes map[string]any `json:"attributes"`
 }
 
+// RoutingRule is a routing rule of the old product (decision 5.15 of the
+// phase 5 plan): its mode, ALLOW or BLOCK as stored, decides over the
+// request paths its regular expressions match.
+type RoutingRule struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Mode        string   `json:"mode"`
+	Matchers    []string `json:"matchers"`
+}
+
+// Routing is the routing rules and the rule each repository names. It is
+// no part of Snapshot: state.sqlite keeps both in tables of their own
+// (decision P5-1 of the phase 5 session).
+type Routing struct {
+	Rules []RoutingRule `json:"rules"`
+	// Links maps the name of a repository to the name of its rule.
+	Links map[string]string `json:"links"`
+}
+
 // Snapshot is the whole state at one point in time. It is never changed
 // after it is handed out; a reload builds a new one.
 type Snapshot struct {
@@ -148,6 +173,65 @@ type Snapshot struct {
 	DefaultRole  string
 	BlobStores   []BlobStore
 	Repositories []Repository
+	// The records of phase 6, each row with its origin.
+	CleanupPolicies []CleanupPolicy
+	Tasks           []Task
+	Capabilities    []Capability
+}
+
+// The origins of a cleanup policy, a task or a capability (ruling S2 of
+// leg 6-state): a row of the import, or one an administrator made.
+const (
+	OriginImport = "import"
+	OriginLocal  = "local"
+)
+
+// CleanupPolicy is a cleanup policy. Criteria hold the stored names and
+// values, known to this server or not (A9).
+type CleanupPolicy struct {
+	Name     string         `json:"name"`
+	Format   string         `json:"format"`
+	Notes    string         `json:"notes"`
+	Criteria map[string]any `json:"criteria"`
+	Origin   string         `json:"origin"`
+}
+
+// TaskSchedule is the schedule of a task in the shape of tasks.Schedule:
+// a type and the fields that type uses. StartAt is zero when it is not
+// given. Cron holds the expression as stored, also one the cron parser
+// refuses.
+type TaskSchedule struct {
+	Type      string    `json:"type"`
+	StartAt   time.Time `json:"startAt,omitzero"`
+	WeekDays  []string  `json:"weekDays,omitempty"`
+	MonthDays []int     `json:"monthDays,omitempty"`
+	Cron      string    `json:"cron,omitempty"`
+}
+
+// Task is a scheduled task. A property whose key holds a secret word is
+// never part of Properties (A11). ImportedState is the state the old row
+// held, nil for a task of origin local; an imported task arrives with
+// Enabled false (I12).
+type Task struct {
+	ID            string            `json:"id"`
+	Name          string            `json:"name"`
+	TypeID        string            `json:"typeId"`
+	Enabled       bool              `json:"enabled"`
+	Schedule      TaskSchedule      `json:"schedule"`
+	Properties    map[string]string `json:"properties"`
+	ImportedState map[string]string `json:"importedState"`
+	Origin        string            `json:"origin"`
+}
+
+// Capability is a capability of the old product. A property whose key
+// holds a secret word is never part of Properties (A11).
+type Capability struct {
+	ID         string            `json:"id"`
+	TypeID     string            `json:"typeId"`
+	Enabled    bool              `json:"enabled"`
+	Notes      string            `json:"notes"`
+	Properties map[string]string `json:"properties"`
+	Origin     string            `json:"origin"`
 }
 
 // Token is a token this server issued, as a row of the tokens table holds
@@ -159,7 +243,7 @@ type Token struct {
 	Kind     string   // "npm" or "user"
 	UserID   string   // the user the token signs in
 	Source   string   // the source of that user: "default" or "LDAP"
-	Digest   [32]byte // SHA-256 of the secret half
+	Digest   [32]byte `audit:"secret"` // SHA-256 of the secret half
 	Created  time.Time
 	LastUsed time.Time // zero while the token was never used
 }
@@ -257,3 +341,33 @@ var (
 	// ErrNoToken is a token to revoke that the subject does not hold.
 	ErrNoToken = &Error{Status: http.StatusNotFound, Message: "no such token"}
 )
+
+// ImportedKey is a key of the old product taken over by an import with
+// secrets (decision K4 of docs/plans/secrets-import.md): no value of the key,
+// only a digest under the install key of the SHA-256 of the key.
+type ImportedKey struct {
+	Kind     string   // "npm", "docker" or "nuget"
+	UserID   string   // the user the key signs in
+	Source   string   // the source of that user: "default" or "LDAP"
+	Digest   [32]byte `audit:"secret"` // HMAC-SHA-256 under the install key of the SHA-256 of the key
+	Created  time.Time
+	LastUsed time.Time // zero while the key was not used on this server
+}
+
+// String names the key by its kind and owner, without the digest.
+func (k ImportedKey) String() string {
+	return "imported key " + k.Kind + " of " + k.UserID + " (" + k.Source + ")"
+}
+
+// GoString is String.
+func (k ImportedKey) GoString() string { return k.String() }
+
+// ImportedDigest is the digest an imported key is stored and found by:
+// HMAC-SHA-256 under the install key of the SHA-256 of the key.
+func ImportedDigest(installKey []byte, sum [32]byte) [32]byte {
+	m := hmac.New(sha256.New, installKey)
+	m.Write(sum[:])
+	var d [32]byte
+	copy(d[:], m.Sum(nil))
+	return d
+}

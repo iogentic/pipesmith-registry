@@ -200,3 +200,41 @@ func TestDropFollowsTheIndex(t *testing.T) {
 		t.Fatalf("asset of a path no store holds: %+v", a)
 	}
 }
+
+// DropRepository removes the asset and blob rows and the proxy state of one
+// repository and keeps those of the others (decision A7).
+func TestDropRepository(t *testing.T) {
+	c := open(t, t.TempDir())
+	for _, s := range writtenSpecs {
+		put(t, c, "write", s)
+	}
+	checked := int64(t0)
+	if err := c.PutProxyRow(catalog.ProxyRow{Repo: "demo-raw", Path: "docs/written.txt", CheckedMS: &checked}); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.DropRepository("demo-raw"); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", c.File())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	count := func(query string) int {
+		var n int
+		if err := db.QueryRow(query).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	for query, want := range map[string]int{
+		"SELECT count(*) FROM blobs WHERE repo = 'demo-raw'":       0,
+		"SELECT count(*) FROM assets WHERE repo = 'demo-raw'":      0,
+		"SELECT count(*) FROM proxy_state WHERE repo = 'demo-raw'": 0,
+		"SELECT count(*) FROM assets WHERE repo = 'demo-maven'":    1,
+	} {
+		if got := count(query); got != want {
+			t.Errorf("%s: %d, want %d", query, got, want)
+		}
+	}
+}

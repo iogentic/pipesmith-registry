@@ -9,7 +9,9 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
+	adminrules "github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/rest"
 )
 
@@ -69,7 +71,7 @@ func TestAreasNeedsASubject(t *testing.T) {
 func TestAreasForEverySignedInUser(t *testing.T) {
 	a := newSecureApp(t, newFakeSecurity())
 	admin, nobody := areasOf(t, a, asAdmin), areasOf(t, a, asNobody)
-	data, err := rest.ReadOnly().JSON()
+	data, err := rest.ReadOnly(adminrules.NewReadOnlyMode(time.Now).State(), true).JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,8 +82,10 @@ func TestAreasForEverySignedInUser(t *testing.T) {
 	if err := json.Unmarshal(data, &want); err != nil {
 		t.Fatal(err)
 	}
-	if !want.Frozen || !admin.ReadOnly.Frozen || admin.ReadOnly.Reason != want.SummaryReason || admin.ReadOnly.Reason == "" {
-		t.Fatalf("readOnly %+v, want frozen with %q", admin.ReadOnly, want.SummaryReason)
+	// ruling SB2: a server with writes off starts released, its reason
+	// says that its content writes stay refused
+	if want.Frozen || admin.ReadOnly.Frozen || admin.ReadOnly.Reason != want.SummaryReason || !strings.Contains(want.SummaryReason, "writes off") {
+		t.Fatalf("readOnly %+v, want released with %q", admin.ReadOnly, want.SummaryReason)
 	}
 	a1, _ := json.Marshal(admin)
 	n1, _ := json.Marshal(nobody)
@@ -98,15 +102,23 @@ func writingSecureApp(t *testing.T) *secureApp {
 }
 
 func TestAreasNamesEveryRefusalOfTheContract(t *testing.T) {
-	// with writes off 73 of the 104 requests of the contract at 1e6d884 are
+	// with writes off 19 of the 104 requests of the contract at 1e6d884 are
 	// refused, as the list of TestContractRefusals counts them, and the one
 	// request of beyondContract; with writes on the 4 of writeRefusals are
-	// served
+	// served; POST .../invalidate-cache (leg 5c of phase 5), the nine writes
+	// of the area security, the five writes of the LDAP connections and the
+	// three checks of an LDAP form (leg 6-identity), and the four writes of
+	// the blob stores and the four of the repositories (leg 6-stores), and
+	// the system information, the four requests of the capabilities, the
+	// seven of the routing rules, the four of the tasks and the three
+	// changes of the read only mode (leg 6-system), the two figures per day
+	// of S43 (task 7.23 of phase 7), the six requests of the log files
+	// and logger levels (task 7.24) and the node id (F2) are served in both
 	for _, c := range []struct {
 		name  string
 		app   *secureApp
 		count int
-	}{{"writes off", newSecureApp(t, newFakeSecurity()), 74}, {"writes on", writingSecureApp(t), 70}} {
+	}{{"writes off", newSecureApp(t, newFakeSecurity()), 20}, {"writes on", writingSecureApp(t), 16}} {
 		t.Run(c.name, func(t *testing.T) { refusalsOfTheContract(t, c.app, c.count) })
 	}
 }
@@ -148,13 +160,14 @@ func refusalsOfTheContract(t *testing.T, a *secureApp, count int) {
 }
 
 // With writes off the list of GET /api/areas is the one of 0.1.1 with one
-// entry more: the three requests of writeRefusals that 0.1.1 lists first, in
-// its order, then the field list of every format (beyondContract), then the
+// entry more and without POST .../invalidate-cache, which leg 5c of phase 5
+// serves: the three requests of writeRefusals that 0.1.1 lists first, in its
+// order, then the field list of every format (beyondContract), then the
 // table of 0.1.1.
 func TestAreasWithWritesOffAsBefore(t *testing.T) {
 	a := newSecureApp(t, newFakeSecurity())
 	r := a.send("GET", "/api/areas", "basic", asAdmin)
-	data, err := rest.Areas(refusedOf(slices.Concat(writeRefusals, refusalTable))).JSON()
+	data, err := rest.Areas(adminrules.NewReadOnlyMode(time.Now).State(), true, refusedOf(slices.Concat(writeRefusals, refusalTable))).JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,12 +187,12 @@ func TestAreasWithWritesOffAsBefore(t *testing.T) {
 }
 
 func TestNoOtherRequestOfTheContractAnswers501(t *testing.T) {
-	// 31 requests outside the list with writes off, 34 with writes on
+	// 85 requests outside the list with writes off, 88 with writes on
 	for _, c := range []struct {
 		name   string
 		app    *secureApp
 		served int
-	}{{"writes off", newSecureApp(t, newFakeSecurity()), 31}, {"writes on", writingSecureApp(t), 34}} {
+	}{{"writes off", newSecureApp(t, newFakeSecurity()), 85}, {"writes on", writingSecureApp(t), 88}} {
 		t.Run(c.name, func(t *testing.T) { servedOfTheContract(t, c.app, c.served) })
 	}
 }
@@ -196,7 +209,12 @@ func servedOfTheContract(t *testing.T, a *secureApp, want int) {
 			continue
 		}
 		method, path, _ := strings.Cut(key, " ")
-		if r := a.send(method, filled(path), "basic", asAdmin); r.status == 501 {
+		target := filled(path)
+		if key == "POST /service/rest/v1/repositories/{segment}/{type}" {
+			// x1 names no kind of A5, which the create answers with 501 by design
+			target = "/service/rest/v1/repositories/raw/hosted"
+		}
+		if r := a.send(method, target, "basic", asAdmin); r.status == 501 {
 			t.Errorf("%s answers 501 but is not in the list", key)
 		}
 		served++
@@ -207,17 +225,17 @@ func servedOfTheContract(t *testing.T, a *secureApp, want int) {
 }
 
 func TestAPlaceholderIsOneSegment(t *testing.T) {
-	// with writes off the templates of writeRefusals are refusals too: 21
-	// templates with a placeholder of one segment give 34 requests; with
-	// writes on 19 give 32
+	// with writes off the templates of writeRefusals are refusals too: 5
+	// templates with a placeholder of one segment give 9 requests; with
+	// writes on 3 give 7
 	for _, c := range []struct {
 		name  string
 		app   *secureApp
 		table []refusalDecl
 		count int
 	}{
-		{"writes off", newSecureApp(t, newFakeSecurity()), slices.Concat(writeRefusals, refusalTable), 34},
-		{"writes on", writingSecureApp(t), refusalTable, 32},
+		{"writes off", newSecureApp(t, newFakeSecurity()), slices.Concat(writeRefusals, refusalTable), 9},
+		{"writes on", writingSecureApp(t), refusalTable, 7},
 	} {
 		t.Run(c.name, func(t *testing.T) { placeholdersAreOneSegment(t, c.app, c.table, c.count) })
 	}

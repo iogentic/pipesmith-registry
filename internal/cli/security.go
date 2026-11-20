@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"reflect"
 	"slices"
 	"strings"
 	"sync"
 
+	"github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/auth"
 	"github.com/iogentic/pipesmith-registry/internal/ldapauth"
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -25,11 +27,43 @@ type askFunc func(prompt string) (string, error)
 
 var _ auth.Store = (*state.Store)(nil)
 
-// security is the service of serve with the state file it follows.
+var _ admin.RoutingStore = (*security)(nil)
+
+// security is the service of serve with the state file it follows. It is
+// the identity store of the writes of the area security too
+// (admin.IdentityStore, server.Options.Identity).
 type security struct {
 	*auth.Service
-	store *state.Store
+	store   *state.Store
+	dataDir string
 }
+
+// Load reads every record of the state file.
+func (s *security) Load() (*model.Snapshot, error) { return s.store.Load() }
+
+// Update writes the kinds of an identity change and raises the generation.
+func (s *security) Update(kinds []state.Kind, fn func(snap *model.Snapshot) error) error {
+	return s.store.Update(kinds, fn)
+}
+
+// DataDir is the data directory of the state file.
+func (s *security) DataDir() string { return s.dataDir }
+
+// Routing reads the routing rules and links of the state file.
+func (s *security) Routing() (model.Routing, error) { return s.store.Routing() }
+
+// UpdateRouting writes a change of the routing rules and raises the
+// generation (admin.RoutingStore).
+func (s *security) UpdateRouting(fn func(r *model.Routing) error) error {
+	return s.store.UpdateRouting(fn)
+}
+
+// Generation is the generation of the state file; the server reads the
+// routing rules again when it changes (ruling SY3 of leg 6-system).
+func (s *security) Generation() (int64, error) { return s.store.Generation() }
+
+// ResetCredentials empties the credential cache of the service.
+func (s *security) ResetCredentials() { s.ForgetCredentials() }
 
 // Close closes the state file when serve ends.
 func (s *security) Close() error { return s.store.Close() }
@@ -37,6 +71,7 @@ func (s *security) Close() error { return s.store.Close() }
 // closeSecurity closes the state file of a service of buildSecurity.
 func closeSecurity(sec model.Security) {
 	if c, ok := sec.(io.Closer); ok {
+		closing("security")
 		_ = c.Close() // the state file is only read and written in transactions; nothing is left to save
 	}
 }
@@ -59,6 +94,12 @@ func buildSecurity(dataDir string, proxies auth.TrustedProxies, ask askFunc, log
 	}
 	if err != nil {
 		return nil, err
+	}
+	path := state.Path(dataDir)
+	if info, err := os.Stat(path); err == nil && info.Mode().Perm()&0o077 != 0 {
+		// finding sa-21: a note, no refusal
+		log.Warn(fmt.Sprintf("%s has mode %04o, so the group or others may read the password hashes it holds; chmod 600 %s",
+			path, info.Mode().Perm(), path))
 	}
 	sec, err := securityOf(st, dataDir, proxies, ask, log)
 	if err != nil {
@@ -85,7 +126,7 @@ func securityOf(st *state.Store, dataDir string, proxies auth.TrustedProxies, as
 		return nil, err
 	}
 	svc, err := auth.New(auth.Options{Snapshot: snap, Generation: gen, Store: st, Directories: dirs, Logger: log,
-		TrustedProxies: proxies, DirectoriesFor: builds.directories})
+		TrustedProxies: proxies, DirectoriesFor: builds.directories, Imported: st, InstallKey: installKeyOf(dataDir)})
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +156,7 @@ func securityOf(st *state.Store, dataDir string, proxies auth.TrustedProxies, as
 		}
 		log.Info("forwarded headers count from the trusted proxies " + strings.Join(names, ", "))
 	}
-	return &security{Service: svc, store: st}, nil
+	return &security{Service: svc, store: st, dataDir: dataDir}, nil
 }
 
 // ordered are the LDAP connections in their stored order.
@@ -263,11 +304,16 @@ func (b *ldapBuilds) report(server model.LDAPServer, last ldapBuild, known bool,
 	if known && last.dir == now.dir {
 		return
 	}
+	plain := strings.EqualFold(strings.TrimSpace(server.Protocol), "ldap")
 	if simple {
 		b.log.Info(fmt.Sprintf("LDAP connection %s: bind password from %s", server.Name, now.from))
-		if strings.EqualFold(strings.TrimSpace(server.Protocol), "ldap") {
+		if plain {
 			b.log.Warn(fmt.Sprintf("LDAP connection %s sends its bind password in clear: protocol ldap with the simple scheme", server.Name))
 		}
+	}
+	if plain {
+		// review 3-60: a sign in binds as the user with the password given
+		b.log.Warn(fmt.Sprintf("LDAP connection %s sends the passwords of its users in clear: protocol ldap; use ldaps", server.Name))
 	}
 }
 
@@ -340,4 +386,16 @@ func (h fieldHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 
 func (h fieldHandler) WithGroup(name string) slog.Handler {
 	return fieldHandler{h.Handler.WithGroup(name)}
+}
+
+// installKeyOf reads the install key of the imported keys of a data
+// directory; none before an import with secrets made one.
+func installKeyOf(dataDir string) func() ([]byte, error) {
+	return func() ([]byte, error) {
+		key, err := state.ReadInstallKey(dataDir)
+		if errors.Is(err, state.ErrNoSecret) {
+			return nil, nil
+		}
+		return key, err
+	}
 }

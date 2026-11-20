@@ -267,10 +267,10 @@ func TestDropDoesNotWaitForARunningReplace(t *testing.T) {
 		t.Fatal("the replace did not start")
 	}
 	started := time.Now()
-	err := ix.Drop("demo-releases", "gone.txt", "b")
+	dropped, err := ix.DropRow("demo-releases", "gone.txt", "b")
 	elapsed := time.Since(started)
-	if err != nil {
-		t.Fatal(err)
+	if err != nil || dropped {
+		t.Fatalf("a drop beside a running write reports %v %v", dropped, err)
 	}
 	if elapsed >= 200*time.Millisecond {
 		t.Errorf("drop waited %s", elapsed)
@@ -282,11 +282,14 @@ func TestDropDoesNotWaitForARunningReplace(t *testing.T) {
 	if err := <-worker; err != nil {
 		t.Fatal(err)
 	}
-	if err := ix.Drop("demo-releases", "gone.txt", "b"); err != nil {
-		t.Fatal(err)
+	if dropped, err := ix.DropRow("demo-releases", "gone.txt", "b"); err != nil || !dropped {
+		t.Fatalf("a drop after the write reports %v %v", dropped, err)
 	}
 	if mustLookup(t, ix, "demo-releases", "gone.txt") != nil {
 		t.Fatal("drop kept the row after the write")
+	}
+	if dropped, err := ix.DropRow("demo-releases", "gone.txt", "b"); err != nil || dropped {
+		t.Fatalf("a drop of a row that is gone reports %v %v", dropped, err)
 	}
 }
 

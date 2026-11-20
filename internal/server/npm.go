@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -147,9 +148,33 @@ func npmNotFound(w http.ResponseWriter, req *request) {
 }
 
 // baseURL is _base_url: the origin of the request, taken from the Host
-// header, which the host guard requires.
+// header, which the host guard requires, in the form of requestHost.
 func baseURL(req *request) string {
-	return req.scheme + "://" + latin1Text(req.r.Host)
+	host, _ := requestHost(req.r.Host)
+	return req.scheme + "://" + latin1Text(host)
+}
+
+// requestHost is a Host header as the URLs of an answer name it (review
+// 3-63): the name in lower case, and the port only when it is a number from
+// 1 to 65535, written without leading zeros. ok is false when the header
+// named another port, which is then left out, or did not match the shape the
+// host guard takes.
+func requestHost(value string) (host string, ok bool) {
+	value = latin1Strip(value)
+	m := hostHeader.FindStringSubmatch(value)
+	if m == nil {
+		return asciiLower(value), false
+	}
+	name := asciiLower(m[1])
+	digits, hasPort := strings.CutPrefix(value[len(m[1]):], ":")
+	if !hasPort {
+		return name, true
+	}
+	port, err := strconv.Atoi(digits)
+	if err != nil || port < 1 || port > 65535 || strconv.Itoa(port) != digits {
+		return name, false
+	}
+	return name + ":" + digits, true
 }
 
 // npmBase is _npm_base: the prefix of every tarball URL of an answer.
@@ -188,7 +213,7 @@ func (s *Server) npm(w http.ResponseWriter, req *request, st *state, repo repos.
 			npmJSON(w, req, http.StatusOK, []byte("{}"))
 			return true, nil
 		}
-		if name, ok := npm.DistTagsPath(t.path); ok && !t.directory && s.writes.writer != nil {
+		if name, ok := npm.DistTagsPath(t.path); ok && !t.directory && s.writes.clients {
 			return true, s.npmDistTags(w, req, st, members, name)
 		}
 		npmNotFound(w, req)
@@ -201,7 +226,7 @@ func (s *Server) npm(w http.ResponseWriter, req *request, st *state, repo repos.
 	if !ok {
 		return false, nil
 	}
-	document, err := s.rp.npmMerged(st, members, call)
+	document, err := s.rp.npmMerged(st, members, call, s.reaching(members))
 	if err != nil || document == nil {
 		return false, err // no document and no tarball: a stored file may lie at this path
 	}
@@ -264,9 +289,13 @@ func copyObject(value any) *pyjson.Object {
 // whose tarball is the one served and whose shasum describes those bytes;
 // every stored tarball no such version covers builds its own version. An
 // empty object says the package has a document but no version with a
-// stored tarball, nil that neither a document nor a tarball is there.
-func (rp *readPath) npmMerged(st *state, members []repos.Repo, call npm.PackagePath) (*pyjson.Object, error) {
-	stored, err := rp.npmDocuments(st, members, call.Name)
+// stored tarball, nil that neither a document nor a tarball is there. Every
+// version of the document of a member in reach stays without a stored
+// tarball: a proxy that reaches its remote fetches the tarball when a client
+// asks for it (decision 5.19 of the phase 5 plan); nil keeps the rule of the
+// port for every member.
+func (rp *readPath) npmMerged(st *state, members []repos.Repo, call npm.PackagePath, reach map[string]bool) (*pyjson.Object, error) {
+	stored, owners, err := rp.npmDocuments(st, members, call.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -326,6 +355,7 @@ func (rp *readPath) npmMerged(st *state, members []repos.Repo, call npm.PackageP
 			}
 		}
 	}
+	keep = inReach(keep, stored, owners, reach)
 	merged.Set("versions", versions)
 	merged.Set("time", times)
 	return orEmpty(npm.SelectVersions(merged, keep))
@@ -389,21 +419,48 @@ func (rp *readPath) npmChoose(members []repos.Repo, documents []*pyjson.Object) 
 	return chosen, nil
 }
 
+// inReach adds to keep every version of a document whose member is in
+// reach (decision 5.19), in the order of the documents.
+func inReach(keep []string, documents []*pyjson.Object, owners []string, reach map[string]bool) []string {
+	if len(reach) == 0 {
+		return keep
+	}
+	kept := map[string]bool{}
+	for _, version := range keep {
+		kept[version] = true
+	}
+	for position, document := range documents {
+		versions, ok := field(document, "versions").(*pyjson.Object)
+		if !ok || !reach[owners[position]] {
+			continue
+		}
+		for version := range versions.All() {
+			if !kept[version] {
+				kept[version] = true
+				keep = append(keep, version)
+			}
+		}
+	}
+	return keep
+}
+
 // npmDocuments is _npm_documents: the stored document of the package in
-// every member that holds one, in member order.
-func (rp *readPath) npmDocuments(st *state, members []repos.Repo, name string) ([]*pyjson.Object, error) {
+// every member that holds one, in member order, with the name of that
+// member.
+func (rp *readPath) npmDocuments(st *state, members []repos.Repo, name string) ([]*pyjson.Object, []string, error) {
 	var documents []*pyjson.Object
+	var owners []string
 	for _, member := range members {
 		asset, f, size, err := rp.open(st, member.Name, name)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if asset == nil {
 			continue
 		}
 		data, err := readBounded(f, size, maxDocumentBytes)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if len(data) == 0 || int64(len(data)) > maxDocumentBytes {
 			logAt(slogWarn, serverLogger, "%s/%s in store %s has %d bytes, not read as a document", asset.Repo, name, asset.Store, size)
@@ -418,16 +475,17 @@ func (rp *readPath) npmDocuments(st *state, members []repos.Repo, name string) (
 		}
 		if err != nil {
 			if !pyjson.IsValueError(err) && PyClass(err) != "RecursionError" {
-				return nil, err
+				return nil, nil, err
 			}
 			logAt(slogWarn, serverLogger, "%s/%s in store %s is not a package document: %s", asset.Repo, name, asset.Store, PyText(err))
 			continue
 		}
 		if document, ok := value.(*pyjson.Object); ok {
 			documents = append(documents, document)
+			owners = append(owners, member.Name)
 		}
 	}
-	return documents, nil
+	return documents, owners, nil
 }
 
 // npmTarballs is _npm_tarballs: the stored tarballs of a package, the first

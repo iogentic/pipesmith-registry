@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/auth"
 	"github.com/iogentic/pipesmith-registry/internal/ldapauth"
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -37,16 +38,23 @@ var identityHelp = map[string]string{
 	"user": "usage: pipesmith-registry user [-h] {add,password,enable,disable,roles} ...\n\n" +
 		"positional arguments:\n  {add,password,enable,disable,roles}\n\n" +
 		"options:\n  -h, --help            show this help message and exit\n",
-	"user add": "usage: pipesmith-registry user add [-h] [--roles ROLES]\n" +
+	"user add": "usage: pipesmith-registry user add [-h] [--role ROLE] [--roles ROLES]\n" +
 		"                                   [--first-name FIRST_NAME]\n" +
 		"                                   [--last-name LAST_NAME] [--email EMAIL]\n" +
+		"                                   [--password-file PASSWORD_FILE | --password-stdin]\n" +
 		"                                   [--data DATA]\n" +
 		"                                   name\n\n" +
 		"positional arguments:\n  name\n\n" +
-		"options:\n  -h, --help            show this help message and exit\n  --roles ROLES\n" +
-		"  --first-name FIRST_NAME\n  --last-name LAST_NAME\n  --email EMAIL\n  --data DATA\n",
-	"user password": "usage: pipesmith-registry user password [-h] [--data DATA] name\n\n" +
-		"positional arguments:\n  name\n\noptions:\n  -h, --help   show this help message and exit\n  --data DATA\n",
+		"options:\n  -h, --help            show this help message and exit\n  --role ROLE\n  --roles ROLES\n" +
+		"  --first-name FIRST_NAME\n  --last-name LAST_NAME\n  --email EMAIL\n" +
+		"  --password-file PASSWORD_FILE\n  --password-stdin\n  --data DATA\n",
+	"user password": "usage: pipesmith-registry user password [-h]\n" +
+		"                                        [--password-file PASSWORD_FILE | --password-stdin]\n" +
+		"                                        [--data DATA]\n" +
+		"                                        name\n\n" +
+		"positional arguments:\n  name\n\n" +
+		"options:\n  -h, --help            show this help message and exit\n" +
+		"  --password-file PASSWORD_FILE\n  --password-stdin\n  --data DATA\n",
 	"user enable": "usage: pipesmith-registry user enable [-h] [--data DATA] name\n\n" +
 		"positional arguments:\n  name\n\noptions:\n  -h, --help   show this help message and exit\n  --data DATA\n",
 	"user disable": "usage: pipesmith-registry user disable [-h] [--data DATA] name\n\n" +
@@ -77,8 +85,10 @@ var identityHelp = map[string]string{
 		"positional arguments:\n  connection\n\noptions:\n  -h, --help   show this help message and exit\n  --data DATA\n",
 	"ldap check": "usage: pipesmith-registry ldap check [-h] [--data DATA] [connection]\n\n" +
 		"positional arguments:\n  connection\n\noptions:\n  -h, --help   show this help message and exit\n  --data DATA\n",
-	"token": "usage: pipesmith-registry token [-h] {issue,list,revoke} ...\n\n" +
-		"positional arguments:\n  {issue,list,revoke}\n\noptions:\n  -h, --help           show this help message and exit\n",
+	"token": "usage: pipesmith-registry token [-h] {issue,list,revoke,forget-imported} ...\n\n" +
+		"positional arguments:\n  {issue,list,revoke,forget-imported}\n\noptions:\n  -h, --help            show this help message and exit\n",
+	"token forget-imported": "usage: pipesmith-registry token forget-imported [-h] [--data DATA]\n\n" +
+		"options:\n  -h, --help   show this help message and exit\n  --data DATA\n",
 	"token issue": "usage: pipesmith-registry token issue [-h] --kind {npm,user}\n" +
 		"                                      [--source {default,LDAP}] [--data DATA]\n" +
 		"                                      user\n\n" +
@@ -103,7 +113,8 @@ func TestIdentityCommandHelp(t *testing.T) {
 		}
 	}
 	_, out, _ := run(t, "help")
-	for _, line := range []string{"\nIdentity\n", "  user add <name> [--roles a,b]", "  user password <name>", "  anonymous on [--user ID]",
+	for _, line := range []string{"\nIdentity\n", "  user add <name> [--role R]... [--roles a,b]", "[--password-file PATH | --password-stdin]",
+		"  user password <name> [--password-file PATH | --password-stdin]", "  anonymous on [--user ID]",
 		"  realms set <realm,realm> [--default-role ROLE]", "  ldap password <connection>", "  ldap ca <connection> <file|none>",
 		"  ldap check [<connection>]", "  token issue <user> --kind npm|user",
 		"  token revoke <id>"} {
@@ -127,6 +138,9 @@ func TestIdentityCommandUsage(t *testing.T) {
 		"token issue someone":    "error: pipesmith-registry token issue: the following arguments are required: --kind\n",
 		"token issue x --kind d": "error: pipesmith-registry token issue: argument --kind: invalid choice: 'd' (choose from npm, user)\n",
 		"user frob":              "error: pipesmith-registry user: argument user_command: invalid choice: 'frob' (choose from add, password, enable, disable, roles)\n",
+		// one source of the password
+		"user add someone --password-file f --password-stdin":      "error: pipesmith-registry user add: argument --password-stdin: not allowed with argument --password-file\n",
+		"user password someone --password-stdin --password-file f": "error: pipesmith-registry user password: argument --password-file: not allowed with argument --password-stdin\n",
 		// a password is never an argument
 		"user add someone " + newPassword: "error: pipesmith-registry: unrecognized arguments: " + newPassword + "\n",
 	} {
@@ -347,6 +361,116 @@ func TestUserCommands(t *testing.T) {
 	}
 }
 
+// passwordFile writes the password and a line break to a file of the mode,
+// the way an operator prepares one for user add --password-file.
+func passwordFile(t *testing.T, password string, mode os.FileMode) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "password.txt")
+	if err := os.WriteFile(path, []byte(password+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, mode); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// TestUserAddPasswordFile is the command of the owner of 2026-11-20: a local
+// account from a password file of mode 0600 and repeated --role, without a
+// prompt, stored as POST /v1/security/users stores it.
+func TestUserAddPasswordFile(t *testing.T) {
+	dir := importedFixture(t)
+	_, gen := stateOf(t, dir)
+	file := passwordFile(t, newPassword, 0o600)
+	code, out, errOut := withInput(t, "", "user", "add", "demo-file", "--role", "nx-admin", "--role", "demo-viewer",
+		"--first-name", "Demo", "--last-name", "File", "--email", "demo-file@example.com", "--password-file", file)
+	if code != 0 || errOut != "" || !strings.Contains(out, "added user demo-file (active, roles: nx-admin, demo-viewer)") {
+		t.Fatalf("user add --password-file: %d %q %q", code, out, errOut)
+	}
+	snap, now := stateOf(t, dir)
+	u := userIn(snap, "demo-file")
+	if u == nil || u.Status != "active" || u.Source != auth.SourceLocal || !slices.Equal(u.Roles, []string{"nx-admin", "demo-viewer"}) ||
+		u.FirstName != "Demo" || u.LastName != "File" || u.Email != "demo-file@example.com" ||
+		!strings.HasPrefix(u.PasswordHash, "$shiro1$SHA-512$1024$") || !auth.VerifyPassword(newPassword, u.PasswordHash) || now != gen+1 {
+		t.Fatalf("after user add: %+v, generation %d after %d", u, now, gen)
+	}
+	if !signsIn(t, dir, "demo-file", newPassword) {
+		t.Fatal("the user of the password file does not sign in")
+	}
+	// --role and --roles add up, each role once
+	code, out, errOut = withInput(t, newPassword+"\n", "user", "add", "demo-both", "--roles", "demo-viewer,nx-admin", "--role", "nx-admin",
+		"--password-stdin")
+	if code != 0 || errOut != "" || !strings.Contains(out, "roles: demo-viewer, nx-admin)") {
+		t.Fatalf("user add --roles --role --password-stdin: %d %q %q", code, out, errOut)
+	}
+	if !signsIn(t, dir, "demo-both", newPassword) {
+		t.Fatal("the user of --password-stdin does not sign in")
+	}
+}
+
+// TestUserPasswordSources sets a password from a file and from standard
+// input named by --password-stdin.
+func TestUserPasswordSources(t *testing.T) {
+	dir := importedFixture(t)
+	const second = "example-second-pass-7"
+	code, out, errOut := withInput(t, "", "user", "password", "viewer", "--password-file", passwordFile(t, newPassword, 0o400))
+	if code != 0 || errOut != "" || !strings.Contains(out, "set the password of user viewer") {
+		t.Fatalf("user password --password-file: %d %q %q", code, out, errOut)
+	}
+	if !signsIn(t, dir, "viewer", newPassword) || signsIn(t, dir, "viewer", "example-viewer-1") {
+		t.Fatal("the password of the file does not sign in, or the old one still does")
+	}
+	code, out, errOut = withInput(t, second+"\n", "user", "password", "viewer", "--password-stdin")
+	if code != 0 || errOut != "" || strings.Contains(out, second) {
+		t.Fatalf("user password --password-stdin: %d %q %q", code, out, errOut)
+	}
+	if !signsIn(t, dir, "viewer", second) {
+		t.Fatal("the password of standard input does not sign in")
+	}
+}
+
+// TestPasswordFileRefusals: a file others may read, no file, a file of two
+// lines or none, an existing user and an unknown role are refused with exit
+// 1, a message and no change; the password never shows.
+func TestPasswordFileRefusals(t *testing.T) {
+	dir := importedFixture(t)
+	_, before := stateOf(t, dir)
+	folder := t.TempDir()
+	twoLines := filepath.Join(folder, "two.txt")
+	if err := os.WriteFile(twoLines, []byte(newPassword+"\nsecond\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	empty := filepath.Join(folder, "empty.txt")
+	if err := os.WriteFile(empty, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ok := passwordFile(t, newPassword, 0o600)
+	for _, c := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"user", "add", "demo-new", "--password-file", passwordFile(t, newPassword, 0o640)}, "has mode 0640; only its owner may read or write it (chmod 600"},
+		{[]string{"user", "add", "demo-new", "--password-file", passwordFile(t, newPassword, 0o604)}, "has mode 0604"},
+		{[]string{"user", "password", "viewer", "--password-file", passwordFile(t, newPassword, 0o644)}, "has mode 0644"},
+		{[]string{"user", "add", "demo-new", "--password-file", filepath.Join(folder, "missing.txt")}, "cannot read the password file"},
+		{[]string{"user", "add", "demo-new", "--password-file", folder}, "is no regular file"},
+		{[]string{"user", "add", "demo-new", "--password-file", twoLines}, "more than one line"},
+		{[]string{"user", "add", "demo-new", "--password-file", empty}, "no password in the file"},
+		{[]string{"user", "add", "viewer", "--password-file", ok}, "user viewer exists already"},
+		{[]string{"user", "add", "demo-new", "--role", "no-such-role", "--password-file", ok}, "no role no-such-role"},
+		{[]string{"user", "password", "nobody", "--password-file", ok}, "nobody"},
+		{[]string{"user", "password", "ldap.person", "--password-file", ok}, "ldap.person"},
+	} {
+		code, out, errOut := withInput(t, newPassword+"\n", c.args...)
+		if code != 1 || out != "" || !strings.HasPrefix(errOut, "error: ") || !strings.Contains(errOut, c.want) {
+			t.Errorf("%v: %d %q %q, want %q", c.args, code, out, errOut, c.want)
+		}
+	}
+	if _, gen := stateOf(t, dir); gen != before {
+		t.Fatalf("a refused command raised the generation from %d to %d", before, gen)
+	}
+}
+
 func TestAnonymousCommands(t *testing.T) {
 	dir := importedFixture(t)
 	read := "nexus:repository-view:maven2:demo-maven-hosted:read"
@@ -381,10 +505,11 @@ func TestAnonymousCommands(t *testing.T) {
 	if !permitted() {
 		t.Fatal("the anonymous user with nx-anonymous does not read")
 	}
-	// another user takes the roles of its local row
-	code, out, _ = withInput(t, "", "anonymous", "on", "--user", "viewer")
-	if code != 0 || !strings.Contains(out, "as user viewer with the roles demo-viewer") || !permitted() {
-		t.Fatalf("anonymous on --user viewer: %d %q", code, out)
+	// another id that is no user takes the roles given (review 3-13: a user
+	// who signs in is refused, see TestAnonymousOnRefusesAUserWhoSignsIn)
+	code, out, _ = withInput(t, "", "anonymous", "on", "--user", "demo-guest", "--roles", "demo-viewer")
+	if code != 0 || !strings.Contains(out, "as user demo-guest with the roles demo-viewer") || !permitted() {
+		t.Fatalf("anonymous on --user demo-guest: %d %q", code, out)
 	}
 	if code, out, _ := withInput(t, "", "anonymous", "on", "--roles", "no-such-role"); code != 1 || out != "" {
 		t.Fatalf("anonymous on with an unknown role: %d %q", code, out)
@@ -1038,7 +1163,11 @@ func TestAnonymousOnKeepsTheRolesOfASignInUser(t *testing.T) {
 		t.Fatalf("a refusal changed the state: generation %d to %d, roles %v, anonymous %+v", gen, gen2, userIn(after, "admin").Roles, after.Anonymous)
 	}
 	// the steps of the refusal in their order, with demo-guest, an id that is
-	// no user
+	// no user; maven-lead gets nx-admin first, so that admin is not the last
+	// administrator (ruling I3)
+	if code, out, errOut := withInput(t, "", "user", "roles", "maven-lead", "nx-admin"); code != 0 {
+		t.Fatalf("user roles maven-lead nx-admin: %d %q %q", code, out, errOut)
+	}
 	for _, args := range [][]string{
 		{"anonymous", "on", "--user", "demo-guest", "--roles", "nx-anonymous"},
 		{"user", "roles", "admin", "nx-anonymous"},
@@ -1053,5 +1182,103 @@ func TestAnonymousOnKeepsTheRolesOfASignInUser(t *testing.T) {
 	}
 	if snap, _ := stateOf(t, dir); !slices.Equal(userIn(snap, "admin").Roles, []string{"nx-anonymous"}) || snap.Anonymous.UserID != "demo-guest" {
 		t.Fatalf("after the two steps: roles %v, anonymous %+v", userIn(snap, "admin").Roles, snap.Anonymous)
+	}
+}
+
+// Review 3-13: anonymous on --user <id> refuses an id that signs in, with
+// --roles or without: a local user with a password, or a directory user.
+// Requests without credentials would hold the rights of that user. The
+// refusal names the safe way and changes nothing.
+func TestAnonymousOnRefusesAUserWhoSignsIn(t *testing.T) {
+	dir := importedFixture(t)
+	before, gen := stateOf(t, dir)
+	for _, args := range [][]string{
+		{"anonymous", "on", "--user", "viewer"},
+		{"anonymous", "on", "--user", "admin"},
+		{"anonymous", "on", "--user", "ldap.person"},
+		{"anonymous", "on", "--user", "LDAP.Person"},
+		{"anonymous", "on", "--user", "ldap.person", "--roles", "nx-anonymous"},
+	} {
+		code, out, errOut := withInput(t, "", args...)
+		if code != 1 || out != "" || !strings.Contains(errOut, "signs in") ||
+			!strings.Contains(errOut, "anonymous on --user <id> --roles <role>") {
+			t.Errorf("%v: %d %q %q", args, code, out, errOut)
+		}
+	}
+	after, gen2 := stateOf(t, dir)
+	if gen2 != gen || after.Anonymous != before.Anonymous {
+		t.Fatalf("a refusal changed the state: generation %d to %d, anonymous %+v", gen, gen2, after.Anonymous)
+	}
+	// an id that is no user is still taken
+	if code, out, errOut := withInput(t, "", "anonymous", "on", "--user", "demo-guest"); code != 0 ||
+		!strings.Contains(out, "anonymous access on as user demo-guest") {
+		t.Fatalf("anonymous on --user demo-guest: %d %q %q", code, out, errOut)
+	}
+}
+
+// Ruling I3 (A10): user disable and user roles refuse a change that leaves
+// no active local user with the full permission set, and change nothing;
+// with a second administrator both pass.
+func TestLastAdministratorCommands(t *testing.T) {
+	dir := importedFixture(t)
+	_, gen := stateOf(t, dir)
+	for _, args := range [][]string{{"user", "disable", "admin"}, {"user", "roles", "admin", "nx-anonymous"}, {"user", "roles", "admin", ""}} {
+		code, out, errOut := withInput(t, "", args...)
+		if code != 1 || out != "" || !strings.Contains(errOut, "full permission set") || !strings.Contains(errOut, "nothing changed") {
+			t.Errorf("%v: %d %q %q", args, code, out, errOut)
+		}
+	}
+	if snap, now := stateOf(t, dir); now != gen || userIn(snap, "admin").Status != "active" ||
+		!slices.Equal(userIn(snap, "admin").Roles, []string{"nx-admin"}) {
+		t.Fatalf("a refusal changed the state: generation %d to %d, %+v", gen, now, userIn(snap, "admin"))
+	}
+	for _, args := range [][]string{{"user", "roles", "maven-lead", "nx-admin"}, {"user", "disable", "admin"}} {
+		if code, out, errOut := withInput(t, "", args...); code != 0 {
+			t.Fatalf("%v: %d %q %q", args, code, out, errOut)
+		}
+	}
+	if snap, _ := stateOf(t, dir); userIn(snap, "admin").Status != "disabled" {
+		t.Fatalf("admin after the second administrator: %+v", userIn(snap, "admin"))
+	}
+}
+
+// The seam of the identity writes: the security of serve is the identity
+// store of its data directory, and a change through it raises the
+// generation.
+func TestServeSecurityIsTheIdentityStore(t *testing.T) {
+	dir := importedFixture(t)
+	_, gen := stateOf(t, dir)
+	var log bytes.Buffer
+	sec, err := buildSecurity(dir, nil, nil, logTo(&log))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeSecurity(sec)
+	store, ok := sec.(admin.IdentityStore)
+	if !ok {
+		t.Fatalf("the security of serve, %T, is no identity store", sec)
+	}
+	if store.DataDir() != dir {
+		t.Fatalf("data directory %q, want %q", store.DataDir(), dir)
+	}
+	if !signsIn(t, dir, "viewer", "example-viewer-1") {
+		t.Fatal("viewer does not sign in before the change")
+	}
+	after, err := admin.Change(store, []state.Kind{state.KindUsers}, func(s *model.Snapshot) error {
+		u, err := admin.LocalUser(s, "viewer")
+		if err == nil {
+			u.Status = "disabled"
+		}
+		return err
+	})
+	if err != nil || userIn(after, "viewer").Status != "disabled" {
+		t.Fatalf("change: %v", err)
+	}
+	loaded, err := store.Load()
+	if err != nil || userIn(loaded, "viewer").Status != "disabled" {
+		t.Fatalf("load after the change: %v", err)
+	}
+	if _, now := stateOf(t, dir); now != gen+1 {
+		t.Fatalf("generation %d, want %d", now, gen+1)
 	}
 }

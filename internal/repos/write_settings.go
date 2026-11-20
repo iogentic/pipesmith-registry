@@ -3,6 +3,8 @@ package repos
 import (
 	"encoding/json"
 	"math"
+	"strconv"
+	"strings"
 
 	"github.com/iogentic/pipesmith-registry/internal/model"
 )
@@ -80,6 +82,13 @@ func sizeOf(m map[string]any, key string) (int64, bool) {
 		n = v
 	case int:
 		n = int64(v)
+	case string:
+		// decimal text, as a record of an earlier create may hold a limit
+		parsed, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || strings.TrimLeft(v, "0123456789") != "" {
+			return 0, false
+		}
+		n = parsed
 	default:
 		return 0, false
 	}
@@ -134,22 +143,60 @@ func (r Repo) WriteSettings() WriteSettings {
 // WithAttributes returns the repositories, each with the attributes, the
 // type and the state of the stored record of its name (seam Repository
 // settings of the phase 4 execution plan). A record without a repository of
-// its name adds none; the repositories it is called on stay as they are.
+// its name is a repository of its own (ruling ST3 of leg 6-stores): name,
+// format and type of the record, the members of a group from
+// group.memberNames, not Defined; a name the index discovers takes them
+// from its record as well, once rows of it exist. The repositories it is
+// called on stay as they are.
 func (r *Repositories) WithAttributes(records []model.Repository) *Repositories {
 	byName := map[string]model.Repository{}
+	var order []string
 	for _, rec := range records {
-		if _, seen := byName[rec.Name]; !seen {
+		if _, seen := byName[rec.Name]; !seen && rec.Name != "" {
 			byName[rec.Name] = rec
+			order = append(order, rec.Name)
 		}
 	}
-	out := &Repositories{byName: make(map[string]Repo, len(r.byName)), sorted: make([]Repo, 0, len(r.sorted))}
+	var defined []Repo
 	for _, repo := range r.sorted {
 		if rec, ok := byName[repo.Name]; ok {
 			repo.Attributes = rec.Attributes
 			repo.Record = &Record{Type: rec.Type, Online: rec.Online}
+			if !repo.Defined {
+				// a name the index discovered is the repository of its record
+				repo.Format, repo.Type, repo.Members = rec.Format, rec.Type, nil
+				if rec.Type == "group" {
+					repo.Members = memberNamesOf(rec.Attributes)
+				}
+			}
 		}
-		out.byName[repo.Name] = repo
-		out.sorted = append(out.sorted, repo)
+		defined = append(defined, repo)
 	}
-	return out
+	for _, name := range order {
+		if _, ok := r.byName[name]; ok {
+			continue
+		}
+		rec := byName[name]
+		repo := Repo{Name: rec.Name, Format: rec.Format, Type: rec.Type, Attributes: rec.Attributes,
+			Record: &Record{Type: rec.Type, Online: rec.Online}}
+		if rec.Type == "group" {
+			repo.Members = memberNamesOf(rec.Attributes)
+		}
+		defined = append(defined, repo)
+	}
+	return New(defined, nil, nil)
+}
+
+// memberNamesOf are the names of group.memberNames, in their order; a
+// value that is no name is left out.
+func memberNamesOf(attributes map[string]any) []string {
+	group, _ := attributes["group"].(map[string]any)
+	list, _ := group["memberNames"].([]any)
+	names := []string{}
+	for _, item := range list {
+		if s, ok := item.(string); ok {
+			names = append(names, s)
+		}
+	}
+	return names
 }

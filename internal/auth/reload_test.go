@@ -363,3 +363,29 @@ func TestReloadIntervalOnTheMonotonicClock(t *testing.T) {
 		t.Fatalf("after the interval on the monotonic clock: anonymous %v, %d reads", e.svc.AnonymousEnabled(), store.reads.Load())
 	}
 }
+
+// Ruling I13: after an identity change of this process the next request
+// sees the new state, without waiting for the reload interval.
+func TestMarkStaleLoadsAtTheNextRequest(t *testing.T) {
+	e, store := newStoreEnv(t, fixture(t))
+	reader := password(t, "demo-reader")
+	if s, err := subjectOf(e, basic(request(http.MethodGet, "/", nil), "demo-reader", reader)); err != nil || s == nil {
+		t.Fatalf("before the change: %v", err)
+	}
+	rewrite(t, store, func(s *model.Snapshot) { userOf(s, "demo-reader").Status = "disabled" })
+	if s, _ := subjectOf(e, basic(request(http.MethodGet, "/", nil), "demo-reader", reader)); s == nil {
+		t.Fatal("the change was seen within the interval without a mark")
+	}
+	e.svc.MarkStale()
+	if s, _ := subjectOf(e, basic(request(http.MethodGet, "/", nil), "demo-reader", reader)); s != nil {
+		t.Fatalf("the request after the mark still signs in as %+v", s.User)
+	}
+	if n := store.reads.Load(); n != 1 {
+		t.Fatalf("%d reads of the generation, want 1", n)
+	}
+	// the mark is spent: the next read waits for the interval again
+	_, _ = subjectOf(e, request(http.MethodGet, "/", nil))
+	if n := store.reads.Load(); n != 1 {
+		t.Fatalf("%d reads of the generation after the reload, want 1", n)
+	}
+}

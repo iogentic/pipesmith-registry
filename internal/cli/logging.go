@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"reflect"
 	"sync"
+
+	"github.com/iogentic/pipesmith-registry/internal/logs"
 )
 
 // logHandler writes log records as the logging module of Python does. With
@@ -43,8 +46,9 @@ func levelName(level slog.Level) string {
 func (h *logHandler) Enabled(_ context.Context, level slog.Level) bool { return level >= h.min }
 
 func (h *logHandler) Handle(_ context.Context, r slog.Record) error {
-	line := r.Message
+	line := stderrMessage(r)
 	if h.basic {
+		defer h.tee(r) // after the line and the unlock below
 		logger := "root"
 		find := func(a slog.Attr) bool {
 			if a.Key == "logger" {
@@ -58,7 +62,7 @@ func (h *logHandler) Handle(_ context.Context, r slog.Record) error {
 		r.Attrs(find)
 		t := r.Time.Local()
 		line = fmt.Sprintf("%s,%03d %s %s: %s", t.Format("2006-01-02 15:04:05"), t.Nanosecond()/1_000_000, levelName(r.Level),
-			logger, r.Message)
+			logs.LineText(logger), line)
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -73,3 +77,46 @@ func (h *logHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 }
 
 func (h *logHandler) WithGroup(string) slog.Handler { return h }
+
+// sinks are the second sinks of the records of serve, by the writer of the
+// log handler: the server log of logfiles.go for standard error.
+var sinks = struct {
+	sync.RWMutex
+	m map[io.Writer]slog.Handler
+}{m: map[io.Writer]slog.Handler{}}
+
+// keyed is a writer that can be a map key.
+func keyed(w io.Writer) bool { return w != nil && reflect.TypeOf(w).Comparable() }
+
+// setSink makes h the second sink of the handlers that write to w; nil
+// removes it.
+func setSink(w io.Writer, h slog.Handler) {
+	if !keyed(w) {
+		return
+	}
+	sinks.Lock()
+	defer sinks.Unlock()
+	if h == nil {
+		delete(sinks.m, w)
+	} else {
+		sinks.m[w] = h
+	}
+}
+
+// tee hands a record, with the attributes of the handler, to the second
+// sink of its writer.
+func (h *logHandler) tee(r slog.Record) {
+	if !keyed(h.w) {
+		return
+	}
+	sinks.RLock()
+	sink := sinks.m[h.w]
+	sinks.RUnlock()
+	if sink == nil || !sink.Enabled(context.Background(), r.Level) {
+		return
+	}
+	if len(h.attrs) > 0 {
+		sink = sink.WithAttrs(h.attrs)
+	}
+	_ = sink.Handle(context.Background(), r) // the sink counts a line it cannot write
+}

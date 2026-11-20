@@ -64,6 +64,7 @@ var tagWords = [][2]string{
 	{"Security", "Privileges, roles, users, realms, anonymous access and LDAP connections."},
 	{"Session", "Sign in and sign out of the web interface."},
 	{"Tokens", "npm login, whoami and logout, and Docker bearer tokens."},
+	{"System", "Routing rules, capabilities, tasks, the read only mode and the system information."},
 	{"Not Served", "Operations of the interface contract that this server does not serve yet."},
 }
 
@@ -96,6 +97,7 @@ var (
 	readParams = []param{readOffset,
 		{name: "n", in: "query", typ: "integer", meaning: "Docker tag list below v2/: the most tags to answer; all when absent.", min: number(0)},
 		query("last", "string", "Docker tag list below v2/: answer the tags after this one."),
+		query("artifactType", "string", "Docker referrers below v2/: answer the referrers of this artifact type only, named in OCI-Filters-Applied."),
 	}
 
 	clientPathWords = map[string]string{"repository": "Name of the repository.",
@@ -160,6 +162,72 @@ func message(status, text string) reply {
 }
 
 func errorBody(status, text string) reply { return reply{status: status, ctype: jsonType, text: text} }
+
+// The shared words of the writes of the area security (identity.go).
+// storeNote is the note of the writes of the blob stores and the
+// repositories (leg 6-stores).
+const storeNote = "Changes the records with security on, writes on or off; the next request sees the change. " +
+	"A delete of blobs in local-write and a rebuild of maven metadata need the write store open."
+
+const identityNote = "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it."
+
+var (
+	identityTooLarge = message("413", "The body is larger than 65536 bytes.")
+	identityGrant    = message("403", "The caller lacks the permission, a write of a session lacks the request token, "+
+		"or the change would give a role or a user a permission the caller does not hold.")
+	identityUnavailable = message("503", "The server has no identity store.")
+)
+
+// The words of the read only mode (contract S37).
+const freezeNote = "The read only mode lives in memory: a start of the server releases it. Each change empties the credential cache, as a change does."
+
+// The words of the tasks (contract S38 and S40).
+const taskNote = "Works with security on, writes on or off. Every run and stop empties the credential cache, as a change does."
+
+var tasksUnavailableReply = message("503", "The server has no tasks.")
+
+func taskXOText(prefix string) string {
+	return prefix + "{id, name, type, message, currentState, lastRunResult, nextRun, lastRun, schedule}: type is the task type, " +
+		"currentState WAITING or RUNNING, lastRunResult OK, FAILED, CANCELED, INTERRUPTED or null, nextRun and lastRun UTC times or null, " +
+		"schedule the schedule type, message the reason a task cannot run or the message of its last run, at most 1024 characters, or null."
+}
+
+// The words of the LDAP connections (contract S26 and S27).
+const (
+	ldapFormNote = "The body is the connection of the contract: name, protocol, host, port, searchBase, authScheme, " +
+		"authUsername, authPassword, the timeouts and the user and group settings. id, order and caFile of the body are not read."
+	ldapCheckNote = "Writes nothing and connects only to the host and port of the form. A blank authPassword of a form whose name " +
+		"a stored connection has takes the stored bind password, with the stored directory settings only; ldaps also trusts the stored CA file of that connection. " +
+		"A check reads at most 21 user entries, 1000 group entries a search and 1 MiB in all, and lasts at most 15 seconds. " +
+		"A directory the check cannot reach gives the one message the directory could not be reached; the detail goes to the server log."
+	ldapFullCaller = "Needs the full permission set besides the permission of the operation, since a directory decides the roles of its users."
+)
+
+var (
+	ldapFields = identityFields("A required field is absent, a key is no field of the connection, a value has the wrong type or cannot be taken, " +
+		"the scheme is DIGEST_MD5 or CRAM_MD5, useTrustStore is true, or authPassword is missing or empty for the scheme SIMPLE.")
+	ldapCheckFields = identityFields("A required field is absent, a key is no field of the connection, a value has the wrong type or cannot be taken, or authPassword is " +
+		"missing for the scheme SIMPLE of a name no stored connection has.")
+	ldapCheckGrant = message("403", "The caller holds neither the permission to create nor the one to save a connection, "+
+		"a write of a session lacks the request token, or the stored bind password would bind with other directory settings "+
+		"than the stored ones and the caller does not hold the full permission set.")
+	ldapGrant = message("403", "The caller lacks the permission, a write of a session lacks the request token, "+
+		"or the change decides the directory and the caller does not hold the full permission set.")
+)
+
+// The words of the routing rules (system.go).
+const (
+	routingNote   = "Works with security on, writes on or off. A change is used from the next request on."
+	routingFields = "A name outside the pattern, an unknown key, a mode other than ALLOW and BLOCK, no matcher or more than 100, " +
+		"a matcher above 1024 characters or that does not compile (at matchers[<index>]), or a body above 65536 bytes (at *)."
+)
+
+var routingUnavailable = message("503", "The server keeps no routing rules.")
+
+// identityFields is the answer 400 of a write with the list of field errors.
+func identityFields(text string) reply {
+	return errorBody("400", `A list [{"id","message"}]; id is the field or *. `+text)
+}
 
 // operationWords are the words of every served route and method.
 var operationWords = map[string]words{
@@ -242,7 +310,7 @@ var operationWords = map[string]words{
 		answers: []reply{{status: "200", text: "Empty body."}}},
 	"GET /service/rest/v1/status/writable": {path: restV1 + "/status/writable", tag: "Status", summary: "Write probe",
 		answers: []reply{{status: "200", text: "Empty body: writes are on and the write store takes a write now."},
-			{status: "503", text: "Empty body: writes are off, a folder of the write store cannot be written, or the delete mark of a replaced blob waits to be tried again."}}},
+			{status: "503", text: "Empty body: writes are off, the server is frozen, the data directory or a folder of the write store cannot be written, or the delete mark of a replaced blob waits to be tried again."}}},
 	"GET /repository/{*}":  readWords("Download a file or list a folder"),
 	"HEAD /repository/{*}": readWords("Headers of a file or folder"),
 	"PUT /repository/{*}": writeWords("Deploy or upload a file, publish to npm, push to Docker", []reply{
@@ -308,10 +376,111 @@ var operationWords = map[string]words{
 		pathWords: map[string]string{"segment": "maven for a maven2 repository, else the format.", "type": "hosted, proxy or group.",
 			"name": "Name of the repository."},
 		answers: []reply{ok200("The settings with name, format, type, url and online."), {status: "404"}}},
+	"POST /service/rest/v1/repositories/{}/invalidate-cache": {path: restV1 + "/repositories/{name}/invalidate-cache", tag: "Repositories",
+		summary: "Invalidate the cache of a proxy or group",
+		description: "The next request for each cached path asks the remote again, and the not found marks are cleared. " +
+			"For a group the cache of every proxy member is invalidated, groups inside it included.",
+		pathWords: map[string]string{"name": "Name of a proxy or group repository."},
+		answers: []reply{{status: "204", text: "The cache is invalidated."},
+			message("400", "The repository is neither a proxy nor a group."), {status: "404"},
+			message("503", "Requests to remotes are off (the switch upstream), or the state of the proxies cannot be written.")}},
+	"POST /service/rest/v1/repositories/{}/{}": {path: restV1 + "/repositories/{segment}/{type}", tag: "Repositories", summary: "Create a repository",
+		description: storeNote + " The body is the settings of the contract: name, online, storage, and the sections of the format and type. " +
+			"The repository is a record of state.sqlite. A hosted or proxy repository names local-write in storage.blobStoreName. " +
+			"The upstream password or token of a proxy goes into secrets/remote/<name>, never into the record or an answer. " +
+			"A Docker port is set on the host with repos port; docker.httpPort and docker.httpsPort are null.",
+		caller: "The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, " +
+			"the view privileges of its whole format when it is the first of the format, and the view read permission of every member a group adds. " +
+			"Without the full permission set the remote host of a proxy must resolve to public addresses only, and the proxy never dials a closed address.",
+		pathWords: map[string]string{"segment": "maven, npm, docker or raw.", "type": "hosted, proxy or group."},
+		answers: []reply{{status: "201", text: "The repository is created."},
+			identityFields("A field is not valid: the name, the store, the remote address or host, a member, a Docker port, the authentication, " +
+				"a placement or limit set on the host, or a value this server does not offer."),
+			message("403", "The new repository would give the caller a permission it does not hold."),
+			message("409", "A repository of the name exists."), message("501", "The format or the type is not one of this server."),
+			identityTooLarge, identityUnavailable}},
+	"PUT /service/rest/v1/repositories/{}/{}/{}": {path: restV1 + "/repositories/{segment}/{type}/{name}", tag: "Repositories", summary: "Save a repository",
+		description: storeNote + " The body is the settings of the contract; the name cannot change. " +
+			"Without httpClient.authentication the stored authentication and secret stay; the type none removes both.",
+		caller:    "Without the full permission set a new remote host must resolve to public addresses only; a member a group adds needs its view read permission.",
+		pathWords: map[string]string{"segment": "maven, npm, docker or raw.", "type": "hosted, proxy or group.", "name": "Name of the repository."},
+		answers: []reply{{status: "204", text: "The repository is saved."}, identityFields("A field is not valid, or the body names another name."),
+			message("403", "A member the group adds needs a permission the caller does not hold."), message("404", "Repository not found as this format and type."),
+			message("409", "repositories.json of the host defines the repository."),
+			identityTooLarge, identityUnavailable}},
+	"DELETE /service/rest/v1/repositories/{}": {path: restV1 + "/repositories/{name}", tag: "Repositories", summary: "Delete a repository",
+		description: storeNote + " The repository goes offline first; then the rows of the index and the catalog go and every blob of the repository in local-write gets the delete mark; " +
+			"then the upstream secret and the record go together.",
+		pathWords: map[string]string{"name": "Name of the repository."},
+		answers: []reply{{status: "204", text: "The repository is deleted."}, message("404", "Repository not found."),
+			message("409", "A group names the repository, repositories.json of the host defines it, or a store of the old product holds files of it."),
+			message("503", "The repository holds blobs in local-write and the store is not open, or the index stayed busy."), identityUnavailable}},
+	"POST /service/rest/v1/repositories/{}/rebuild-index": {path: restV1 + "/repositories/{name}/rebuild-index", tag: "Repositories",
+		summary:     "Rebuild the maven metadata of a hosted repository",
+		description: storeNote + " For a hosted maven2 repository maven-metadata.xml and its checksums are written again from its files. Any other repository answers 204 and nothing is done.",
+		pathWords:   map[string]string{"name": "Name of the repository."},
+		answers: []reply{{status: "204", text: "The metadata is written, or there is nothing to do."}, message("404", "Repository not found."),
+			message("409", "The repository takes no write."), message("503", "Writes are off.")}},
 	"GET /service/rest/v1/repositorySettings": {path: restV1 + "/repositorySettings", tag: "Repositories", summary: "Settings of every administered repository",
 		caller: "The list holds the repositories whose administration permission the caller holds.",
 		answers: []reply{ok200("Array of settings, as one repository answers them."),
 			message("403", "The caller administers no repository.")}},
+	"GET /service/rest/v1/search/assets": {path: restV1 + "/search/assets", tag: "Search", summary: "Search assets",
+		description: "The parameters of the component search. 50 assets per page, ordered by repository, directory and file name. " +
+			"An asset that belongs to no component matches no search.",
+		caller: "An unknown repository, and one the caller may not browse, give an empty list.",
+		params: append([]param{
+			searchParam("q", "Words that each occur in group, name, version or path; * is a wildcard; case is ignored."),
+			searchParam("repository", "Name of a repository; a group searches its members."),
+			searchParam("format", "Format of the repositories."),
+			searchParam("group", "Group of the component."),
+			searchParam("name", "Name of the component."),
+			searchParam("version", "Version of the component."),
+			searchParam("sha1", "SHA-1 of an asset."),
+			searchParam("maven.groupId", "Maven group id."),
+			searchParam("maven.artifactId", "Maven artifact id."),
+			searchParam("maven.baseVersion", "Maven base version."),
+			searchParam("maven.extension", "Extension of a Maven file."),
+			searchParam("maven.classifier", "Classifier of a Maven file."),
+			searchParam("docker.imageName", "Docker image name."),
+			searchParam("docker.imageTag", "Docker image tag."),
+			searchParam("npm.scope", "npm scope; a leading @ is dropped."),
+			searchParam("continuationToken", "Token of the next page from the answer before."),
+			searchParam("timeout", "Seconds a page may take, a whole number from 1 to 120; 120 without it."),
+		}, deferredSearch...),
+		answers: []reply{
+			ok200("{items, continuationToken}; each item is an asset as one asset by id answers it."),
+			message("400", "Unknown, repeated or too long parameter, a value that is no UTF-8 or holds a NUL byte, or a continuationToken of another search."),
+			{status: "501", ctype: jsonType, schema: "Refusal", text: "A parameter this server does not answer yet; the area is search."},
+			message("503", "The search is not ready, or a page took longer than two minutes."),
+		}},
+	"GET /service/rest/v1/search/assets/download": {path: restV1 + "/search/assets/download", tag: "Search", summary: "Download the one asset that matches",
+		description: "The parameters of the asset search without continuationToken.",
+		params: append([]param{
+			searchParam("q", "Words that each occur in group, name, version or path; * is a wildcard; case is ignored."),
+			searchParam("repository", "Name of a repository; a group searches its members."),
+			searchParam("format", "Format of the repositories."),
+			searchParam("group", "Group of the component."),
+			searchParam("name", "Name of the component."),
+			searchParam("version", "Version of the component."),
+			searchParam("sha1", "SHA-1 of an asset."),
+			searchParam("maven.groupId", "Maven group id."),
+			searchParam("maven.artifactId", "Maven artifact id."),
+			searchParam("maven.baseVersion", "Maven base version."),
+			searchParam("maven.extension", "Extension of a Maven file."),
+			searchParam("maven.classifier", "Classifier of a Maven file."),
+			searchParam("docker.imageName", "Docker image name."),
+			searchParam("docker.imageTag", "Docker image tag."),
+			searchParam("npm.scope", "npm scope; a leading @ is dropped."),
+			searchParam("timeout", "Seconds a page may take, a whole number from 1 to 120; 120 without it."),
+		}, deferredSearch...),
+		answers: []reply{
+			{status: "302", text: "Redirect to the downloadUrl of the one asset that matches."},
+			message("400", "More than one asset matches, a continuationToken, or a parameter the search refuses."),
+			message("404", "No asset matches."),
+			{status: "501", ctype: jsonType, schema: "Refusal", text: "A parameter this server does not answer yet; the area is search."},
+			message("503", "The search is not ready, or it took longer than two minutes."),
+		}},
 	"GET /service/rest/v1/search": {path: restV1 + "/search", tag: "Search", summary: "Search components",
 		description: "50 components per page, ordered by repository, group, name and version. Each parameter may appear once, with at most 1024 bytes. " +
 			"The parameters that are not served yet answer 501.",
@@ -333,6 +502,7 @@ var operationWords = map[string]words{
 			searchParam("docker.imageTag", "Docker image tag."),
 			searchParam("npm.scope", "npm scope; a leading @ is dropped."),
 			searchParam("continuationToken", "Token of the next page from the answer before."),
+			searchParam("timeout", "Seconds a page may take, a whole number from 1 to 120; 120 without it."),
 		}, deferredSearch...),
 		answers: []reply{
 			ok200("{items, continuationToken}; each item has id, repository, format, group, name, version and assets."),
@@ -344,6 +514,27 @@ var operationWords = map[string]words{
 		pathWords: map[string]string{"id": "Asset id: base64url without padding of <repository>:<path>."},
 		answers: []reply{ok200("{downloadUrl, path, id, repository, format, checksum, contentType, fileSize, blobCreated, blobStoreName}."),
 			{status: "404"}, message("422", "The asset id is malformed.")}},
+	"GET /service/rest/v1/assets": {path: restV1 + "/assets", tag: "Browse", summary: "Assets of a repository",
+		description: "10 assets per page, ordered by directory and file name. A group lists each path once, with the asset of its first member that holds it.",
+		params: []param{
+			{name: "repository", in: "query", typ: "string", required: true, meaning: "Name of the repository."},
+			{name: "continuationToken", in: "query", typ: "string", meaning: "Token of the next page from the answer before."}},
+		answers: []reply{ok200("{items, continuationToken}; each item is an asset as one asset by id answers it."),
+			message("400", "A continuationToken of another listing."), message("404", "Repository not found."),
+			message("422", "The parameter repository is missing."), message("503", "The listing is not ready.")}},
+	"GET /service/rest/v1/components": {path: restV1 + "/components", tag: "Browse", summary: "Components of a repository",
+		description: "10 components per page, in the order and shape of the search.",
+		params: []param{
+			{name: "repository", in: "query", typ: "string", required: true, meaning: "Name of the repository."},
+			{name: "continuationToken", in: "query", typ: "string", meaning: "Token of the next page from the answer before."}},
+		answers: []reply{ok200("{items, continuationToken}; each item has id, repository, format, group, name, version and assets."),
+			message("400", "A continuationToken of another listing."), message("404", "Repository not found."),
+			message("422", "The parameter repository is missing."), message("503", "The listing is not ready.")}},
+	"GET /service/rest/v1/components/{}": {path: restV1 + "/components/{id}", tag: "Browse", summary: "One component by id",
+		pathWords: map[string]string{"id": "Component id as the search and the listing give it."},
+		answers: []reply{ok200("{id, repository, format, group, name, version, assets}."),
+			message("404", "Component not found."), message("422", "The component id is malformed."),
+			message("503", "catalog.sqlite is behind the index; the message names the store to scan.")}},
 	"GET /service/rest/v1/blobstores": {path: restV1 + "/blobstores", tag: "Blob Stores", summary: "Blob stores with counts and sizes",
 		answers: []reply{ok200("Array of {name, type, unavailable, blobCount, totalSizeInBytes, availableSpaceInBytes, softQuota}, sorted by name.")}},
 	"GET /service/rest/v1/blobstores/file/{}": {path: restV1 + "/blobstores/file/{name}", tag: "Blob Stores", summary: "Path and quota of a file blob store",
@@ -352,6 +543,26 @@ var operationWords = map[string]words{
 	"GET /service/rest/v1/blobstores/{}/quota-status": {path: restV1 + "/blobstores/{name}/quota-status", tag: "Blob Stores", summary: "Quota state of a blob store",
 		pathWords: map[string]string{"name": "Name of the blob store."},
 		answers:   []reply{ok200("{isViolation, message, blobStoreName}."), {status: "404"}}},
+	"POST /service/rest/v1/blobstores/file": {path: restV1 + "/blobstores/file", tag: "Blob Stores", summary: "Create a file blob store",
+		description: storeNote + " The body is {name, path, softQuota}. The store is a record with a folder below the folder stores of the data directory; " +
+			"an absent path is stores/<name>, a relative one lies below stores/. The folder is made. New blobs still go into local-write.",
+		answers: []reply{{status: "204", text: "The store is created."},
+			identityFields("The name is not allowed, the path lies outside stores/ with its links resolved, holds files or is the path of another store, or the soft quota is not valid."),
+			message("409", "A store of the name exists."), identityTooLarge, identityUnavailable}},
+	"PUT /service/rest/v1/blobstores/file/{}": {path: restV1 + "/blobstores/file/{name}", tag: "Blob Stores", summary: "Save the quota of a file blob store",
+		description: storeNote + " The body is {path, softQuota}. The path is fixed; a null soft quota removes it.",
+		pathWords:   map[string]string{"name": "Name of the blob store."},
+		answers: []reply{{status: "204", text: "The store is saved."}, identityFields("Another path, or a soft quota that is not valid."),
+			message("404", "Blob store not found."), identityTooLarge, identityUnavailable}},
+	"DELETE /service/rest/v1/blobstores/{}": {path: restV1 + "/blobstores/{name}", tag: "Blob Stores", summary: "Delete a blob store",
+		description: storeNote + " The record goes; the folder and its files stay.",
+		pathWords:   map[string]string{"name": "Name of the blob store."},
+		answers: []reply{{status: "204", text: "The store is deleted."}, message("404", "Blob store not found."),
+			message("409", "A repository names the store, or it is local-write or a store that config.json attaches."), identityUnavailable}},
+	"GET /api/blob-stores/{}/deleted": {path: "/api/blob-stores/{name}/deleted", tag: "Blob Stores", summary: "Blobs of a store with the delete mark",
+		description: "Counts the blobs of the file store that carry the delete mark, by a walk of its properties files.",
+		pathWords:   map[string]string{"name": "Name of the blob store."},
+		answers:     []reply{ok200("{name, blobCount, bytes}."), message("404", "Blob store not found.")}},
 	"GET /service/rest/v1/security/privileges": {path: restV1 + "/security/privileges", tag: "Security", summary: "Privileges",
 		answers: []reply{ok200("Array of privileges with type, name, description, readOnly, the fields of the type and actions, sorted by name.")}},
 	"GET /service/rest/v1/security/privileges/{}": {path: restV1 + "/security/privileges/{name}", tag: "Security", summary: "One privilege",
@@ -382,10 +593,212 @@ var operationWords = map[string]words{
 	"GET /service/rest/v1/security/ldap/{}": {path: restV1 + "/security/ldap/{name}", tag: "Security", summary: "One LDAP connection",
 		pathWords: map[string]string{"name": "Name of the connection."},
 		answers:   []reply{ok200("The connection, without its bind password."), {status: "404"}}},
+	"POST /service/rest/v1/security/roles": {path: restV1 + "/security/roles", tag: "Security", summary: "Create a role",
+		description: identityNote + " The body is RoleXORequest: {id, name, description, privileges, roles}; privileges and roles are lists of ids.",
+		answers: []reply{ok200("The role as GET answers it."), identityFields("The id is not allowed, or a privilege or a contained role does not exist or contains the role."),
+			identityGrant, message("409", "A role with the id exists."), identityTooLarge, identityUnavailable}},
+	"PUT /service/rest/v1/security/roles/{}": {path: restV1 + "/security/roles/{id}", tag: "Security", summary: "Save a role",
+		description: identityNote + " The body is RoleXORequest; its id, when it names one, is the id of the path.",
+		pathWords:   map[string]string{"id": "Id of the role."},
+		answers: []reply{{status: "204", text: "The role is saved."},
+			identityFields("A built in or read only role (at *), another id, or a privilege or contained role that does not exist."),
+			identityGrant, message("404", "Role not found."), identityTooLarge, identityUnavailable}},
+	"DELETE /service/rest/v1/security/roles/{}": {path: restV1 + "/security/roles/{id}", tag: "Security", summary: "Delete a role",
+		description: identityNote,
+		pathWords:   map[string]string{"id": "Id of the role."},
+		answers: []reply{{status: "204", text: "The role is deleted."}, identityFields("A built in or read only role, at *."),
+			message("404", "Role not found."),
+			message("409", "A user, a role mapping, a role, the anonymous user or the default role holds the role; the message names the first."),
+			identityUnavailable}},
+	"POST /service/rest/v1/security/users": {path: restV1 + "/security/users", tag: "Security", summary: "Create a local user",
+		description: identityNote + " The body is ApiCreateUser: {userId, firstName, lastName, emailAddress, password, status, roles}. The password is never answered.",
+		answers: []reply{ok200("The user as GET users lists it, without a password."),
+			identityFields("The userId is not allowed, a role does not exist, the status is unknown, or the password is empty, longer than 1024 bytes or holds a control character."),
+			identityGrant, message("409", "A user with the id exists."), identityTooLarge, identityUnavailable}},
+	"PUT /service/rest/v1/security/users/{}": {path: restV1 + "/security/users/{userId}", tag: "Security", summary: "Save a user",
+		description: identityNote + " The body is the whole ApiUser; its source picks the user, the local one when it names none. A user of another source takes its roles only.",
+		caller:      "A save of the own user keeps its roles unless the caller holds every action on users.",
+		pathWords:   map[string]string{"userId": "Id of the user."},
+		answers: []reply{{status: "204", text: "The user is saved."},
+			identityFields("Another userId, an unknown status, or a role that does not exist."), identityGrant, message("404", "User not found."),
+			message("409", "The names, mail or status of a directory user change, or no active local user would keep the full permission set."),
+			identityTooLarge, identityUnavailable}},
+	"DELETE /service/rest/v1/security/users/{}": {path: restV1 + "/security/users/{userId}", tag: "Security", summary: "Delete a user",
+		description: identityNote,
+		caller:      "The own user cannot be deleted.",
+		pathWords:   map[string]string{"userId": "Id of the user."},
+		params: []param{query("realm", "string",
+			"Realm of the user as the interface sends it, the realm of the local users or of the directory, or the source name default or LDAP; the local source when absent.")},
+		answers: []reply{{status: "204", text: "The user is deleted."}, identityFields("The realm names no source of users, at realm."),
+			message("404", "User not found."),
+			message("409", "A directory user, the own user, the user anonymous access names, or the last active local user with the full permission set."),
+			identityUnavailable}},
+	"PUT /service/rest/v1/security/users/{}/change-password": {path: restV1 + "/security/users/{userId}/change-password", tag: "Security",
+		summary:     "Set the password of a local user",
+		description: identityNote + " The body is the new password as it is, text/plain.",
+		pathWords:   map[string]string{"userId": "Id of the user."},
+		answers: []reply{{status: "204", text: "The password is set."},
+			identityFields("The password is empty, longer than 1024 bytes or holds a control character."), identityGrant,
+			message("404", "User not found."),
+			message("409", "The user belongs to another source."), identityTooLarge, identityUnavailable}},
+	"PUT /service/rest/v1/security/anonymous": {path: restV1 + "/security/anonymous", tag: "Security", summary: "Save anonymous access",
+		description: identityNote + " The body is {enabled, userId, realmName}.",
+		answers: []reply{ok200("{enabled, userId, realmName} as saved."),
+			identityFields("The userId is not allowed, or the realmName is no realm this server builds."),
+			message("403", "The caller lacks the permission, a write of a session lacks the request token, "+
+				"or access turned on would give requests without credentials a permission the caller does not hold."),
+			message("409", "The userId names a user that signs in: a local user with a password or a directory user."),
+			identityTooLarge, identityUnavailable}},
+	"PUT /service/rest/v1/security/realms/active": {path: restV1 + "/security/realms/active", tag: "Security", summary: "Save the active realms",
+		description: identityNote + " The body is the list of active realm ids in their order.",
+		answers: []reply{{status: "204", text: "The order is saved."},
+			identityFields("The list is empty, names an empty, unknown or repeated realm, or DefaultRole without a default role; at *."),
+			message("403", "The caller lacks the permission, a write of a session lacks the request token, "+
+				"or the list makes DefaultRole active while the caller does not hold every permission of the default role."),
+			message("409", "The list leaves out the realm of the local users while an active local user holds the full permission set."),
+			identityTooLarge, identityUnavailable}},
+	"POST /service/rest/v1/security/ldap": {path: restV1 + "/security/ldap", tag: "Security", summary: "Create an LDAP connection",
+		description: identityNote + " " + ldapFormNote + " A scheme with a bind needs authPassword, which goes into the secret file of the connection.",
+		caller:      ldapFullCaller,
+		answers: []reply{{status: "201", text: "The connection is created; the answer has no body."}, ldapFields,
+			ldapGrant, message("409", "A connection with the name exists."), identityTooLarge, identityUnavailable}},
+	"PUT /service/rest/v1/security/ldap/{}": {path: restV1 + "/security/ldap/{name}", tag: "Security", summary: "Save an LDAP connection",
+		description: identityNote + " " + ldapFormNote + " The body may carry a new name; the id stays. " +
+			"Without authPassword the stored bind password stays; an empty one is refused for a scheme with a bind, and so is none " +
+			"while the connection has no stored bind password. A save to a scheme without a bind removes the stored one.",
+		caller:    "A save that changes the address, the search base, a user or a group setting needs the full permission set.",
+		pathWords: map[string]string{"name": "Name of the connection."},
+		answers: []reply{{status: "204", text: "The connection is saved."}, ldapFields, ldapGrant,
+			message("404", "LDAP connection not found."), message("409", "Another connection has the new name."),
+			identityTooLarge, identityUnavailable}},
+	"DELETE /service/rest/v1/security/ldap/{}": {path: restV1 + "/security/ldap/{name}", tag: "Security", summary: "Delete an LDAP connection",
+		description: identityNote + " The secret file of the connection is removed with it.",
+		caller:      ldapFullCaller,
+		pathWords:   map[string]string{"name": "Name of the connection."},
+		answers: []reply{{status: "204", text: "The connection is deleted."}, ldapGrant,
+			message("404", "LDAP connection not found."), identityUnavailable}},
+	"POST /service/rest/v1/security/ldap/change-order": {path: restV1 + "/security/ldap/change-order", tag: "Security",
+		summary:     "Order the LDAP connections",
+		description: identityNote + " The body is the list of the names of every connection in the new order.",
+		caller:      "A change of the order needs the full permission set; the stored order again passes.",
+		answers: []reply{{status: "204", text: "The order is saved."},
+			identityFields("The list is no list of names, or does not name every connection once; at *."), ldapGrant,
+			identityTooLarge, identityUnavailable}},
+	"POST /api/ldap/verify-connection": {path: "/api/ldap/verify-connection", tag: "Security", summary: "Check the connection of an LDAP form",
+		description: ldapCheckNote + " Connects, binds and reads the search base.",
+		answers: []reply{ok200("{ok, message}; ok is false with the reason when the directory does not pass."), ldapCheckFields,
+			ldapCheckGrant, identityTooLarge, identityUnavailable}},
+	"POST /api/ldap/verify-user-mapping": {path: "/api/ldap/verify-user-mapping", tag: "Security", summary: "List the users of an LDAP form",
+		description: ldapCheckNote + " Searches the users of the user settings and reads the groups of each.",
+		answers: []reply{ok200("{ok, message, users}; users holds at most 20 entries {userId, name, email, groups}; " +
+			"ok is false when the search fails or finds nobody."), ldapCheckFields, ldapCheckGrant, identityTooLarge, identityUnavailable}},
+	"POST /api/ldap/verify-login": {path: "/api/ldap/verify-login", tag: "Security", summary: "Sign one user in with an LDAP form",
+		description: "The body is {connection, username, password}; connection is the form of the connection. " + ldapCheckNote +
+			" Signs the user in as a sign in of the server does.",
+		answers: []reply{ok200("{ok, message}; ok is false when the directory refuses the pair or does not answer."),
+			identityFields("A field of the connection, with connection. in front of its id, or a missing username or password."),
+			ldapCheckGrant, identityTooLarge, identityUnavailable}},
+	"POST /api/ldap/clear-cache": {path: "/api/ldap/clear-cache", tag: "Security", summary: "Forget cached sign ins",
+		description: "Empties the credential cache, so that the next request of a directory user signs in at the directory again. The body is not read.",
+		answers:     []reply{{status: "204", text: "The cache is empty."}, identityUnavailable}},
+	"GET /service/rest/beta/system/information": {path: "/service/rest/beta/system/information", tag: "System", summary: "Version, schemas, runtime and stores of the server",
+		answers: []reply{ok200("Object of sections, each an object: version {version, go}, schema with the version of state.sqlite, index.sqlite and catalog.sqlite, " +
+			"runtime {started, uptimeSeconds}, stores with {kind, available, files, bytes} per store name, and update, empty in this version. No path, host, user or address.")}},
+	"GET /service/rest/v1/system/node": {path: restV1 + "/system/node", tag: "System", summary: "Node id",
+		answers: []reply{ok200("{nodeId}: a lower case UUID, written at the first start into the file node-id of the data directory and kept in " +
+			"state.sqlite; the status checks name the node with it.")}},
+	"GET /service/rest/v1/capabilities": {path: restV1 + "/capabilities", tag: "System", summary: "Capabilities",
+		answers: []reply{ok200("Array of {id, type, notes, enabled, properties}, sorted by id; properties is an object of strings.")}},
+	"PUT /service/rest/v1/capabilities/{}": {path: restV1 + "/capabilities/{id}", tag: "System", summary: "Save notes, properties and enabled of a capability",
+		description: identityNote + " The body is {id, type, notes, enabled, properties}; an absent field keeps the stored value, id and type cannot change. " +
+			"A capability of the type defaultrole that is enabled sets the role the realm DefaultRole gives every signed in user. Nothing creates a capability.",
+		pathWords: map[string]string{"id": "Id of the capability."},
+		answers: []reply{{status: "204", text: "The capability is saved."},
+			identityFields("Another id or type, an unknown key, a property key that names a secret, enabled switched on for a type without effect, " +
+				"or a missing or unknown role of an enabled defaultrole capability."),
+			message("403", "The caller lacks the permission, a write of a session lacks the request token, "+
+				"or the save sets a default role whose permissions the caller does not all hold."),
+			message("404", "Capability not found."), identityTooLarge, identityUnavailable}},
+	"DELETE /service/rest/v1/capabilities/{}": {path: restV1 + "/capabilities/{id}", tag: "System", summary: "Delete a capability",
+		description: identityNote + " An enabled defaultrole capability takes its role from the default role.",
+		pathWords:   map[string]string{"id": "Id of the capability."},
+		answers:     []reply{{status: "204", text: "The capability is deleted."}, message("404", "Capability not found."), identityUnavailable}},
+	"GET /api/capabilities/support": {path: "/api/capabilities/support", tag: "System", summary: "What this server does with each capability type",
+		answers: []reply{ok200("Object of {supported, reason} per capability type of kinds.json; a type missing from it is not supported.")}},
+	"GET /service/rest/v1/routing-rules": {path: restV1 + "/routing-rules", tag: "System", summary: "Routing rules",
+		answers: []reply{ok200("Array of {name, description, mode, matchers}, sorted by name; mode is ALLOW or BLOCK."), routingUnavailable}},
+	"POST /service/rest/v1/routing-rules": {path: restV1 + "/routing-rules", tag: "System", summary: "Create a routing rule",
+		description: routingNote + " The body is {name, description, mode, matchers}, at most 65536 bytes.",
+		answers: []reply{{status: "204", text: "The rule is created."},
+			identityFields(routingFields), message("409", "A rule of the name exists, letter case aside."), routingUnavailable}},
+	"GET /service/rest/v1/routing-rules/{}": {path: restV1 + "/routing-rules/{name}", tag: "System", summary: "One routing rule",
+		pathWords: map[string]string{"name": "Name of the routing rule."},
+		answers:   []reply{ok200("{name, description, mode, matchers}."), message("404", "Routing rule not found."), routingUnavailable}},
+	"PUT /service/rest/v1/routing-rules/{}": {path: restV1 + "/routing-rules/{name}", tag: "System", summary: "Save a routing rule",
+		description: routingNote + " The body is {name, description, mode, matchers}, at most 65536 bytes; the name cannot change.",
+		pathWords:   map[string]string{"name": "Name of the routing rule."},
+		answers: []reply{{status: "204", text: "The rule is saved."}, identityFields(routingFields + " Another name in the body."),
+			message("404", "Routing rule not found."), routingUnavailable}},
+	"DELETE /service/rest/v1/routing-rules/{}": {path: restV1 + "/routing-rules/{name}", tag: "System", summary: "Delete a routing rule",
+		description: routingNote,
+		pathWords:   map[string]string{"name": "Name of the routing rule."},
+		answers: []reply{{status: "204", text: "The rule is deleted."}, message("404", "Routing rule not found."),
+			message("409", "A repository names the rule; the message names every one."), routingUnavailable}},
+	"POST /api/routing-rules/test": {path: "/api/routing-rules/test", tag: "System", summary: "Test one path against a routing rule",
+		description: "The body is {mode, matchers, path}. The rule is tested as a request would be; a path without a leading / gets one. Nothing is stored.",
+		answers: []reply{ok200("{allowed, matcher}; matcher is the index of the first matcher that matched, or null."),
+			identityFields("An unknown key, a mode other than ALLOW and BLOCK, more than 100 matchers, a matcher above 1024 characters or that does not compile (at matchers[<index>]), " +
+				"no path or one above 4096 characters, or a body above 65536 bytes.")}},
+	"POST /api/routing-rules/preview": {path: "/api/routing-rules/preview", tag: "System", summary: "Verdict of the routing rules for one path",
+		description: "The body is {scope, path}, scope all, group or proxy. Only repositories the caller may browse are listed, sorted by name; no content is read. " +
+			"A rule decides for a proxy only, so a hosted repository and a group have no rule and allow every path.",
+		answers: []reply{ok200("{items}; each item is {repository, type, format, rule, allowed}, rule null for a repository without a rule."),
+			identityFields("An unknown key, a scope other than all, group and proxy, no path or one above 4096 characters, or a body above 65536 bytes."),
+			message("503", "The routing rules cannot be read now.")}},
+	"GET /service/rest/v1/tasks": {path: restV1 + "/tasks", tag: "System", summary: "Tasks",
+		description: "Every stored task on one page, sorted by id. A task whose type this server does not run is listed with the reason as its message.",
+		answers:     []reply{ok200(taskXOText("{items, continuationToken}; continuationToken is null, and each item is ")), tasksUnavailableReply}},
+	"GET /service/rest/v1/tasks/{}": {path: restV1 + "/tasks/{id}", tag: "System", summary: "One task",
+		pathWords: map[string]string{"id": "Id of the task."},
+		answers:   []reply{ok200(taskXOText("")), message("404", "Task not found."), tasksUnavailableReply}},
+	"POST /service/rest/v1/tasks/{}/run": {path: restV1 + "/tasks/{id}/run", tag: "System", summary: "Run a task now",
+		description: taskNote,
+		pathWords:   map[string]string{"id": "Id of the task."},
+		answers: []reply{{status: "204", text: "The run has started."}, message("404", "Task not found."),
+			message("405", "The task is disabled; the message gives the reason, a type this server does not run among them."),
+			message("409", "The task is running already, or the server is frozen."), message("503", "The scheduler has not started or is closed, or the server has no tasks.")}},
+	"POST /service/rest/v1/tasks/{}/stop": {path: restV1 + "/tasks/{id}/stop", tag: "System", summary: "Stop the run of a task",
+		description: taskNote + " The run ends as CANCELED once its work returns.",
+		pathWords:   map[string]string{"id": "Id of the task."},
+		answers: []reply{{status: "204", text: "The run is told to stop."}, message("404", "Task not found."),
+			message("409", "The task is not running."), tasksUnavailableReply}},
 	"GET /service/rest/v1/status/check": {path: restV1 + "/status/check", tag: "Status", summary: "Health checks of blob stores and index",
 		answers: []reply{ok200("Object with the checks Blob Stores and Index, each {healthy, message, error, details, time, duration, timestamp}.")}},
 	"GET /service/rest/v1/read-only": {path: restV1 + "/read-only", tag: "Status", summary: "Read only state",
-		answers: []reply{ok200("{frozen, systemInitiated, summaryReason}; frozen is always true, with writes on as well.")}},
+		answers: []reply{ok200("{frozen, systemInitiated, summaryReason}; the state lives in memory and a start releases it, so summaryReason says so. " +
+			"A server with writes off is not frozen; its summaryReason says that its content writes stay refused.")}},
+	"POST /service/rest/v1/read-only/freeze": {path: restV1 + "/read-only/freeze", tag: "System", summary: "Freeze the server",
+		description: freezeNote + " A freeze waits up to 30 s for the changes that run, while new changes wait for it. While frozen every change answers 503 with the reason and the run of a task 409, except the release, the force release, " +
+			"the stop of a task, the session, the npm sign in and sign out, and the tests and previews. No scheduled run starts while frozen; " +
+			"a run that is going runs to its end.",
+		answers: []reply{{status: "204", text: "The server is frozen."},
+			message("409", "Changes still ran after 30 s, so the server stays released and a change that came while the freeze waited runs then; "+
+				"or another freeze waits for the running changes already."),
+			message("503", "The server is frozen already, or it has no identity store.")}},
+	"POST /service/rest/v1/read-only/release": {path: restV1 + "/read-only/release", tag: "System", summary: "End a freeze of a user",
+		description: freezeNote,
+		answers: []reply{{status: "204", text: "The freeze has ended."},
+			message("409", "The server is not frozen, or it froze itself, which only a force release ends."), identityUnavailable}},
+	"POST /service/rest/v1/read-only/force-release": {path: restV1 + "/read-only/force-release", tag: "System", summary: "End a freeze the server set itself",
+		description: freezeNote + " Only while systemInitiated is true.",
+		answers: []reply{{status: "204", text: "The freeze has ended."},
+			message("409", "The server is not frozen, or a user froze it, which a release ends."), identityUnavailable}},
+	"GET /api/updates": {path: "/api/updates", tag: "Status", summary: "Update and signing state of the install root",
+		description: "Read only. The install root is the one of the running binary, <root>/releases/<version>/pipesmith-registry beside the link <root>/current. " +
+			"The server never writes the trusted key.",
+		answers: []reply{ok200("{installed, message, binary}; when installed also root, config {path, found, error}, " +
+			"key {path, found, state, problem, sha256, hint} with state good, missing, refused or unchecked, " +
+			"check {ran, passed, message} of the owner and mode rule, and release {name, from, note}.")}},
 	"GET /api/areas": {path: "/api/areas", tag: "Status", summary: "Read only state and refused operations",
 		answers: []reply{ok200("{readOnly, refused}; refused lists method, path and area of every operation of the tag Not Served, " +
 			"and with writes off also of the three writes of the area content that answer 501 then.")}},
@@ -552,7 +965,7 @@ func writeWords(summary string, own []reply) words {
 var deferredSearch = func() []param {
 	var out []param
 	for _, name := range []string{"md5", "sha256", "sha512", "npm.author", "npm.description", "npm.keywords", "npm.license",
-		"docker.layerId", "docker.contentDigest", "sort", "direction", "prerelease", "timeout", "gavec", "lastBlobUpdated"} {
+		"docker.layerId", "docker.contentDigest", "sort", "direction", "prerelease", "gavec", "lastBlobUpdated"} {
 		out = append(out, query(name, "string", "Not served yet: answers 501 with the area search."))
 	}
 	return out

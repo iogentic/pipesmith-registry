@@ -23,7 +23,46 @@ import (
 // directory that does not answer leaves the token without an answer, and a
 // name no directory holds is refused; a user that is gone from the
 // directory, or that the user filter of its connection leaves out, as a
-// disabled account usually is, is such a name.
+// disabled account usually is, is such a name, and so is an entry the
+// directory marks disabled or locked (package ldapauth, review 3-40). A
+// token is bound to the entry of its user (tokenBindings).
+
+// tokenBindings are the directory entries the npm and user tokens of
+// directory users are bound to (review 3-40), by public half: model.User.Entry
+// of the user the token was issued for. The tokens table has no column for
+// it, so the bindings live in memory: a token is bound at its issue, and a
+// token without a binding, issued before release 0.2.0, by the command line
+// or before the start of the process, at its first use whose directory names
+// an entry. A bound token whose name a directory now gives to another entry
+// is refused.
+type tokenBindings struct {
+	mu      sync.Mutex
+	entries map[string]string
+}
+
+func newTokenBindings() *tokenBindings { return &tokenBindings{entries: map[string]string{}} }
+
+// holds reports whether the token of public may sign in the user of entry,
+// and binds a token without a binding to it. An empty entry, of a directory
+// that names none, binds nothing.
+func (b *tokenBindings) holds(public, entry string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	bound, ok := b.entries[public]
+	if ok {
+		return bound == entry
+	}
+	if entry != "" {
+		b.entries[public] = entry
+	}
+	return true
+}
+
+func (b *tokenBindings) drop(public string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	delete(b.entries, public)
+}
 
 // lookup is the answer of the directories for a user id.
 type lookup struct {
@@ -193,7 +232,7 @@ func (s *Service) lookUp(ctx context.Context, v *view, id string) lookupAnswer {
 		case err == nil && u.ID != "":
 			holders = append(holders, strconv.Itoa(i+1))
 			who := principal{user: model.User{ID: id, FirstName: u.FirstName, LastName: u.LastName, Email: u.Email,
-				Status: "active", Source: SourceLDAP}, realm: RealmLDAP, groups: slices.Clone(groups)}
+				Status: "active", Source: SourceLDAP, Entry: u.Entry}, realm: RealmLDAP, groups: slices.Clone(groups)}
 			if len(holders) == 1 {
 				found = lookupAnswer{lookup: lookup{who: who, known: true, gen: v.gen}, answered: true}
 			}

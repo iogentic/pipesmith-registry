@@ -304,9 +304,12 @@ func TestPermissionTextFollowsTheRule(t *testing.T) {
 		{ruleView, "GET", "/api/browse/{repository}", "view of the repository (browse)", true},
 		{ruleAdmin, "GET", "/service/rest/v1/repositories/{segment}/{type}/{name}", "administration of the repository", true},
 		{ruleAssetID, "GET", "/service/rest/v1/assets/{id}", "view of the repository of the asset (browse)", true},
+		{ruleCreate, "POST", "/service/rest/v1/repositories/{segment}/{type}", "administration of any repository of the format of the path (add)", true},
 		{ruleClient, "GET", "/repository/{repository}/{path}", "view of the repository (read below /repository/, browse below the browse route)", true},
 		{ruleContent, "DELETE", "/service/rest/v1/assets/{id}", "view of the repository of the id (delete)", true},
 		{ruleContent, "POST", "/service/rest/v1/components", "view of the repository of the query parameter repository (add)", true},
+		{ruleListing, "GET", "/service/rest/v1/assets", "view of the repository of the query parameter repository (browse)", true},
+		{ruleListing, "GET", "/service/rest/v1/components/{id}", "view of the repository of the id (browse)", true},
 	}
 	ops := operations(t, openAPIOf(t))
 	tested := map[ruleKind]bool{}
@@ -365,7 +368,7 @@ func TestOpenAPIHoldsNoOldProductName(t *testing.T) {
 // path: the first whose pattern matches and whose methods list the method.
 func firstRoute(table []route, method, path string) int {
 	for i, rt := range table {
-		if rt.pattern.MatchString(path) && slices.Contains(rt.methods, method) {
+		if rt.Pattern.MatchString(path) && slices.Contains(rt.Methods, method) {
 			return i
 		}
 	}
@@ -373,7 +376,7 @@ func firstRoute(table []route, method, path string) int {
 }
 
 func sameRoute(rt route, r apiRoute) bool {
-	return rt.pattern.String() == r.pattern.String() && slices.Contains(rt.methods, r.method)
+	return rt.Pattern.String() == r.pattern.String() && slices.Contains(rt.Methods, r.method)
 }
 
 func TestEveryOperationIsTheFirstMatch(t *testing.T) {
@@ -394,8 +397,8 @@ func TestEveryOperationIsTheFirstMatch(t *testing.T) {
 				// writes off: the sample reaches the refusal that the words name, or no route
 				switch {
 				case r.offPattern == nil && i >= 0:
-					t.Errorf("%s: %s %s reaches %s, want no route as its words say", c.name, r.method, path, c.table[i].pattern)
-				case r.offPattern != nil && (i < 0 || c.table[i].pattern.String() != r.offPattern.String()):
+					t.Errorf("%s: %s %s reaches %s, want no route as its words say", c.name, r.method, path, c.table[i].Pattern)
+				case r.offPattern != nil && (i < 0 || c.table[i].Pattern.String() != r.offPattern.String()):
 					t.Errorf("%s: %s %s does not reach the refusal %s of its words", c.name, r.method, path, r.offPattern)
 				}
 				continue
@@ -408,7 +411,7 @@ func TestEveryOperationIsTheFirstMatch(t *testing.T) {
 				continue // TestShadowedRefusalsAnswerAlike checks these
 			}
 			if !sameRoute(c.table[i], r) {
-				t.Errorf("%s: %s %s reaches %s first, not its own route %s", c.name, r.method, path, c.table[i].pattern, r.pattern)
+				t.Errorf("%s: %s %s reaches %s first, not its own route %s", c.name, r.method, path, c.table[i].Pattern, r.pattern)
 				continue
 			}
 			key := fmt.Sprint(i, " ", r.method)
@@ -423,10 +426,7 @@ func TestEveryOperationIsTheFirstMatch(t *testing.T) {
 // shadowed are refusals that an earlier refusal of the same area reaches
 // first, so that the answer is the same 501. Pinned, so that a new case
 // fails.
-var shadowed = map[string]bool{
-	"POST /service/rest/v1/repositories/{name}/rebuild-index":    true,
-	"POST /service/rest/v1/repositories/{name}/invalidate-cache": true,
-}
+var shadowed = map[string]bool{}
 
 func TestShadowedRefusalsAnswerAlike(t *testing.T) {
 	found := map[string]bool{}
@@ -546,8 +546,8 @@ func kitSampled(t *testing.T, path string, refused bool) string {
 	if !ok {
 		t.Fatal("no component id for demo-raw docs/readme.txt")
 	}
-	values := map[string]string{"repository": "demo-raw", "path": "docs/readme.txt", "user": "demo-admin", "token": "sample",
-		"format": "raw", "segment": "raw", "type": "hosted", "name": "demo-raw", "id": rest.AssetID("demo-raw", "docs/readme.txt")}
+	values := map[string]string{"repository": "demo-raw", "path": "docs/readme.txt", "user": "demo-admin", "userId": "demo-admin", "token": "sample",
+		"format": "raw", "segment": "raw", "type": "hosted", "name": "demo-raw", "id": rest.AssetID("demo-raw", "docs/readme.txt"), "nodeId": "0000"}
 	switch {
 	case strings.Contains(path, "/-/"):
 		values["repository"] = "demo-npm"
@@ -803,7 +803,7 @@ var tableModes = []struct {
 }{
 	{"security off", &Server{writes: &writePath{}}},
 	{"security on", &Server{sec: newFakeSecurity(), writes: &writePath{}}},
-	{"writes on", &Server{sec: newFakeSecurity(), writes: &writePath{writer: &blobwrite.Writer{}}}},
+	{"writes on", &Server{sec: newFakeSecurity(), writes: &writePath{writer: &blobwrite.Writer{}, clients: true}}},
 }
 
 // The route reader sees every route of every table the server routes by:
@@ -823,10 +823,10 @@ func TestRouteReaderSeesEveryRoute(t *testing.T) {
 	for _, mode := range tableModes {
 		table := mode.srv.table()
 		tables[fmt.Sprintf("%p", table)] = true
-		for _, rt := range table {
-			for _, method := range rt.methods {
-				if !read[method+" "+rt.pattern.String()] {
-					t.Errorf("%s: the table holds %s %s, which apiRoutes does not read", mode.name, method, rt.pattern)
+		for _, rt := range table.Entries() {
+			for _, method := range rt.Methods {
+				if !read[method+" "+rt.Pattern.String()] {
+					t.Errorf("%s: the table holds %s %s, which apiRoutes does not read", mode.name, method, rt.Pattern)
 				}
 			}
 		}

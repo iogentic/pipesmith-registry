@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="psr-flow-proxy" viewBox="0 0 1360 854" width="1360" height="854" role="img" aria-label="Proxy Fetch, Pipesmith Registry 0.2.0. A proxy answers from its cache while the copy is fresh, and stores and checks a fetched file before the client gets a byte. 1: Client to Proxy repository: GET /repository/&lt;proxy&gt;/&lt;path&gt;. 2: Proxy repository: routing rule first: a blocked path answers 403. 3: Proxy repository to Cache: index row of the path. 4: Proxy repository to catalog.sqlite: last check, ETag, Last-Modified, not found mark. 5: Proxy repository: fresh: the cached copy answers, nothing goes out. Stale or missing. 6: Proxy repository to Remote: GET with If-None-Match and If-Modified-Since. 7: Remote to Proxy repository: 200, 304, 404, or a failure. 8: Proxy repository to Cache: 200: stored, checked against .sha1, integrity or digest. 9: Proxy repository to catalog.sqlite: checked now, new validators; a 404 is remembered. 10: Proxy repository to Client: the stored copy; remote failed: cached copy, else 502."><title>Pipesmith Registry proxy fetch</title><defs><marker id="psr-flow-proxy-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2B62F0" stroke="none"/></marker><marker id="psr-flow-proxy-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#46526E" stroke="none"/></marker><marker id="psr-flow-proxy-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#12B5D6" stroke="none"/></marker><marker id="psr-flow-proxy-write" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7A52F0" stroke="none"/></marker></defs>
+<rect x="0" y="0" width="1360" height="854" rx="18" fill="#F5F7FC" stroke="#D8DEEA" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="46" font-size="12" font-weight="600" fill="#46526E" text-anchor="start" letter-spacing="1.6">PIPESMITH REGISTRY 0.2.0</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="86" font-size="30" font-weight="700" fill="#0A1020" text-anchor="start">Proxy Fetch</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="116" font-size="15" font-weight="400" fill="#46526E" text-anchor="start">A proxy answers from its cache while the copy is fresh, and stores and checks a fetched file before the client gets a byte.</text>
+<path d="M168,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="70" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#2B62F0" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="168" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Client</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="168" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">Maven, npm, Docker, curl</text>
+<path d="M435,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="337" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="435" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Proxy repository</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="435" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">serve --upstream</text>
+<path d="M702,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="604" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A52F0" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="702" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Cache</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="702" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">local-write, index.sqlite</text>
+<path d="M969,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="871" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A52F0" stroke-width="1.6"/>
+<text x="969" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">catalog.sqlite</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="969" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">table proxy_state</text>
+<path d="M1236,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="1138" y="150" width="196" height="58" rx="10" fill="#EEF2FA" stroke="#7A859C" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1236" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Remote</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1236" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">proxy.remoteUrl</text>
+<circle cx="47" cy="275" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="279" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">1</text>
+<path d="M168,283 H431" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-proxy-req)"/>
+<text x="301.5" y="274" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET /repository/&lt;proxy&gt;/&lt;path&gt;</text>
+<circle cx="47" cy="321" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="325" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">2</text>
+<rect x="419" y="306" width="345.4" height="30" rx="7" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="433" y="325.5" font-size="13" font-weight="400" fill="#0A1020" text-anchor="start">routing rule first: a blocked path answers 403</text>
+<circle cx="47" cy="367" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="371" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">3</text>
+<path d="M435,375 H698" fill="none" stroke="#12B5D6" stroke-width="1.8" marker-end="url(#psr-flow-proxy-read)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="568.5" y="366" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">index row of the path</text>
+<circle cx="47" cy="413" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="417" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">4</text>
+<path d="M435,421 H965" fill="none" stroke="#12B5D6" stroke-width="1.8" marker-end="url(#psr-flow-proxy-read)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="702" y="412" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">last check, ETag, Last-Modified, not found mark</text>
+<circle cx="47" cy="459" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="463" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">5</text>
+<rect x="419" y="444" width="359.2" height="30" rx="7" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="433" y="463.5" font-size="13" font-weight="400" fill="#0A1020" text-anchor="start">fresh: the cached copy answers, nothing goes out</text>
+<rect x="34" y="490" width="1292" height="40" rx="8" fill="#EEF2FA" stroke="#D8DEEA" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="515" font-size="13" font-weight="650" fill="#0A1020" text-anchor="start">Stale or missing</text>
+<circle cx="47" cy="561" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="565" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">6</text>
+<path d="M435,569 H1232" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-proxy-req)"/>
+<text x="835.5" y="560" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET with If-None-Match and If-Modified-Since</text>
+<circle cx="47" cy="607" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="611" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">7</text>
+<path d="M1236,615 H439" fill="none" stroke="#46526E" stroke-width="1.8" marker-end="url(#psr-flow-proxy-muted)" stroke-dasharray="2 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="835.5" y="606" font-size="13" font-weight="400" fill="#46526E" text-anchor="middle">200, 304, 404, or a failure</text>
+<circle cx="47" cy="653" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="657" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">8</text>
+<path d="M435,661 H698" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-proxy-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="568.5" y="652" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">200: stored, checked against .sha1, integrity or digest</text>
+<circle cx="47" cy="699" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="703" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">9</text>
+<path d="M435,707 H965" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-proxy-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="702" y="698" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">checked now, new validators; a 404 is remembered</text>
+<circle cx="47" cy="745" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="749" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">10</text>
+<path d="M435,753 H172" fill="none" stroke="#46526E" stroke-width="1.8" marker-end="url(#psr-flow-proxy-muted)" stroke-dasharray="2 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="301.5" y="744" font-size="13" font-weight="400" fill="#46526E" text-anchor="middle">the stored copy; remote failed: cached copy, else 502</text>
+<path d="M34,798 H68" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-proxy-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="78" y="802" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">request</text>
+<path d="M170.3,798 H204.3" fill="none" stroke="#46526E" stroke-width="1.8" marker-end="url(#psr-flow-proxy-muted)" stroke-dasharray="2 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="214.3" y="802" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">answer</text>
+<path d="M299.7,798 H333.7" fill="none" stroke="#12B5D6" stroke-width="1.8" marker-end="url(#psr-flow-proxy-read)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="343.7" y="802" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">read from disk</text>
+<path d="M484.3,798 H518.3" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-proxy-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="528.3" y="802" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">write to disk</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="836" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="start">Read from internal/proxy, internal/catalog and internal/server (upstream.go) of Pipesmith Registry 0.2.0, checked 2026-11-19.</text>
+</svg>

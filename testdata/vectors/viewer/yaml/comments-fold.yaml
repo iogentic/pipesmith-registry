@@ -1,0 +1,9 @@
+a:
+  b: 1
+# about c
+  c: 2
+# about d
+d:
+  - 1
+  # inside
+  - 2

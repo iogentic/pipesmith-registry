@@ -6,7 +6,7 @@ Pipesmith Registry is a single static binary that serves the file blob stores of
 
 ## State of 0.1
 
-Version 0.1.3. It reads and never writes the blob stores.
+Version 0.2.0. It never writes the blob stores it imports. With `serve --writes`, new uploads go into a blob store of its own.
 
 What works:
 
@@ -46,7 +46,7 @@ The screenshots show invented data.
 The release has binaries for `linux-amd64`, `linux-arm64` and `darwin-arm64`. Download one of them with the checksum file and check it:
 
 ```bash
-VERSION=0.1.3
+VERSION=0.2.0
 BASE=https://github.com/iogentic/pipesmith-registry/releases/download/v$VERSION
 curl -fLO "$BASE/pipesmith-registry-linux-amd64"
 curl -fLO "$BASE/SHA256SUMS"
@@ -54,7 +54,17 @@ sha256sum --check --ignore-missing SHA256SUMS
 chmod +x pipesmith-registry-linux-amd64
 ```
 
-On macOS, use `shasum -a 256 --check --ignore-missing SHA256SUMS`. Release 0.1.3 is not signed. The checksum only shows that the download is complete.
+On macOS, use `shasum -a 256 --check --ignore-missing SHA256SUMS`.
+
+From 0.2.0 on, `SHA256SUMS` is signed with cosign. Download the bundle and the public key of the release and check the signature:
+
+```bash
+curl -fLO "$BASE/SHA256SUMS.sigstore.json"
+curl -fLO "$BASE/cosign.pub"
+cosign verify-blob --key cosign.pub --bundle SHA256SUMS.sigstore.json --insecure-ignore-tlog SHA256SUMS
+```
+
+The signature is not in a transparency log, hence `--insecure-ignore-tlog`. The same key is in `release/cosign.pub` of this repository.
 
 Attach a blob store, import the repository list, scan, and start:
 
@@ -76,7 +86,7 @@ Without imported users there is no sign in, and the server stays on the local ad
 The image is on Docker Hub, built for linux/amd64. It runs as user 65532 and keeps its data in `/data`. Put `/data` on a Docker volume:
 
 ```bash
-IMAGE=iogentic/pipesmith-registry:0.1.3
+IMAGE=iogentic/pipesmith-registry:0.2.0
 docker volume create pipesmith-data
 docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" store add default --kind <blob store kind> --root /stores/default
 docker run --rm -v pipesmith-data:/data -v "$PWD/export:/import:ro" "$IMAGE" import /import

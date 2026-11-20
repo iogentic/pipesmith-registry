@@ -7,7 +7,8 @@
 #
 # With the secrets COSIGN_PRIVATE_KEY and COSIGN_PASSWORD and the matching
 # public key committed as release/cosign.pub, SHA256SUMS is signed with cosign.
-# Without the secret the release carries SHA256SUMS without a signature.
+# With release/cosign.pub committed and no secret the release stops. Without
+# both the release carries SHA256SUMS without a signature.
 name: release
 
 on:
@@ -31,6 +32,10 @@ jobs:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
         run: |
           if [ -z "$COSIGN_PRIVATE_KEY" ]; then
+            if [ -f release/cosign.pub ]; then
+              echo "release/cosign.pub is committed but the secret COSIGN_PRIVATE_KEY is not set" >&2
+              exit 1
+            fi
             echo "no secret COSIGN_PRIVATE_KEY: SHA256SUMS without a signature"
             echo "RELEASE_SIGN=--no-sign" >> "$GITHUB_ENV"
             exit 0

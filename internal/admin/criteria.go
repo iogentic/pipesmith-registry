@@ -76,24 +76,38 @@ func Runnable(criteria map[string]any) (bool, []string) {
 	return len(unknown) == 0 && CheckCriteria(criteria, nil) == nil, unknown
 }
 
-// wholeDays reports whether a value is a whole number of 1 or more: a
-// number of the JSON decoder, as float64 or json.Number, or a Go integer.
-func wholeDays(v any) bool {
+// CriterionDays gives the number of days of a criterion value that
+// CheckCriteria takes: a whole number of 1 or more, at most 2^53, as a
+// number of the JSON decoder, float64 or json.Number, or a Go integer. ok
+// is false, and days 0, for any other value, null among them.
+func CriterionDays(v any) (days int64, ok bool) {
 	switch x := v.(type) {
 	case int:
-		return x >= 1 && int64(x) <= maxDays
+		days = int64(x)
 	case int64:
-		return x >= 1 && x <= maxDays
+		days = x
 	case float64:
-		return x >= 1 && x <= maxDays && x == math.Trunc(x)
+		if x == math.Trunc(x) && x >= 1 && x <= maxDays {
+			days = int64(x)
+		}
 	case json.Number:
 		if n, err := x.Int64(); err == nil {
-			return n >= 1 && n <= maxDays
+			days = n
+		} else if f, err := x.Float64(); err == nil && f == math.Trunc(f) && f >= 1 && f <= maxDays {
+			days = int64(f)
 		}
-		f, err := x.Float64()
-		return err == nil && f >= 1 && f <= maxDays && f == math.Trunc(f)
 	}
-	return false
+	if days < 1 || days > maxDays {
+		return 0, false
+	}
+	return days, true
+}
+
+// wholeDays reports whether a value is a whole number of 1 or more that
+// CriterionDays gives.
+func wholeDays(v any) bool {
+	_, ok := CriterionDays(v)
+	return ok
 }
 
 // sameValue reports whether two decoded values are equal, so that the two

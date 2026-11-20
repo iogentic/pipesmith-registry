@@ -25,10 +25,12 @@ import (
 // runEntries is the size of a run; a variable so that a test can make many runs.
 var runEntries = 1 << 17
 
-// staged is one entry of a scan; seq is its place in the walk.
+// staged is one entry of a scan; seq is its place in the walk, location
+// the blob in its store.
 type staged struct {
 	blob
-	seq uint64
+	seq      uint64
+	location string
 }
 
 // compareStaged orders by key, then the newer blob first, then the earlier
@@ -48,16 +50,17 @@ func compareStaged(a, b *staged) int {
 }
 
 type staging struct {
-	dir  string
-	buf  []staged
-	runs []string
-	seq  uint64
+	dir    string
+	buf    []staged
+	runs   []string
+	seq    uint64
+	chosen map[key]string // Fill.Choose
 }
 
 func (s *staging) add(e stores.Entry) error {
 	s.seq++
 	s.buf = append(s.buf, staged{blob: blob{key: key{e.Repo, e.Path}, size: e.Size, created: e.CreatedMS, sha1: pointer(e.SHA1),
-		contentType: pointer(e.ContentType), uploader: pointer(e.Uploader), address: pointer(e.UploaderIP)}, seq: s.seq})
+		contentType: pointer(e.ContentType), uploader: pointer(e.Uploader), address: pointer(e.UploaderIP)}, seq: s.seq, location: e.Location})
 	if len(s.buf) < runEntries {
 		return nil
 	}
@@ -110,6 +113,7 @@ func writeStaged(w *bufio.Writer, scratch []byte, e *staged) {
 	_, _ = w.Write(scratch[:binary.PutVarint(scratch, e.size)]) // as above
 	_, _ = w.Write(scratch[:binary.PutVarint(scratch, e.created)])
 	_, _ = w.Write(scratch[:binary.PutUvarint(scratch, e.seq)])
+	writeText(w, scratch, e.location)
 	for _, text := range []sql.NullString{e.sha1, e.contentType, e.uploader, e.address} {
 		writeNull(w, scratch, text)
 	}
@@ -159,6 +163,9 @@ func readStaged(r *bufio.Reader) (staged, error) {
 	if err == nil {
 		e.seq, err = binary.ReadUvarint(r)
 	}
+	if err == nil {
+		e.location, err = readText(r)
+	}
 	for _, text := range []*sql.NullString{&e.sha1, &e.contentType, &e.uploader, &e.address} {
 		if err == nil {
 			*text, err = readNull(r)
@@ -190,18 +197,20 @@ func (c *cursors) Pop() any {
 }
 
 // merged gives the entries of all runs in key order, the entry the index
-// keeps once per key. It is a rowSource.
+// keeps once per key. It is a rowSource. For a key of chosen the entry is
+// the one at the location chosen names, and none when no entry is there.
 type merged struct {
-	heap  cursors
-	files []*os.File
-	last  key
-	any   bool
+	heap   cursors
+	files  []*os.File
+	last   key
+	any    bool
+	chosen map[key]string
 }
 
 // source sorts the entries in memory as the last run and opens the runs on
 // the disk for the merge.
 func (s *staging) source() (*merged, error) {
-	m := &merged{}
+	m := &merged{chosen: s.chosen}
 	slices.SortFunc(s.buf, func(a, b staged) int { return compareStaged(&a, &b) })
 	mem := s.buf
 	if err := m.add(func() (staged, bool, error) {
@@ -261,6 +270,9 @@ func (m *merged) next() (*blob, error) {
 		}
 		if m.any && e.key == m.last {
 			continue // the first entry of the key won
+		}
+		if location, ok := m.chosen[e.key]; ok && e.location != location {
+			continue // the arbiter of the store keeps another blob of the key, or none
 		}
 		m.last, m.any = e.key, true
 		return &e.blob, nil

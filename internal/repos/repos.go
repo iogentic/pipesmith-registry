@@ -32,6 +32,10 @@ type Repo struct {
 	// others), from state.sqlite through WithAttributes; nil without them.
 	// Only this package reads them: write_settings.go for a write.
 	Attributes map[string]any
+	// RoutingRule is the name of the routing rule the repository names, from
+	// state.sqlite through WithRoutingRules (proxy_settings.go); empty for
+	// none.
+	RoutingRule string
 	// Record is what the stored record of the repository says of its type
 	// and its state, through WithAttributes; nil without a record.
 	Record *Record

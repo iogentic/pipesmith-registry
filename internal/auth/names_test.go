@@ -225,3 +225,26 @@ func TestLimiterKeyFoldsAsRFC4518(t *testing.T) {
 		}
 	}
 }
+
+// Row 3-51 of review 3: after the steps of RFC 4518 the limiter key takes
+// full case folding (golang.org/x/text/cases.Fold), so sharp s and ss, the
+// capital sharp s, and final sigma and sigma are one pair. Diacritics stay
+// apart: a directory that ignores them matches looser than this key.
+func TestLimiterKeyFoldsSharpSAndFinalSigma(t *testing.T) {
+	for _, c := range [][2]string{
+		{"straße", "strasse"}, // sharp s
+		{"STRAẞE", "strasse"}, // capital sharp s
+		{"ßmith", "SSMITH"},   // sharp s at the start, upper case ss
+		{"οδος", "ΟΔΟΣ"},      // final sigma and capital sigma
+		{"οδος", "οδοσ"},      // final sigma and sigma
+	} {
+		if !auth.SamePair(c[0], c[1]) {
+			t.Errorf("%q and %q are two pairs", c[0], c[1])
+		}
+	}
+	for _, c := range [][2]string{{"straße", "strase"}, {"émile", "emile"}} {
+		if auth.SamePair(c[0], c[1]) {
+			t.Errorf("%q and %q are one pair", c[0], c[1])
+		}
+	}
+}

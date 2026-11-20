@@ -11,8 +11,8 @@ import (
 
 // The rows of single writes, for the catalog hook of the write path
 // (seam Catalog hook and decision E5 of the execution plan): Put after a
-// write, Delete after a delete. Drop follows index.Drop. A later leg wires
-// them; nothing calls them in this one.
+// write, Delete after a delete. Drop follows index.Drop. Serve wires them
+// to the one opening of the file of its process (leg F1b).
 
 // Digests are the lower case hex digests of the bytes of one blob as the
 // write path computes them; an empty one is unknown. The fields are those of

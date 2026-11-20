@@ -52,7 +52,7 @@ func TestUpdateCommandHelp(t *testing.T) {
 	}
 	_, out, _ := run(t, "help")
 	for _, line := range []string{"Updates\n", "  update [--root DIR] [--allow-downgrade] <release directory>\n",
-		"  update --fetch [--version V] [--allow-downgrade] [--root DIR]\n", "  update --fetch --scheduled  ", "  rollback [--root DIR]  ",
+		"  update --fetch [--version V [--allow-downgrade]] [--root DIR]\n", "  update --fetch --scheduled  ", "  rollback [--root DIR]  ",
 		"  update --switch <version> [--allow-downgrade] [--root DIR]\n", "  schema                               print the schema"} {
 		if !strings.Contains(out, line) {
 			t.Errorf("help lacks %q", line)
@@ -126,6 +126,13 @@ func (s *cliService) Stop(context.Context, string) error {
 	defer s.mu.Unlock()
 	s.running = ""
 	return nil
+}
+
+// Active reports a unit that runs a release.
+func (s *cliService) Active(context.Context, string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.running != "", nil
 }
 
 func (s *cliService) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -36,11 +36,13 @@ type schemaService struct {
 	oldStarts  int
 	junkSeen   []string // -wal and -shm files of no use the old release met
 	oldRefusal []error
+	// catalogFree is the free space the start of 0.2.0 sees, when set
+	catalogFree func(dir string) (uint64, error)
 }
 
 var openerOptions = map[string]migrate.Options{
 	StateFile:   {Kind: "state file", Backup: true},
-	CatalogFile: {Kind: "catalog file", Create: true, CopyWhen: migrate.SpareCopy(migrate.FreeSpace)},
+	CatalogFile: {Kind: "catalog file", Create: true, CopyWhen: migrate.CopyRule(migrate.FreeSpace)},
 }
 
 func (s *schemaService) Restart(ctx context.Context, unit string) error {
@@ -57,7 +59,11 @@ func (s *schemaService) Restart(ctx context.Context, unit string) error {
 		db := openFile(path)
 		switch running {
 		case "0.2.0":
-			res, err := migrate.Run(db, path, testSteps(s.writes), openerOptions[name])
+			opts := openerOptions[name]
+			if name == CatalogFile && s.catalogFree != nil {
+				opts.CopyWhen = migrate.CopyRule(s.catalogFree)
+			}
+			res, err := migrate.Run(db, path, testSteps(s.writes), opts)
 			if err != nil {
 				return err
 			}

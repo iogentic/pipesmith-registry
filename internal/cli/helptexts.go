@@ -4,19 +4,24 @@ package cli
 // columns under the program name pipesmith-registry.
 var commandHelp = map[string]string{
 	"serve": "usage: pipesmith-registry serve [-h] [--port PORT] [--bind BIND]\n" +
-		"                                [--server-names SERVER_NAMES]\n" +
+		"                                [--server-names SERVER_NAMES] [--log-dir DIR]\n" +
 		"                                [--ask-ldap-password] [--tls-cert FILE]\n" +
-		"                                [--tls-key FILE] [--writes]\n" +
+		"                                [--tls-key FILE] [--writes] [--upstream]\n" +
+		"                                [--export-max-files N] [--export-max-bytes N]\n" +
 		"\n" +
 		"options:\n" +
 		"  -h, --help            show this help message and exit\n" +
 		"  --port PORT\n" +
 		"  --bind BIND\n" +
 		"  --server-names SERVER_NAMES\n" +
+		"  --log-dir DIR\n" +
 		"  --ask-ldap-password\n" +
 		"  --tls-cert FILE\n" +
 		"  --tls-key FILE\n" +
-		"  --writes\n",
+		"  --writes\n" +
+		"  --upstream\n" +
+		"  --export-max-files N\n" +
+		"  --export-max-bytes N\n",
 	"store": "usage: pipesmith-registry store [-h] {add,list,remove} ...\n" +
 		"\n" +
 		"positional arguments:\n" +
@@ -55,13 +60,14 @@ var commandHelp = map[string]string{
 		"\n" +
 		"options:\n" +
 		"  -h, --help  show this help message and exit\n",
-	"repos": "usage: pipesmith-registry repos [-h] [--json] {port} ...\n" +
+	"repos": "usage: pipesmith-registry repos [-h] [--json]\n" +
+		"                                {port,remote-secret,write-settings} ...\n" +
 		"\n" +
 		"positional arguments:\n" +
-		"  {port}\n" +
+		"  {port,remote-secret,write-settings}\n" +
 		"\n" +
 		"options:\n" +
-		"  -h, --help  show this help message and exit\n" +
+		"  -h, --help            show this help message and exit\n" +
 		"  --json\n",
 	"repos port": "usage: pipesmith-registry repos port [-h] name <port|none>\n" +
 		"\n" +
@@ -71,6 +77,29 @@ var commandHelp = map[string]string{
 		"\n" +
 		"options:\n" +
 		"  -h, --help   show this help message and exit\n",
+	"repos remote-secret": "usage: pipesmith-registry repos remote-secret [-h] name\n" +
+		"\n" +
+		"positional arguments:\n" +
+		"  name\n" +
+		"\n" +
+		"options:\n" +
+		"  -h, --help  show this help message and exit\n",
+	"repos write-settings": "usage: pipesmith-registry repos write-settings [-h]\n" +
+		"                                               [--write-policy {ALLOW,ALLOW_ONCE,DENY}]\n" +
+		"                                               [--max-body-bytes BYTES]\n" +
+		"                                               [--free-space-floor-bytes BYTES]\n" +
+		"                                               [--write-store STORE]\n" +
+		"                                               name\n" +
+		"\n" +
+		"positional arguments:\n" +
+		"  name\n" +
+		"\n" +
+		"options:\n" +
+		"  -h, --help            show this help message and exit\n" +
+		"  --write-policy {ALLOW,ALLOW_ONCE,DENY}\n" +
+		"  --max-body-bytes BYTES\n" +
+		"  --free-space-floor-bytes BYTES\n" +
+		"  --write-store STORE\n",
 	"docker-check": "usage: pipesmith-registry docker-check [-h] name\n" +
 		"\n" +
 		"positional arguments:\n" +
@@ -118,9 +147,10 @@ var commandHelp = map[string]string{
 		"\n" +
 		"options:\n" +
 		"  -h, --help            show this help message and exit\n",
-	"user add": "usage: pipesmith-registry user add [-h] [--roles ROLES]\n" +
+	"user add": "usage: pipesmith-registry user add [-h] [--role ROLE] [--roles ROLES]\n" +
 		"                                   [--first-name FIRST_NAME]\n" +
 		"                                   [--last-name LAST_NAME] [--email EMAIL]\n" +
+		"                                   [--password-file PASSWORD_FILE | --password-stdin]\n" +
 		"                                   [--data DATA]\n" +
 		"                                   name\n" +
 		"\n" +
@@ -129,14 +159,29 @@ var commandHelp = map[string]string{
 		"\n" +
 		"options:\n" +
 		"  -h, --help            show this help message and exit\n" +
+		"  --role ROLE\n" +
 		"  --roles ROLES\n" +
 		"  --first-name FIRST_NAME\n" +
 		"  --last-name LAST_NAME\n" +
 		"  --email EMAIL\n" +
+		"  --password-file PASSWORD_FILE\n" +
+		"  --password-stdin\n" +
 		"  --data DATA\n",
-	"user password": nameHelp("user password"),
-	"user enable":   nameHelp("user enable"),
-	"user disable":  nameHelp("user disable"),
+	"user password": "usage: pipesmith-registry user password [-h]\n" +
+		"                                        [--password-file PASSWORD_FILE | --password-stdin]\n" +
+		"                                        [--data DATA]\n" +
+		"                                        name\n" +
+		"\n" +
+		"positional arguments:\n" +
+		"  name\n" +
+		"\n" +
+		"options:\n" +
+		"  -h, --help            show this help message and exit\n" +
+		"  --password-file PASSWORD_FILE\n" +
+		"  --password-stdin\n" +
+		"  --data DATA\n",
+	"user enable":  nameHelp("user enable"),
+	"user disable": nameHelp("user disable"),
 	"user roles": "usage: pipesmith-registry user roles [-h] [--data DATA] name [roles]\n" +
 		"\n" +
 		"positional arguments:\n" +
@@ -213,13 +258,18 @@ var commandHelp = map[string]string{
 		"options:\n" +
 		"  -h, --help   show this help message and exit\n" +
 		"  --data DATA\n",
-	"token": "usage: pipesmith-registry token [-h] {issue,list,revoke} ...\n" +
+	"token": "usage: pipesmith-registry token [-h] {issue,list,revoke,forget-imported} ...\n" +
 		"\n" +
 		"positional arguments:\n" +
-		"  {issue,list,revoke}\n" +
+		"  {issue,list,revoke,forget-imported}\n" +
 		"\n" +
 		"options:\n" +
-		"  -h, --help           show this help message and exit\n",
+		"  -h, --help            show this help message and exit\n",
+	"token forget-imported": "usage: pipesmith-registry token forget-imported [-h] [--data DATA]\n" +
+		"\n" +
+		"options:\n" +
+		"  -h, --help   show this help message and exit\n" +
+		"  --data DATA\n",
 	"token issue": "usage: pipesmith-registry token issue [-h] --kind {npm,user}\n" +
 		"                                      [--source {default,LDAP}] [--data DATA]\n" +
 		"                                      user\n" +
@@ -311,6 +361,51 @@ var commandHelp = map[string]string{
 		"options:\n" +
 		"  -h, --help   show this help message and exit\n" +
 		"  --root ROOT\n",
+	"log-target": "usage: pipesmith-registry log-target [-h] {list,add,remove,test} ...\n" +
+		"\n" +
+		"positional arguments:\n" +
+		"  {list,add,remove,test}\n" +
+		"\n" +
+		"options:\n" +
+		"  -h, --help            show this help message and exit\n",
+	"log-target list": "usage: pipesmith-registry log-target list [-h] [--json] [--data DATA]\n" +
+		"\n" +
+		"options:\n" +
+		"  -h, --help   show this help message and exit\n" +
+		"  --json\n" +
+		"  --data DATA\n",
+	"log-target add": "usage: pipesmith-registry log-target add [-h] --kind KIND --address ADDRESS\n" +
+		"                                         [--files FILES]\n" +
+		"                                         [--queue-lines QUEUE_LINES]\n" +
+		"                                         [--queue-bytes QUEUE_BYTES]\n" +
+		"                                         [--batch-lines BATCH_LINES]\n" +
+		"                                         [--flush-interval-ms FLUSH_INTERVAL_MS]\n" +
+		"                                         [--timeout-ms TIMEOUT_MS]\n" +
+		"                                         [--ca-file CA_FILE] [--user USER]\n" +
+		"                                         [--index INDEX] [--secret-stdin]\n" +
+		"                                         [--data DATA]\n" +
+		"                                         name\n" +
+		"\n" +
+		"positional arguments:\n" +
+		"  name\n" +
+		"\n" +
+		"options:\n" +
+		"  -h, --help            show this help message and exit\n" +
+		"  --kind KIND\n" +
+		"  --address ADDRESS\n" +
+		"  --files FILES\n" +
+		"  --queue-lines QUEUE_LINES\n" +
+		"  --queue-bytes QUEUE_BYTES\n" +
+		"  --batch-lines BATCH_LINES\n" +
+		"  --flush-interval-ms FLUSH_INTERVAL_MS\n" +
+		"  --timeout-ms TIMEOUT_MS\n" +
+		"  --ca-file CA_FILE\n" +
+		"  --user USER\n" +
+		"  --index INDEX\n" +
+		"  --secret-stdin\n" +
+		"  --data DATA\n",
+	"log-target remove": nameHelp("log-target remove"),
+	"log-target test":   nameHelp("log-target test"),
 }
 
 // nameHelp is the help of a command with the positional name and --data,

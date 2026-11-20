@@ -1,7 +1,8 @@
 // Package state is state.sqlite of the data directory: the users, roles,
 // privileges, role mappings, LDAP servers, settings, blob store definitions
-// and repositories an administrator set in the old product, and from schema
-// 2 on the tokens this server issues and the generation (tokens.go).
+// and repositories an administrator set in the old product, from schema 2
+// on the tokens this server issues and the generation (tokens.go), and from
+// schema 5 on the cleanup policies, tasks and capabilities (schema5.go).
 //
 // The file has mode 0600 and its directory 0750. Writes go through one
 // writer connection, each Write in one transaction; Load reads in one read
@@ -54,6 +55,11 @@ const (
 	KindAnonymous    Kind = "anonymous"    // settings row "anonymous"
 	KindBlobStores   Kind = "blob_stores"  // blob_stores
 	KindRepositories Kind = "repositories" // repositories
+	// The kinds of step 5, each row with its origin (policies.go, tasks.go,
+	// capabilities.go).
+	KindCleanupPolicies Kind = "cleanup_policies" // cleanup_policies
+	KindTasks           Kind = "tasks"            // tasks
+	KindCapabilities    Kind = "capabilities"     // capabilities
 	// KindDefaultRole is the settings row "default_role" of `realms set`. No
 	// export holds it, so an import keeps it.
 	KindDefaultRole Kind = "default_role"
@@ -61,7 +67,7 @@ const (
 
 // Kinds are all kinds in the order Write handles them.
 var Kinds = []Kind{KindUsers, KindRoles, KindPrivileges, KindLDAP, KindRealms, KindAnonymous, KindBlobStores, KindRepositories,
-	KindDefaultRole}
+	KindCleanupPolicies, KindTasks, KindCapabilities, KindDefaultRole}
 
 const (
 	settingRealms      = "realms"
@@ -97,6 +103,35 @@ func Open(dataDir string) (*Store, error) {
 		return nil, fmt.Errorf("%s is not a regular file", path)
 	}
 	return open(path, false)
+}
+
+// FoundSchema reads the schema of the state file of dataDir over a read
+// only connection and migrates nothing. A missing file gives ErrAbsent.
+func FoundSchema(dataDir string) (int, error) {
+	path := Path(dataDir)
+	info, err := os.Stat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return 0, ErrAbsent
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !info.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", path)
+	}
+	name, err := dsn(path, url.Values{"mode": {"ro"}, "_pragma": {fmt.Sprintf("busy_timeout(%d)", busyTimeoutMS), "query_only(1)"}})
+	if err != nil {
+		return 0, err
+	}
+	db, err := sql.Open("sqlite", name)
+	if err != nil {
+		return 0, err
+	}
+	found, err := migrate.Version(db, path, "state file")
+	if cerr := db.Close(); err == nil {
+		err = cerr
+	}
+	return found, err
 }
 
 // Create opens the state file of dataDir and creates it with its directory
@@ -241,6 +276,10 @@ var writers = map[Kind]func(*sql.Tx, *model.Snapshot) error{
 	KindBlobStores:   writeBlobStores,
 	KindRepositories: writeRepositories,
 	KindDefaultRole:  writeDefaultRole,
+
+	KindCleanupPolicies: writeCleanupPolicies,
+	KindTasks:           writeTasks,
+	KindCapabilities:    writeCapabilities,
 }
 
 func exec(tx *sql.Tx, query string, args ...any) error {
@@ -260,10 +299,10 @@ func encode(v any) (string, error) {
 	return string(data), err
 }
 
-// writeUsers replaces the users and their roles. The token rows of a user
-// leave with its id, and an id that arrives starts without the rows an
-// earlier user of that id left (review S4), so a user of the same name
-// added later never inherits a token.
+// writeUsers replaces the users and their roles. The token rows and the
+// imported keys of a user leave with its id, and an id that arrives starts
+// without the rows an earlier user of that id left (review S4), so a user of
+// the same name added later never inherits a token.
 func writeUsers(tx *sql.Tx, snap *model.Snapshot) error {
 	before, err := userPairs(tx)
 	if err != nil {
@@ -312,6 +351,9 @@ func writeUsers(tx *sql.Tx, snap *model.Snapshot) error {
 	}
 	for pair := range local { // the ids that left and the ids that arrived
 		if err := exec(tx, "DELETE FROM tokens WHERE user_id = ? AND source = ?", pair[0], pair[1]); err != nil {
+			return err
+		}
+		if err := exec(tx, "DELETE FROM imported_keys WHERE user_id = ? AND source = ?", pair[0], pair[1]); err != nil {
 			return err
 		}
 	}
@@ -487,7 +529,7 @@ func (st *Store) Load() (*model.Snapshot, error) {
 func loadAll(tx *sql.Tx) (*model.Snapshot, error) {
 	snap := &model.Snapshot{}
 	for _, step := range []func(*sql.Tx, *model.Snapshot) error{loadUsers, loadRoles, loadPrivileges, loadLDAP,
-		loadSettings, loadBlobStores, loadRepositories} {
+		loadSettings, loadBlobStores, loadRepositories, loadCleanupPolicies, loadTasks, loadCapabilities} {
 		if err := step(tx, snap); err != nil {
 			return nil, err
 		}
@@ -712,5 +754,9 @@ func Counts(snap *model.Snapshot) map[string]int {
 		"realms":        len(snap.Realms),
 		"blob_stores":   len(snap.BlobStores),
 		"repositories":  len(snap.Repositories),
+
+		"cleanup_policies": len(snap.CleanupPolicies),
+		"tasks":            len(snap.Tasks),
+		"capabilities":     len(snap.Capabilities),
 	}
 }

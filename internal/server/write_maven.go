@@ -10,8 +10,10 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/iogentic/pipesmith-registry/internal/maven"
+	"github.com/iogentic/pipesmith-registry/internal/policy"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 )
 
@@ -19,12 +21,34 @@ import (
 // reads; a digest in hex is at most 128 characters.
 const maxChecksumBytes = 1024
 
+// defaultCompareLimit is the largest file whose checksum file the comparison
+// of W7 hashes again (N4). Every PUT of a .md5, .sha256 or .sha512 file
+// hashes its file once more, so a larger file is not compared.
+const defaultCompareLimit = 64 << 20
+
+// compareLimit replaces defaultCompareLimit while it is above zero; tests
+// lower it.
+var compareLimit atomic.Int64
+
+func compareLimitBytes() int64 {
+	if n := compareLimit.Load(); n > 0 {
+		return n
+	}
+	return defaultCompareLimit
+}
+
 // writeMaven takes a write to a hosted maven2 repository (task 9 of the
 // phase 4 plan): the PUT of every file of a deploy, the artifacts, their
 // checksum files and maven-metadata.xml of every level, each stored as the
 // client sends it (W15), 201. The policies of the repository decide in
-// ingest. DELETE by path answers as for raw (write_files.go).
+// ingest. DELETE by path answers as for raw (write_files.go). A write of
+// maven-metadata.xml or of its checksum files waits for a metadata rebuild
+// whose scope holds it (metadataGate).
 func (s *Server) writeMaven(w *recorder, req *request, st *state, repo repos.Repo, t *target) error {
+	if (req.r.Method == http.MethodPut || req.r.Method == http.MethodDelete) && policy.MavenMetadata(t.path) {
+		leave := s.writes.metadata.enter(repo.Name, t.path, false)
+		defer leave()
+	}
 	switch req.r.Method {
 	case http.MethodPut:
 		result, err := s.putFile(w, req, repo, t)
@@ -85,8 +109,14 @@ func (s *Server) compareChecksum(st *state, repo repos.Repo, written *ingestResu
 	if algorithm == "sha1" && row.SHA1 != nil && *row.SHA1 != "" {
 		actual = strings.ToLower(*row.SHA1)
 	} else {
+		limit := compareLimitBytes()
+		if row.Size > limit {
+			logAt(slogInfo, serverLogger, "the checksum file %s of repository %s is not compared: %s holds %d bytes, more than %d",
+				written.asset.Path, repo.Name, base, row.Size, limit)
+			return nil
+		}
 		h := checksumHash(algorithm)
-		if _, err := io.Copy(h, file); err != nil {
+		if _, err := io.Copy(h, io.LimitReader(file, limit)); err != nil {
 			return err
 		}
 		actual = hex.EncodeToString(h.Sum(nil))

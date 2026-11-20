@@ -45,8 +45,8 @@ func coversTheTable(t *testing.T, list []RouteInfo, table []route, writes bool) 
 	}
 	for i, info := range list {
 		rt := table[i]
-		if info.Pattern != rt.pattern.String() || !slices.Equal(info.Methods, rt.methods) {
-			t.Fatalf("entry %d is %s %v, the table holds %s %v", i, info.Pattern, info.Methods, rt.pattern, rt.methods)
+		if info.Pattern != rt.Pattern.String() || !slices.Equal(info.Methods, rt.Methods) {
+			t.Fatalf("entry %d is %s %v, the table holds %s %v", i, info.Pattern, info.Methods, rt.Pattern, rt.Methods)
 		}
 		if len(info.Examples) == 0 {
 			t.Errorf("%s has no example", info.Pattern)
@@ -57,7 +57,7 @@ func coversTheTable(t *testing.T, list []RouteInfo, table []route, writes bool) 
 			if len(info.Permissions) == 0 {
 				t.Errorf("%s: an application rule without permissions", info.Pattern)
 			}
-		case "view", "admin", "asset", "client", "content":
+		case "view", "admin", "asset", "client", "content", "create", "listing":
 			if info.Action == "" {
 				t.Errorf("%s: a %s rule without an action", info.Pattern, info.Rule)
 			}
@@ -67,7 +67,7 @@ func coversTheTable(t *testing.T, list []RouteInfo, table []route, writes bool) 
 		// with writes on every write below /repository/ names the actions
 		// of writeAction, method by method; with writes off it asks read
 		wantActions := map[string]MethodAction(nil)
-		if writes && rt.rule.kind == ruleClient && slices.Contains(rt.methods, "PUT") {
+		if writes && rt.Rule.kind == ruleClient && slices.Contains(rt.Methods, "PUT") {
 			wantActions = map[string]MethodAction{"PUT": {"add", "edit"}, "POST": {"add", "edit"}, "PATCH": {"add", "edit"},
 				"DELETE": {"delete", "delete"}}
 		}
@@ -81,7 +81,7 @@ func coversTheTable(t *testing.T, list []RouteInfo, table []route, writes bool) 
 				}
 			}
 			path := fill(example, info.Format)
-			if !rt.pattern.MatchString(path) {
+			if !rt.Pattern.MatchString(path) {
 				t.Errorf("the example %s of %s does not match it", path, info.Pattern)
 				continue
 			}
@@ -91,13 +91,13 @@ func coversTheTable(t *testing.T, list []RouteInfo, table []route, writes bool) 
 			// then checks the same rule, and the log names the pair.
 			for _, method := range info.Methods {
 				first := slices.IndexFunc(table, func(r route) bool {
-					return r.pattern.MatchString(path) && slices.Contains(r.methods, method)
+					return r.Pattern.MatchString(path) && slices.Contains(r.Methods, method)
 				})
 				switch {
 				case first == i:
-				case first >= 0 && first < i && reflect.DeepEqual(table[first].rule, rt.rule):
+				case first >= 0 && first < i && reflect.DeepEqual(table[first].Rule, rt.Rule):
 					t.Logf("%s %s reaches entry %d (%s) before entry %d (%s), under the same rule", method, path, first,
-						table[first].pattern, i, info.Pattern)
+						table[first].Pattern, i, info.Pattern)
 				default:
 					t.Errorf("%s %s reaches entry %d, not %d (%s)", method, path, first, i, info.Pattern)
 				}
@@ -112,18 +112,20 @@ func TestRouteListReadsTheRules(t *testing.T) {
 	for _, l := range listed {
 		list := Routes(l.writes)
 		for i, info := range list {
-			r := l.table[i].rule
+			r := l.table[i].Rule
 			want := map[ruleKind]string{rulePublic: "public", ruleSignedIn: "signed-in", ruleApp: "application", ruleView: "view",
-				ruleAdmin: "admin", ruleAssetID: "asset", ruleClient: "client", ruleContent: "content"}[r.kind]
+				ruleAdmin: "admin", ruleAssetID: "asset", ruleClient: "client", ruleContent: "content", ruleCreate: "create",
+				ruleListing: "listing"}[r.kind]
 			if info.Rule != want || !slices.Equal(info.Permissions, r.permissions) {
 				t.Errorf("%s: rule %s %v, the table has %s %v", info.Pattern, info.Rule, info.Permissions, want, r.permissions)
 			}
-			if (r.kind == ruleView || r.kind == ruleContent) && info.Action != r.action {
+			if (r.kind == ruleView || r.kind == ruleContent || r.kind == ruleListing) && info.Action != r.action {
 				t.Errorf("%s: action %s, the table has %s", info.Pattern, info.Action, r.action)
 			}
 			for _, example := range info.Examples {
 				hasRepository := strings.Contains(example, "{repository}") || strings.Contains(example, "{asset}")
-				if (r.kind == ruleView || r.kind == ruleAdmin || r.kind == ruleAssetID || r.kind == ruleClient || r.kind == ruleContent) !=
+				if (r.kind == ruleView || r.kind == ruleAdmin || r.kind == ruleAssetID || r.kind == ruleClient || r.kind == ruleContent ||
+					r.kind == ruleListing) !=
 					hasRepository && info.Format == "" {
 					t.Errorf("%s: the example %s names the repository of the rule %s wrongly", info.Pattern, example, info.Rule)
 				}
@@ -142,7 +144,7 @@ func TestRouteListReadsTheRules(t *testing.T) {
 	// every hint names a pattern of the table, so a changed pattern cannot
 	// leave its hint behind
 	for pattern := range routeHints {
-		if !slices.ContainsFunc(securedRoutes, func(r route) bool { return r.pattern.String() == pattern }) {
+		if !slices.ContainsFunc(securedRoutes, func(r route) bool { return r.Pattern.String() == pattern }) {
 			t.Errorf("the hint of %s names no pattern of the table", pattern)
 		}
 	}

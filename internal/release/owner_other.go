@@ -15,3 +15,5 @@ func lockRoot(string) (func(), error) { return nil, errPlatform }
 func lockDir(string, error) (func(), error) { return nil, errPlatform }
 
 func textBusy(error) bool { return false }
+
+const openNonblock = 0

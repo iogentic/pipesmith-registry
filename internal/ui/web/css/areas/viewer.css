@@ -79,6 +79,22 @@
 .vtools input.vgoto { width: 6em; min-height: 30px; padding: 2px var(--s2); }
 .vcase-label { display: inline-flex; gap: var(--s1); align-items: center; font-size: var(--size-small); white-space: nowrap; }
 .vcount { min-width: 5em; }
+.vmore { display: contents; }
+/* At 600 pixels and below the toolbar takes two rows: the find field with its steps and count, and
+   the other tools in one row that scrolls sideways; a control that gets the focus scrolls into it. */
+@media (max-width: 600px) {
+  .vtools { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: var(--s2); padding: var(--s2) var(--s1); }
+  .vfindbar { flex-wrap: nowrap; gap: var(--s1); }
+  .vtools input.vfind { flex: 1 1 auto; width: auto; min-width: 0; }
+  .vfindbar .btn.small { padding: 0 var(--s2); }
+  .vfindbar .vcount { min-width: 4em; white-space: nowrap; }
+  .vmore {
+    display: flex; flex-wrap: nowrap; gap: var(--s2) var(--s4); align-items: center;
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding-bottom: 2px;
+  }
+  .vmore .vgroup { flex-wrap: nowrap; flex: 0 0 auto; }
+  .vmore .vreason { white-space: nowrap; }
+}
 .vfound { background: var(--syntax-found); border-radius: 2px; }
 .vcurrent { background: var(--syntax-current); outline: 1px solid var(--syntax-mark-line); }
 .vrow.vtarget .vnum { color: var(--text); font-weight: 700; }
@@ -91,16 +107,17 @@
 .viewer.wrap .vnum, .viewer.wrap .vfold, .viewer.wrap .vfold-space { position: static; }
 .vinfo { margin: 0; padding: 2px var(--s3); min-height: 24px; font-size: var(--size-small); color: var(--text-muted); border-top: 1px solid var(--border); }
 
-/* Colours per token kind (call B14). Each reaches 4.5 to 1 on --surface, measured by
-   tests/page/check_viewer_parts.py, group folds, in both themes. */
+/* Colours per token kind (call B14). Each reaches 4.5 to 1 on --surface and on the backgrounds of a
+   find match, the current match and a mark, measured by tests/page/check_viewer_parts.py, groups
+   folds and contrast, in both themes. */
 :root {
   --syntax-tag: #0033B3;
   --syntax-attr: #6C3B9E;
-  --syntax-string: #067D17;
+  --syntax-string: #05701A;
   --syntax-number: #1750EB;
   --syntax-keyword: #9E4B00;
   --syntax-key: #871094;
-  --syntax-comment: #5E6A7A;
+  --syntax-comment: #556070;
   --syntax-punct: #3D4452;
   --syntax-entity: #A0431F;
   --syntax-meta: #7A5600;
@@ -119,7 +136,7 @@
   --syntax-number: #6FB3FF;
   --syntax-keyword: #FF9F5A;
   --syntax-key: #E58AE8;
-  --syntax-comment: #8A96AA;
+  --syntax-comment: #A3AEC0;
   --syntax-punct: #C5CDDA;
   --syntax-entity: #FFB38A;
   --syntax-meta: #D4B26A;
@@ -139,7 +156,7 @@
     --syntax-number: #6FB3FF;
     --syntax-keyword: #FF9F5A;
     --syntax-key: #E58AE8;
-    --syntax-comment: #8A96AA;
+    --syntax-comment: #A3AEC0;
     --syntax-punct: #C5CDDA;
     --syntax-entity: #FFB38A;
     --syntax-meta: #D4B26A;

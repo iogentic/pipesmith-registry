@@ -251,3 +251,29 @@ func TestTokenRowsLeaveWithTheirUser(t *testing.T) {
 	}
 	held("alice-1", "ldap-bob")
 }
+
+// Review 3-11: the cap follows the order of issue, not the clock of the
+// writer. After the clock steps back, a user at the cap keeps the token that
+// was just issued and loses the oldest one.
+func TestTokenCapKeepsTheNewTokenAfterTheClockStepsBack(t *testing.T) {
+	_, st := create(t)
+	for i, public := range []string{"c1", "c2", "c3"} {
+		row := token(public, "npm", "admin")
+		row.Created = created.Add(time.Duration(i) * time.Hour)
+		if _, err := st.AddToken(row, 3); err != nil {
+			t.Fatal(err)
+		}
+	}
+	back := token("c4", "npm", "admin")
+	back.Created = created.Add(-24 * time.Hour)
+	gone, err := st.AddToken(back, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(gone, []string{"c1"}) {
+		t.Fatalf("revoked %q, want c1", gone)
+	}
+	if _, ok, err := st.Token("c4"); err != nil || !ok {
+		t.Fatalf("the token issued after the clock stepped back is gone: %v %v", ok, err)
+	}
+}

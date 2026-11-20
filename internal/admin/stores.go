@@ -1,8 +1,12 @@
 package admin
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -80,4 +84,115 @@ func checkQuota(quota, stored *model.SoftQuota) Refusals {
 			"the soft quota limit of %d bytes is below 1048576 bytes", quota.Limit)})
 	}
 	return list
+}
+
+// StoresDir is the folder of the created stores in a data directory (ST1).
+const StoresDir = "stores"
+
+// resolveLoose resolves the symbolic links of the longest part of p that
+// exists and appends the rest, so that a path that does not exist yet is
+// read where the file system would put it.
+func resolveLoose(p string) (string, error) {
+	p = filepath.Clean(p)
+	var rest []string
+	for {
+		real, err := filepath.EvalSymlinks(p)
+		if err == nil {
+			return filepath.Join(append([]string{real}, rest...)...), nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+		parent := filepath.Dir(p)
+		if parent == p {
+			return "", err
+		}
+		rest = append([]string{filepath.Base(p)}, rest...)
+		p = parent
+	}
+}
+
+// within reports whether p lies strictly below dir; both are resolved.
+func within(p, dir string) bool {
+	rel, err := filepath.Rel(dir, p)
+	return err == nil && rel != "." && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) &&
+		!filepath.IsAbs(rel)
+}
+
+// StorePath gives the path of a created store (ruling ST1), resolved with
+// its symbolic links. sent is the path of the body, nil when it sends none,
+// which means <data>/stores/<name>; a relative path is read below
+// <data>/stores/. The resolved path lies strictly below the resolved
+// stores folder, is no file and no folder that holds anything, and is not
+// equal to, inside or around a path of taken, the paths of the other
+// stores, compared without regard to letter case (ST14); else 400 at path. The stores folder is made when it is missing.
+func StorePath(dataDir, name string, sent *string, taken []string) (string, error) {
+	fail := func(problem string) error {
+		return &Refusal{Code: CodePathInvalid, Field: "path", Message: "the path of the blob store " + name + " " + problem}
+	}
+	base := filepath.Join(dataDir, StoresDir)
+	if err := os.MkdirAll(base, 0o750); err != nil {
+		return "", err
+	}
+	root, err := filepath.EvalSymlinks(base)
+	if err != nil {
+		return "", err
+	}
+	p := filepath.Join(base, name)
+	if sent != nil {
+		p = *sent
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(base, p)
+		}
+	}
+	resolved, err := resolveLoose(p)
+	if err != nil {
+		return "", fail("cannot be resolved")
+	}
+	if !within(resolved, root) {
+		return "", fail("must lie below the folder " + StoresDir + " of the data directory, its links resolved")
+	}
+	info, err := os.Lstat(resolved)
+	switch {
+	case err == nil && !info.IsDir():
+		return "", fail("names a file")
+	case err == nil:
+		entries, err := os.ReadDir(resolved)
+		if err != nil {
+			return "", err
+		}
+		if len(entries) > 0 {
+			return "", fail("holds files already; name an empty or a new folder")
+		}
+	case !errors.Is(err, fs.ErrNotExist):
+		return "", err
+	}
+	for _, t := range taken {
+		other, err := resolveLoose(t)
+		if err != nil {
+			continue
+		}
+		// without regard to case (ST14): two paths that differ in case only
+		// may name one folder
+		lowOther, lowResolved := strings.ToLower(other), strings.ToLower(resolved)
+		if lowOther == lowResolved || within(lowResolved, lowOther) || within(lowOther, lowResolved) {
+			return "", fail("is the path of another store, or lies inside or around it")
+		}
+	}
+	return resolved, nil
+}
+
+// CheckStoreProtected refuses, with 409, the delete of local-write, the
+// store this server writes into, and of a store that config.json of the
+// host attaches (ST2): this server does not own those.
+func CheckStoreProtected(name string, attached bool) error {
+	switch {
+	case name == WriteStore:
+		return &Refusal{Code: CodeStoreProtected, Message: fmt.Sprintf(
+			"the blob store %s is the store this server writes into; it is never deleted", name)}
+	case attached:
+		return &Refusal{Code: CodeStoreProtected, Message: fmt.Sprintf(
+			"the blob store %s is attached by config.json of the host; remove it there", name)}
+	}
+	return nil
 }

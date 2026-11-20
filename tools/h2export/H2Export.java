@@ -2,7 +2,7 @@
 // database as JSON lines, with a manifest of counts and SHA-256 digests.
 //
 // usage: java -cp h2-2.2.224.jar H2Export.java --database <base> --out <dir>
-//            [--set content|identity|all] [--with-password-hashes]
+//            [--set content|identity|all|secrets] [--with-password-hashes] [--with-secrets]
 //        java -cp h2-2.2.224.jar H2Export.java --selftest
 //
 // <base> is the database path without ".mv.db". The file is opened read
@@ -13,6 +13,16 @@
 // a JSON column that holds no object or list. The password hash column is
 // read only with --with-password-hashes; without it every user row carries
 // an empty hash. No value of a row is ever printed, in errors neither.
+//
+// --with-secrets also reads the key table and the secret store of the old
+// product (docs/plans/secrets-import.md, decision K1). It decrypts the
+// stored values inside this process with the built in passphrase and writes
+// api_key_v2.jsonl (the SHA-256 of each key, never the key),
+// remote_secrets.jsonl (the remote passwords and bearer tokens of proxy
+// repositories) and ldap_secrets.jsonl (the bind passwords). The two last
+// files hold clear values: the export directory has mode 0700 and its files
+// 0600, and the run book removes it after the import. Without the option
+// neither table is read. The set secrets writes these three files only.
 //
 // Exit codes: 0 done, 1 failed, 2 usage, 3 refused output directory,
 // 4 schema mismatch (a table or column is missing), 5 the database cannot be
@@ -42,6 +52,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -49,15 +61,23 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public final class H2Export {
     static final String DRIVER = "2.2.224";
     static final String FORMAT = "pipesmith-registry-h2-export";
     static final int OK = 0, FAILED = 1, USAGE = 2, REFUSED = 3, SCHEMA = 4, CANNOT_OPEN = 5;
     static final List<String> SECRET_WORDS = List.of("password", "secret", "token", "key", "passphrase", "credential");
-    static final String IDENTITY = "identity", CONTENT = "content", ALL = "all";
+    static final String IDENTITY = "identity", CONTENT = "content", ALL = "all", SECRETS = "secrets";
 
-    enum Type { TEXT, BOOL, INT, UUID, JSON, HASH }
+    enum Type { TEXT, BOOL, INT, UUID, JSON, HASH, JOBDATA }
 
     record Column(String name, Type type) {
         String key() { return name.toLowerCase(Locale.ROOT); }
@@ -95,7 +115,25 @@ public final class H2Export {
             col("ID", Type.UUID), col("NAME", Type.TEXT), col("TYPE", Type.TEXT), col("ATTRIBUTES", Type.JSON))),
         new Table("REPOSITORY", CONTENT, "\"NAME\"", List.of(
             col("ID", Type.UUID), col("NAME", Type.TEXT), col("RECIPE_NAME", Type.TEXT), col("ONLINE", Type.BOOL),
-            col("ROUTING_RULE_ID", Type.UUID), col("ATTRIBUTES", Type.JSON))));
+            col("ROUTING_RULE_ID", Type.UUID), col("ATTRIBUTES", Type.JSON))),
+        new Table("REPOSITORY_ROUTING_RULE", CONTENT, "\"NAME\"", List.of(
+            col("ID", Type.UUID), col("NAME", Type.TEXT), col("MODE", Type.TEXT), col("DESCRIPTION", Type.TEXT),
+            col("MATCHERS", Type.JSON))),
+        // Cleanup policies, capabilities and the tasks of the scheduler: the
+        // schema list of the old database (S6), the task keys after S10.
+        new Table("CLEANUP_POLICY", CONTENT, "\"NAME\"", List.of(
+            col("NAME", Type.TEXT), col("NOTES", Type.TEXT), col("FORMAT", Type.TEXT), col("MODE", Type.TEXT),
+            col("CRITERIA", Type.JSON))),
+        new Table("CAPABILITY_STORAGE_ITEM", CONTENT, "\"ID\"", List.of(
+            col("ID", Type.UUID), col("VERSION", Type.INT), col("TYPE", Type.TEXT), col("ENABLED", Type.BOOL),
+            col("NOTES", Type.TEXT), col("PROPERTIES", Type.JSON))),
+        new Table("QRTZ_JOB_DETAILS", CONTENT, "\"JOB_GROUP\", \"JOB_NAME\"", List.of(
+            col("JOB_NAME", Type.TEXT), col("JOB_GROUP", Type.TEXT), col("DESCRIPTION", Type.TEXT),
+            col("JOB_CLASS_NAME", Type.TEXT), col("JOB_DATA", Type.JOBDATA))),
+        new Table("QRTZ_TRIGGERS", CONTENT, "\"TRIGGER_GROUP\", \"TRIGGER_NAME\"", List.of(
+            col("TRIGGER_NAME", Type.TEXT), col("TRIGGER_GROUP", Type.TEXT), col("JOB_NAME", Type.TEXT),
+            col("JOB_GROUP", Type.TEXT), col("TRIGGER_STATE", Type.TEXT), col("TRIGGER_TYPE", Type.TEXT),
+            col("JOB_DATA", Type.JOBDATA))));
 
     /** An error with its exit code. The message never holds a value of a row. */
     static final class Exit extends Exception {
@@ -121,13 +159,14 @@ public final class H2Export {
 
     static int run(String[] args) throws Exception {
         String database = null, out = null, set = CONTENT;
-        boolean hashes = false, selftest = false;
+        boolean hashes = false, selftest = false, secrets = false;
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "--database" -> database = value(args, ++i);
                 case "--out" -> out = value(args, ++i);
                 case "--set" -> set = value(args, ++i);
                 case "--with-password-hashes" -> hashes = true;
+                case "--with-secrets" -> secrets = true;
                 case "--selftest" -> selftest = true;
                 default -> throw new Exit(USAGE, "unknown argument " + args[i]);
             }
@@ -137,10 +176,11 @@ public final class H2Export {
             return selftest();
         }
         if (database == null || out == null) throw new Exit(USAGE, "--database and --out are required");
-        if (!set.equals(CONTENT) && !set.equals(IDENTITY) && !set.equals(ALL)) {
-            throw new Exit(USAGE, "--set is content, identity or all");
+        if (!set.equals(CONTENT) && !set.equals(IDENTITY) && !set.equals(ALL) && !set.equals(SECRETS)) {
+            throw new Exit(USAGE, "--set is content, identity, all or secrets");
         }
-        return export(database, Path.of(out), set, hashes);
+        if (set.equals(SECRETS) && !secrets) throw new Exit(USAGE, "--set secrets needs --with-secrets");
+        return export(database, Path.of(out), set, hashes, secrets);
     }
 
     static String value(String[] args, int i) throws Exit {
@@ -165,7 +205,7 @@ public final class H2Export {
 
     record Written(Table table, List<String> columns, long rows, long removed, String sha256) {}
 
-    static int export(String base, Path out, String set, boolean hashes) throws Exception {
+    static int export(String base, Path out, String set, boolean hashes, boolean secrets) throws Exception {
         Path file = Path.of(base + ".mv.db");
         if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
             throw new Exit(CANNOT_OPEN, "the database file does not exist or is not a regular file");
@@ -180,6 +220,7 @@ public final class H2Export {
         boolean done = false;
         try {
             List<Written> written = new ArrayList<>();
+            Left left = null;
             String driver;
             String url = "jdbc:h2:file:" + base
                 + ";ACCESS_MODE_DATA=r;IFEXISTS=TRUE;TRACE_LEVEL_FILE=0;TRACE_LEVEL_SYSTEM_OUT=0";
@@ -198,16 +239,25 @@ public final class H2Export {
                     throw new Exit(CANNOT_OPEN, "the driver is " + driver + ", not " + DRIVER);
                 }
                 for (Table t : tables) check(meta, t);
+                if (secrets) {
+                    for (Table t : Secrets.READ) check(meta, t);
+                }
                 for (Table t : tables) written.add(dump(c, t, out, hashes, created));
+                if (secrets) left = Secrets.export(c, out, created, written);
             } catch (SQLException e) {
                 throw new Exit(FAILED, "reading failed: H2 error " + e.getErrorCode() + ", SQL state " + e.getSQLState());
             }
             if (!Stamp.of(file).equals(before)) {
                 throw new Exit(FAILED, "the database file changed in size or time during the export");
             }
-            writeManifest(out, set, driver, hashes, written, created);
+            writeManifest(out, set, driver, hashes, written, created, left);
             for (Written w : written) {
                 System.out.println(w.table().file() + ": " + w.rows() + " rows, " + w.removed() + " fields removed");
+            }
+            if (left != null) {
+                System.out.println("secrets not taken over: " + left.keyed + " under a key of their own, " + left.unreadable
+                    + " unreadable, " + left.unknownDomains + " keys of an unknown domain, " + left.unreferenced
+                    + " named by nothing");
             }
             System.out.println("export of set " + set + " written: " + written.size() + " files and manifest.json");
             done = true;
@@ -318,8 +368,201 @@ public final class H2Export {
                 }
                 return clean(value, column.key(), removed);
             }
+            case JOBDATA -> {
+                return jobData(rs.getBytes(label), column.key(), removed);
+            }
         }
         throw new IllegalStateException("no reader for " + column.type());
+    }
+
+    /**
+     * A job data column as a JSON object of strings without the secret keys, or null, listed in removed, when
+     * JobData cannot read it. An empty column is an empty object.
+     */
+    static Object jobData(byte[] bytes, String key, List<String> removed) {
+        if (bytes == null) return Json.NULL;
+        Map<String, Object> map = JobData.decode(bytes);
+        if (map == null) {
+            removed.add(key);
+            return Json.NULL;
+        }
+        return clean(map, key, removed);
+    }
+
+    /**
+     * The reader of a job data map of the scheduler (S10): a stream of the Java object serialization protocol
+     * that holds a java.util.HashMap of strings, alone or as the field of the scheduler's map classes. The
+     * stream is parsed by its grammar, no class is loaded and no object is made. Any other class, a value that
+     * is no string, a stream that ends early or has bytes left gives null, and so does a stream nested deeper than
+     * MAX_DEPTH, class descriptions and their parents counted, one above MAX_CHARS decoded characters, and one
+     * that overflows the stack. Messages never hold a value.
+     */
+    static final class JobData {
+        static final Set<String> MAPS = Set.of("java.util.HashMap");
+        static final Set<String> WRAPPERS = Set.of("org.quartz.JobDataMap", "org.quartz.utils.StringKeyDirtyFlagMap",
+            "org.quartz.utils.DirtyFlagMap");
+        static final int MAX_DEPTH = 16, MAX_ENTRIES = 100_000;
+        /** The decoded characters of one row, each repeated reference counted again. */
+        static final long MAX_CHARS = 1L << 20;
+        static final byte TC_NULL = 0x70, TC_REFERENCE = 0x71, TC_CLASSDESC = 0x72, TC_OBJECT = 0x73,
+            TC_STRING = 0x74, TC_BLOCKDATA = 0x77, TC_ENDBLOCKDATA = 0x78;
+        static final int SC_WRITE_METHOD = 0x01, SC_SERIALIZABLE = 0x02;
+
+        static final class Refused extends Exception {
+            Refused() { super(null, null, false, false); }
+        }
+
+        record Field(char type, String name) {}
+
+        record Desc(String name, int flags, List<Field> fields, Desc parent) {}
+
+        private final java.io.DataInputStream in;
+        private final List<Object> handles = new ArrayList<>();
+        private long chars;
+
+        private JobData(byte[] bytes) { in = new java.io.DataInputStream(new java.io.ByteArrayInputStream(bytes)); }
+
+        static Map<String, Object> decode(byte[] bytes) {
+            JobData d = new JobData(bytes);
+            try {
+                if (d.in.readUnsignedShort() != 0xACED || d.in.readUnsignedShort() != 5) return null;
+                Object value = d.content(d.in.readByte(), 0);
+                if (d.in.available() != 0 || !(value instanceof Map<?, ?> map)) return null;
+                Map<String, Object> out = new java.util.TreeMap<>();
+                for (Map.Entry<?, ?> e : map.entrySet()) out.put((String) e.getKey(), e.getValue());
+                return out;
+            } catch (IOException | Refused | RuntimeException | StackOverflowError e) {
+                return null;
+            }
+        }
+
+        private Object content(byte tc, int depth) throws IOException, Refused {
+            if (depth > MAX_DEPTH) throw new Refused();
+            switch (tc) {
+                case TC_NULL: return null;
+                case TC_REFERENCE: {
+                    int handle = in.readInt() - 0x7E0000;
+                    if (handle < 0 || handle >= handles.size()) throw new Refused();
+                    Object value = handles.get(handle);
+                    if (value instanceof String text) count(text.length());
+                    if (value instanceof Map<?, ?> map) {
+                        for (Map.Entry<?, ?> e : map.entrySet()) {
+                            count(((String) e.getKey()).length() + ((String) e.getValue()).length());
+                        }
+                    }
+                    return value;
+                }
+                case TC_STRING: {
+                    String text = in.readUTF();
+                    count(text.length());
+                    handles.add(text);
+                    return text;
+                }
+                case TC_OBJECT: return object(depth);
+                default: throw new Refused();
+            }
+        }
+
+        /** Adds n decoded characters and refuses the row above MAX_CHARS. */
+        private void count(long n) throws Refused {
+            chars += n;
+            if (chars > MAX_CHARS) throw new Refused();
+        }
+
+        private Desc classDesc(int depth) throws IOException, Refused {
+            if (depth > MAX_DEPTH) throw new Refused();
+            byte tc = in.readByte();
+            if (tc == TC_NULL) return null;
+            if (tc == TC_REFERENCE) {
+                int handle = in.readInt() - 0x7E0000;
+                if (handle < 0 || handle >= handles.size() || !(handles.get(handle) instanceof Desc desc)) {
+                    throw new Refused();
+                }
+                return desc;
+            }
+            if (tc != TC_CLASSDESC) throw new Refused();
+            String name = in.readUTF();
+            if (!MAPS.contains(name) && !WRAPPERS.contains(name)) throw new Refused();
+            in.readLong();
+            int slot = handles.size();
+            handles.add(null);
+            int flags = in.readUnsignedByte();
+            if ((flags & SC_SERIALIZABLE) == 0) throw new Refused();
+            int count = in.readUnsignedShort();
+            List<Field> fields = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                char type = (char) in.readUnsignedByte();
+                String field = in.readUTF();
+                if (type == 'L' || type == '[') {
+                    if (!(content(in.readByte(), depth + 1) instanceof String)) throw new Refused();
+                } else if ("BCDFIJSZ".indexOf(type) < 0) {
+                    throw new Refused();
+                }
+                fields.add(new Field(type, field));
+            }
+            if (in.readByte() != TC_ENDBLOCKDATA) throw new Refused();
+            Desc desc = new Desc(name, flags, fields, null);
+            handles.set(slot, desc);
+            Desc parent = classDesc(depth + 1);
+            desc = new Desc(name, flags, fields, parent);
+            handles.set(slot, desc);
+            return desc;
+        }
+
+        /** An object: the map of a HashMap, or the one map a wrapper holds in its fields. */
+        private Object object(int depth) throws IOException, Refused {
+            Desc desc = classDesc(depth + 1);
+            if (desc == null) throw new Refused();
+            int slot = handles.size();
+            handles.add(null);
+            List<Desc> chain = new ArrayList<>();
+            for (Desc d = desc; d != null; d = d.parent()) chain.add(0, d);
+            Map<String, Object> map = null;
+            for (Desc d : chain) {
+                for (Field f : d.fields()) {
+                    Object value = field(f, depth);
+                    if (value instanceof Map<?, ?> m) {
+                        if (map != null) throw new Refused();
+                        @SuppressWarnings("unchecked") Map<String, Object> found = (Map<String, Object>) m;
+                        map = found;
+                    }
+                }
+                if ((d.flags() & SC_WRITE_METHOD) != 0) {
+                    if (!MAPS.contains(d.name())) throw new Refused();
+                    map = entries(depth);
+                }
+            }
+            if (map == null) throw new Refused();
+            handles.set(slot, map);
+            return map;
+        }
+
+        private Object field(Field f, int depth) throws IOException, Refused {
+            switch (f.type()) {
+                case 'B', 'Z' -> in.readByte();
+                case 'C', 'S' -> in.readShort();
+                case 'F', 'I' -> in.readInt();
+                case 'D', 'J' -> in.readLong();
+                default -> { return content(in.readByte(), depth + 1); }
+            }
+            return null;
+        }
+
+        /** The data HashMap.writeObject writes: a block of the bucket count and the size, then the pairs. */
+        private Map<String, Object> entries(int depth) throws IOException, Refused {
+            if (in.readByte() != TC_BLOCKDATA || in.readUnsignedByte() != 8) throw new Refused();
+            in.readInt();
+            int size = in.readInt();
+            if (size < 0 || size > MAX_ENTRIES) throw new Refused();
+            Map<String, Object> map = new LinkedHashMap<>();
+            for (int i = 0; i < size; i++) {
+                if (!(content(in.readByte(), depth + 1) instanceof String k)) throw new Refused();
+                if (!(content(in.readByte(), depth + 1) instanceof String v)) throw new Refused();
+                if (map.put(k, v) != null) throw new Refused();
+            }
+            if (in.readByte() != TC_ENDBLOCKDATA) throw new Refused();
+            return map;
+        }
     }
 
     static String utf8(byte[] bytes) throws CharacterCodingException {
@@ -359,7 +602,7 @@ public final class H2Export {
     }
 
     static void writeManifest(Path out, String set, String driver, boolean hashes, List<Written> written,
-                              List<Path> created) throws IOException {
+                              List<Path> created, Left left) throws IOException {
         List<Object> files = new ArrayList<>();
         for (Written w : written) {
             Map<String, Object> entry = new LinkedHashMap<>();
@@ -378,9 +621,286 @@ public final class H2Export {
         manifest.put("driver", driver);
         manifest.put("passwordHashes", hashes);
         manifest.put("files", files);
+        if (left != null) {
+            Map<String, Object> counts = new LinkedHashMap<>();
+            counts.put("keyed", left.keyed);
+            counts.put("unreadable", left.unreadable);
+            counts.put("unknownDomains", left.unknownDomains);
+            counts.put("unreferenced", left.unreferenced);
+            manifest.put("secrets", true);
+            manifest.put("secretsLeft", counts);
+        }
         try (OutputStream stream = create(out.resolve("manifest.json"), created)) {
             stream.write((Json.write(manifest, true) + "\n").getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    /** The counts of what --with-secrets did not take over. */
+    static final class Left {
+        long keyed, unreadable, unknownDomains, unreferenced;
+    }
+
+    /**
+     * The secrets of --with-secrets. The scheme is the one of the old
+     * product's public source (docs/plans/secrets-import.md, section Sources):
+     * a value is a reference _<id> into SECRETS, a PHC string
+     * $<alg>[$v=<n>]$iv=<hex>,key_iteration=<n>,key_len=<bits>$<salt>$<ct>, or
+     * the legacy form, Base64 of AES/CBC under the passphrase and salt
+     * "changeme" and the iv "0123456789ABCDEF". A key is ACCESS_KEY followed
+     * by its decrypted second half. No value leaves this class but through
+     * the three files.
+     */
+    static final class Secrets {
+        static final String PASSPHRASE = "changeme";
+        static final Pattern REFERENCE = Pattern.compile("_[0-9]{1,9}");
+        static final Set<String> DOMAINS = Set.of("NpmToken", "DockerToken", "NuGetApiKey");
+        static final String REALM_LOCAL = "NexusAuthenticatingRealm", REALM_LDAP = "LdapRealm";
+
+        // The tables read only with --with-secrets, for the schema check.
+        static final List<Table> READ = List.of(
+            new Table("REPOSITORY", "secrets", "", List.of(col("NAME", Type.TEXT), col("ATTRIBUTES", Type.JSON))),
+            new Table("LDAP_CONFIGURATION", "secrets", "", List.of(col("ID", Type.UUID), col("order", Type.INT),
+                col("CONNECTION", Type.JSON))),
+            new Table("API_KEY_V2", "secrets", "\"DOMAIN\"", List.of(col("USERNAME", Type.TEXT),
+                col("PRINCIPALS", Type.TEXT), col("DOMAIN", Type.TEXT), col("ACCESS_KEY", Type.TEXT),
+                col("SECRET", Type.TEXT), col("CREATED", Type.TEXT))),
+            new Table("SECRETS", "secrets", "\"ID\"", List.of(col("ID", Type.INT), col("KEY_ID", Type.TEXT),
+                col("SECRET", Type.TEXT))));
+        // The files written, with the columns the import reads.
+        static final Table KEYS = new Table("API_KEY_V2", "secrets", "", List.of(col("USERNAME", Type.TEXT),
+            col("DOMAIN", Type.TEXT), col("REALM", Type.TEXT), col("SHA256", Type.TEXT), col("CREATED", Type.TEXT)));
+        static final Table REMOTE = new Table("REMOTE_SECRETS", "secrets", "", List.of(col("REPOSITORY", Type.TEXT),
+            col("FIELD", Type.TEXT), col("SECRET", Type.TEXT)));
+        static final Table LDAP = new Table("LDAP_SECRETS", "secrets", "", List.of(col("ID", Type.TEXT),
+            col("SECRET", Type.TEXT)));
+
+        /** A value that is not taken over: under a key of its own, or not decryptable. */
+        static final class Skip extends Exception {
+            final boolean keyed;
+            Skip(boolean keyed) { super(null, null, false, false); this.keyed = keyed; }
+        }
+
+        record Stored(String keyId, String secret) {}
+
+        static Left export(Connection c, Path out, List<Path> created, List<Written> written) throws Exception {
+            Left left = new Left();
+            Map<Integer, Stored> store = new TreeMap<>();
+            try (Statement s = c.createStatement();
+                 ResultSet rs = s.executeQuery("SELECT \"ID\", \"KEY_ID\", \"SECRET\" FROM \"PUBLIC\".\"SECRETS\" ORDER BY \"ID\"")) {
+                while (rs.next()) store.put(rs.getInt(1), new Stored(rs.getString(2), rs.getString(3)));
+            }
+            Set<Integer> referenced = new TreeSet<>();
+            written.add(write(out, created, KEYS, keys(c, store, referenced, left)));
+            written.add(write(out, created, REMOTE, remote(c, store, referenced, left)));
+            written.add(write(out, created, LDAP, ldap(c, store, referenced, left)));
+            for (Integer id : store.keySet()) {
+                if (!referenced.contains(id)) left.unreferenced++;
+            }
+            return left;
+        }
+
+        static List<Map<String, Object>> keys(Connection c, Map<Integer, Stored> store, Set<Integer> referenced, Left left)
+                throws Exception {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            String sql = "SELECT \"USERNAME\", \"PRINCIPALS\", \"DOMAIN\", \"ACCESS_KEY\", \"SECRET\", \"CREATED\""
+                + " FROM \"PUBLIC\".\"API_KEY_V2\" ORDER BY \"DOMAIN\", \"USERNAME\", \"ACCESS_KEY\"";
+            try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
+                while (rs.next()) {
+                    String domain = rs.getString("DOMAIN"), secret = rs.getString("SECRET");
+                    if (!DOMAINS.contains(domain)) {
+                        if (secret != null && REFERENCE.matcher(secret).matches()) referenced.add(Integer.parseInt(secret.substring(1)));
+                        left.unknownDomains++;
+                        continue;
+                    }
+                    String second;
+                    try {
+                        second = resolve(secret, store, referenced);
+                    } catch (Skip e) {
+                        if (e.keyed) left.keyed++; else left.unreadable++;
+                        continue;
+                    }
+                    String access = rs.getString("ACCESS_KEY");
+                    byte[] key = ((access == null ? "" : access) + second).getBytes(StandardCharsets.UTF_8);
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("username", rs.getString("USERNAME"));
+                    row.put("domain", domain);
+                    row.put("realm", realm(rs.getBytes("PRINCIPALS")));
+                    row.put("sha256", HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(key)));
+                    java.time.OffsetDateTime at = rs.getObject("CREATED", java.time.OffsetDateTime.class);
+                    row.put("created", at == null ? Json.NULL
+                        : at.format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                    Arrays.fill(key, (byte) 0);
+                    rows.add(row);
+                }
+            }
+            return rows;
+        }
+
+        static List<Map<String, Object>> remote(Connection c, Map<Integer, Stored> store, Set<Integer> referenced, Left left)
+                throws Exception {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            String sql = "SELECT \"NAME\", \"ATTRIBUTES\" FROM \"PUBLIC\".\"REPOSITORY\" ORDER BY \"NAME\"";
+            try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
+                while (rs.next()) {
+                    Object auth = at(json(rs.getBytes("ATTRIBUTES")), "httpclient", "authentication");
+                    for (String field : List.of("password", "bearerToken")) {
+                        if (!(auth instanceof Map<?, ?> m) || !(m.get(field) instanceof String value) || value.isEmpty()) continue;
+                        try {
+                            String clear = resolve(value, store, referenced);
+                            Map<String, Object> row = new LinkedHashMap<>();
+                            row.put("repository", rs.getString("NAME"));
+                            row.put("field", field);
+                            row.put("secret", clear);
+                            rows.add(row);
+                        } catch (Skip e) {
+                            if (e.keyed) left.keyed++; else left.unreadable++;
+                        }
+                    }
+                }
+            }
+            return rows;
+        }
+
+        static List<Map<String, Object>> ldap(Connection c, Map<Integer, Stored> store, Set<Integer> referenced, Left left)
+                throws Exception {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            String sql = "SELECT \"ID\", \"CONNECTION\" FROM \"PUBLIC\".\"LDAP_CONFIGURATION\" ORDER BY \"order\", \"ID\"";
+            try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
+                while (rs.next()) {
+                    if (!(at(json(rs.getBytes("CONNECTION")), "systemPassword") instanceof String value) || value.isEmpty()) continue;
+                    try {
+                        String clear = resolve(value, store, referenced);
+                        Map<String, Object> row = new LinkedHashMap<>();
+                        row.put("id", rs.getString("ID"));
+                        row.put("secret", clear);
+                        rows.add(row);
+                    } catch (Skip e) {
+                        if (e.keyed) left.keyed++; else left.unreadable++;
+                    }
+                }
+            }
+            return rows;
+        }
+
+        static Object json(byte[] bytes) {
+            if (bytes == null) return null;
+            try {
+                return Json.parse(utf8(bytes));
+            } catch (Json.Invalid | CharacterCodingException e) {
+                return null;
+            }
+        }
+
+        static Object at(Object value, String... path) {
+            for (String key : path) {
+                if (!(value instanceof Map<?, ?> m)) return null;
+                value = m.get(key);
+            }
+            return value;
+        }
+
+        /** The realm named in the bytes of a principal collection, found without deserializing them (K3). */
+        static String realm(byte[] principals) {
+            if (principals == null) return "unknown";
+            boolean local = contains(principals, REALM_LOCAL), ldap = contains(principals, REALM_LDAP);
+            if (local == ldap) return "unknown";
+            return local ? REALM_LOCAL : REALM_LDAP;
+        }
+
+        static boolean contains(byte[] hay, String needle) {
+            byte[] n = needle.getBytes(StandardCharsets.US_ASCII);
+            outer:
+            for (int i = 0; i + n.length <= hay.length; i++) {
+                for (int j = 0; j < n.length; j++) {
+                    if (hay[i + j] != n[j]) continue outer;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        static String resolve(String value, Map<Integer, Stored> store, Set<Integer> referenced) throws Skip {
+            if (value == null) throw new Skip(false);
+            if (REFERENCE.matcher(value).matches()) {
+                int id = Integer.parseInt(value.substring(1));
+                referenced.add(id);
+                Stored row = store.get(id);
+                if (row == null || row.secret() == null) throw new Skip(false);
+                if (row.keyId() != null) throw new Skip(true);
+                return decrypt(row.secret());
+            }
+            return decrypt(value);
+        }
+
+        static String decrypt(String value) throws Skip {
+            try {
+                byte[] plain = value.startsWith("$") ? phc(value) : value.startsWith("{") ? null
+                    : aes("PBKDF2WithHmacSHA1", PASSPHRASE.getBytes(StandardCharsets.UTF_8), 1024, 128,
+                        "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8), Base64.getDecoder().decode(value.trim()));
+                if (plain == null) throw new Skip(false);
+                String text = utf8(plain);
+                Arrays.fill(plain, (byte) 0);
+                return text;
+            } catch (Skip e) {
+                throw e;
+            } catch (Exception e) {
+                throw new Skip(false);
+            }
+        }
+
+        static byte[] phc(String value) throws Exception {
+            List<String> parts = new ArrayList<>();
+            for (String p : value.trim().split("\\$")) if (!p.isEmpty()) parts.add(p);
+            if (parts.size() < 4 || parts.size() > 5) throw new Skip(false);
+            int n = parts.size();
+            String alg = parts.get(0), attrs = n == 4 ? parts.get(1) : parts.get(2);
+            String prf;
+            int bits, iterations;
+            switch (alg) {
+                case "PBKDF2WithHmacSHA256" -> { prf = alg; bits = 256; iterations = 10000; }
+                case "PBKDF2WithHmacSHA1", "AES/CBC/PKCS5Padding" -> { prf = "PBKDF2WithHmacSHA1"; bits = 128; iterations = 1024; }
+                default -> throw new Skip(false);
+            }
+            byte[] iv = null;
+            for (String a : attrs.split(",")) {
+                int eq = a.indexOf('=');
+                if (eq < 0) continue;
+                String k = a.substring(0, eq).trim(), v = a.substring(eq + 1).trim();
+                if (k.equals("iv")) iv = HexFormat.of().parseHex(v);
+                else if (k.equals("key_iteration")) iterations = Integer.parseInt(v);
+                else if (k.equals("key_len")) bits = Integer.parseInt(v);
+            }
+            if (iv == null || iterations < 1 || iterations > 10_000_000) throw new Skip(false);
+            Base64.Decoder b64 = Base64.getDecoder();
+            return aes(prf, b64.decode(parts.get(n - 2)), iterations, bits, iv, b64.decode(parts.get(n - 1)));
+        }
+
+        static byte[] aes(String prf, byte[] salt, int iterations, int bits, byte[] iv, byte[] ct) throws Exception {
+            PBEKeySpec spec = new PBEKeySpec(PASSPHRASE.toCharArray(), salt, iterations, bits);
+            byte[] key = SecretKeyFactory.getInstance(prf).generateSecret(spec).getEncoded();
+            spec.clearPassword();
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(iv));
+            Arrays.fill(key, (byte) 0);
+            return cipher.doFinal(ct);
+        }
+
+        static Written write(Path out, List<Path> created, Table t, List<Map<String, Object>> rows) throws Exception {
+            MessageDigest sha = MessageDigest.getInstance("SHA-256");
+            try (OutputStream raw = create(out.resolve(t.file()), created);
+                 OutputStream stream = new BufferedOutputStream(new DigestOutputStream(raw, sha))) {
+                for (Map<String, Object> row : rows) {
+                    row.put("_removed", new ArrayList<Object>());
+                    stream.write(Json.write(row, false).getBytes(StandardCharsets.UTF_8));
+                    stream.write('\n');
+                }
+            }
+            List<String> keys = new ArrayList<>();
+            for (Column column : t.columns()) keys.add(column.key());
+            return new Written(t, keys, rows.size(), 0, HexFormat.of().formatHex(sha.digest()));
+        }
+
+        private Secrets() {}
     }
 
     /** A small JSON reader and writer: objects keep their key order, numbers their text. */

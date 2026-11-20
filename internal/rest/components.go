@@ -3,6 +3,7 @@ package rest
 import (
 	"bytes"
 	"encoding/base64"
+	"sort"
 	"unicode/utf8"
 
 	"github.com/iogentic/pipesmith-registry/internal/index"
@@ -12,8 +13,10 @@ import (
 // path (decision E5 of the phase 4 execution plan): an asset id names its
 // repository and path (AssetID); a component id names its repository and
 // the first 128 bits of the SHA-256 of the coordinates its format gives it
-// (componentID of the search). A component id round trips by a walk of its
-// repository: the component is every path whose coordinates give that key.
+// (componentID of the search). A component id round trips by the rows of
+// catalog.sqlite when the process holds it open (Env.Components), else by
+// a walk of its repository: the component is every path whose coordinates
+// give that key.
 
 // componentKeyBytes is the length of the key of a component id.
 const componentKeyBytes = 16
@@ -61,7 +64,7 @@ type Component struct {
 // caller refuses those first.
 func FindComponent(env *Env, id string) (*Component, error) {
 	repoName, _, valid := DecodeComponentID(id)
-	if !valid || env.Catalog == nil {
+	if !valid {
 		return nil, nil
 	}
 	repo, found := env.Repositories.Get(repoName)
@@ -69,20 +72,48 @@ func FindComponent(env *Env, id string) (*Component, error) {
 		return nil, nil
 	}
 	var c *Component
-	err := env.Catalog.walk(env.Context, repo.Name, prefilter{}, env.Index.Lookup, func(a index.Asset) error {
-		coords, ok := componentOf(repo.Format, a.Path)
-		if !ok {
-			return nil
-		}
-		key := [4]string{repo.Name, coords.group, coords.name, coords.version}
-		if componentID(key) != id {
-			return nil
+	take := func(path string) {
+		coords, ok := componentOf(repo.Format, path)
+		if !ok || componentID([4]string{repo.Name, coords.group, coords.name, coords.version}) != id {
+			return
 		}
 		if c == nil {
 			c = &Component{Repository: repo.Name, Format: repo.Format, Group: coords.group, Name: coords.name, Version: coords.version,
 				HasGroup: coords.hasGroup, HasVersion: coords.hasVersion}
 		}
-		c.Paths = append(c.Paths, a.Path)
+		c.Paths = append(c.Paths, path)
+	}
+	behind, err := env.catalogBehind()
+	if err != nil {
+		return nil, err
+	}
+	if behind == "" && env.Components != nil {
+		// the rows of the catalog: the candidates are the components whose
+		// coordinates give the id; a path counts when the read path still
+		// serves it and its format places it in the same component
+		paths, err := env.Components.ComponentPaths(repo.Name, func(namespace, name, version string) bool {
+			return componentID([4]string{repo.Name, namespace, name, version}) == id
+		})
+		if err != nil {
+			return nil, err
+		}
+		sort.Strings(paths)
+		for _, path := range paths {
+			a, err := env.Index.Lookup(repo.Name, path)
+			if err != nil {
+				return nil, err
+			}
+			if a != nil {
+				take(path)
+			}
+		}
+		return c, nil
+	}
+	if env.Catalog == nil {
+		return nil, nil
+	}
+	err = env.Catalog.walk(env.Context, repo.Name, prefilter{}, env.Index.Lookup, func(a index.Asset) error {
+		take(a.Path)
 		return nil
 	})
 	if err != nil {
@@ -100,4 +131,13 @@ func ComponentID(repo, format, path string) (string, bool) {
 		return "", false
 	}
 	return componentID([4]string{repo, coords.group, coords.name, coords.version}), true
+}
+
+// catalogBehind is the store the catalog is behind in, "" without a catalog
+// or while it is current.
+func (env *Env) catalogBehind() (string, error) {
+	if env.Components == nil || env.CatalogBehind == nil {
+		return "", nil
+	}
+	return env.CatalogBehind()
 }

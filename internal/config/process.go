@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math/big"
 	"net/netip"
 	"strings"
 
@@ -55,6 +56,47 @@ func parseProxy(entry string) (netip.Prefix, error) {
 	return p, nil
 }
 
+// The defaults of export_max_files and export_max_bytes, those of
+// export.DefaultLimits.
+const (
+	defaultExportMaxFiles = 20_000
+	defaultExportMaxBytes = 2 << 30
+)
+
+// ExportBound reads a value of export_max_files or export_max_bytes, of
+// config.json or of its serve option named what: a whole number above 0
+// that fits in 64 bits.
+func ExportBound(what string, value any) (int64, error) {
+	var n int64
+	switch x := value.(type) {
+	case int64:
+		n = x
+	case *big.Int:
+		if x.IsInt64() {
+			n = x.Int64()
+		}
+	}
+	if n < 1 {
+		return 0, valueError("%s is not a whole number above 0: %s", what, pyRepr(value))
+	}
+	return n, nil
+}
+
+func pyRepr(value any) string {
+	switch x := value.(type) {
+	case string:
+		return pystr.Repr(x)
+	case bool:
+		if x {
+			return "True"
+		}
+		return "False"
+	case *big.Int:
+		return x.String()
+	}
+	return fmt.Sprint(value)
+}
+
 // applyProcess reads the process values of this product from config.json.
 func applyProcess(cfg *Config, data *pyjson.Object) error {
 	path := cfg.ConfigPath()
@@ -89,12 +131,28 @@ func applyProcess(cfg *Config, data *pyjson.Object) error {
 			cfg.TrustedProxies = entries
 		}
 	}
+	for _, field := range []struct {
+		key    string
+		target *int64
+		def    int64
+	}{{"export_max_files", &cfg.ExportMaxFiles, defaultExportMaxFiles}, {"export_max_bytes", &cfg.ExportMaxBytes, defaultExportMaxBytes}} {
+		if value := get(data, field.key); value != nil {
+			n, err := ExportBound(field.key, value)
+			if err != nil {
+				return valueError("%s: %s", path, err)
+			}
+			if n != field.def {
+				*field.target = n
+			}
+		}
+	}
 	return nil
 }
 
 // ProcessItems are the process values that differ from their defaults, as
 // key and JSON value in the order config.json holds them: tls_cert, tls_key
-// (decision E9 of the execution plan), trusted_proxies (E8).
+// (decision E9 of the execution plan), trusted_proxies (E8),
+// export_max_files and export_max_bytes (B18).
 func (c *Config) ProcessItems() [][2]any {
 	var items [][2]any
 	if c.TLSCert != "" {
@@ -110,6 +168,12 @@ func (c *Config) ProcessItems() [][2]any {
 		}
 		items = append(items, [2]any{"trusted_proxies", list})
 	}
+	if c.ExportMaxFiles != 0 && c.ExportMaxFiles != defaultExportMaxFiles {
+		items = append(items, [2]any{"export_max_files", c.ExportMaxFiles})
+	}
+	if c.ExportMaxBytes != 0 && c.ExportMaxBytes != defaultExportMaxBytes {
+		items = append(items, [2]any{"export_max_bytes", c.ExportMaxBytes})
+	}
 	return items
 }
 
@@ -118,6 +182,12 @@ func (c *Config) ProcessItems() [][2]any {
 func checkProcess(cfg *Config) error {
 	if _, err := ParseTrustedProxies(cfg.TrustedProxies); err != nil {
 		return valueError("%s", err)
+	}
+	if cfg.ExportMaxFiles < 0 {
+		return valueError("export_max_files is not a whole number above 0: %d", cfg.ExportMaxFiles)
+	}
+	if cfg.ExportMaxBytes < 0 {
+		return valueError("export_max_bytes is not a whole number above 0: %d", cfg.ExportMaxBytes)
 	}
 	return nil
 }

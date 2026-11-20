@@ -13,12 +13,18 @@ import (
 	"sync"
 	"time"
 
+	adminrules "github.com/iogentic/pipesmith-registry/internal/admin"
+	"github.com/iogentic/pipesmith-registry/internal/catalog"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/listeners"
+	"github.com/iogentic/pipesmith-registry/internal/logs"
+	"github.com/iogentic/pipesmith-registry/internal/metrics"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/notify"
+	"github.com/iogentic/pipesmith-registry/internal/proxy"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
+	"github.com/iogentic/pipesmith-registry/internal/tasks"
 )
 
 const (
@@ -33,6 +39,14 @@ const (
 
 // ServeOptions configure Serve.
 type ServeOptions struct {
+	// Logs is called once, when every refusal of Serve has passed and every
+	// listener is open, before the first line about listening is logged. It
+	// opens the log files and returns the sink of the request records, or
+	// nil; a nil Logs records nothing.
+	Logs func() func(logs.Request)
+	// Audit writes one line of audit.log before it returns; it is called
+	// only after Logs. Nil writes none.
+	Audit func(logs.AuditEvent) error
 	// AccessLog receives the access lines; nil writes none.
 	AccessLog io.Writer
 	// Ready, when set, is called once every listener is open, with their
@@ -40,6 +54,8 @@ type ServeOptions struct {
 	Ready func(addrs []net.Addr)
 	// Security is Options.Security: nil serves as in step 2.
 	Security model.Security
+	// Identity is Options.Identity.
+	Identity adminrules.IdentityStore
 	// HostNames is Options.HostNames.
 	HostNames []string
 	// Notify tells the service manager READY=1 once every listener is
@@ -50,6 +66,14 @@ type ServeOptions struct {
 	Writes bool
 	// Catalog is Options.Catalog.
 	Catalog CatalogHook
+	// CatalogFile is Options.CatalogFile.
+	CatalogFile *catalog.Catalog
+	// Upstream is Options.Upstream.
+	Upstream bool
+	// ProxyState is Options.ProxyState.
+	ProxyState proxy.StateStore
+	// Routing is Options.Routing.
+	Routing *model.Routing
 	// TLS is the configuration of every listener, the main port and each
 	// Docker port (LoadTLS); nil serves plain HTTP.
 	TLS *tls.Config
@@ -57,6 +81,21 @@ type ServeOptions struct {
 	Secure func(*http.Request) bool
 	// Forwarded is Options.Forwarded.
 	Forwarded func(*http.Request)
+	// Figures counts every request and the downloads of L11; nil counts nothing.
+	Figures *metrics.Recorder
+	// Tasks is Options.Tasks: Serve starts it once the server is built; the
+	// caller closes it.
+	Tasks *tasks.Registry
+	// TaskRuns is Options.TaskRuns.
+	TaskRuns TaskRuns
+	// TasksClose is Options.TasksClose.
+	TasksClose time.Duration
+	// ExportMaxFiles and ExportMaxBytes are those of Options.
+	ExportMaxFiles, ExportMaxBytes int64
+	// Logging is what the log routes read; nil answers them with 503.
+	Logging *LogAccess
+	// TrustRule is Options.TrustRule.
+	TrustRule func(root, key string) error
 }
 
 // errorLog sends what net/http logs to the log of the server.
@@ -171,12 +210,20 @@ func Serve(ctx context.Context, cfg *config.Config, opts ServeOptions) error {
 			l.Close()
 		}
 	}()
-	srv, err := New(cfg, dockerPorts, Options{AccessLog: opts.AccessLog, Security: opts.Security, HostNames: opts.HostNames, Writes: opts.Writes,
-		Catalog: opts.Catalog, Secure: opts.Secure, Forwarded: opts.Forwarded})
+	srv, err := New(cfg, dockerPorts, Options{AccessLog: opts.AccessLog, Security: opts.Security, Identity: opts.Identity, HostNames: opts.HostNames, Writes: opts.Writes,
+		Catalog: opts.Catalog, CatalogFile: opts.CatalogFile, Upstream: opts.Upstream, ProxyState: opts.ProxyState, Routing: opts.Routing, Secure: opts.Secure, Forwarded: opts.Forwarded,
+		Tasks: opts.Tasks, TaskRuns: opts.TaskRuns, TasksClose: opts.TasksClose, ExportMaxFiles: opts.ExportMaxFiles, ExportMaxBytes: opts.ExportMaxBytes, TrustRule: opts.TrustRule})
 	if err != nil {
 		return err
 	}
 	defer srv.Close()
+	srv.requests = opts.requestSink()
+	srv.figures = opts.Figures
+	srv.audit = opts.Audit
+	srv.logging.set(opts.Logging)
+	if err := srv.startTasks(); err != nil {
+		return err
+	}
 	if tcp, ok := opened[0].Addr().(*net.TCPAddr); ok {
 		srv.port = tcp.Port // the configuration may ask for port 0
 	}
@@ -184,10 +231,11 @@ func Serve(ctx context.Context, cfg *config.Config, opts ServeOptions) error {
 	for _, port := range listeners.SortedPorts(dockerPorts) {
 		logAt(slogInfo, listenersLogger, "Docker repository %s listening on %s port %d", dockerPorts[port], cfg.Bind, port)
 	}
-	if srv.writes.writer != nil {
+	if srv.writes.clients {
 		// With writes off the log keeps the lines of the port (W17).
 		logAt(slogInfo, serverLogger, "writes on: new blobs go into store %s at %s", srv.writes.writer.Name(), srv.writes.writer.Root())
 	}
+	srv.logUpstream()
 	servers := make([]*http.Server, len(opened))
 	stopped := make(chan error, len(opened))
 	addrs := make([]net.Addr, len(opened))

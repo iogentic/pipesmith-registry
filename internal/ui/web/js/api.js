@@ -302,6 +302,7 @@ export const api = {
   statusChecks: () => get(`${REST}/status/check`),
   writable: () => request("GET", `${REST}/status/writable`),
   systemInformation: () => get(`${BETA}/system/information`),
+  updates: () => get("/api/updates"),
 
   capabilities: {
     list: () => get(`${REST}/capabilities`),
@@ -333,5 +334,6 @@ export const api = {
   metrics: {
     requests: (from, to) => get("/api/metrics/requests", { from, to }),
     downloads: (from, to) => get("/api/metrics/downloads", { from, to })
-  }
+  },
+  figures: (range) => get("/api/figures", { range })
 };

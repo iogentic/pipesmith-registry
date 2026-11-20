@@ -84,3 +84,18 @@ func (t TrustedProxies) Secure(r *http.Request) bool {
 	}
 	return false
 }
+
+// budgetKey is the client address a budget of failures counts for (limiter
+// rule B, row 3-8 of review 3): an IPv4 address, the /64 of an IPv6 address
+// (row 3-16), and any other address as it stands. The pair key keeps the
+// full address.
+func budgetKey(address string) string {
+	ip, err := netip.ParseAddr(address)
+	if err != nil {
+		return address
+	}
+	if ip = ip.Unmap(); ip.Is4() {
+		return ip.String()
+	}
+	return netip.PrefixFrom(ip.WithZone(""), 64).Masked().String()
+}

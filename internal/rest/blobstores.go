@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"syscall"
 
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -92,6 +95,11 @@ func (env *Env) blobStoreXOs() ([]blobStoreXO, error) {
 				xo.Unavailable = false
 				xo.AvailableSpaceInBytes = freeBytes(b.attached.Root)
 			}
+		} else if info, err := os.Stat(b.path); err == nil && info.IsDir() && env.created(b.path) {
+			// a store created over REST (ruling ST1): a record with a folder,
+			// which holds no blob of the index
+			xo.Unavailable = false
+			xo.AvailableSpaceInBytes = freeBytes(b.path)
 		}
 		list = append(list, xo)
 	}
@@ -169,4 +177,23 @@ func QuotaStatus(env *Env, name string) (Answer, error) {
 		return ok(status)
 	}
 	return refuse(http.StatusNotFound, "blob store "+name+" not found")
+}
+
+// created reports a path of a store created over REST (ruling ST1): a
+// folder strictly below the stores folder of the data directory, both with
+// their links resolved.
+func (env *Env) created(path string) bool {
+	if env.StoresRoot == "" {
+		return false
+	}
+	root, err := filepath.EvalSymlinks(env.StoresRoot)
+	if err != nil {
+		return false
+	}
+	real, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(root, real)
+	return err == nil && rel != "." && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }

@@ -67,11 +67,19 @@ var (
 	contentTables = []table{
 		{"BLOB_STORE_CONFIGURATION", []string{"id", "name", "type", "attributes"}, state.KindBlobStores},
 		{"REPOSITORY", []string{"id", "name", "recipe_name", "online", "routing_rule_id", "attributes"}, state.KindRepositories},
+		{routingTable, []string{"id", "name", "mode", "description", "matchers"}, ""},
+		{policyTable, []string{"name", "notes", "format", "mode", "criteria"}, state.KindCleanupPolicies},
+		{capabilityTable, []string{"id", "version", "type", "enabled", "notes", "properties"}, state.KindCapabilities},
+		{jobTable, []string{"job_name", "job_group", "description", "job_class_name", "job_data"}, state.KindTasks},
+		{triggerTable, []string{"trigger_name", "trigger_group", "job_name", "job_group", "trigger_state", "trigger_type",
+			"job_data"}, ""},
 	}
 	sets = map[string][]table{
 		"identity": identityTables,
 		"content":  contentTables,
 		"all":      slices.Concat(identityTables, contentTables),
+		// no table: only the files of --with-secrets (secrets.go)
+		"secrets": {},
 	}
 )
 
@@ -125,6 +133,20 @@ type Export struct {
 	PasswordHashes   int      // users with a stored hash
 	NeedsCredentials []string // repositories whose credentials were removed
 	UnmappedLDAPKeys []string // keys of the LDAP columns no field takes, by name only
+	// Secrets reports an export with --with-secrets, and SecretsLeft counts
+	// what its program did not take over (secrets.go).
+	Secrets     bool
+	SecretsLeft SecretsLeft
+	secrets     *secretSet
+	// Routing holds the routing rules and the rule each repository names
+	// (routing.go), nil when the source holds no routing rules.
+	Routing *model.Routing
+	// RoutingWithoutRules are the repositories that name a routing rule in an
+	// export without the routing table, whose rule cannot be known.
+	RoutingWithoutRules []string
+	// The lists of the cleanup policies, capabilities and tasks
+	// (administration.go).
+	administration
 }
 
 // Result is an import that was written.
@@ -132,6 +154,19 @@ type Result struct {
 	Export
 	StatePath        string
 	RepositoriesPath string // empty when the source holds no repositories
+	// ImportedKeys, RemoteSecrets and LDAPSecrets count what an export with
+	// secrets wrote; SecretsKept names the secret files an import kept.
+	ImportedKeys  int
+	RemoteSecrets int
+	LDAPSecrets   int
+	SecretsKept   []string
+	RoutingKept   bool // the routing rules went into state.sqlite (routing.go)
+	// LocalKept are the rows of origin local an imported row of the same
+	// key did not replace, as "task <id>" (ruling S4).
+	LocalKept []string `json:"localKept"`
+	// ImportedTasks is the number of stored tasks of origin import after
+	// the import, every one paused (ruling S14).
+	ImportedTasks int `json:"importedTasks"`
 }
 
 type manifestFile struct {
@@ -150,6 +185,8 @@ type manifest struct {
 	Driver         string         `json:"driver"`
 	PasswordHashes bool           `json:"passwordHashes"`
 	Files          []manifestFile `json:"files"`
+	Secrets        bool           `json:"secrets"`
+	SecretsLeft    *SecretsLeft   `json:"secretsLeft"`
 }
 
 type row map[string]any
@@ -217,8 +254,18 @@ func readManifest(dir string) (*manifest, []table, error) {
 	if !ok {
 		return nil, nil, fmt.Errorf("%s names the unknown set %q", path, m.Set)
 	}
+	tables = listedTables(tables, m.Files)
+	if m.Secrets != (m.SecretsLeft != nil) {
+		return nil, nil, fmt.Errorf("%s gives secrets and secretsLeft only together", path)
+	}
+	if m.Set == "secrets" && !m.Secrets {
+		return nil, nil, fmt.Errorf("%s names the set secrets without the secret files", path)
+	}
+	if m.Secrets {
+		tables = slices.Concat(tables, secretTables)
+	}
 	if len(m.Files) != len(tables) {
-		return nil, nil, fmt.Errorf("%s lists %d files; the set %s has %d", path, len(m.Files), m.Set, len(tables))
+		return nil, nil, fmt.Errorf("%s lists %d files; the set %s has %d", path, len(m.Files), m.Set, len(sets[m.Set]))
 	}
 	for i, t := range tables {
 		f := m.Files[i]
@@ -386,7 +433,8 @@ func eachRow(file string, rows []row, fn func(rd *reader) error) error {
 func emptySnapshot() *model.Snapshot {
 	return &model.Snapshot{Users: []model.User{}, Roles: []model.Role{}, Privileges: []model.Privilege{},
 		RoleMappings: []model.RoleMapping{}, LDAP: []model.LDAPServer{}, Realms: []string{},
-		BlobStores: []model.BlobStore{}, Repositories: []model.Repository{}}
+		BlobStores: []model.BlobStore{}, Repositories: []model.Repository{}, CleanupPolicies: []model.CleanupPolicy{},
+		Tasks: []model.Task{}, Capabilities: []model.Capability{}}
 }
 
 // ReadExport checks an export directory and maps its rows. It writes
@@ -416,7 +464,11 @@ func ReadExport(dir string) (*Export, error) {
 			return nil, err
 		}
 	}
-	export := &Export{Set: m.Set, Snapshot: emptySnapshot(), NeedsCredentials: []string{}, UnmappedLDAPKeys: []string{}}
+	export := &Export{Set: m.Set, Snapshot: emptySnapshot(), NeedsCredentials: []string{}, UnmappedLDAPKeys: []string{},
+		RoutingWithoutRules: []string{}, Secrets: m.Secrets, administration: emptyAdministration()}
+	if m.SecretsLeft != nil {
+		export.SecretsLeft = *m.SecretsLeft
+	}
 	for _, k := range state.Kinds {
 		if slices.ContainsFunc(tables, func(t table) bool { return t.kind == k }) {
 			export.Kinds = append(export.Kinds, k)
@@ -429,6 +481,7 @@ func ReadExport(dir string) (*Export, error) {
 		{"SECURITY_USER", mapUsers}, {"ROLE", mapRoles}, {"PRIVILEGE", mapPrivileges},
 		{"REALM_CONFIGURATION", mapRealms}, {"ANONYMOUS_CONFIGURATION", mapAnonymous}, {"LDAP_CONFIGURATION", mapLDAP},
 		{"BLOB_STORE_CONFIGURATION", mapBlobStores}, {"REPOSITORY", mapRepositories},
+		{policyTable, mapPolicies}, {capabilityTable, mapCapabilities},
 	}
 	for _, step := range steps {
 		if _, ok := data[step.table]; ok {
@@ -436,6 +489,17 @@ func ReadExport(dir string) (*Export, error) {
 				return nil, err
 			}
 		}
+	}
+	if m.Secrets {
+		if err := mapSecrets(export, data); err != nil {
+			return nil, err
+		}
+	}
+	if err := mapRouting(export, data); err != nil {
+		return nil, err
+	}
+	if err := mapTasks(export, data); err != nil {
+		return nil, err
 	}
 	return export, nil
 }
@@ -755,15 +819,65 @@ func mapRepositories(export *Export, data map[string][]row) error {
 
 // write puts the kinds of the export into state.sqlite of cfg.
 func write(export *Export, cfg *config.Config) (*Result, error) {
+	if err := checkSecrets(cfg.DataDir, export.administration.secrets); err != nil {
+		return nil, err
+	}
+	result := &Result{Export: *export, StatePath: state.Path(cfg.DataDir), SecretsKept: []string{}}
+	if export.secrets != nil {
+		var err error
+		if result.RemoteSecrets, result.LDAPSecrets, result.SecretsKept, err = export.secrets.writeFiles(cfg.DataDir); err != nil {
+			return nil, err
+		}
+	}
 	st, err := state.Create(cfg.DataDir)
 	if err != nil {
 		return nil, err
 	}
 	defer st.Close()
-	if err := st.Write(export.Kinds, export.Snapshot); err != nil {
+	var installKey []byte
+	if export.secrets != nil {
+		if installKey, err = state.MakeInstallKey(cfg.DataDir); err != nil {
+			return nil, err
+		}
+	}
+	var left []string
+	var stored *model.Snapshot
+	var keys func(*model.Snapshot) []model.ImportedKey
+	if export.secrets != nil {
+		keys = func(snap *model.Snapshot) []model.ImportedKey {
+			rows := importedKeyRows(export.secrets, installKey, snap.Users)
+			result.ImportedKeys = len(rows)
+			return rows
+		}
+	}
+	// One transaction: the kinds of the export replace their rows, the kinds
+	// of step 5 keep their rows of origin local (merge), and the imported keys
+	// of an export with secrets replace theirs.
+	err = st.UpdateImport(export.Kinds, func(snap *model.Snapshot) error {
+		copyKinds(snap, export.Snapshot, export.Kinds)
+		left = merge(snap, export.Snapshot, export.Kinds)
+		stored = snap
+		return nil
+	}, keys)
+	if err != nil {
 		return nil, err
 	}
-	return &Result{Export: *export, StatePath: state.Path(cfg.DataDir)}, nil
+	if err := writeSecrets(cfg.DataDir, export.administration.secrets, left); err != nil {
+		return nil, err
+	}
+	if err := removeStaleSecrets(cfg.DataDir, stored, export.Kinds, export.administration.secrets, left); err != nil {
+		return nil, err
+	}
+	result.LocalKept = left
+	result.SecretProperties = keptWritten(export.SecretProperties, left)
+	result.ImportedTasks = importedTasks(stored)
+	if result.LocalKept == nil {
+		result.LocalKept = []string{}
+	}
+	if result.RoutingKept, err = writeRouting(st, export.Routing); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // Import checks the export directory dir, then writes its record kinds into
@@ -880,7 +994,8 @@ func ReadSettings(path string) (*Export, error) {
 		return nil, fmt.Errorf("%s does not hold a list of repositories", path)
 	}
 	export := &Export{Set: "settings", Kinds: []state.Kind{state.KindRepositories}, Snapshot: emptySnapshot(),
-		NeedsCredentials: []string{}, UnmappedLDAPKeys: []string{}}
+		NeedsCredentials: []string{}, UnmappedLDAPKeys: []string{}, RoutingWithoutRules: []string{},
+		administration: emptyAdministration()}
 	seen := map[string]bool{}
 	for _, entry := range list {
 		item, ok := entry.(map[string]any)

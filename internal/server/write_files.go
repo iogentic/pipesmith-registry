@@ -65,7 +65,8 @@ func (s *Server) putFile(w *recorder, req *request, repo repos.Repo, t *target) 
 	}
 	body := newTimedBody(w, req)
 	result, err := s.ingest(ingestRequest{repo: repo, path: t.path, body: body, size: req.r.ContentLength,
-		addOnly: !s.mayEdit(subject, repo), subject: subject, address: peerAddress(w)})
+		addOnly: !s.mayEdit(subject, addressed(req, repo)), editOnly: !s.mayAdd(subject, addressed(req, repo)), subject: subject,
+		address: peerAddress(w)})
 	if err != nil {
 		return nil, s.writeFailed(w, req, repo, t.path, body, err)
 	}
@@ -115,4 +116,25 @@ func (s *Server) writeFailed(w *recorder, req *request, repo repos.Repo, path st
 		return nil
 	}
 	return err
+}
+
+// rollBack takes back the blobs that a request of several writes stored
+// before a later write of it failed (note N5 of the 0.2.0 plan): a blob of a
+// new path gets its delete mark through erase, so that neither the read path
+// nor a scan serves it. A blob that replaced another stays: the blob it
+// replaced carries its delete mark already. It is best effort, no
+// transaction: an erase that fails, a busy index for one, leaves its blob
+// live, and a warning names it.
+func (s *Server) rollBack(repo repos.Repo, results []*ingestResult, cause error) {
+	for i := len(results) - 1; i >= 0; i-- {
+		path := results[i].asset.Path
+		if results[i].replaced != nil {
+			logAt(slogWarn, serverLogger, "%s/%s stays live: it replaced a blob, and a later write of the same request failed: %v", repo.Name, path, cause)
+			continue
+		}
+		if _, err := s.erase(repo, path); err != nil {
+			logAt(slogWarn, serverLogger, "%s/%s stays live: a later write of the same request failed (%v), and its delete mark failed: %v",
+				repo.Name, path, cause, err)
+		}
+	}
 }

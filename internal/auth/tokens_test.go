@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -556,5 +557,83 @@ func TestAnonymousDockerTokensTakeNoPlace(t *testing.T) {
 	e.clock.Add(auth.DockerTokenTime)
 	if s, err := subjectOf(e, bearer(anonymous[49].Text)); s != nil || !errors.Is(err, model.ErrUnauthorized) {
 		t.Errorf("anonymous token after 300 s: %+v %v", s, err)
+	}
+}
+
+// Review 3-37: the end of an anonymous Docker token runs on the monotonic
+// clock of the service. A wall clock that steps back keeps no such token
+// alive past DockerTokenTime.
+func TestAnonymousDockerTokenEndsOnTheMonotonicClock(t *testing.T) {
+	snap := tokenSnapshot(t)
+	snap.Anonymous.Enabled = true
+	snap.Repositories = append(snap.Repositories, model.Repository{Name: "demo-docker", Format: "docker", Type: "hosted", Online: true,
+		Attributes: map[string]any{"docker": map[string]any{"forceBasicAuth": false}}})
+	e, _ := newStoreEnv(t, snap)
+	var mono atomic.Int64
+	auth.SetIntervalClock(e.svc, func() time.Duration { return time.Duration(mono.Load()) })
+	tok, err := e.svc.DockerToken(request(http.MethodGet, "/v2/token", nil), "demo-docker")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mono.Store(int64(auth.DockerTokenTime - time.Second))
+	if s, err := subjectOf(e, bearer(tok.Text)); s != nil || err != nil {
+		t.Fatalf("anonymous token before its end: %+v %v", s, err)
+	}
+	e.clock.Add(-time.Hour) // the wall clock steps back by an hour
+	mono.Store(int64(auth.DockerTokenTime))
+	if s, err := subjectOf(e, bearer(tok.Text)); s != nil || !errors.Is(err, model.ErrUnauthorized) {
+		t.Errorf("anonymous token after %v on the monotonic clock, wall clock an hour back: %+v %v", auth.DockerTokenTime, s, err)
+	}
+}
+
+// Review 3-34: a Docker bearer token of a local user is bound to the stored
+// password form the user had at the issue. Once the user is removed and a
+// user of the same name is added again, between two reloads or across
+// them, the old token signs nobody in; a write that leaves the user as it is
+// keeps the token, and the new user gets tokens of its own.
+func TestDockerTokenOfARemovedLocalUserSignsInNoNewUserOfItsName(t *testing.T) {
+	e, store := newStoreEnv(t, tokenSnapshot(t))
+	issue := func(pass string) model.IssuedToken {
+		t.Helper()
+		tok, err := e.svc.DockerToken(basic(request(http.MethodGet, "/v2/token", nil), "demo-reader", pass), "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tok
+	}
+	old := issue(password(t, "demo-reader"))
+	signsIn := func(tok model.IssuedToken) bool {
+		s, err := subjectOf(e, bearer(tok.Text))
+		return err == nil && s != nil && s.User.ID == "demo-reader"
+	}
+	var reader model.User
+	rewrite(t, store, func(s *model.Snapshot) {
+		for _, u := range s.Users {
+			if u.ID == "demo-reader" {
+				reader = u
+			}
+		}
+		s.Anonymous.Enabled = !s.Anonymous.Enabled
+	})
+	e.clock.Add(auth.ReloadInterval)
+	if !signsIn(old) {
+		t.Fatal("the token after a write that left its user as it was")
+	}
+	rewrite(t, store, func(s *model.Snapshot) {
+		s.Users = slices.DeleteFunc(s.Users, func(u model.User) bool { return u.ID == "demo-reader" })
+	})
+	form, err := auth.HashPassword("demo-new-reader-pass-4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	again := reader
+	again.PasswordHash = form
+	rewrite(t, store, func(s *model.Snapshot) { s.Users = append(s.Users, again) })
+	e.clock.Add(auth.ReloadInterval)
+	if signsIn(old) {
+		t.Error("the Docker token of the removed demo-reader signs in the demo-reader added again")
+	}
+	if fresh := issue("demo-new-reader-pass-4"); !signsIn(fresh) {
+		t.Error("a token of the demo-reader added again")
 	}
 }

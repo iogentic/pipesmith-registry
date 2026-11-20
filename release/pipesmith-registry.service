@@ -17,6 +17,9 @@ Environment=PIPESMITH_REGISTRY_DATA=/var/lib/pipesmith-registry
 # drain_seconds of update.json names the same number.
 Environment=PIPESMITH_REGISTRY_DRAIN=300
 TimeoutStopSec=330
+# A start may copy and migrate large data files before it reports ready.
+# 900 s is a wide bound, not a measured time; update waits for it too.
+TimeoutStartSec=900
 EnvironmentFile=-/etc/pipesmith-registry/ldap.env
 ExecStart=/opt/pipesmith-registry/current/pipesmith-registry serve
 

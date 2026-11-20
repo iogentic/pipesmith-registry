@@ -3,13 +3,15 @@
 # image with the H2 driver 2.2.224. Nothing is installed on the host.
 #
 # usage: tools/h2export.sh <command>
-#   export --database <file> --out <dir> [--set content|identity|all] [--with-password-hashes]
+#   export --database <file> --out <dir> [--set content|identity|all|secrets] [--with-password-hashes]
+#          [--with-secrets]
 #             export one database below work/ or .tmp/ of this repository
 #   export --database-copy <file> --out <dir> [...]
 #             the same for a database anywhere else, named on purpose
 #   selftest  check the driver and the image, print the Java and driver versions
-#   fixture <file> [--missing-column TABLE.COLUMN]
-#             build the fixture database of tests/import (FixtureDb.java)
+#   fixture <file> [--missing-column TABLE.COLUMN | --secret-store <rows>]
+#             build the fixture database of tests/import (FixtureDb.java);
+#             <rows> lies in the folder of <file>
 #
 # <file> is the .mv.db file of the database. --out must not exist or be
 # empty, and lies below work/ or .tmp/ of this repository, or below
@@ -39,7 +41,7 @@ CACHE="${PSR_GO_CACHE:-$ROOT/.cache}"
 JAR_DIR="$CACHE/h2"
 JAR="$JAR_DIR/h2-$H2_VERSION.jar"
 
-usage() { sed -n '2,13p' "$0" >&2; exit 2; }
+usage() { sed -n '2,15p' "$0" >&2; exit 2; }
 fail() { echo "tools/h2export.sh: $*" >&2; exit 1; }
 refuse() { echo "tools/h2export.sh: $*" >&2; exit 3; }
 
@@ -107,7 +109,7 @@ database_file() {
 }
 
 cmd_export() {
-  local database="" copy="" out="" set="content" hashes=()
+  local database="" copy="" out="" set="content" hashes=() secrets=()
   while [ $# -gt 0 ]; do
     case "$1" in
       --database) [ $# -ge 2 ] || usage; database="$2"; shift 2 ;;
@@ -115,13 +117,14 @@ cmd_export() {
       --out) [ $# -ge 2 ] || usage; out="$2"; shift 2 ;;
       --set) [ $# -ge 2 ] || usage; set="$2"; shift 2 ;;
       --with-password-hashes) hashes=(--with-password-hashes); shift ;;
+      --with-secrets) secrets=(--with-secrets); shift ;;
       *) usage ;;
     esac
   done
   [ -n "$out" ] || usage
   if [ -n "$database" ] && [ -n "$copy" ]; then usage; fi
   [ -n "$database$copy" ] || usage
-  case "$set" in content|identity|all) ;; *) usage ;; esac
+  case "$set" in content|identity|all|secrets) ;; *) usage ;; esac
 
   local file
   file="$(resolved "$(database_file "${database:-$copy}")")"
@@ -152,7 +155,8 @@ cmd_export() {
   dir="$(dirname "$file")"
   base="$(basename "$file" .mv.db)"
   java_run -v "$dir:/db:ro" -v "$target:/out" -- \
-    /tool/H2Export.java --database "/db/$base" --out /out --set "$set" ${hashes[@]+"${hashes[@]}"} || code=$?
+    /tool/H2Export.java --database "/db/$base" --out /out --set "$set" ${hashes[@]+"${hashes[@]}"} \
+    ${secrets[@]+"${secrets[@]}"} || code=$?
   if [ "$code" -ne 0 ] && [ "$created" -eq 1 ] && [ -z "$(ls -A "$target")" ]; then rmdir "$target"; fi
   return "$code"
 }
@@ -165,6 +169,11 @@ cmd_fixture() {
   case "${1:-}" in
     "") ;;
     --missing-column) [ $# -eq 2 ] || usage; extra=(--missing-column "$2") ;;
+    --secret-store)
+      [ $# -eq 2 ] || usage
+      [ "$(dirname "$(resolved "$2")")" = "$(dirname "$file")" ] ||
+        refuse "the rows of --secret-store lie in the folder of the fixture database"
+      extra=(--secret-store "/db/$(basename "$2")") ;;
     *) usage ;;
   esac
   below "$file" "$ROOT/work" "$ROOT/.tmp" || refuse "the fixture database goes below work/ or .tmp/ of this repository only"

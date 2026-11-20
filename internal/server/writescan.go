@@ -20,9 +20,9 @@ import (
 // The scan of the write store. A delete mark that waits (marks.go) lives in
 // the memory of the process, so a kill between the row of a write and the
 // mark of the blob it replaced leaves two live blobs of one path in the
-// write store, and a delete after the next start marks the blob of the row
-// only. The scan of the write store serves the blob of a path that was
-// written last, keeps a path deleted whose delete came after its last live
+// write store. A start with the writer open runs this scan before it takes
+// a request (repairAtStart, writestore.go). The scan of the write store
+// serves the blob of a path that was written last, keeps a path deleted whose delete came after its last live
 // blob, and, while writes are on, gives every such older live blob its
 // delete mark. No file format changes: the order of the writes is read from
 // what the store holds.
@@ -191,13 +191,23 @@ type walker interface {
 	Walk(counts *stores.ScanCounts, yield func(stores.Entry) error, marked func(stores.Marked) error) error
 }
 
-// markedWalk is a store whose Entries give its marked blobs to marked.
+// looseWalker is a walker that gives its bytes files without properties too.
+type looseWalker interface {
+	WalkLoose(counts *stores.ScanCounts, yield func(stores.Entry) error, marked func(stores.Marked) error, loose func(string) error) error
+}
+
+// markedWalk is a store whose Entries give its marked blobs to marked, and
+// its bytes files without properties to loose when that is set.
 type markedWalk struct {
 	stores.Store
 	marked func(stores.Marked) error
+	loose  func(location string) error
 }
 
 func (m *markedWalk) Entries(counts *stores.ScanCounts, yield func(stores.Entry) error) error {
+	if w, ok := m.Store.(looseWalker); ok && m.loose != nil {
+		return w.WalkLoose(counts, yield, m.marked, m.loose)
+	}
 	if w, ok := m.Store.(walker); ok {
 		return w.Walk(counts, yield, m.marked)
 	}
@@ -211,7 +221,7 @@ func (wp *writePath) scanRunnerFor(s stores.Store) scanRunner {
 		return wp.scanStore
 	}
 	if late := wp.late.Load(); late != nil && s == stores.Store(late) {
-		return (&writePath{store: late}).scanStore // writes are off: no delete mark
+		return (&writePath{store: late, file: wp.file}).scanStore // writes are off: no delete mark
 	}
 	return nil
 }
@@ -222,7 +232,14 @@ func (wp *writePath) scanRunnerFor(s stores.Store) scanRunner {
 // for a scan with writes on.
 func (wp *writePath) scanStore(s stores.Store, ix *index.Index, progress func(live int)) (scan.Result, error) {
 	arbiter := &writeScan{order: newWriteOrder(wp.store.Root()), deletes: map[[2]string]stores.Entry{}}
-	result, err := scan.RunWith(&markedWalk{Store: s, marked: arbiter.marked}, ix, progress, arbiter)
+	walk := &markedWalk{Store: s, marked: arbiter.marked}
+	if wp.writer != nil {
+		walk.loose = wp.removeLoose
+	}
+	result, err := scan.RunIn(wp.file, walk, ix, progress, arbiter)
+	if err == nil {
+		wp.noteDeletes(arbiter.deletes)
+	}
 	if err != nil || wp.writer == nil {
 		return result, err
 	}
@@ -237,6 +254,19 @@ func (wp *writePath) scanStore(s stores.Store, ix *index.Index, progress func(li
 			wp.writer.Name(), len(arbiter.stale), marked)
 	}
 	return result, nil
+}
+
+// removeLoose removes a bytes file without properties that the walk of a
+// scan with writes on meets (N2). The scan holds the index for its walk, so
+// no write of this process is between the renames of its two files; a file
+// that cannot be removed stays and the scan goes on.
+func (wp *writePath) removeLoose(location string) error {
+	if err := wp.writer.RemoveLoose(location); err != nil {
+		logAt(slogWarn, serverLogger, "the bytes file %s of store %s has no properties and stays: %v", location, wp.writer.Name(), err)
+		return nil
+	}
+	logAt(slogInfo, serverLogger, "the scan of store %s removed the bytes file %s, which had no properties", wp.writer.Name(), location)
+	return nil
 }
 
 // ScanWriteStore is the scan of the write store for the command scan

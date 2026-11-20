@@ -126,15 +126,22 @@ func SetFloorClock(s *Service, now func() time.Time, sleep func(time.Duration)) 
 	s.floorNow, s.floorSleep = now, sleep
 }
 
-// FillPairs counts one failure for n invented pairs.
+// FillPairs counts one failure for n invented pairs, each of an address of
+// its own, so no address budget stops them.
 func FillPairs(s *Service, n int) {
 	for i := range n {
-		user := fmt.Sprintf("fill-%d", i)
-		if s.limiter.begin(user, "192.0.2.1") == 0 {
-			s.limiter.end(user, "192.0.2.1", false)
+		user, address := fmt.Sprintf("fill-%d", i), fmt.Sprintf("10.%d.%d.%d", i>>16&255, i>>8&255, i&255)
+		if s.limiter.begin(user, address) == 0 {
+			s.limiter.end(user, address, false)
 		}
 	}
 }
+
+// BeginPair reserves an attempt of a pair as a check in flight does.
+func BeginPair(s *Service, user, address string) int { return s.limiter.begin(user, address) }
+
+// ReleasePair settles a reservation of BeginPair without a result.
+func ReleasePair(s *Service, user, address string) { s.limiter.release(user, address) }
 
 // FailPair counts n failures for the pair of a user name and an address.
 func FailPair(s *Service, user, address string, n int) {
@@ -173,3 +180,10 @@ func PairsInFlight(s *Service) int {
 // CheckWaiters is the number of Basic requests that wait for the check of
 // another request with the same user name and password now.
 func CheckWaiters(s *Service) int64 { return s.checks.waiting.Load() }
+
+// ForwardedPeers is the number of peers the warner remembers.
+func ForwardedPeers(w *ForwardedWarner) int {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return len(w.seen)
+}

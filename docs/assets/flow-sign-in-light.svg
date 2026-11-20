@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="psr-flow-sign-in" viewBox="0 0 1360 798" width="1360" height="798" role="img" aria-label="Basic Sign In, Pipesmith Registry 0.2.0. A Basic request passes the Host gate, the limiter and a cache of 300 s before a realm sees the password. 1: Client to Host gate: GET /repository/&lt;name&gt;/&lt;path&gt;, Authorization: Basic. 2: Host gate to Limiter: Host names this server, else 403. 3: Limiter: reserve the pair; blocked, or 5 failures pending: 429 with Retry-After. 4: Limiter to Credential cache: name and password, keyed by HMAC. 5: Credential cache: hit: signed in, no realm asked. 6: Credential cache to Realms: miss: try the realms. 7: Realms to state.sqlite: local users: the stored hash. 8: Realms: then LDAP connections, then a user token as password. 9: Realms to Limiter: success: kept 300 s; failure: one more for the pair. 10: Host gate to Client: 200 with the file, 401 wrong pair, 403 no permission, 429."><title>Pipesmith Registry basic sign in</title><defs><marker id="psr-flow-sign-in-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2B62F0" stroke="none"/></marker><marker id="psr-flow-sign-in-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#46526E" stroke="none"/></marker><marker id="psr-flow-sign-in-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#12B5D6" stroke="none"/></marker><marker id="psr-flow-sign-in-write" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7A52F0" stroke="none"/></marker></defs>
+<rect x="0" y="0" width="1360" height="798" rx="18" fill="#F5F7FC" stroke="#D8DEEA" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="46" font-size="12" font-weight="600" fill="#46526E" text-anchor="start" letter-spacing="1.6">PIPESMITH REGISTRY 0.2.0</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="86" font-size="30" font-weight="700" fill="#0A1020" text-anchor="start">Basic Sign In</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="116" font-size="15" font-weight="400" fill="#46526E" text-anchor="start">A Basic request passes the Host gate, the limiter and a cache of 300 s before a realm sees the password.</text>
+<path d="M168,208 V712" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="70" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#2B62F0" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="168" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Client</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="168" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">Maven, npm, curl</text>
+<path d="M381.6,208 V712" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="283.6" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="381.6" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Host gate</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="381.6" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">every request</text>
+<path d="M595.2,208 V712" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="497.2" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="595.2" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Limiter</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="595.2" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">name and address</text>
+<path d="M808.8,208 V712" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="710.8" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="808.8" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Credential cache</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="808.8" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">300 s, 10,000 entries</text>
+<path d="M1022.4,208 V712" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="924.4" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1022.4" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Realms</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1022.4" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">in their stored order</text>
+<path d="M1236,208 V712" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="1138" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A52F0" stroke-width="1.6"/>
+<text x="1236" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">state.sqlite</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1236" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">users, tokens</text>
+<circle cx="47" cy="275" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="279" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">1</text>
+<path d="M168,283 H377.6" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-req)"/>
+<text x="279.45" y="274" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET /repository/&lt;name&gt;/&lt;path&gt;, Authorization: Basic</text>
+<circle cx="47" cy="321" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="325" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">2</text>
+<path d="M381.6,329 H591.2" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="488.4" y="320" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">Host names this server, else 403</text>
+<circle cx="47" cy="367" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="371" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">3</text>
+<rect x="579.2" y="352" width="511" height="30" rx="7" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="593.2" y="371.5" font-size="13" font-weight="400" fill="#0A1020" text-anchor="start">reserve the pair; blocked, or 5 failures pending: 429 with Retry-After</text>
+<circle cx="47" cy="413" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="417" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">4</text>
+<path d="M595.2,421 H804.8" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="702" y="412" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">name and password, keyed by HMAC</text>
+<circle cx="47" cy="459" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="463" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">5</text>
+<rect x="792.8" y="444" width="235" height="30" rx="7" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="806.8" y="463.5" font-size="13" font-weight="400" fill="#0A1020" text-anchor="start">hit: signed in, no realm asked</text>
+<circle cx="47" cy="505" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="509" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">6</text>
+<path d="M808.8,513 H1018.4" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="915.6" y="504" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">miss: try the realms</text>
+<circle cx="47" cy="551" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="555" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">7</text>
+<path d="M1022.4,559 H1232" fill="none" stroke="#12B5D6" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-read)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1129.2" y="550" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">local users: the stored hash</text>
+<circle cx="47" cy="597" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="601" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">8</text>
+<rect x="939.2" y="582" width="386.8" height="30" rx="7" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="953.2" y="601.5" font-size="13" font-weight="400" fill="#0A1020" text-anchor="start">then LDAP connections, then a user token as password</text>
+<circle cx="47" cy="643" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="647" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">9</text>
+<path d="M1022.4,651 H599.2" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="808.8" y="642" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">success: kept 300 s; failure: one more for the pair</text>
+<circle cx="47" cy="689" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="693" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">10</text>
+<path d="M381.6,697 H172" fill="none" stroke="#46526E" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-muted)" stroke-dasharray="2 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="274.8" y="688" font-size="13" font-weight="400" fill="#46526E" text-anchor="middle">200 with the file, 401 wrong pair, 403 no permission, 429</text>
+<path d="M34,742 H68" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="78" y="746" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">request</text>
+<path d="M170.3,742 H204.3" fill="none" stroke="#46526E" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-muted)" stroke-dasharray="2 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="214.3" y="746" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">answer</text>
+<path d="M299.7,742 H333.7" fill="none" stroke="#12B5D6" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-read)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="343.7" y="746" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">read from disk</text>
+<path d="M484.3,742 H518.3" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-sign-in-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="528.3" y="746" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">write to disk</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="780" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="start">Read from internal/server and internal/auth of Pipesmith Registry 0.2.0, checked 2026-11-19.</text>
+</svg>

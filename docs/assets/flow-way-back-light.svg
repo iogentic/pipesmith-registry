@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="psr-flow-way-back" viewBox="0 0 1360 854" width="1360" height="854" role="img" aria-label="Way Back, Pipesmith Registry 0.2.0. The first command of this version copies state.sqlite before it migrates; the way back is that copy and the earlier binary. 1: Operator to This version: serve or state show. 2: This version to state.sqlite.v1: VACUUM INTO, mode 0600, never replaced. 3: This version to state.sqlite: step 2: table tokens, generation row. 4: Operator to Earlier binary: start on the migrated file. 5: Earlier binary to Operator: refused: state.sqlite has schema 2, this binary knows schema 1. Way back by hand. 6: Operator to This version: stop the server. 7: Operator to state.sqlite: move state.sqlite, -wal and -shm away. 8: Operator to state.sqlite.v1: rename state.sqlite.v1 to state.sqlite. 9: Operator to Earlier binary: start the earlier binary. 10: Operator: changes of users, roles, realms and tokens since the upgrade are lost."><title>Pipesmith Registry way back</title><defs><marker id="psr-flow-way-back-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2B62F0" stroke="none"/></marker><marker id="psr-flow-way-back-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#46526E" stroke="none"/></marker><marker id="psr-flow-way-back-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#12B5D6" stroke="none"/></marker><marker id="psr-flow-way-back-write" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7A52F0" stroke="none"/></marker></defs>
+<rect x="0" y="0" width="1360" height="854" rx="18" fill="#F5F7FC" stroke="#D8DEEA" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="46" font-size="12" font-weight="600" fill="#46526E" text-anchor="start" letter-spacing="1.6">PIPESMITH REGISTRY 0.2.0</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="86" font-size="30" font-weight="700" fill="#0A1020" text-anchor="start">Way Back</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="116" font-size="15" font-weight="400" fill="#46526E" text-anchor="start">The first command of this version copies state.sqlite before it migrates; the way back is that copy and the earlier binary.</text>
+<path d="M168,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="70" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#2B62F0" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="168" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Operator</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="168" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">after an upgrade</text>
+<path d="M435,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="337" y="150" width="196" height="58" rx="10" fill="#EEF2FA" stroke="#7A859C" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="435" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">Earlier binary</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="435" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">schema 1</text>
+<path d="M702,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="604" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A859C" stroke-width="1.6"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="702" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle">This version</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="702" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">schema 2</text>
+<path d="M969,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="871" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A52F0" stroke-width="1.6"/>
+<text x="969" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">state.sqlite</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="969" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">data directory</text>
+<path d="M1236,208 V768" fill="none" stroke="#D8DEEA" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="1138" y="150" width="196" height="58" rx="10" fill="#FFFFFF" stroke="#7A52F0" stroke-width="1.6"/>
+<text x="1236" y="175" font-size="14.5" font-weight="650" fill="#0A1020" text-anchor="middle" class="mono" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">state.sqlite.v1</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="1236" y="194" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="middle">copy of schema 1</text>
+<circle cx="47" cy="275" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="279" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">1</text>
+<path d="M168,283 H698" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="435" y="274" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">serve or state show</text>
+<circle cx="47" cy="321" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="325" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">2</text>
+<path d="M702,329 H1232" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="969" y="320" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">VACUUM INTO, mode 0600, never replaced</text>
+<circle cx="47" cy="367" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="371" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">3</text>
+<path d="M702,375 H965" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="835.5" y="366" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">step 2: table tokens, generation row</text>
+<circle cx="47" cy="413" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="417" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">4</text>
+<path d="M168,421 H431" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="301.5" y="412" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">start on the migrated file</text>
+<circle cx="47" cy="459" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="463" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">5</text>
+<path d="M435,467 H172" fill="none" stroke="#46526E" stroke-width="1.8" marker-end="url(#psr-flow-way-back-muted)" stroke-dasharray="2 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="301.5" y="458" font-size="13" font-weight="400" fill="#46526E" text-anchor="middle">refused: state.sqlite has schema 2, this binary knows schema 1</text>
+<rect x="34" y="490" width="1292" height="40" rx="8" fill="#EEF2FA" stroke="#D8DEEA" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="50" y="515" font-size="13" font-weight="650" fill="#0A1020" text-anchor="start">Way back by hand</text>
+<circle cx="47" cy="561" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="565" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">6</text>
+<path d="M168,569 H698" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="435" y="560" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">stop the server</text>
+<circle cx="47" cy="607" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="611" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">7</text>
+<path d="M168,615 H965" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="568.5" y="606" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">move state.sqlite, -wal and -shm away</text>
+<circle cx="47" cy="653" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="657" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">8</text>
+<path d="M168,661 H1232" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="702" y="652" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">rename state.sqlite.v1 to state.sqlite</text>
+<circle cx="47" cy="699" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="703" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">9</text>
+<path d="M168,707 H431" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="301.5" y="698" font-size="13" font-weight="400" fill="#0A1020" text-anchor="middle">start the earlier binary</text>
+<circle cx="47" cy="745" r="11" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="47" y="749" font-size="11" font-weight="650" fill="#46526E" text-anchor="middle">10</text>
+<rect x="152" y="730" width="504.1" height="30" rx="7" fill="#FFFFFF" stroke="#7A859C" stroke-width="1"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="166" y="749.5" font-size="13" font-weight="400" fill="#0A1020" text-anchor="start">changes of users, roles, realms and tokens since the upgrade are lost</text>
+<path d="M34,798 H68" fill="none" stroke="#2B62F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-req)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="78" y="802" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">request</text>
+<path d="M170.3,798 H204.3" fill="none" stroke="#46526E" stroke-width="1.8" marker-end="url(#psr-flow-way-back-muted)" stroke-dasharray="2 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="214.3" y="802" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">answer</text>
+<path d="M299.7,798 H333.7" fill="none" stroke="#12B5D6" stroke-width="1.8" marker-end="url(#psr-flow-way-back-read)"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="343.7" y="802" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">read from disk</text>
+<path d="M484.3,798 H518.3" fill="none" stroke="#7A52F0" stroke-width="1.8" marker-end="url(#psr-flow-way-back-write)" stroke-dasharray="6 4"/>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="528.3" y="802" font-size="12.5" font-weight="400" fill="#46526E" text-anchor="start">write to disk</text>
+<text font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" x="34" y="836" font-size="11.5" font-weight="400" fill="#46526E" text-anchor="start">Read from internal/migrate and internal/state of Pipesmith Registry 0.2.0, checked 2026-11-19.</text>
+</svg>

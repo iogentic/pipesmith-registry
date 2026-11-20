@@ -15,12 +15,19 @@
 | `web/index.html` | 2026-11-19 | One `<link>` line after the one of `system.css` loads `css/areas/viewer.css`, the stylesheet of the file viewer, as the four area stylesheets are loaded. No other line changed. |
 | `web/js/routes.js` | 2026-11-19 | One line after the one of S05 adds the screen S46 Viewer at `/view/:repository`, module `./pages/browse/view.js`, below Browse like S05. No other line changed. |
 | `web/js/pages/browse/tree.js` | 2026-11-19 | Lines inserted, none moved: an import of `showsView` and `viewHref`, the button "Open in viewer" in the page head and in the detail of a folder, and the button "View" in the detail of a file that the viewer shows as text. Leg V2 inserts an import of the export dialog, the button "Export" in the page head and in the detail of a folder, shown with the read permission of the repository and not for a Docker repository, and the button "Export" in the detail of a Docker manifest. |
+| `web/js/ui/table.js` | 2026-11-19 | On the owner's order of 2026-11-19 the columns of a data table can be resized. Above 700 pixels each column head but the last holds an edge of class `col-resize` (role `separator`): a drag with the mouse or the arrow keys (Shift for five steps) move it by one percent of the table width, and the column on its right gives or takes the same share, at least 72 pixels each. A column may name a default share in `width`. The widths are stored per browser and table in `localStorage` under `pipesmith-columns:<id or route and column keys>`, every access in a try block, and the button Reset column widths in the tools of the table forgets them. The tools are drawn only while one of their parts shows. |
+| `web/css/components.css` | 2026-11-19 | The rules of the edges, the fixed layout of a table with set widths, chips that wrap inside their cell, and below 700 pixels no edge and no reset button. Appended at the end of the file; no rule above changed. |
+| `web/js/routes.js` | 2026-11-20 | One line after the one of S33 adds the screen S47 Updates at `/admin/updates`, module `./pages/support/updates.js`, in the section Support with the permission of Status, `nexus:atlas:read`. No other line changed. |
+| `web/js/api.js` | 2026-11-20 | `api.figures(range)` asks `GET /api/figures` (task 7.23), the series of requests, data sent, CPU and memory of the server. One line after `systemInformation` adds `api.updates`, the request `GET /api/updates` of the server. No other line changed. |
+| `web/js/pages/overview.js` | 2026-11-20 | Task 7.23 of the phase 7 plan: one import of `figureCards` and one line in `render` that draws the figure cards below the grid for a user with `nexus:atlas:read`. The cards of the grid did not change. |
+| `web/index.html` | 2026-11-20 | One `<link>` line after the one of `viewer.css` loads `css/areas/figures.css`. No other line changed. |
+| `web/js/pages/security/users.js` | 2026-11-19 | The users table of 0.1.3 gave most of its width to the roles, so on the test host a user id and a mail address broke after a few characters. The columns name default shares: user id 20, name 15, mail 22, state 11, roles 32, directory groups 20. |
 
 Section Preview of `docs/ui/API.md` in the interface repository still says that the probe of every served read leaves the browser. With this change no probe leaves it while the server answers `GET /api/areas`, which is the alternative that decision U41 of that repository names.
 
 ## Added Files
 
-The files in this table are new here; the taken commit does not hold them. They are the read only file viewer of Browse (`docs/plans/browse-tools.md`, leg V1) and the export dialog (leg V2). `added` in `ui_test.go` names each of them, the tree test leaves them out, and the served count grows by their number.
+The files in this table are new here; the taken commit does not hold them. They are the read only file viewer of Browse (`docs/plans/browse-tools.md`, leg V1), the export dialog (leg V2), the figure cards of Overview (task 7.23 of the phase 7 plan) and the screen S47 Updates. `added` in `ui_test.go` names each of them, the tree test leaves them out, and the served count grows by their number.
 
 | File | Date | Holds |
 | --- | --- | --- |
@@ -40,4 +47,7 @@ The files in this table are new here; the taken commit does not hold them. They 
 | `web/js/viewer/grammar/yaml.js` | 2026-11-19 | the YAML line scanner: comments, keys, dashes, strings, numbers, keywords, anchors, tags and block scalars, folds by indentation |
 | `web/js/viewer/grammar/markdown.js` | 2026-11-19 | the Markdown line scanner for the source: headings, fenced blocks, inline code and markers, folds by heading |
 | `web/js/viewer/grammar/asciidoc.js` | 2026-11-19 | the AsciiDoc line scanner for the source: titles, delimited blocks, comments, attributes and inline code, folds by section |
+| `web/js/ui/figures.js` | 2026-11-20 | the figure cards of Overview (task 7.23): line charts of requests, data sent, CPU and memory drawn as SVG, with a range switch of 24 hours, 7 days and 30 days and the value under the pointer, and the most used repositories as a bar list |
+| `web/css/areas/figures.css` | 2026-11-20 | the layout of the figure cards and the colours of their lines and bars from the tokens, light and dark |
+| `web/js/pages/support/updates.js` | 2026-11-20 | the screen S47 Updates: install root, `update.json`, the trusted key, the owner and mode check, the fingerprint in hex and base64, the installed release, and the steps that set the key when it is missing or refused; read only, it never writes the key |
 | `web/js/viewer/grammar/lines.js` | 2026-11-19 | folds by indentation and by heading, and inline code, for the line scanners |

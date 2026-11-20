@@ -10,11 +10,33 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-# The owner of the install root /opt/pipesmith-registry; update refuses
-# any other user.
-User=root
+# It runs as root, the owner of the install root /opt/pipesmith-registry;
+# update refuses any other user. No User= line: with User=root and the
+# settings below systemd in a container failed the start with "Failed to
+# keep CAP_SYS_ADMIN".
 Environment=PIPESMITH_REGISTRY_DATA=/var/lib/pipesmith-registry
 ExecStart=/opt/pipesmith-registry/current/pipesmith-registry update --fetch --scheduled
+# The file system is read only except the install root, where the fetch
+# stage stages releases and the switch changes the links and the history,
+# and the data directory, where the way back renames the data files. It
+# talks to systemd over its socket below /run, which stays reachable.
+ProtectSystem=strict
+ReadWritePaths=/opt/pipesmith-registry /var/lib/pipesmith-registry
 PrivateTmp=yes
 NoNewPrivileges=yes
 ProtectHome=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0022

@@ -53,9 +53,14 @@ func (s *Server) docker(w http.ResponseWriter, req *request, st *state, repo rep
 		rest += "/"
 	}
 	if upload := s.uploadCall(rest); upload != nil {
-		return s.uploadStatus(w, req, repo, upload) // the status of an upload session (write_docker_upload.go)
+		// a session through a group lives in its writable member (decision 5.16)
+		target, _ := s.throughGroup(st, req, repo)
+		return s.uploadStatus(w, req, target, upload) // the status of an upload session (write_docker_upload.go)
 	}
-	call, err := docker.ParseV2(rest)
+	call, err := s.referrersCall(rest)
+	if call == nil && err == nil {
+		call, err = docker.ParseV2(rest)
+	}
 	if err != nil {
 		var pathErr *docker.PathError
 		if errors.As(err, &pathErr) {
@@ -68,11 +73,28 @@ func (s *Server) docker(w http.ResponseWriter, req *request, st *state, repo rep
 		dockerError(w, req, http.StatusNotFound, "UNSUPPORTED", fmt.Sprintf("/v2/%s is not a call of the registry read path", rest), nil)
 		return nil
 	}
-	switch call.Kind {
-	case "base":
+	if call.Kind == "base" {
 		dockerJSON(w, req, []byte("{}"), nil)
 		return nil
-	case "blob":
+	}
+	// the routing rules of the proxies (decision 5.15), then a proxy that
+	// asks its remote (upstream_docker.go)
+	members, blocked, err := s.routedMembers(repo, members, routedPath(t))
+	if err != nil {
+		dockerError(w, req, http.StatusServiceUnavailable, "UNAVAILABLE", routingRefusal, nil)
+		return nil
+	}
+	if blocked {
+		dockerError(w, req, http.StatusForbidden, "DENIED", fmt.Sprintf("a routing rule of repository %s blocks this path", repo.Name), nil)
+		return nil
+	}
+	if call.Kind == "referrers" {
+		return s.dockerReferrers(w, req, st, members, call) // from the stored manifests only (write_docker_referrers.go)
+	}
+	if s.fetchingAny(members) {
+		return s.dockerThrough(w, req, st, repo, members, call)
+	}
+	if call.Kind == "blob" {
 		return s.dockerBlob(w, req, st, members, call)
 	}
 	known, err := s.rp.anyIsDir(members, "v2/"+call.Name+"/manifests")
@@ -95,53 +117,59 @@ func (s *Server) docker(w http.ResponseWriter, req *request, st *state, repo rep
 func (s *Server) dockerManifest(w http.ResponseWriter, req *request, st *state, members []repos.Repo, call *docker.V2Path) error {
 	path := "v2/" + call.Name + "/manifests/" + call.Reference
 	for _, member := range members {
-		asset, f, size, err := s.rp.open(st, member.Name, path)
-		if err != nil {
+		answered, err := s.manifestOf(w, req, st, member, path, call)
+		if err != nil || answered {
 			return err
 		}
-		if asset == nil {
-			continue
-		}
-		var data []byte
-		if size <= docker.MaxManifestBytes {
-			if data, err = readUpTo(f, docker.MaxManifestBytes+1); err != nil {
-				return err
-			}
-		} else {
-			f.Close()
-		}
-		if len(data) == 0 || len(data) > docker.MaxManifestBytes {
-			logAt(slogWarn, serverLogger, "%s/%s in store %s has %d bytes, not served as a manifest", asset.Repo, path, asset.Store, size)
-			continue
-		}
-		contentType := stores.ManifestMediaType(data)
-		if headerSafe(asset.ContentType) {
-			contentType = *asset.ContentType
-		} else if contentType == "" {
-			contentType = jsonType
-		}
-		digest := docker.DigestOf(data)
-		if docker.IsDigest(call.Reference) {
-			algorithm, _, _ := strings.Cut(call.Reference, ":")
-			actual := digest
-			if algorithm != "sha256" {
-				if actual, err = docker.DigestOfAlgorithm(data, algorithm); err != nil {
-					return err
-				}
-			}
-			if actual != call.Reference && !docker.IsSchema1Signed(data, &contentType) {
-				logAt(slogWarn, serverLogger, "%s/%s in store %s hashes to %s; not served under %s", asset.Repo, path, asset.Store,
-					actual, call.Reference)
-				continue
-			}
-			digest = call.Reference
-		}
-		created := asset.CreatedMS
-		b := &body{size: int64(len(data)), etag: `"` + digest + `"`, modifiedMS: &created, contentType: contentType, data: data}
-		return send(w, req, b, append([][2]string{{docker.DigestHeader, digest}}, registryHeaders...))
 	}
 	dockerError(w, req, http.StatusNotFound, "MANIFEST_UNKNOWN", fmt.Sprintf("manifest %s of %s is not known", call.Reference, call.Name), nil)
 	return nil
+}
+
+// manifestOf answers the manifest of one member, false when the member has
+// none that answers the reference.
+func (s *Server) manifestOf(w http.ResponseWriter, req *request, st *state, member repos.Repo, path string, call *docker.V2Path) (bool, error) {
+	asset, f, size, err := s.rp.open(st, member.Name, path)
+	if err != nil || asset == nil {
+		return false, err
+	}
+	var data []byte
+	if size <= docker.MaxManifestBytes {
+		if data, err = readUpTo(f, docker.MaxManifestBytes+1); err != nil {
+			return false, err
+		}
+	} else {
+		f.Close()
+	}
+	if len(data) == 0 || len(data) > docker.MaxManifestBytes {
+		logAt(slogWarn, serverLogger, "%s/%s in store %s has %d bytes, not served as a manifest", asset.Repo, path, asset.Store, size)
+		return false, nil
+	}
+	contentType := stores.ManifestMediaType(data)
+	if headerSafe(asset.ContentType) {
+		contentType = *asset.ContentType
+	} else if contentType == "" {
+		contentType = jsonType
+	}
+	digest := docker.DigestOf(data)
+	if docker.IsDigest(call.Reference) {
+		algorithm, _, _ := strings.Cut(call.Reference, ":")
+		actual := digest
+		if algorithm != "sha256" {
+			if actual, err = docker.DigestOfAlgorithm(data, algorithm); err != nil {
+				return false, err
+			}
+		}
+		if actual != call.Reference && !docker.IsSchema1Signed(data, &contentType) {
+			logAt(slogWarn, serverLogger, "%s/%s in store %s hashes to %s; not served under %s", asset.Repo, path, asset.Store,
+				actual, call.Reference)
+			return false, nil
+		}
+		digest = call.Reference
+	}
+	created := asset.CreatedMS
+	b := &body{size: int64(len(data)), etag: `"` + digest + `"`, modifiedMS: &created, contentType: contentType, data: data}
+	return true, send(w, req, b, append([][2]string{{docker.DigestHeader, digest}}, registryHeaders...))
 }
 
 // dockerBlob is _docker_blob: the bytes of v2/-/blobs/<digest>, shared by
@@ -149,21 +177,27 @@ func (s *Server) dockerManifest(w http.ResponseWriter, req *request, st *state, 
 func (s *Server) dockerBlob(w http.ResponseWriter, req *request, st *state, members []repos.Repo, call *docker.V2Path) error {
 	path := dockerBlobPrefix + call.Reference
 	for _, member := range members {
-		asset, f, size, err := s.rp.open(st, member.Name, path)
-		if err != nil {
+		answered, err := s.blobOf(w, req, st, member, path, call)
+		if err != nil || answered {
 			return err
-		}
-		if asset != nil {
-			b := fileBody(asset, f, size)
-			b.contentType = octet
-			if headerSafe(asset.ContentType) {
-				b.contentType = *asset.ContentType
-			}
-			return send(w, req, b, append([][2]string{{docker.DigestHeader, call.Reference}}, registryHeaders...))
 		}
 	}
 	dockerError(w, req, http.StatusNotFound, "BLOB_UNKNOWN", fmt.Sprintf("blob %s is not known", call.Reference), nil)
 	return nil
+}
+
+// blobOf answers the blob of one member, false when it has none.
+func (s *Server) blobOf(w http.ResponseWriter, req *request, st *state, member repos.Repo, path string, call *docker.V2Path) (bool, error) {
+	asset, f, size, err := s.rp.open(st, member.Name, path)
+	if err != nil || asset == nil {
+		return false, err
+	}
+	b := fileBody(asset, f, size)
+	b.contentType = octet
+	if headerSafe(asset.ContentType) {
+		b.contentType = *asset.ContentType
+	}
+	return true, send(w, req, b, append([][2]string{{docker.DigestHeader, call.Reference}}, registryHeaders...))
 }
 
 // dockerTags is _docker_tags: the tags in code point order; n limits the
@@ -186,6 +220,12 @@ func (s *Server) dockerTags(w http.ResponseWriter, req *request, repo repos.Repo
 			}
 		}
 	}
+	return s.answerTags(w, req, repo, call, names, limit)
+}
+
+// answerTags is the answer of a tag list over the names found: the tags
+// among them in code point order, limit (the parameter n) and last applied.
+func (s *Server) answerTags(w http.ResponseWriter, req *request, repo repos.Repo, call *docker.V2Path, names []string, limit *big.Int) error {
 	tags := docker.TagNames(names)
 	if last, _ := req.params().get("last"); last != "" {
 		kept := []string{}

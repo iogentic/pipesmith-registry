@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"crypto/sha256"
 	"log/slog"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -120,6 +122,16 @@ func (v *view) report(log *slog.Logger) {
 	if len(unknown) > 0 {
 		log.Warn("realms this server does not build: nobody signs in through them", "realms", strings.Join(unknown, ","))
 	}
+	for _, u := range v.snap.Users {
+		if FormTooCostly(u.PasswordHash) {
+			log.Warn("the stored password form of a local user costs more than "+strconv.Itoa(MaxHashWork)+
+				" digests, so its password check is refused: set the password again", "user", u.ID)
+		}
+	}
+	for _, ids := range caseTwins(v.snap.RoleMappings) {
+		log.Warn("role mappings differ only in letter case, and each applies to the user of any of them", "source", ids[0],
+			"users", strings.Join(ids[1:], ","))
+	}
 	for kind, n := range v.resolver.Ignored() {
 		log.Warn("stored privileges that grant nothing", "type", kind, "count", n)
 	}
@@ -144,6 +156,29 @@ func (v *view) anonymousPermissions() []string {
 		return v.resolver.Permissions(u.Roles)
 	}
 	return v.resolver.Permissions(v.mappedRoles(id, SourceLocal))
+}
+
+// caseTwins are the role mappings of one source whose user ids differ only
+// in letter case (review 3-63): each entry is the source, then the ids.
+func caseTwins(mappings []model.RoleMapping) [][]string {
+	ids := map[[2]string][]string{}
+	var order [][2]string
+	for _, m := range mappings {
+		key := [2]string{m.Source, strings.ToLower(m.UserID)}
+		if _, seen := ids[key]; !seen {
+			order = append(order, key)
+		}
+		if !slices.Contains(ids[key], m.UserID) {
+			ids[key] = append(ids[key], m.UserID)
+		}
+	}
+	var twins [][]string
+	for _, key := range order {
+		if len(ids[key]) > 1 {
+			twins = append(twins, append([]string{key[0]}, ids[key]...))
+		}
+	}
+	return twins
 }
 
 // mappedRoles are the roles of the role mappings of a source for a user id,
@@ -190,12 +225,28 @@ func (v *view) subjectOf(u model.User, roles []string, realm string) model.Subje
 // that answer: CredentialTime after the bind or the lookup (review R7). A
 // remembered check and a Docker token of a directory user hold no longer
 // than until without asking the directory again. A local user has no until;
-// the view checks it at every use.
+// the view checks it at every use, and forms binds it to the stored password
+// form it had when it was checked (review 3-34): a user removed and added
+// again under the same name has a new form, so a Docker token or a session
+// of the removed user signs nobody in. forms holds a second digest when the
+// check stored the form again (rehash.go); an empty forms binds nothing.
+// forms is never changed after the check, so copies share it.
 type principal struct {
 	user   model.User
 	realm  string
 	groups []string
 	until  time.Time
+	forms  [][32]byte
+}
+
+// formDigest is the digest of a stored password form a principal holds, so
+// no copy of the form itself stays with a token or a session.
+func formDigest(form string) [32]byte { return sha256.Sum256([]byte("form\x00" + form)) }
+
+// localPrincipal is the principal of a local user of the view, bound to its
+// stored form.
+func localPrincipal(u model.User) principal {
+	return principal{user: model.User{ID: u.ID, Source: SourceLocal}, realm: RealmLocal, forms: [][32]byte{formDigest(u.PasswordHash)}}
 }
 
 // signedIn is a successful check: the principal, its subject against the view
@@ -222,6 +273,9 @@ func (v *view) subject(p principal) (model.Subject, bool) {
 	case RealmLocal:
 		u, ok := v.local[p.user.ID]
 		if !v.localOn || !ok || u.Status != "active" {
+			return model.Subject{}, false
+		}
+		if len(p.forms) > 0 && !slices.Contains(p.forms, formDigest(u.PasswordHash)) {
 			return model.Subject{}, false
 		}
 		return v.subjectOf(u, u.Roles, RealmLocal), true

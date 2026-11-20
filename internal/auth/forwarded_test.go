@@ -9,7 +9,6 @@ import (
 	"net/netip"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/auth"
 )
@@ -54,21 +53,66 @@ func TestForwardedHeadersFromAnUntrustedPeer(t *testing.T) {
 	if lines() != 3 || strings.Contains(logs.String(), canary) {
 		t.Fatalf("one line per peer and interval: %q", logs.String())
 	}
-	// the table holds MaxForwardedPeers peers: the two peers above are old by
-	// now and make room; a new peer while the table is full of recent ones
-	// gets no line, and room comes back once they are old
+	// the table holds MaxForwardedPeers peers; a new peer while it is full of
+	// recent ones takes the place of the oldest and gets its line (review
+	// 3-38)
 	for i := range auth.MaxForwardedPeers + 10 {
 		from(fmt.Sprintf("10.0.%d.%d", i/256, i%256), "X-Forwarded-For", canary)
 	}
-	if n := lines(); n != 3+auth.MaxForwardedPeers {
-		t.Fatalf("%d lines after %d new peers, want %d", n, auth.MaxForwardedPeers+10, 3+auth.MaxForwardedPeers)
+	if n := lines(); n != 3+auth.MaxForwardedPeers+10 {
+		t.Fatalf("%d lines after %d new peers, want %d", n, auth.MaxForwardedPeers+10, 3+auth.MaxForwardedPeers+10)
 	}
-	c.Add(auth.ForwardedWarnEvery - time.Second)
+	if n := auth.ForwardedPeers(w); n != auth.MaxForwardedPeers {
+		t.Fatalf("the table holds %d peers, want %d", n, auth.MaxForwardedPeers)
+	}
 	from("10.9.9.8", "X-Forwarded-For", canary)
-	c.Add(time.Second)
-	from("10.9.9.9", "X-Forwarded-For", canary)
-	if n := lines(); n != 3+auth.MaxForwardedPeers+1 || !strings.Contains(logs.String(), "10.9.9.9") || strings.Contains(logs.String(), "10.9.9.8") {
-		t.Fatalf("a new peer before and after the table aged: %d lines", n)
+	if n := lines(); n != 3+auth.MaxForwardedPeers+11 || !strings.Contains(logs.String(), "10.9.9.8") {
+		t.Fatalf("a new peer after %d recent ones: %d lines", auth.MaxForwardedPeers, n)
+	}
+}
+
+// Review 3-38: a real proxy that comes after MaxForwardedPeers other peers,
+// all recent, gets its line; the table stays bounded, and the lines of one
+// ForwardedWarnEvery are bounded by MaxForwardedLines plus one line that
+// says lines were left out.
+func TestForwardedWarningOfANewPeerAfterAFullTable(t *testing.T) {
+	var logs bytes.Buffer
+	c := newClock()
+	w := auth.NewForwardedWarner(nil, slog.New(slog.NewTextHandler(&lockedWriter{w: &logs}, nil)), c.Now)
+	from := func(peer string) {
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r.RemoteAddr = peer + ":40000"
+		r.Header.Set("X-Forwarded-For", "203.0.113.250")
+		w.Check(r)
+	}
+	lines := func() int { return strings.Count(logs.String(), "\n") }
+	for i := range auth.MaxForwardedPeers {
+		from(fmt.Sprintf("10.1.%d.%d", i/256, i%256))
+	}
+	from("198.51.100.20") // the real proxy
+	if !strings.Contains(logs.String(), "forwarded headers from 198.51.100.20,") || lines() != auth.MaxForwardedPeers+1 {
+		t.Fatalf("the proxy after %d recent peers: %d lines, proxy named %v", auth.MaxForwardedPeers, lines(),
+			strings.Contains(logs.String(), "198.51.100.20"))
+	}
+	if n := auth.ForwardedPeers(w); n > auth.MaxForwardedPeers {
+		t.Fatalf("the table holds %d peers, bound %d", n, auth.MaxForwardedPeers)
+	}
+	for i := lines(); i < auth.MaxForwardedLines; i++ {
+		from(fmt.Sprintf("10.2.%d.%d", i/256, i%256))
+	}
+	if lines() != auth.MaxForwardedLines {
+		t.Fatalf("%d lines, want %d", lines(), auth.MaxForwardedLines)
+	}
+	from("198.51.100.21")
+	from("198.51.100.22")
+	if lines() != auth.MaxForwardedLines+1 || strings.Contains(logs.String(), "198.51.100.21") ||
+		!strings.Contains(logs.String(), "lines left out") {
+		t.Fatalf("beyond the bound of lines: %d lines, last %q", lines(), logs.String()[strings.LastIndex(strings.TrimSuffix(logs.String(), "\n"), "\n")+1:])
+	}
+	c.Add(auth.ForwardedWarnEvery)
+	from("198.51.100.21")
+	if lines() != auth.MaxForwardedLines+2 || !strings.Contains(logs.String(), "forwarded headers from 198.51.100.21,") {
+		t.Fatalf("the peer left out, in the next interval: %d lines", lines())
 	}
 }
 

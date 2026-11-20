@@ -207,7 +207,7 @@ func LoadUpdateConfig(root string) (*UpdateConfig, error) {
 	p := filepath.Join(root, ConfigFile)
 	f, err := os.Open(p) // #nosec G304 -- update.json of the install root.
 	if err != nil {
-		return nil, fmt.Errorf("%w: cannot read %s: %v", ErrConfig, p, err)
+		return nil, fmt.Errorf("%w: cannot read %s: %w", ErrConfig, p, err)
 	}
 	defer f.Close()
 	data, err := io.ReadAll(io.LimitReader(f, maxConfig+1))

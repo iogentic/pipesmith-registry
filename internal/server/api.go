@@ -340,6 +340,7 @@ func (s *Server) apiScan(w *recorder, req *request, _ []string) error {
 	}
 	if err != nil {
 		// a body h11 cannot read ends the request as uvicorn ends it
+		w.writeAudit(http.StatusBadRequest) // finding 7b-5: the audit line follows the status; no access line, as uvicorn
 		s.invalidRequest(w.ResponseWriter)
 		return nil
 	}

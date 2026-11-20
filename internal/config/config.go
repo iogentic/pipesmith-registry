@@ -22,6 +22,7 @@ const (
 	EnvData       = "PIPESMITH_REGISTRY_DATA"
 	EnvPort       = "PIPESMITH_REGISTRY_PORT"
 	EnvWrites     = "PIPESMITH_REGISTRY_WRITES"
+	EnvUpstream   = "PIPESMITH_REGISTRY_UPSTREAM"
 	LegacyEnvData = "ARTIFACT_REPOSITORY_DATA"
 	LegacyEnvPort = "ARTIFACT_REPOSITORY_PORT"
 )
@@ -173,9 +174,13 @@ func Save(cfg *Config) error {
 		ports.Set(name, port)
 	}
 	doc := pyjson.NewObject().Set("bind", cfg.Bind).Set("port", cfg.Port).Set("stores", stores).Set("docker_ports", ports)
+	saveLogDir(cfg, doc)
 	if cfg.Writes {
 		// only while on: with writes off the file keeps the bytes of the port
 		doc.Set("writes", true)
+	}
+	if cfg.Upstream {
+		doc.Set("upstream", true) // only while on, as writes
 	}
 	saveProcess(cfg, doc)
 	text, err := pyjson.DumpsIndent(doc, 2)
@@ -329,6 +334,9 @@ func nonEmptyString(v any) bool {
 }
 
 func apply(cfg *Config, data *pyjson.Object) error {
+	if err := applyLogDir(cfg, data); err != nil {
+		return err
+	}
 	path := cfg.ConfigPath()
 	if bind, ok := data.Get("bind"); ok {
 		s, isString := bind.(string)
@@ -384,12 +392,17 @@ func apply(cfg *Config, data *pyjson.Object) error {
 		cfg.Stores = append(cfg.Stores, StoreConfig{Name: name, Kind: get(obj, "kind").(string),
 			Root: get(obj, "root").(string), Repos: repos, Manifest: manifest})
 	}
-	if value, ok := data.Get("writes"); ok {
-		on, isBool := value.(bool)
-		if !isBool {
-			return valueError("%s: writes is not true or false", path)
+	for _, key := range []struct {
+		name   string
+		target *bool
+	}{{"writes", &cfg.Writes}, {"upstream", &cfg.Upstream}} {
+		if value, ok := data.Get(key.name); ok {
+			on, isBool := value.(bool)
+			if !isBool {
+				return valueError("%s: %s is not true or false", path, key.name)
+			}
+			*key.target = on
 		}
-		cfg.Writes = on
 	}
 	ports := pyjson.NewObject()
 	if value := get(data, "docker_ports"); truthy(value) {
@@ -454,10 +467,21 @@ func checkPort(value any, what string) (int, error) {
 // config.json. The variable takes 1, true, on or yes for on and 0, false,
 // off or no for off, without regard to case and surrounding space.
 func WritesFrom(getenv func(string) string, file bool) (bool, error) {
+	return switchFrom(EnvWrites, getenv, file)
+}
+
+// UpstreamFrom is the value upstream of serve without its option (decision
+// 5.1 of the phase 5 plan), read as WritesFrom reads writes: EnvUpstream
+// when it is set, else file.
+func UpstreamFrom(getenv func(string) string, file bool) (bool, error) {
+	return switchFrom(EnvUpstream, getenv, file)
+}
+
+func switchFrom(name string, getenv func(string) string, file bool) (bool, error) {
 	if getenv == nil {
 		getenv = os.Getenv
 	}
-	value := strings.ToLower(strings.TrimSpace(getenv(EnvWrites)))
+	value := strings.ToLower(strings.TrimSpace(getenv(name)))
 	switch value {
 	case "":
 		return file, nil
@@ -466,5 +490,5 @@ func WritesFrom(getenv func(string) string, file bool) (bool, error) {
 	case "0", "false", "off", "no":
 		return false, nil
 	}
-	return false, valueError("%s is neither on nor off: %s", EnvWrites, pystr.Repr(getenv(EnvWrites)))
+	return false, valueError("%s is neither on nor off: %s", name, pystr.Repr(getenv(name)))
 }

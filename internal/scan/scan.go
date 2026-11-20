@@ -77,14 +77,25 @@ func Run(s stores.Store, ix *index.Index, progress func(live int)) (Result, erro
 // the scan of a store whose write order the caller knows. A nil arbiter is
 // Run.
 func RunWith(s stores.Store, ix *index.Index, progress func(live int), arbiter index.Arbiter) (Result, error) {
+	return RunIn(nil, s, ix, progress, arbiter)
+}
+
+// RunIn is RunWith with catalog.sqlite as the caller holds it open: a
+// serving process opens the file once and its writes keep it (leg F1b).
+// The scan takes the writer of the catalog before the index commits, so a
+// write that follows the index waits for the catalog of the scan. A nil
+// file is RunWith, which opens the file beside the index for the scan.
+func RunIn(file *catalog.Catalog, s stores.Store, ix *index.Index, progress func(live int), arbiter index.Arbiter) (Result, error) {
 	var counts stores.ScanCounts
 	started := time.Now()
 	reported := -1
 	ranks := map[string]int{}
 
-	// The walk runs as a pull iterator, as the generator of Python does: the
-	// first entry is read before the index is touched, and counts holds what
-	// the walk had counted when it handed over the current entry.
+	// The walk runs as a pull iterator, as the generator of Python does, and
+	// counts holds what the walk had counted when it handed over the current
+	// entry. The first entry is read inside the index transaction: a write
+	// that lands after the first read of the walk then waits for the scan
+	// instead of losing its row to it.
 	var walkErr error
 	next, stop := iter.Pull(func(yield func(stores.Entry) bool) {
 		walkErr = s.Entries(&counts, func(e stores.Entry) error {
@@ -96,36 +107,23 @@ func RunWith(s stores.Store, ix *index.Index, progress func(live int), arbiter i
 	})
 	defer stop()
 
-	entry, ok := next()
-	if !ok {
-		if walkErr != nil {
-			return Result{}, walkErr
-		}
-		if stores.LooksUnmounted(s) {
-			stats, err := ix.StoreStats()
-			if err != nil {
-				return Result{}, err
-			}
-			var held int64
-			for _, stat := range stats {
-				if stat.Store == s.Name() {
-					held = stat.Files
-					break
-				}
-			}
-			if held != 0 {
-				return Result{}, &stores.NotFoundError{Message: fmt.Sprintf(
-					"store %s at %s holds no files, but the index has %d rows of it; the rows are kept."+
-						" Check that the disk is mounted, or detach the store with: store remove %s",
-					s.Name(), s.Root(), held, s.Name())}
-			}
-		}
-	}
-
 	// catalog.sqlite beside the index takes the same entries once the index
 	// holds them; it never fails the scan.
-	fill := catalog.StartScan(ix, s.Name())
+	var fill *catalog.Scan
+	if arbiter != nil {
+		arbiter = &chooser{Arbiter: arbiter, fill: &fill}
+	}
 	_, err := ix.ReplaceStoreWith(s.Name(), func(yield func(stores.Entry) error) error {
+		entry, ok := next()
+		if !ok {
+			if walkErr != nil {
+				return walkErr
+			}
+			if err := keepUnmounted(s, ix); err != nil {
+				return err
+			}
+		}
+		fill = catalog.StartScanIn(file, ix, s.Name())
 		for ok {
 			rank, seen := ranks[entry.Repo]
 			if !seen || rank != 0 {
@@ -146,10 +144,15 @@ func RunWith(s stores.Store, ix *index.Index, progress func(live int), arbiter i
 			}
 			entry, ok = next()
 		}
+		if walkErr == nil {
+			fill.Hold()
+		}
 		return walkErr
 	}, arbiter)
 	if err != nil {
-		fill.Finish(ix, false)
+		if fill != nil {
+			fill.Finish(ix, false)
+		}
 		return Result{}, err
 	}
 	hints := map[string]string{}
@@ -174,4 +177,76 @@ func RunWith(s stores.Store, ix *index.Index, progress func(live int), arbiter i
 		Seconds:    time.Since(started).Seconds(),
 		Hints:      hints,
 	}, nil
+}
+
+// chooser hands every decision of the arbiter of a store to the catalog
+// side of the scan, so that catalog.sqlite takes the blob the index takes
+// for each path: the one the arbiter keeps of two blobs of a path, and none
+// for a row it drops. fill points at the catalog side, which the scan starts
+// inside the index transaction once it has read the first entry.
+type chooser struct {
+	index.Arbiter
+	fill **catalog.Scan
+}
+
+func (c *chooser) choose(repo, path, location string) {
+	if *c.fill != nil {
+		(*c.fill).Choose(repo, path, location)
+	}
+}
+
+func (c *chooser) Newer(held, next stores.Entry) bool {
+	newer := c.Arbiter.Newer(held, next)
+	kept := held
+	if newer {
+		kept = next
+	}
+	c.choose(kept.Repo, kept.Path, kept.Location)
+	return newer
+}
+
+func (c *chooser) Settle(rows index.Rows) error {
+	return c.Arbiter.Settle(chosenRows{Rows: rows, chooser: c})
+}
+
+// chosenRows are the rows of a store that tell the catalog of every row the
+// arbiter drops.
+type chosenRows struct {
+	index.Rows
+	chooser *chooser
+}
+
+func (r chosenRows) Drop(repo, path string) error {
+	if err := r.Rows.Drop(repo, path); err != nil {
+		return err
+	}
+	r.chooser.choose(repo, path, "")
+	return nil
+}
+
+// keepUnmounted fails a walk without entries of a store that looks unmounted
+// while the index has rows of it, so that the rows stay. The rows are read
+// on a reader connection, which sees them as the last commit left them.
+func keepUnmounted(s stores.Store, ix *index.Index) error {
+	if !stores.LooksUnmounted(s) {
+		return nil
+	}
+	stats, err := ix.StoreStats()
+	if err != nil {
+		return err
+	}
+	var held int64
+	for _, stat := range stats {
+		if stat.Store == s.Name() {
+			held = stat.Files
+			break
+		}
+	}
+	if held == 0 {
+		return nil
+	}
+	return &stores.NotFoundError{Message: fmt.Sprintf(
+		"store %s at %s holds no files, but the index has %d rows of it; the rows are kept."+
+			" Check that the disk is mounted, or detach the store with: store remove %s",
+		s.Name(), s.Root(), held, s.Name())}
 }

@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/export"
 	"github.com/iogentic/pipesmith-registry/internal/pyjson"
 	"github.com/iogentic/pipesmith-registry/internal/stores"
 	"github.com/iogentic/pipesmith-registry/internal/testkit"
@@ -335,5 +336,71 @@ func TestExportTimeLimitBreaksTheTransfer(t *testing.T) {
 	}
 	if len(lines) != 1 || !strings.Contains(lines[0], "ended early") {
 		t.Fatalf("log lines on the time limit: %q", lines)
+	}
+}
+
+// growingStore hands out the bytes of a file with more bytes after them,
+// for every file whose bytes start with prefix: a store that grew after the
+// scan, out of step with its index.
+type growingStore struct {
+	stores.Store
+	dir    string
+	prefix []byte
+}
+
+func (g *growingStore) Open(location string) (*os.File, error) {
+	f, err := g.Store.Open(location)
+	if err != nil {
+		return nil, err
+	}
+	data, err := io.ReadAll(f)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.HasPrefix(data, g.prefix) {
+		return g.Store.Open(location)
+	}
+	grown, err := os.CreateTemp(g.dir, "grown-*")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := grown.Write(append(data, " and bytes the index never counted"...)); err != nil {
+		grown.Close()
+		return nil, err
+	}
+	if _, err := grown.Seek(0, io.SeekStart); err != nil {
+		grown.Close()
+		return nil, err
+	}
+	return grown, nil
+}
+
+// browsetools-34: a store file that grew after the scan would pass the byte
+// limit, which counts the sizes of the index. The export sends no entry
+// beyond its index size: the transfer ends early (call B19) and the entry is
+// not in the archive. The twin: the same folder with a store in step exports
+// whole.
+func TestExportEndsAtAStoreFileThatGrewAfterTheScan(t *testing.T) {
+	dir := t.TempDir()
+	defs := []*pyjson.Object{def("demo-raw", "raw", "hosted")}
+	a := startExport(t, exportOptions{blobs: threeJars(), defs: defs, limits: export.Limits{MaxFiles: 3, MaxBytes: 61},
+		wrap: func(s stores.Store) stores.Store { return &growingStore{Store: s, dir: dir, prefix: []byte("BBBB")} }})
+	target := exportTarget("demo-raw", "path", "docs")
+	dry := dryOf(t, a.get(exportTarget("demo-raw", "path", "docs", "dry", "1")))
+	if dry["bytes"] != json.Number("61") {
+		t.Fatalf("dry %v", dry)
+	}
+	cut := rawGet(t, a.addr, target)
+	if cut.status != 200 || bytes.HasSuffix(cut.raw, lastChunk) || !errors.Is(cut.bodyErr, io.ErrUnexpectedEOF) {
+		t.Fatalf("the export of a grown file: %d, last chunk %v, body error %v", cut.status, bytes.HasSuffix(cut.raw, lastChunk), cut.bodyErr)
+	}
+	if bytes.Contains(cut.body, []byte("never counted")) {
+		t.Fatal("the archive holds bytes beyond the index size")
+	}
+	whole := startExport(t, exportOptions{blobs: threeJars(), defs: defs, limits: export.Limits{MaxFiles: 3, MaxBytes: 61}})
+	got := rawGet(t, whole.addr, target)
+	if got.status != 200 || got.bodyErr != nil || len(readZip(t, got.body)) != 3 {
+		t.Fatalf("the export in step: %d, body error %v", got.status, got.bodyErr)
 	}
 }

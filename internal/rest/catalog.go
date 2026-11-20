@@ -54,7 +54,13 @@ func (c *Catalog) Close() error { return c.db.Close() }
 type prefilter struct {
 	groups [][]string
 	sha1   string
+	// after, when set, passes only the paths whose key (directory, file
+	// name) sorts after it: the keyset of a listing page.
+	after *[2]string
 }
+
+// errStop ends a walk early without an error (walk returns nil).
+var errStop = errors.New("stop the walk")
 
 // cursor is the rows of one store of one repository in key order.
 type cursor struct {
@@ -90,6 +96,15 @@ func (c *cursor) next() error {
 		c.row.ContentType = &s
 	}
 	return nil
+}
+
+// splitPath is the key of a path in the index: directory and file name.
+func splitPath(path string) [2]string {
+	i := strings.LastIndex(path, "/")
+	if i < 0 {
+		return [2]string{"", path}
+	}
+	return [2]string{path[:i], path[i+1:]}
 }
 
 func less(a, b [2]string) bool { return a[0] < b[0] || a[0] == b[0] && a[1] < b[1] }
@@ -138,6 +153,10 @@ func (c *Catalog) walk(ctx context.Context, repo string, pre prefilter, lookup f
 			args = append(args, pattern)
 		}
 		where += " AND (" + strings.Join(or, " OR ") + ")"
+	}
+	if pre.after != nil {
+		where += " AND (parent > ? OR parent = ? AND name > ?)"
+		args = append(args, pre.after[0], pre.after[0], pre.after[1])
 	}
 	if pre.sha1 != "" {
 		where += " AND lower(sha1) = ?"
@@ -195,6 +214,9 @@ func (c *Catalog) walk(ctx context.Context, repo string, pre prefilter, lookup f
 			}
 		}
 		if err := fn(winner); err != nil {
+			if errors.Is(err, errStop) {
+				return nil
+			}
 			return err
 		}
 	}

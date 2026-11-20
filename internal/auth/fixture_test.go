@@ -164,6 +164,20 @@ type directory struct {
 	groups  []string
 	err     error
 	noID    bool // accept every pair and answer a user without an id
+	// entries name the directory entry of a person (model.User.Entry); a
+	// person without one is answered without an entry
+	entries map[string]string
+}
+
+// setEntry gives the name to the entry named entry, as when the directory
+// gives a name anew to another entry.
+func (d *directory) setEntry(name, entry string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.entries == nil {
+		d.entries = map[string]string{}
+	}
+	d.entries[name] = entry
 }
 
 // Lookup finds a person by name, as the search under the service bind does.
@@ -178,7 +192,7 @@ func (d *directory) Lookup(_ context.Context, username string) (model.User, []st
 		return model.User{}, nil, fmt.Errorf("demo directory: %w", auth.ErrNoUser)
 	}
 	return model.User{ID: username, FirstName: "Lena", LastName: "Directory", Email: username + "@example.com",
-		Source: "LDAP", Status: "active"}, d.groups, nil
+		Source: "LDAP", Status: "active", Entry: d.entries[username]}, d.groups, nil
 }
 
 func (d *directory) lookupCount() int {
@@ -216,7 +230,7 @@ func (d *directory) Login(_ context.Context, username, password string) (model.U
 	}
 	if want, ok := d.people[username]; ok && want == password {
 		return model.User{ID: username, FirstName: "Lena", LastName: "Directory", Email: username + "@example.com",
-			Source: "LDAP", Status: "active"}, d.groups, nil
+			Source: "LDAP", Status: "active", Entry: d.entries[username]}, d.groups, nil
 	}
 	return model.User{}, nil, fmt.Errorf("demo directory: %w", auth.ErrWrongPair)
 }

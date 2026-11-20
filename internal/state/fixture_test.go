@@ -19,13 +19,15 @@ import (
 )
 
 // The fixtures in testdata/state: v<N>.sqlite is a state file of schema N
-// with invented rows. v1.sqlite is a state file as release 0.1.1 writes it.
-// Its generator below holds schema 1 as that release creates it and writes
-// the rows with plain SQL, so the steps after 1 in migrations.go never
-// change it. The file is written again with
+// with invented rows. v1.sqlite is a state file as release 0.1.1 writes it,
+// v2.sqlite one as release 0.1.3 writes it, v3.sqlite one with the routing
+// tables of step 3 (phase 5), v4.sqlite one with the imported keys of step 4. The generator below holds each
+// schema as its release creates it and writes the rows with plain SQL, so
+// the steps of migrations.go never change a fixture. The files are written
+// again with
 //
-//	tools/go.sh run 'go test ./internal/state -run "^TestFixtureV1IsItsGeneratorOutput$" -write-fixture'
-var writeFixture = testflag.Bool("write-fixture", false, "write testdata/state/v1.sqlite from its generator")
+//	tools/go.sh run 'go test ./internal/state -run "^TestFixturesAreTheirGeneratorOutput$" -write-fixture'
+var writeFixture = testflag.Bool("write-fixture", false, "write testdata/state/v<N>.sqlite from its generator")
 
 const fixtures = "../../testdata/state"
 
@@ -51,6 +53,65 @@ var schemaV1 = []string{
 		" soft_quota TEXT) WITHOUT ROWID",
 	"CREATE TABLE IF NOT EXISTS repositories (name TEXT PRIMARY KEY, format TEXT NOT NULL, type TEXT NOT NULL," +
 		" online INTEGER NOT NULL, attributes TEXT NOT NULL) WITHOUT ROWID",
+}
+
+// schemaV2 is what step 2 adds as release 0.1.3 creates it: the tokens and
+// the generation row.
+var schemaV2 = []string{
+	"CREATE TABLE IF NOT EXISTS tokens (public TEXT NOT NULL UNIQUE, kind TEXT NOT NULL, user_id TEXT NOT NULL," +
+		" source TEXT NOT NULL, digest BLOB NOT NULL, created INTEGER NOT NULL, last_used INTEGER)",
+	"CREATE INDEX IF NOT EXISTS tokens_owner ON tokens (user_id, source, kind)",
+	"INSERT INTO meta VALUES ('generation', 0) ON CONFLICT (key) DO NOTHING",
+}
+
+// schemaV3 is what step 3 adds: the routing rules and the links of the
+// repositories to them.
+var schemaV3 = []string{
+	"CREATE TABLE IF NOT EXISTS routing_rules (name TEXT PRIMARY KEY, description TEXT NOT NULL, mode TEXT NOT NULL," +
+		" matchers TEXT NOT NULL) WITHOUT ROWID",
+	"CREATE TABLE IF NOT EXISTS routing_links (repository TEXT PRIMARY KEY, rule TEXT NOT NULL) WITHOUT ROWID",
+}
+
+// schemaV4 is what step 4 adds: the keys an import took over.
+var schemaV4 = []string{
+	"CREATE TABLE IF NOT EXISTS imported_keys (digest BLOB PRIMARY KEY, kind TEXT NOT NULL," +
+		" user_id TEXT NOT NULL, source TEXT NOT NULL, created INTEGER NOT NULL, last_used INTEGER) WITHOUT ROWID",
+}
+
+// rowsV4 are the rows v4.sqlite holds beyond those of v3.sqlite: one
+// imported npm key of demo-admin with an invented digest. Load gives none.
+var rowsV4 = []struct {
+	table  string
+	values []any
+}{
+	{"imported_keys", []any{
+		[]byte{0x5a, 0x11, 0x0e, 0x93, 0x27, 0xc4, 0x80, 0x6b, 0x3d, 0xf2, 0x19, 0xa7, 0x44, 0x08, 0xbe, 0x71,
+			0xcc, 0x02, 0x6d, 0x95, 0xe3, 0x4a, 0x1f, 0xb8, 0x70, 0x2e, 0xd6, 0x59, 0x13, 0x8f, 0xa4, 0x36},
+		"npm", "demo-admin", "default", int64(1795121000000), nil}},
+}
+
+// rowsV3 are the rows v3.sqlite holds beyond those of v2.sqlite: one
+// routing rule and the link of demo-docker to it. Load gives neither.
+var rowsV3 = []struct {
+	table  string
+	values []any
+}{
+	{"routing_rules", []any{"demo-block-internal", "Keeps the internal names off the remote", "BLOCK",
+		`["^/com/example/internal/.*"]`}},
+	{"routing_links", []any{"demo-docker", "demo-block-internal"}},
+}
+
+// rowsV2 are the rows v2.sqlite holds beyond those of v1.sqlite: one npm
+// token of demo-admin with invented digest bytes. The generation stays 0,
+// as in a fresh file, so that the schema comparison holds.
+var rowsV2 = []struct {
+	table  string
+	values []any
+}{
+	{"tokens", []any{"AAAAAAAAAAA", "npm", "demo-admin", "default",
+		[]byte{0x0b, 0x2f, 0xc3, 0x5c, 0x8e, 0x4e, 0x86, 0x58, 0x62, 0x3c, 0x1c, 0x1a, 0x8e, 0x8b, 0xe8, 0xf5,
+			0x97, 0x1d, 0x9b, 0x21, 0x0c, 0x9c, 0xb5, 0x55, 0x50, 0x88, 0xe1, 0x28, 0x6f, 0x23, 0x0a, 0x93},
+		int64(1795120000000), int64(1795120600000)}},
 }
 
 // adminHashV1 is the Shiro 1 hash (SHA-512, 1024 rounds) of the invented
@@ -159,15 +220,24 @@ func recordsV1() *model.Snapshot {
 				"maven":   map[string]any{"layoutPolicy": "STRICT", "versionPolicy": "RELEASE"},
 				"storage": map[string]any{"blobStoreName": "demo-quota", "writePolicy": "ALLOW"}}},
 		},
+		CleanupPolicies: []model.CleanupPolicy{},
+		Tasks:           []model.Task{},
+		Capabilities:    []model.Capability{},
 	}
 }
 
 // fixtureRecords are the records Load gives for each fixture, by version.
-var fixtureRecords = map[int]func() *model.Snapshot{1: recordsV1}
+// The token of v2.sqlite, the routing rows of v3.sqlite and the imported
+// key of v4.sqlite are no records of Load.
+var fixtureRecords = map[int]func() *model.Snapshot{1: recordsV1, 2: recordsV1, 3: recordsV1, 4: recordsV1}
 
-// generateV1 writes v1.sqlite at path, which must not exist: WAL mode, schema
-// 1 and the schema row in one transaction, the rows in a second one.
-func generateV1(path string) error {
+// fixtureVersions are the schemas of the committed fixtures.
+var fixtureVersions = []int{1, 2, 3, 4}
+
+// generateFixture writes v<version>.sqlite at path, which must not exist:
+// WAL mode, the schema up to version and the schema row in one
+// transaction, the rows in a second one.
+func generateFixture(path string, version int) error {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return err
@@ -198,18 +268,38 @@ func generateV1(path string) error {
 	_, err = db.Exec("PRAGMA journal_mode = WAL")
 	if err == nil {
 		err = inTx(func(tx *sql.Tx) error {
-			for _, statement := range schemaV1 {
+			statements := slices.Clone(schemaV1)
+			if version >= 2 {
+				statements = append(statements, schemaV2...)
+			}
+			if version >= 3 {
+				statements = append(statements, schemaV3...)
+			}
+			if version >= 4 {
+				statements = append(statements, schemaV4...)
+			}
+			for _, statement := range statements {
 				if _, err := tx.Exec(statement); err != nil {
 					return err
 				}
 			}
-			_, err := tx.Exec("INSERT INTO meta VALUES ('schema', ?)", 1)
+			_, err := tx.Exec("INSERT INTO meta VALUES ('schema', ?)", version)
 			return err
 		})
 	}
 	if err == nil {
 		err = inTx(func(tx *sql.Tx) error {
-			for _, row := range rowsV1 {
+			rows := slices.Clone(rowsV1)
+			if version >= 2 {
+				rows = append(rows, rowsV2...)
+			}
+			if version >= 3 {
+				rows = append(rows, rowsV3...)
+			}
+			if version >= 4 {
+				rows = append(rows, rowsV4...)
+			}
+			for _, row := range rows {
 				marks := strings.TrimSuffix(strings.Repeat("?, ", len(row.values)), ", ")
 				if _, err := tx.Exec("INSERT INTO "+row.table+" VALUES ("+marks+")", row.values...); err != nil {
 					return fmt.Errorf("%s %v: %w", row.table, row.values[0], err)
@@ -330,6 +420,23 @@ func dump(t *testing.T, path string, rows bool) string {
 	return strings.Join(out, "\n")
 }
 
+// keptTables are the tables of each schema whose rows the records of
+// fixtureRecords do not cover: the tokens of step 2, the routing rules of
+// step 3 and the imported keys of step 4. A migration keeps their rows as
+// they are.
+var keptTables = map[int][]string{2: {"tokens"}, 3: {"tokens", "routing_rules", "routing_links"},
+	4: {"tokens", "routing_rules", "routing_links", "imported_keys"}}
+
+// keptRows are the rows of the kept tables of the file at path, by table.
+func keptRows(t *testing.T, path string, version int) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	for _, table := range keptTables[version] {
+		out[table] = tableRows(t, path, table)
+	}
+	return out
+}
+
 func sameRecords(t *testing.T, got, want *model.Snapshot) {
 	t.Helper()
 	if !reflect.DeepEqual(got, want) {
@@ -344,25 +451,28 @@ func sameRecords(t *testing.T, got, want *model.Snapshot) {
 	}
 }
 
-// The committed v1.sqlite holds what its generator writes.
-func TestFixtureV1IsItsGeneratorOutput(t *testing.T) {
-	committed := filepath.Join(fixtures, "v1.sqlite")
-	if *writeFixture {
-		if err := os.Remove(committed); err != nil && !os.IsNotExist(err) {
+// Each committed fixture holds what its generator writes.
+func TestFixturesAreTheirGeneratorOutput(t *testing.T) {
+	for _, version := range fixtureVersions {
+		name := "v" + strconv.Itoa(version) + ".sqlite"
+		committed := filepath.Join(fixtures, name)
+		if *writeFixture {
+			if err := os.Remove(committed); err != nil && !os.IsNotExist(err) {
+				t.Fatal(err)
+			}
+			if err := generateFixture(committed, version); err != nil {
+				t.Fatal(err)
+			}
+		}
+		fresh := filepath.Join(t.TempDir(), name)
+		if err := generateFixture(fresh, version); err != nil {
 			t.Fatal(err)
 		}
-		if err := generateV1(committed); err != nil {
-			t.Fatal(err)
+		got := dump(t, copied(t, committed, filepath.Join(t.TempDir(), name)), true)
+		if want := dump(t, fresh, true); got != want {
+			t.Fatalf("%s is not what its generator writes; write it again with -write-fixture\ngot\n%s\nwant\n%s",
+				committed, got, want)
 		}
-	}
-	fresh := filepath.Join(t.TempDir(), "v1.sqlite")
-	if err := generateV1(fresh); err != nil {
-		t.Fatal(err)
-	}
-	got := dump(t, copied(t, committed, filepath.Join(t.TempDir(), "v1.sqlite")), true)
-	if want := dump(t, fresh, true); got != want {
-		t.Fatalf("%s is not what its generator writes; write it again with -write-fixture\ngot\n%s\nwant\n%s",
-			committed, got, want)
 	}
 }
 
@@ -392,6 +502,13 @@ func TestFixturesReachTheLastSchema(t *testing.T) {
 				t.Fatalf("%s: no version or no records for it in fixtureRecords", name)
 			}
 			dir := dataDirOf(t, name)
+			// read from the copy: a read of the fixture itself leaves files beside it
+			before := keptRows(t, Path(dir), version)
+			for table, rows := range before {
+				if rows == "" {
+					t.Fatalf("%s holds no row of %s", name, table)
+				}
+			}
 			st, err := Open(dir)
 			if err != nil {
 				t.Fatal(err)
@@ -404,6 +521,9 @@ func TestFixturesReachTheLastSchema(t *testing.T) {
 				t.Fatal(err)
 			}
 			sameRecords(t, got, fixtureRecords[version]())
+			if after := keptRows(t, Path(dir), version); !reflect.DeepEqual(after, before) {
+				t.Fatalf("rows after the open\n%v\nrows of the fixture\n%v", after, before)
+			}
 			if schema := dump(t, Path(dir), false); schema != fresh {
 				t.Fatalf("schema after the open\n%s\nschema of a fresh file\n%s", schema, fresh)
 			}

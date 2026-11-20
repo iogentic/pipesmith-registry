@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="psr-flow-update" viewBox="0 0 1360 992" width="1360" height="992" role="img" aria-label="Update, Pipesmith Registry 0.2.0. update checks signature, version and schema before it swaps two links; when the new server fails, the links and copies go back. 1: update to Install root: lock the root; read update.json and current. 2: update to Release folder: signature of SHA256SUMS, SHA-256 of the binary. 3: update to Release folder: copy answers version: higher than current. 4: update to Data directory: schema plan; free space for the copies. 5: update to Install root: releases/&lt;version&gt;/; previous -&gt; old, current -&gt; new. 6: update to systemd unit: systemctl restart. 7: systemd unit to New server: start. 8: New server to Data directory: copy state.sqlite.v1, then migrate. 9: update to New server: GET /api/health and /api/status, 30 s. Way back when the restart or the health wait fails. 10: update to Install root: current and previous as they were. 11: update to systemd unit: systemctl stop. 12: update to Data directory: state.sqlite.v1 back; migrated file kept as .failed. 13: update to systemd unit: restart the earlier release, health wait, exit 1."><title>Pipesmith Registry update</title><style>#psr-flow-update{--psr-bg:#F5F7FC; --psr-panel:#FFFFFF; --psr-dim:#EEF2FA; --psr-ink:#0A1020; --psr-muted:#46526E; --psr-line:#D8DEEA; --psr-edge:#7A859C; --psr-req:#2B62F0; --psr-read:#12B5D6; --psr-write:#7A52F0;}@media (prefers-color-scheme: dark){#psr-flow-update{--psr-bg:#05070D; --psr-panel:#0D1322; --psr-dim:#151D31; --psr-ink:#F2F6FF; --psr-muted:#A6B3CF; --psr-line:#1F2A42; --psr-edge:#5B6A8C; --psr-req:#3D7BFF; --psr-read:#22E6FF; --psr-write:#8A5CFF;}}[data-theme="light"] #psr-flow-update{--psr-bg:#F5F7FC; --psr-panel:#FFFFFF; --psr-dim:#EEF2FA; --psr-ink:#0A1020; --psr-muted:#46526E; --psr-line:#D8DEEA; --psr-edge:#7A859C; --psr-req:#2B62F0; --psr-read:#12B5D6; --psr-write:#7A52F0;}[data-theme="dark"] #psr-flow-update{--psr-bg:#05070D; --psr-panel:#0D1322; --psr-dim:#151D31; --psr-ink:#F2F6FF; --psr-muted:#A6B3CF; --psr-line:#1F2A42; --psr-edge:#5B6A8C; --psr-req:#3D7BFF; --psr-read:#22E6FF; --psr-write:#8A5CFF;}#psr-flow-update text{font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}#psr-flow-update .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}</style><defs><marker id="psr-flow-update-req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-req, #3D7BFF)" stroke="none"/></marker><marker id="psr-flow-update-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-muted, #A6B3CF)" stroke="none"/></marker><marker id="psr-flow-update-read" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-read, #22E6FF)" stroke="none"/></marker><marker id="psr-flow-update-write" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--psr-write, #8A5CFF)" stroke="none"/></marker></defs>
+<rect x="0" y="0" width="1360" height="992" rx="18" fill="var(--psr-bg, #05070D)" stroke="var(--psr-line, #1F2A42)" stroke-width="1"/>
+<text x="34" y="46" font-size="12" font-weight="600" fill="var(--psr-muted, #A6B3CF)" text-anchor="start" letter-spacing="1.6">PIPESMITH REGISTRY 0.2.0</text>
+<text x="34" y="86" font-size="30" font-weight="700" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Update</text>
+<text x="34" y="116" font-size="15" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">update checks signature, version and schema before it swaps two links; when the new server fails, the links and copies go back.</text>
+<path d="M168,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="70" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.6"/>
+<text x="168" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">update</text>
+<text x="168" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">pipesmith-registry update</text>
+<path d="M381.6,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="283.6" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-read, #22E6FF)" stroke-width="1.6"/>
+<text x="381.6" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">Release folder</text>
+<text x="381.6" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">SHA256SUMS, bundle, binary</text>
+<path d="M595.2,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="497.2" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.6"/>
+<text x="595.2" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">Install root</text>
+<text x="595.2" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">releases/, current, previous</text>
+<path d="M808.8,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="710.8" y="150" width="196" height="58" rx="10" fill="var(--psr-dim, #151D31)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.6"/>
+<text x="808.8" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">systemd unit</text>
+<text x="808.8" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">pipesmith-registry.service</text>
+<path d="M1022.4,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="924.4" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1.6"/>
+<text x="1022.4" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">New server</text>
+<text x="1022.4" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">the release just installed</text>
+<path d="M1236,208 V906" fill="none" stroke="var(--psr-line, #1F2A42)" stroke-width="1.4" stroke-dasharray="3 5"/>
+<rect x="1138" y="150" width="196" height="58" rx="10" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.6"/>
+<text x="1236" y="175" font-size="14.5" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">Data directory</text>
+<text x="1236" y="194" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">state.sqlite, catalog.sqlite</text>
+<circle cx="47" cy="275" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="279" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">1</text>
+<path d="M168,283 H591.2" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="1.8" marker-end="url(#psr-flow-update-read)"/>
+<text x="381.6" y="274" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">lock the root; read update.json and current</text>
+<circle cx="47" cy="321" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="325" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">2</text>
+<path d="M168,329 H377.6" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="1.8" marker-end="url(#psr-flow-update-read)"/>
+<text x="274.8" y="320" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">signature of SHA256SUMS, SHA-256 of the binary</text>
+<circle cx="47" cy="367" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="371" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">3</text>
+<path d="M168,375 H377.6" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="1.8" marker-end="url(#psr-flow-update-read)"/>
+<text x="274.8" y="366" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">copy answers version: higher than current</text>
+<circle cx="47" cy="413" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="417" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">4</text>
+<path d="M168,421 H1232" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="1.8" marker-end="url(#psr-flow-update-read)"/>
+<text x="702" y="412" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">schema plan; free space for the copies</text>
+<circle cx="47" cy="459" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="463" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">5</text>
+<path d="M168,467 H591.2" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-write)" stroke-dasharray="6 4"/>
+<text x="381.6" y="458" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">releases/&lt;version&gt;/; previous -&gt; old, current -&gt; new</text>
+<circle cx="47" cy="505" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="509" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">6</text>
+<path d="M168,513 H804.8" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-req)"/>
+<text x="488.4" y="504" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">systemctl restart</text>
+<circle cx="47" cy="551" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="555" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">7</text>
+<path d="M808.8,559 H1018.4" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-req)"/>
+<text x="915.6" y="550" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">start</text>
+<circle cx="47" cy="597" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="601" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">8</text>
+<path d="M1022.4,605 H1232" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-write)" stroke-dasharray="6 4"/>
+<text x="1129.2" y="596" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">copy state.sqlite.v1, then migrate</text>
+<circle cx="47" cy="643" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="647" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">9</text>
+<path d="M168,651 H1018.4" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-req)"/>
+<text x="595.2" y="642" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle" class="mono">GET /api/health and /api/status, 30 s</text>
+<rect x="34" y="674" width="1292" height="40" rx="8" fill="var(--psr-dim, #151D31)" stroke="var(--psr-line, #1F2A42)" stroke-width="1"/>
+<text x="50" y="699" font-size="13" font-weight="650" fill="var(--psr-ink, #F2F6FF)" text-anchor="start">Way back when the restart or the health wait fails</text>
+<circle cx="47" cy="745" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="749" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">10</text>
+<path d="M168,753 H591.2" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-write)" stroke-dasharray="6 4"/>
+<text x="381.6" y="744" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">current and previous as they were</text>
+<circle cx="47" cy="791" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="795" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">11</text>
+<path d="M168,799 H804.8" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-req)"/>
+<text x="488.4" y="790" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">systemctl stop</text>
+<circle cx="47" cy="837" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="841" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">12</text>
+<path d="M168,845 H1232" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-write)" stroke-dasharray="6 4"/>
+<text x="702" y="836" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">state.sqlite.v1 back; migrated file kept as .failed</text>
+<circle cx="47" cy="883" r="11" fill="var(--psr-panel, #0D1322)" stroke="var(--psr-edge, #5B6A8C)" stroke-width="1"/>
+<text x="47" y="887" font-size="11" font-weight="650" fill="var(--psr-muted, #A6B3CF)" text-anchor="middle">13</text>
+<path d="M168,891 H804.8" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-req)"/>
+<text x="488.4" y="882" font-size="13" font-weight="400" fill="var(--psr-ink, #F2F6FF)" text-anchor="middle">restart the earlier release, health wait, exit 1</text>
+<path d="M34,936 H68" fill="none" stroke="var(--psr-req, #3D7BFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-req)"/>
+<text x="78" y="940" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">request</text>
+<path d="M170.3,936 H204.3" fill="none" stroke="var(--psr-muted, #A6B3CF)" stroke-width="1.8" marker-end="url(#psr-flow-update-muted)" stroke-dasharray="2 4"/>
+<text x="214.3" y="940" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">answer</text>
+<path d="M299.7,936 H333.7" fill="none" stroke="var(--psr-read, #22E6FF)" stroke-width="1.8" marker-end="url(#psr-flow-update-read)"/>
+<text x="343.7" y="940" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">read from disk</text>
+<path d="M484.3,936 H518.3" fill="none" stroke="var(--psr-write, #8A5CFF)" stroke-width="1.8" marker-end="url(#psr-flow-update-write)" stroke-dasharray="6 4"/>
+<text x="528.3" y="940" font-size="12.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">write to disk</text>
+<text x="34" y="974" font-size="11.5" font-weight="400" fill="var(--psr-muted, #A6B3CF)" text-anchor="start">Read from internal/release, internal/cli (update.go) and internal/migrate of Pipesmith Registry 0.2.0, checked 2026-11-19.</text>
+</svg>

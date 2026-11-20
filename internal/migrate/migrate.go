@@ -15,6 +15,7 @@
 package migrate
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -161,6 +162,11 @@ func noMeta(file, kind string) error {
 	return fmt.Errorf("%s has no meta table, so it is no %s", file, kind)
 }
 
+// Version reads the schema row of the file db has open and changes
+// nothing: 0 for a file without any table, an error for a file with tables
+// and no meta table. kind names the file in that error, as Options.Kind.
+func Version(db *sql.DB, file, kind string) (int, error) { return version(db, file, kind) }
+
 // version reads the schema row of the file. A file without any table has
 // version 0; a file with tables and no meta table is refused.
 func version(q queryer, file, kind string) (int, error) {
@@ -226,19 +232,53 @@ func apply(db *sql.DB, file, kind string, step Step, last int) (int, error) {
 }
 
 // writeCopy writes <file>.v<old> with VACUUM INTO into a new file of mode
-// 0600 and syncs it. It refuses a copy that exists and leaves it as it is.
+// 0600 and syncs it. A copy that exists and holds the file as it is now, as
+// a crash between the copy and the first step leaves it, is kept and taken
+// (review 3-15). Any other copy that exists is refused and left as it is.
 func writeCopy(db *sql.DB, file string, old int) (string, error) {
 	target, err := filepath.Abs(file + ".v" + strconv.Itoa(old))
 	if err != nil {
 		return "", err
 	}
-	f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- the copy beside the file the caller opened.
+	err = vacuumInto(db, file, target)
 	if errors.Is(err, fs.ErrExist) {
-		return "", fmt.Errorf("the copy %s exists, from an earlier migration of %s or from another process that migrates it now; "+
-			"move the copy away while no other process uses the file, then start again", target, file)
+		check := target + ".check"
+		if cerr := vacuumInto(db, file, check); cerr == nil {
+			same, serr := sameBytes(target, check)
+			_ = os.Remove(check) // the check copy is no way back; the comparison counts
+			if serr == nil && same {
+				return target, nil
+			}
+		}
+		return "", fmt.Errorf("the copy %s exists and does not hold %s as it is now, from an earlier migration or from another "+
+			"process that migrates it now; move the copy away while no other process uses the file, then start again", target, file)
 	}
 	if err != nil {
 		return "", err
+	}
+	return target, nil
+}
+
+// sameBytes reports two files of equal bytes.
+func sameBytes(a, b string) (bool, error) {
+	x, err := os.ReadFile(a) // #nosec G304 -- the copy beside the file the caller opened.
+	if err != nil {
+		return false, err
+	}
+	y, err := os.ReadFile(b) // #nosec G304 -- the check copy beside it.
+	if err != nil {
+		return false, err
+	}
+	return bytes.Equal(x, y), nil
+}
+
+// vacuumInto writes the file db has open into target, a new file of mode
+// 0600, and syncs it. A target that exists gives an error that is
+// fs.ErrExist and stays as it is.
+func vacuumInto(db *sql.DB, file, target string) error {
+	f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- the copy beside the file the caller opened.
+	if err != nil {
+		return err
 	}
 	err = f.Close()
 	if err == nil {
@@ -250,9 +290,9 @@ func writeCopy(db *sql.DB, file string, old int) (string, error) {
 	}
 	if err != nil {
 		_ = os.Remove(target) // a part copy is no way back; the copy error counts
-		return "", fmt.Errorf("copy of %s to %s: %w", file, target, err)
+		return fmt.Errorf("copy of %s to %s: %w", file, target, err)
 	}
-	return target, nil
+	return nil
 }
 
 // syncFile puts the copy on the disk before the first step changes the file.

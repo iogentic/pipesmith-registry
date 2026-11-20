@@ -34,10 +34,10 @@ var contentWriteRoutes = []route{
 	get(restBase+"/formats/"+segment+"/upload-specs", signedIn, named(func(_ *rest.Env, format string) (rest.Answer, error) {
 		return rest.UploadSpec(format), nil
 	})),
-	{exact(restBase + "/components"), []string{"POST"}, rule{kind: ruleContent, action: "add"}, (*Server).uploadComponent},
-	{exact(restBase + "/assets/" + segment), []string{"DELETE"}, rule{kind: ruleContent, group: 1, action: "delete"}, (*Server).deleteAsset},
-	{exact(restBase + "/components/" + segment), []string{"DELETE"}, rule{kind: ruleContent, group: 1, action: "delete"},
-		(*Server).deleteComponent},
+	entry(exact(restBase+"/components"), []string{"POST"}, rule{kind: ruleContent, action: "add"}, (*Server).uploadComponent),
+	entry(exact(restBase+"/assets/"+segment), []string{"DELETE"}, rule{kind: ruleContent, group: 1, action: "delete"}, (*Server).deleteAsset),
+	entry(exact(restBase+"/components/"+segment), []string{"DELETE"}, rule{kind: ruleContent, group: 1, action: "delete"},
+		(*Server).deleteComponent),
 }
 
 // allowContent is the rule of a REST write: the view permission of the

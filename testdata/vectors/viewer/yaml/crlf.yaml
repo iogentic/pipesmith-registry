@@ -1,0 +1,7 @@
+# head
+a:
+  b: 1 # note
+  c: "s"
+d:
+  - x
+  - true

@@ -15,7 +15,7 @@ import (
 // 2026-11-18). 404 for a package without a version. With writes off the
 // path keeps the npm 404 of 0.1.1.
 func (s *Server) npmDistTags(w http.ResponseWriter, req *request, st *state, members []repos.Repo, name string) error {
-	document, err := s.rp.npmMerged(st, members, npm.PackagePath{Name: name})
+	document, err := s.rp.npmMerged(st, members, npm.PackagePath{Name: name}, s.reaching(members))
 	if err != nil {
 		return err
 	}

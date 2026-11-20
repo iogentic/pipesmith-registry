@@ -51,6 +51,7 @@ type reposKey struct {
 	file       fileKey
 	generation int64
 	snapshot   *model.Snapshot // the state the attributes of the repositories come from; nil without security
+	routing    *routingNow     // the links of the routing rules; nil without them
 }
 
 // state is one view of the data directory: the attached stores and the
@@ -73,12 +74,16 @@ type readPath struct {
 	openPorts  map[string]int         // the ports this process listens on, repository -> port
 	writeStore stores.Store           // the write store of the data directory, attached beside config.json; nil for none
 	snapshot   func() *model.Snapshot // the state of the security; nil without security
+	routing    *liveRouting           // the routing rule each repository names (ruling P5-4 of the phase 5 session, SY3); nil for none
 	index      *index.Index
 	mu         sync.Mutex
 	current    atomic.Pointer[state]
 	// lateWrite gives the write store once it exists, for a server without
 	// writes that found none at its start (attachLate); nil otherwise.
 	lateWrite func() stores.Store
+	// dropped removes the side data of a row the read path dropped
+	// (catalog.Drop, leg F1b); nil for none.
+	dropped func(repo, path, store string) error
 }
 
 // attach makes the stores of config.json, and adds extra, the write store,
@@ -98,8 +103,9 @@ func attach(configs []config.StoreConfig, dataDir string, extra stores.Store) (m
 	return attached, nil
 }
 
-func newReadPath(cfg *config.Config, dockerPorts map[int]string, writeStore stores.Store, snapshot func() *model.Snapshot) (*readPath, error) {
-	rp := &readPath{cfg: cfg, openPorts: map[string]int{}, writeStore: writeStore, snapshot: snapshot}
+func newReadPath(cfg *config.Config, dockerPorts map[int]string, writeStore stores.Store, snapshot func() *model.Snapshot,
+	routes *liveRouting) (*readPath, error) {
+	rp := &readPath{cfg: cfg, openPorts: map[string]int{}, writeStore: writeStore, snapshot: snapshot, routing: routes}
 	for _, port := range sortedPorts(dockerPorts) {
 		rp.openPorts[dockerPorts[port]] = port
 	}
@@ -123,11 +129,11 @@ func newReadPath(cfg *config.Config, dockerPorts map[int]string, writeStore stor
 	if err != nil {
 		return fail(err)
 	}
-	st.reposKey = reposKey{st.definitionsKey, generation, rp.currentSnapshot()}
+	st.reposKey = reposKey{st.definitionsKey, generation, rp.currentSnapshot(), rp.routing.links()}
 	if st.definitions, err = repos.LoadDefinitions(cfg.RepositoriesPath()); err != nil {
 		return fail(err)
 	}
-	if st.repositories, err = rp.repositoriesOf(st.definitions, st.reposKey.snapshot); err != nil {
+	if st.repositories, err = rp.repositoriesOf(st.definitions, st.reposKey); err != nil {
 		return fail(err)
 	}
 	rp.current.Store(st)
@@ -152,7 +158,8 @@ func (rp *readPath) currentSnapshot() *model.Snapshot {
 
 // repositoriesOf are the repositories of the definitions and the index,
 // with the stored attributes of the state when there is one.
-func (rp *readPath) repositoriesOf(definitions []repos.Repo, snapshot *model.Snapshot) (*repos.Repositories, error) {
+func (rp *readPath) repositoriesOf(definitions []repos.Repo, key reposKey) (*repos.Repositories, error) {
+	snapshot := key.snapshot
 	names, err := rp.index.RepoNames()
 	if err != nil {
 		return nil, err
@@ -164,6 +171,9 @@ func (rp *readPath) repositoriesOf(definitions []repos.Repo, snapshot *model.Sna
 	repositories := repos.New(definitions, names, hints)
 	if snapshot != nil {
 		repositories = repositories.WithAttributes(snapshot.Repositories)
+	}
+	if key.routing != nil && key.routing.links != nil {
+		repositories = repositories.WithRoutingRules(key.routing.links)
 	}
 	return repositories, nil
 }
@@ -177,7 +187,7 @@ func (rp *readPath) sync() (*state, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := reposKey{keyOf(rp.cfg.RepositoriesPath()), generation, rp.currentSnapshot()}
+	key := reposKey{keyOf(rp.cfg.RepositoriesPath()), generation, rp.currentSnapshot(), rp.routing.links()}
 	st := rp.current.Load()
 	if configKey == st.configKey && key == st.reposKey {
 		return st, nil
@@ -195,7 +205,7 @@ func (rp *readPath) sync() (*state, error) {
 	}
 	if key != next.reposKey {
 		next.reposKey = key
-		if err := rp.reloadRepositories(&next, key.file, key.snapshot); err != nil {
+		if err := rp.reloadRepositories(&next, key); err != nil {
 			return nil, err
 		}
 	}
@@ -248,7 +258,8 @@ func (rp *readPath) reloadStores(next *state) error {
 	return nil
 }
 
-func (rp *readPath) reloadRepositories(next *state, definitionsKey fileKey, snapshot *model.Snapshot) error {
+func (rp *readPath) reloadRepositories(next *state, key reposKey) error {
+	definitionsKey := key.file
 	if definitionsKey != next.definitionsKey {
 		next.definitionsKey = definitionsKey
 		definitions, err := repos.LoadDefinitions(rp.cfg.RepositoriesPath())
@@ -261,7 +272,7 @@ func (rp *readPath) reloadRepositories(next *state, definitionsKey fileKey, snap
 			return err
 		}
 	}
-	repositories, err := rp.repositoriesOf(next.definitions, snapshot)
+	repositories, err := rp.repositoriesOf(next.definitions, key)
 	if err != nil {
 		return err
 	}
@@ -297,8 +308,14 @@ func (rp *readPath) open(st *state, repo, path string) (*index.Asset, *os.File, 
 					return nil, nil, 0, &unavailable{fmt.Sprintf("Store %s is not available", store.Name())}
 				}
 				logAt(slogInfo, serverLogger, "bytes of %s/%s in store %s are gone, row dropped", repo, path, asset.Store)
-				if err := rp.index.Drop(asset.Repo, asset.Path, asset.Store); err != nil {
+				dropped, err := rp.index.DropRow(asset.Repo, asset.Path, asset.Store)
+				if err != nil {
 					return nil, nil, 0, err
+				}
+				if dropped && rp.dropped != nil {
+					if err := rp.dropped(asset.Repo, asset.Path, asset.Store); err != nil {
+						logAt(slogWarn, serverLogger, "the catalog keeps the row of %s/%s in store %s until the next scan: %v", asset.Repo, asset.Path, asset.Store, err)
+					}
 				}
 				continue
 			}

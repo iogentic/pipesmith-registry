@@ -3,6 +3,7 @@ package auth
 import (
 	"strings"
 
+	"golang.org/x/text/cases"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -12,7 +13,9 @@ import (
 // The code points section 2.2 maps to nothing are removed and those it maps
 // to SPACE become spaces, section 2.3 normalizes to Unicode form KC, the name
 // counts in lower case, and runs of spaces count as one with the outer ones
-// cut, as section 2.6.1 makes them insignificant. Only the key of the
+// cut, as section 2.6.1 makes them insignificant. Full case folding follows
+// (row 3-51 of review 3), so sharp s and ss, and final sigma and sigma, are
+// one pair; diacritics stay apart. Only the key of the
 // limiter takes this form; the local users and the directories get the name
 // as userName gives it.
 func limiterName(user string) string {
@@ -25,7 +28,8 @@ func limiterName(user string) string {
 		}
 		return r
 	}, user)
-	return strings.Join(strings.Fields(strings.ToLower(norm.NFKC.String(mapped))), " ")
+	folded := cases.Fold().String(strings.ToLower(norm.NFKC.String(mapped)))
+	return strings.Join(strings.Fields(norm.NFKC.String(folded)), " ")
 }
 
 // foldedAway are the code points RFC 4518 section 2.2 maps to nothing: soft

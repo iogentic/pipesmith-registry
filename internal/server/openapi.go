@@ -60,14 +60,14 @@ func apiRoutes() ([]apiRoute, error) {
 	var out []apiRoute
 	add := func(table []route, secured, writes bool) error {
 		for _, rt := range table {
-			template, err := genericTemplate(rt.pattern)
+			template, err := genericTemplate(rt.Pattern)
 			if err != nil {
 				return err
 			}
-			for _, method := range rt.methods {
-				r := apiRoute{method: method, template: template, pattern: rt.pattern, rule: rt.rule, secured: secured, writes: writes}
+			for _, method := range rt.Methods {
+				r := apiRoute{method: method, template: template, pattern: rt.Pattern, rule: rt.Rule, secured: secured, writes: writes}
 				if writes {
-					r.offArea, r.offPattern = writeRefusalOf(method, rt.pattern)
+					r.offArea, r.offPattern = writeRefusalOf(method, rt.Pattern)
 				}
 				out = append(out, r)
 			}
@@ -77,7 +77,7 @@ func apiRoutes() ([]apiRoute, error) {
 	for _, t := range []struct {
 		table           []route
 		secured, writes bool
-	}{{routes, false, false}, {secureRoutes, true, false}, {contentWriteRoutes, true, true}} {
+	}{{routes, false, false}, {secureRoutes, true, false}, {identityRoutes, true, false}, {systemRoutes, true, false}, {statusAreaRoutes, true, false}, {figureRoutes, true, false}, {logRoutes, true, false}, {storeRoutes, true, false}, {proxyRoutes, true, false}, {contentWriteRoutes, true, true}} {
 		if err := add(t.table, t.secured, t.writes); err != nil {
 			return nil, err
 		}
@@ -85,11 +85,11 @@ func apiRoutes() ([]apiRoute, error) {
 	for _, d := range slices.Concat(writeRefusals, refusalTable) {
 		rt := d.route()
 		for _, method := range d.methods {
-			if servedWrite(out, method, rt.pattern) {
+			if servedWrite(out, method, rt.Pattern) {
 				continue
 			}
 			for _, path := range d.paths() {
-				out = append(out, apiRoute{method: method, template: path, pattern: rt.pattern, rule: rt.rule,
+				out = append(out, apiRoute{method: method, template: path, pattern: rt.Pattern, rule: rt.Rule,
 					secured: true, refused: true, area: d.area})
 			}
 		}
@@ -173,12 +173,17 @@ func permissionText(r rule) string {
 	case ruleView:
 		return "view of the repository (" + r.action + ")"
 	case ruleAdmin:
+		if r.action != "" {
+			return "administration of the repository (" + r.action + ")"
+		}
 		return "administration of the repository"
 	case ruleAssetID:
 		return "view of the repository of the asset (browse)"
+	case ruleCreate:
+		return "administration of any repository of the format of the path (add)"
 	case ruleClient:
 		return "view of the repository (read below /repository/, browse below the browse route)"
-	case ruleContent:
+	case ruleContent, ruleListing:
 		if r.group > 0 {
 			return "view of the repository of the id (" + r.action + ")"
 		}
@@ -356,13 +361,13 @@ func operation(r apiRoute, w words) obj {
 	}
 	if !r.refused {
 		switch r.rule.kind {
-		case ruleSignedIn, ruleApp, ruleView, ruleAdmin, ruleAssetID, ruleContent:
+		case ruleSignedIn, ruleApp, ruleView, ruleAdmin, ruleAssetID, ruleContent, ruleCreate, ruleListing:
 			if !typed["401"] {
 				answers = append(answers, reply{status: "401"})
 			}
 		}
 		switch r.rule.kind {
-		case ruleApp, ruleView, ruleAdmin, ruleAssetID, ruleContent:
+		case ruleApp, ruleView, ruleAdmin, ruleAssetID, ruleContent, ruleCreate, ruleListing:
 			if !typed["403"] {
 				answers = append(answers, reply{status: "403"})
 			}

@@ -1,0 +1,7 @@
+<project>
+	<build>
+		<plugin id="x">
+			<name>a</name>
+		</plugin>
+	</build>
+</project>

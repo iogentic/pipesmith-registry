@@ -11,9 +11,10 @@ import (
 )
 
 // This file ports the parts of argparse of Python 3.12.13 that the parser
-// of cli.py uses: options with one value or none, positionals with one
-// value or "?", sub commands, a group of options that exclude each other,
-// abbreviations of long options and the help of each command. The messages
+// of cli.py uses: options with one value or none, options that append each
+// value to a list, positionals with one value or "?", sub commands, a group
+// of options that exclude each other, abbreviations of long options and the
+// help of each command. The messages
 // and their order are those of argparse; the help texts of the commands are
 // the ones argparse prints at 80 columns (helptexts.go).
 
@@ -59,6 +60,7 @@ type action struct {
 	metavar  string
 	help     bool
 	flag     bool // store_true
+	appended bool // append: each use adds its value to a list
 	commands map[string]*parser
 }
 
@@ -412,6 +414,9 @@ func (p *parser) call(a *action, ns map[string]any, value any) error {
 			more, _ := ns[unrecognizedKey].([]string)
 			ns[unrecognizedKey] = append(more, extras...)
 		}
+	case a.appended:
+		list, _ := ns[a.dest].([]string)
+		ns[a.dest] = append(slices.Clone(list), value.(string))
 	default:
 		ns[a.dest] = value
 	}

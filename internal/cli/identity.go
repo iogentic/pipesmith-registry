@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/auth"
-	"github.com/iogentic/pipesmith-registry/internal/authz"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/ldapauth"
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -29,11 +29,13 @@ import (
 // running serve follows within about auth.ReloadInterval.
 
 const identityHelpBody = `Identity
-  user add <name> [--roles a,b] [--first-name F] [--last-name L] [--email E]
+  user add <name> [--role R]... [--roles a,b] [--first-name F] [--last-name L]
+           [--email E] [--password-file PATH | --password-stdin]
                                        add a local user with these roles; its password comes
-                                       from standard input, at a terminal from a prompt
-                                       without echo
-  user password <name>                 set the password of a local user, read the same way
+                                       from a file only its owner may read, from standard
+                                       input, at a terminal from a prompt without echo
+  user password <name> [--password-file PATH | --password-stdin]
+                                       set the password of a local user, read the same way
   user enable <name>                   let a local user sign in again
   user disable <name>                  stop a local user from signing in
   user roles <name> [<role,role>]      show the roles of a local user, or set them
@@ -56,6 +58,8 @@ const identityHelpBody = `Identity
   token list <user> [--source default|LDAP]
                                        the tokens of a user, without their secret part
   token revoke <id>                    revoke a token by its id, the part between its dots
+  token forget-imported                delete every key an import took over from the old
+                                       product
 
 The identity commands take --data <dir> as the commands of the import do and need no sign
 in. A change reaches a running serve within about a second.
@@ -77,15 +81,27 @@ func addIdentityCommands(commands map[string]*parser, sub func(map[string]*parse
 	}
 
 	group("user", []string{"add", "password", "enable", "disable", "roles"}, func(c map[string]*parser) {
+		passwordSource := func(p *parser) {
+			file := p.add(&action{dest: "password_file", options: []string{"--password-file"}})
+			fromStdin := p.add(&action{dest: "password_stdin", options: []string{"--password-stdin"}, nargs: "0", flag: true})
+			p.exclusive(file, fromStdin)
+		}
 		add := sub(c, "user add", "add")
 		add.add(&action{dest: "name"})
+		add.add(&action{dest: "role", options: []string{"--role"}, appended: true})
 		add.add(&action{dest: "roles", options: []string{"--roles"}})
 		add.add(&action{dest: "first_name", options: []string{"--first-name"}})
 		add.add(&action{dest: "last_name", options: []string{"--last-name"}})
 		add.add(&action{dest: "email", options: []string{"--email"}})
+		passwordSource(add)
 		data(add)
 		add.defaults["run"] = "cmd_user_add"
-		for _, name := range []string{"password", "enable", "disable"} {
+		password := sub(c, "user password", "password")
+		password.add(&action{dest: "name"})
+		passwordSource(password)
+		data(password)
+		password.defaults["run"] = "cmd_user_password"
+		for _, name := range []string{"enable", "disable"} {
 			p := sub(c, "user "+name, name)
 			p.add(&action{dest: "name"})
 			data(p)
@@ -132,7 +148,7 @@ func addIdentityCommands(commands map[string]*parser, sub func(map[string]*parse
 		data(check)
 		check.defaults["run"] = "cmd_ldap_check"
 	})
-	group("token", []string{"issue", "list", "revoke"}, func(c map[string]*parser) {
+	group("token", []string{"issue", "list", "revoke", "forget-imported"}, func(c map[string]*parser) {
 		sources := []string{auth.SourceLocal, auth.SourceLDAP}
 		issue := sub(c, "token issue", "issue")
 		issue.add(&action{dest: "user"})
@@ -149,6 +165,9 @@ func addIdentityCommands(commands map[string]*parser, sub func(map[string]*parse
 		revoke.add(&action{dest: "id"})
 		data(revoke)
 		revoke.defaults["run"] = "cmd_token_revoke"
+		forget := sub(c, "token forget-imported", "forget-imported")
+		data(forget)
+		forget.defaults["run"] = "cmd_token_forget_imported"
 	})
 }
 
@@ -159,7 +178,7 @@ func (c *command) identityCommand() (int, bool, error) {
 		"cmd_user_disable": c.userDisable, "cmd_user_roles": c.userRoles, "cmd_anonymous_on": c.anonymousOn,
 		"cmd_anonymous_off": c.anonymousOff, "cmd_realms_list": c.realmsList, "cmd_realms_set": c.realmsSet,
 		"cmd_ldap_password": c.ldapPassword, "cmd_ldap_ca": c.ldapCA, "cmd_ldap_check": c.ldapCheck, "cmd_token_issue": c.tokenIssue,
-		"cmd_token_list": c.tokenList, "cmd_token_revoke": c.tokenRevoke,
+		"cmd_token_list": c.tokenList, "cmd_token_revoke": c.tokenRevoke, "cmd_token_forget_imported": c.tokenForgetImported,
 	}
 	fn, ok := commands[c.ns.run]
 	if !ok {
@@ -205,9 +224,14 @@ func (c *command) withState(create bool, fn func(st *state.Store, cfg *config.Co
 const maxSecretLine = auth.MaxPasswordBytes
 
 // secret reads a secret: at a terminal from a prompt without echo, asked
-// twice when repeat is set, else the one line of standard input.
+// twice when repeat is set, else the one line of standard input. With
+// --password-stdin a terminal is refused, since it would show the line.
 func (c *command) secret(prompt string, repeat bool) (string, error) {
 	var value string
+	if isTerminal(stdin) && c.ns.values["password_stdin"] == true {
+		return "", refuse("--password-stdin reads a pipe or a file, and standard input is a terminal; " +
+			"leave the option out to type the password at a prompt without echo; nothing changed")
+	}
 	if isTerminal(stdin) {
 		ask := askSecret(stdin, c.err)
 		first, err := ask(prompt)
@@ -234,15 +258,83 @@ func (c *command) secret(prompt string, repeat bool) (string, error) {
 	if value == "" {
 		return "", refuse("no password on standard input; nothing changed")
 	}
-	if len(value) > maxSecretLine {
-		return "", refuse("a password has 1 to %d bytes; nothing changed", maxSecretLine)
-	}
-	for _, r := range value {
-		if r < 0x20 || r == 0x7f {
-			return "", refuse("the password holds a control character; nothing changed")
-		}
+	if err := admin.CheckPassword(value); err != nil {
+		return "", refused(err)
 	}
 	return value, nil
+}
+
+// newPassword is the new password of user add and user password: the one
+// line of the file of --password-file, the one line of standard input with
+// --password-stdin, else as secret reads it.
+func (c *command) newPassword(prompt string) (string, error) {
+	if path, ok := c.text("password_file"); ok {
+		return passwordFromFile(path)
+	}
+	return c.secret(prompt, true)
+}
+
+// passwordFromFile reads the password of --password-file: the one line of a
+// regular file that only its owner may read or write.
+func passwordFromFile(path string) (string, error) {
+	f, err := os.Open(path) // #nosec G304 -- the operator names the file of the password
+	if err != nil {
+		return "", refuse("cannot read the password file: %v; nothing changed", err)
+	}
+	defer func() { _ = f.Close() }()
+	info, err := f.Stat()
+	if err != nil {
+		return "", refuse("cannot read the password file: %v; nothing changed", err)
+	}
+	if !info.Mode().IsRegular() {
+		return "", refuse("the password file %s is no regular file; nothing changed", path)
+	}
+	if perm := info.Mode().Perm(); perm&0o077 != 0 {
+		return "", refuse("the password file %s has mode %04o; only its owner may read or write it (chmod 600 %s); nothing changed",
+			path, perm, path)
+	}
+	line, err := secretLine(f)
+	if err != nil {
+		return "", err
+	}
+	if line == "" {
+		return "", refuse("no password in the file %s; nothing changed", path)
+	}
+	if err := admin.CheckPassword(line); err != nil {
+		return "", refused(err)
+	}
+	return line, nil
+}
+
+// commandStore is the identity store of a command: state.sqlite without a
+// running service, so there is no credential cache to empty; a running
+// serve follows the generation the write raised.
+type commandStore struct {
+	*state.Store
+	dir string
+}
+
+func (s commandStore) DataDir() string { return s.dir }
+
+func (commandStore) ResetCredentials() {}
+
+func (commandStore) MarkStale() {}
+
+// change applies one identity change through admin.Change, so the rule of
+// the last administrator (A10) holds for the commands as for REST.
+func change(st *state.Store, cfg *config.Config, kinds []state.Kind, fn func(snap *model.Snapshot) error) (*model.Snapshot, error) {
+	after, err := admin.Change(commandStore{st, cfg.DataDir}, kinds, fn)
+	return after, refused(err)
+}
+
+// refused is the error of a command for a refusal of internal/admin, which
+// says that nothing changed; any other error passes unchanged.
+func refused(err error) error {
+	var r *admin.Refusal
+	if err != nil && errors.As(err, &r) {
+		return refuse("%s; nothing changed", err.Error())
+	}
+	return err
 }
 
 // secretLine is the one line of r: up to its line break, without "\r\n" or
@@ -265,11 +357,6 @@ func secretLine(r io.Reader) (string, error) {
 
 // Users
 
-// userName is the name user add takes: a letter or digit first, then
-// letters, digits, '.', '_', '@', '+' and '-', at most 256 bytes. A ':' would
-// end the user name of Basic credentials.
-var userName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._@+-]{0,255}$`)
-
 // roleList is a comma separated list of role ids, each one trimmed; an
 // empty text is no role.
 func roleList(text string) []string {
@@ -282,32 +369,12 @@ func roleList(text string) []string {
 	return roles
 }
 
-// knownRoles refuses a role that is neither stored nor built in.
-func knownRoles(snap *model.Snapshot, roles []string) error {
-	resolver := authz.NewResolver(snap)
-	for _, r := range roles {
-		if !slices.Contains(resolver.Roles([]string{r}), r) {
-			return refuse("no role %s; the roles are those of the import and nx-admin and nx-anonymous; nothing changed", r)
-		}
-	}
-	return nil
-}
-
-func roleText(roles []string) string {
-	if len(roles) == 0 {
-		return "none"
-	}
-	return strings.Join(roles, ", ")
-}
+func roleText(roles []string) string { return admin.RoleText(roles) }
 
 // localUser is the local user name in snap, or a refusal.
 func localUser(snap *model.Snapshot, name string) (*model.User, error) {
-	for i := range snap.Users {
-		if u := &snap.Users[i]; u.ID == name && u.Source == auth.SourceLocal {
-			return u, nil
-		}
-	}
-	return nil, refuse("no local user %s; nothing changed", name)
+	u, err := admin.LocalUser(snap, name)
+	return u, refused(err)
 }
 
 // realmNote is the note of a write when the stored order lets no local
@@ -321,18 +388,25 @@ func (c *command) realmNote(snap *model.Snapshot) {
 
 func (c *command) userAdd() (int, error) {
 	name, _ := c.text("name")
-	if !userName.MatchString(name) {
-		return 1, refuse("user name %q is not allowed; use letters, digits, '.', '_', '@', '+' and '-', a letter or digit first", name)
+	if err := admin.CheckName(admin.KindUser, name); err != nil {
+		return 1, refused(err)
 	}
 	roles := []string{}
 	if text, ok := c.text("roles"); ok {
 		roles = roleList(text)
 	}
+	if listed, ok := c.ns.values["role"].([]string); ok {
+		for _, r := range listed {
+			if r = strings.TrimSpace(r); !slices.Contains(roles, r) {
+				roles = append(roles, r)
+			}
+		}
+	}
 	cfg, err := c.stateConfig()
 	if err != nil {
 		return 1, err
 	}
-	// refuse what can be refused before the password is asked
+	// refuse what can be refused before the password is read
 	if st, err := state.Open(cfg.DataDir); err == nil {
 		snap, lerr := st.Load()
 		if cerr := st.Close(); lerr == nil {
@@ -341,38 +415,26 @@ func (c *command) userAdd() (int, error) {
 		if lerr != nil {
 			return 1, lerr
 		}
-		if err := addable(snap, name, roles); err != nil {
-			return 1, err
+		if err := admin.CheckNewUser(snap, name, roles); err != nil {
+			return 1, refused(err)
 		}
 	} else if !errors.Is(err, state.ErrAbsent) {
 		return 1, err
-	} else if err := knownRoles(&model.Snapshot{}, roles); err != nil {
-		return 1, err
+	} else if err := admin.CheckNewUser(&model.Snapshot{}, name, roles); err != nil {
+		return 1, refused(err)
 	}
-	password, err := c.secret("password of user "+name+": ", true)
-	if err != nil {
-		return 1, err
-	}
-	hash, err := auth.HashPassword(password)
+	password, err := c.newPassword("password of user " + name + ": ")
 	if err != nil {
 		return 1, err
 	}
 	first, _ := c.text("first_name")
 	last, _ := c.text("last_name")
 	email, _ := c.text("email")
+	user := model.User{ID: name, FirstName: first, LastName: last, Email: email, Status: "active", Source: auth.SourceLocal, Roles: roles}
 	return c.withState(true, func(st *state.Store, cfg *config.Config) (int, error) {
-		var after *model.Snapshot
-		err := st.Update([]state.Kind{state.KindUsers}, func(snap *model.Snapshot) error {
-			if err := addable(snap, name, roles); err != nil {
-				return err
-			}
-			snap.Users = append(snap.Users, model.User{ID: name, FirstName: first, LastName: last, Email: email, Status: "active",
-				Source: auth.SourceLocal, Roles: roles, PasswordHash: hash})
-			after = snap
-			return nil
-		})
+		after, err := admin.CreateUser(commandStore{st, cfg.DataDir}, user, password, nil)
 		if err != nil {
-			return 1, err
+			return 1, refused(err)
 		}
 		c.print("added user %s (active, roles: %s) to %s", name, roleText(roles), state.Path(cfg.DataDir))
 		c.realmNote(after)
@@ -380,25 +442,9 @@ func (c *command) userAdd() (int, error) {
 	})
 }
 
-// addable refuses a new local user whose name is taken or whose roles do
-// not exist.
-func addable(snap *model.Snapshot, name string, roles []string) error {
-	for _, u := range snap.Users {
-		if u.ID == name {
-			return refuse("user %s exists already; set its password with: user password %s", name, name)
-		}
-	}
-	for _, m := range snap.RoleMappings {
-		if m.UserID == name && m.Source == auth.SourceLocal {
-			return refuse("user %s has roles of the local source already (anonymous on --user %s); nothing changed", name, name)
-		}
-	}
-	return knownRoles(snap, roles)
-}
-
 func (c *command) userPassword() (int, error) {
 	name, _ := c.text("name")
-	return c.withState(false, func(st *state.Store, _ *config.Config) (int, error) {
+	return c.withState(false, func(st *state.Store, cfg *config.Config) (int, error) {
 		snap, err := st.Load()
 		if err != nil {
 			return 1, err
@@ -406,7 +452,7 @@ func (c *command) userPassword() (int, error) {
 		if _, err := localUser(snap, name); err != nil {
 			return 1, err
 		}
-		password, err := c.secret("password of user "+name+": ", true)
+		password, err := c.newPassword("password of user " + name + ": ")
 		if err != nil {
 			return 1, err
 		}
@@ -414,8 +460,8 @@ func (c *command) userPassword() (int, error) {
 		if err != nil {
 			return 1, err
 		}
-		err = st.Update([]state.Kind{state.KindUsers}, func(snap *model.Snapshot) error {
-			u, err := localUser(snap, name)
+		_, err = change(st, cfg, []state.Kind{state.KindUsers}, func(snap *model.Snapshot) error {
+			u, err := admin.LocalUser(snap, name)
 			if err == nil {
 				u.PasswordHash = hash
 			}
@@ -434,9 +480,9 @@ func (c *command) userDisable() (int, error) { return c.userStatus("disabled", "
 
 func (c *command) userStatus(status, done string) (int, error) {
 	name, _ := c.text("name")
-	return c.withState(false, func(st *state.Store, _ *config.Config) (int, error) {
-		err := st.Update([]state.Kind{state.KindUsers}, func(snap *model.Snapshot) error {
-			u, err := localUser(snap, name)
+	return c.withState(false, func(st *state.Store, cfg *config.Config) (int, error) {
+		_, err := change(st, cfg, []state.Kind{state.KindUsers}, func(snap *model.Snapshot) error {
+			u, err := admin.LocalUser(snap, name)
 			if err == nil {
 				u.Status = status
 			}
@@ -453,7 +499,7 @@ func (c *command) userStatus(status, done string) (int, error) {
 func (c *command) userRoles() (int, error) {
 	name, _ := c.text("name")
 	text, set := c.text("roles")
-	return c.withState(false, func(st *state.Store, _ *config.Config) (int, error) {
+	return c.withState(false, func(st *state.Store, cfg *config.Config) (int, error) {
 		if !set {
 			snap, err := st.Load()
 			if err != nil {
@@ -467,12 +513,12 @@ func (c *command) userRoles() (int, error) {
 			return 0, nil
 		}
 		roles := roleList(text)
-		err := st.Update([]state.Kind{state.KindUsers}, func(snap *model.Snapshot) error {
-			u, err := localUser(snap, name)
+		_, err := change(st, cfg, []state.Kind{state.KindUsers}, func(snap *model.Snapshot) error {
+			u, err := admin.LocalUser(snap, name)
 			if err != nil {
 				return err
 			}
-			if err := knownRoles(snap, roles); err != nil {
+			if err := admin.CheckUserRoles(snap, roles, nil); err != nil {
 				return err
 			}
 			u.Roles = roles
@@ -502,11 +548,11 @@ func (c *command) anonymousOn() (int, error) {
 	if rolesGiven {
 		kinds = append(kinds, state.KindUsers)
 	}
-	return c.withState(false, func(st *state.Store, _ *config.Config) (int, error) {
+	return c.withState(false, func(st *state.Store, cfg *config.Config) (int, error) {
 		var id string
 		var roles []string
 		local := true
-		err := st.Update(kinds, func(snap *model.Snapshot) error {
+		_, err := change(st, cfg, kinds, func(snap *model.Snapshot) error {
 			a := &snap.Anonymous
 			a.Enabled = true
 			if userGiven {
@@ -519,23 +565,36 @@ func (c *command) anonymousOn() (int, error) {
 				a.RealmName = anonymousRealm
 			}
 			id = a.UserID
+			if userGiven {
+				// review 3-13: requests without credentials never hold the
+				// rights of a user that signs in
+				if admin.SignInUser(snap, id) == nil && directoryUser(snap, id) {
+					return refuse("user %s signs in through a directory; requests without credentials should not hold "+
+						"its rights; nothing changed. Name an id that is no user: anonymous on --user <id> --roles <role>", id)
+				}
+				if u := admin.SignInUser(snap, id); u != nil && !rolesGiven {
+					return refuse("user %s signs in with a password; requests without credentials should not hold its "+
+						"rights (roles %s); nothing changed. Name an id that is no user: anonymous on --user <id> --roles <role>",
+						id, roleText(u.Roles))
+				}
+			}
 			if rolesGiven {
 				roles = roleList(rolesText)
-				if err := knownRoles(snap, roles); err != nil {
+				if err := admin.CheckUserRoles(snap, roles, nil); err != nil {
 					return err
 				}
-				if u := signInUser(snap, id); userGiven && u != nil {
+				if err := admin.CheckAnonymousRoles(snap, id); userGiven && err != nil {
 					// review R9: no step of the advice lets requests without
 					// credentials hold the rights of a user that signs in
 					given := strings.Join(roles, ",")
-					return refuse("user %s signs in with the roles %s, and --roles would replace them; nothing changed. "+
+					return refuse("%s; nothing changed. "+
 						"Requests without credentials should not hold the rights of a user that signs in. To give them the "+
 						"roles %s, name an id that is no user: anonymous on --user <id> --roles %s. For user %s to hold "+
-						"these roles as well, then run: user roles %s %s", id, roleText(u.Roles), given, given, id, id, given)
+						"these roles as well, then run: user roles %s %s", err, given, given, id, id, given)
 				}
-				setAnonymousRoles(snap, id, roles)
+				admin.SetAnonymousRoles(snap, id, roles)
 			}
-			roles, local = anonymousRoles(snap, id)
+			roles, local = admin.AnonymousRoles(snap, id)
 			return nil
 		})
 		if err != nil {
@@ -554,62 +613,26 @@ func (c *command) anonymousOn() (int, error) {
 	})
 }
 
-// setAnonymousRoles gives the anonymous user its roles: those of its local
-// row, else a role mapping of the local source, which the server reads for
-// a user without a row.
-// signInUser is the local user of id that signs in with a password: active
-// and with a stored form. Nil for any other id (review N5).
-func signInUser(snap *model.Snapshot, id string) *model.User {
-	for i := range snap.Users {
-		if u := &snap.Users[i]; u.ID == id && signsInWithPassword(*u) {
-			return u
-		}
-	}
-	return nil
-}
-
-// signsInWithPassword reports a local user that signs in with a password:
-// active and with a stored form.
-func signsInWithPassword(u model.User) bool {
-	return u.Source == auth.SourceLocal && u.Status == "active" && u.PasswordHash != ""
-}
-
-func setAnonymousRoles(snap *model.Snapshot, id string, roles []string) {
-	for i := range snap.Users {
-		if snap.Users[i].ID == id && snap.Users[i].Source == auth.SourceLocal {
-			snap.Users[i].Roles = roles
-			return
-		}
-	}
-	for i := range snap.RoleMappings {
-		if snap.RoleMappings[i].UserID == id && snap.RoleMappings[i].Source == auth.SourceLocal {
-			snap.RoleMappings[i].Roles = roles
-			return
-		}
-	}
-	snap.RoleMappings = append(snap.RoleMappings, model.RoleMapping{UserID: id, Source: auth.SourceLocal, Roles: roles})
-}
-
-// anonymousRoles are the roles the server gives the anonymous user, and
-// false for a local row that is not active.
-func anonymousRoles(snap *model.Snapshot, id string) ([]string, bool) {
+// directoryUser reports an id the state knows as a user of a directory: a
+// user row or a role mapping of the source LDAP, matched without regard to
+// letter case as the server does.
+func directoryUser(snap *model.Snapshot, id string) bool {
 	for _, u := range snap.Users {
-		if u.ID == id && u.Source == auth.SourceLocal {
-			return u.Roles, u.Status == "active"
+		if u.Source == auth.SourceLDAP && strings.EqualFold(u.ID, id) {
+			return true
 		}
 	}
-	var roles []string
 	for _, m := range snap.RoleMappings {
-		if m.Source == auth.SourceLocal && strings.EqualFold(m.UserID, id) {
-			roles = append(roles, m.Roles...)
+		if m.Source == auth.SourceLDAP && strings.EqualFold(m.UserID, id) {
+			return true
 		}
 	}
-	return roles, true
+	return false
 }
 
 func (c *command) anonymousOff() (int, error) {
-	return c.withState(false, func(st *state.Store, _ *config.Config) (int, error) {
-		err := st.Update([]state.Kind{state.KindAnonymous}, func(snap *model.Snapshot) error {
+	return c.withState(false, func(st *state.Store, cfg *config.Config) (int, error) {
+		_, err := change(st, cfg, []state.Kind{state.KindAnonymous}, func(snap *model.Snapshot) error {
 			snap.Anonymous.Enabled = false
 			return nil
 		})
@@ -660,20 +683,10 @@ func (c *command) realmsSet() (int, error) {
 	text, _ := c.text("realms")
 	var realms []string
 	for _, part := range strings.Split(text, ",") {
-		id := strings.TrimSpace(part)
-		switch _, known := auth.RealmByID(id); {
-		case id == "":
-			return 1, refuse("the list holds an empty realm name; give the realms separated by commas; nothing changed")
-		case !known:
-			ids := make([]string, len(auth.Realms))
-			for i, r := range auth.Realms {
-				ids[i] = r.ID
-			}
-			return 1, refuse("realm %s is not one this server builds; realms: %s; nothing changed", id, strings.Join(ids, ", "))
-		case slices.Contains(realms, id):
-			return 1, refuse("realm %s is named twice; nothing changed", id)
-		}
-		realms = append(realms, id)
+		realms = append(realms, strings.TrimSpace(part))
+	}
+	if err := admin.CheckRealmList(realms); err != nil {
+		return 1, refused(err)
 	}
 	role, roleGiven := c.text("default_role")
 	kinds := []state.Kind{state.KindRealms}
@@ -681,28 +694,33 @@ func (c *command) realmsSet() (int, error) {
 		role = strings.TrimSpace(role)
 		kinds = append(kinds, state.KindDefaultRole)
 	}
-	return c.withState(false, func(st *state.Store, _ *config.Config) (int, error) {
-		var after *model.Snapshot
-		err := st.Update(kinds, func(snap *model.Snapshot) error {
+	return c.withState(false, func(st *state.Store, cfg *config.Config) (int, error) {
+		var hadAuthorizing bool
+		after, err := change(st, cfg, kinds, func(snap *model.Snapshot) error {
+			hadAuthorizing = slices.Contains(snap.Realms, auth.RealmAuthorizing)
 			if roleGiven {
 				if role != "" {
-					if err := knownRoles(snap, []string{role}); err != nil {
+					if err := admin.CheckUserRoles(snap, []string{role}, nil); err != nil {
 						return err
 					}
 				}
 				snap.DefaultRole = role
 			}
-			if slices.Contains(realms, auth.RealmDefaultRole) && snap.DefaultRole == "" {
-				return refuse("the realm %s needs a role: give --default-role <role>; nothing changed", auth.RealmDefaultRole)
+			if err := admin.CheckRealmRole(realms, snap.DefaultRole); err != nil {
+				return refuse("%s: give --default-role <role>; nothing changed", err)
 			}
 			snap.Realms = realms
-			after = snap
 			return nil
 		})
 		if err != nil {
 			return 1, err
 		}
 		c.print("active realms: %s", strings.Join(realms, ", "))
+		if hadAuthorizing && !slices.Contains(realms, auth.RealmAuthorizing) {
+			// owner choice 3-26
+			c.print("note: the realm %s left the order; it has no effect on this server, roles resolve without it",
+				auth.RealmAuthorizing)
+		}
 		switch {
 		case after.DefaultRole == "":
 		case slices.Contains(realms, auth.RealmDefaultRole):
@@ -773,14 +791,7 @@ const maxCABytes = 1 << 20
 
 // readCA reads a file of CA certificates, at most maxCABytes.
 func readCA(path string) ([]byte, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-	if !info.Mode().IsRegular() || info.Size() > maxCABytes {
-		return nil, fmt.Errorf("%s is no regular file of at most %d bytes", path, maxCABytes)
-	}
-	return os.ReadFile(path) // #nosec G304 -- the CA file the operator names in the LDAP settings.
+	return state.ReadTrustFile(path, maxCABytes) // review 3-14: no link, no file the group or others may write
 }
 
 func (c *command) ldapCA() (int, error) {
@@ -943,13 +954,20 @@ func (c *command) tokenList() (int, error) {
 		if err != nil {
 			return 1, err
 		}
-		if len(list) == 0 {
+		imported, err := st.ImportedKeysOf(user, source)
+		if err != nil {
+			return 1, err
+		}
+		if len(list) == 0 && len(imported) == 0 {
 			c.print("no tokens of user %s (%s)", user, source)
 			return 0, nil
 		}
 		rows := [][]string{{"ID", "KIND", "ISSUED", "LAST USED"}}
 		for _, t := range list {
 			rows = append(rows, []string{t.Public, t.Kind, minute(t.Created), minute(t.LastUsed)})
+		}
+		for _, k := range imported {
+			rows = append(rows, []string{"imported", k.Kind, minute(k.Created), minute(k.LastUsed)})
 		}
 		if err := table(c.out, rows); err != nil {
 			return 1, err
@@ -991,6 +1009,19 @@ func (c *command) tokenRevoke() (int, error) {
 			return 1, refuse("no token with the id %s; see: token list <user>", id)
 		}
 		c.print("revoked the %s token %s of user %s", row.Kind, id, row.UserID)
+		return 0, nil
+	})
+}
+
+// tokenForgetImported deletes every imported key (decision K10 of
+// docs/plans/secrets-import.md).
+func (c *command) tokenForgetImported() (int, error) {
+	return c.withState(false, func(st *state.Store, _ *config.Config) (int, error) {
+		n, err := st.ForgetImportedKeys()
+		if err != nil {
+			return 1, err
+		}
+		c.print("deleted %d imported keys", n)
 		return 0, nil
 	})
 }

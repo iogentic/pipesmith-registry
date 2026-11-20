@@ -315,7 +315,9 @@ func TestExportForms(t *testing.T) {
 		for _, r := range rows {
 			path := c.strip + r.name
 			if c.repo == "demo-npm" {
-				continue
+				// <package>/<file>.tgz is stored as <package>/-/<file>.tgz
+				cut := strings.LastIndexByte(r.name, '/')
+				path = r.name[:cut] + "/-/" + r.name[cut+1:]
 			}
 			file := a.get("/repository/" + c.repo + "/" + path)
 			if file.status != 200 || !bytes.Equal(file.body, r.data) {
@@ -363,7 +365,8 @@ func TestExportRefusals(t *testing.T) {
 	}
 }
 
-func TestExportRefusesAStoredPathNoArchiveMayHold(t *testing.T) {
+func TestExportLeavesOutAStoredPathNoArchiveMayHold(t *testing.T) {
+	logs := captureLog(t)
 	for _, bad := range []string{"docs/../escape.txt", `docs/a\b.txt`, "docs/./x", "docs/c\x01d"} {
 		blobs := []testkit.BlobSpec{spec("demo-raw", "docs/fine.txt", []byte("fine"), "text/plain"),
 			spec("demo-raw", bad, []byte("bad"), "text/plain")}
@@ -371,15 +374,58 @@ func TestExportRefusesAStoredPathNoArchiveMayHold(t *testing.T) {
 		if len(walked(t, a, "demo-raw", "docs")) != 2 {
 			t.Fatalf("%q did not reach the index", bad)
 		}
+		dry := dryOf(t, a.get(exportTarget("demo-raw", "path", "docs", "dry", "1")))
+		if dry["files"] != json.Number("1") || dry["left_out"] != json.Number("1") || fmt.Sprint(dry["left_out_paths"]) != fmt.Sprint([]any{bad}) {
+			t.Fatalf("%q: dry %v", bad, dry)
+		}
+		got := a.get(exportTarget("demo-raw", "path", "docs"))
+		status(t, got, 200)
+		if rows := readZip(t, got.body); len(rows) != 1 || rows[0].name != "fine.txt" || string(rows[0].data) != "fine" {
+			t.Fatalf("%q: entries %v", bad, entryNames(rows))
+		}
+		// the folder that holds only the bad path has nothing to export: 409 with that path
+		alone := startExport(t, exportOptions{blobs: blobs[1:], defs: []*pyjson.Object{def("demo-raw", "raw", "hosted")}})
 		for _, dry := range []string{"", "1"} {
-			got := a.get(exportTarget("demo-raw", "path", "docs", "dry", dry))
+			got := alone.get(exportTarget("demo-raw", "path", "docs", "dry", dry))
 			if got.status != 409 || got.object(t)["path"] != bad {
-				t.Fatalf("%q dry %q: %d %s", bad, dry, got.status, got.body)
+				t.Fatalf("%q alone, dry %q: %d %s", bad, dry, got.status, got.body)
 			}
 		}
-		// the positive twin: the folder beside it exports
-		ok := startExport(t, exportOptions{blobs: blobs[:1], defs: []*pyjson.Object{def("demo-raw", "raw", "hosted")}})
-		status(t, ok.get(exportTarget("demo-raw", "path", "docs")), 200)
+	}
+	if !slices.ContainsFunc(logs.all(), func(line string) bool {
+		return strings.Contains(line, "1 files, 4 bytes") && strings.Contains(line, "1 left out")
+	}) {
+		t.Fatalf("no export line counts the left out path:\n%s", strings.Join(logs.all(), "\n"))
+	}
+	// a folder whose own path holds a backslash: its zip names lie below
+	// it and pass, the folder above it holds only the bad path
+	inner := []testkit.BlobSpec{spec("demo-raw", `docs/a\b/inner.txt`, []byte("inner"), "text/plain")}
+	b := startExport(t, exportOptions{blobs: inner, defs: []*pyjson.Object{def("demo-raw", "raw", "hosted")}})
+	if rows := readZip(t, b.get(exportTarget("demo-raw", "path", `docs/a\b`)).body); len(rows) != 1 || rows[0].name != "inner.txt" {
+		t.Fatalf("the folder with a backslash: %v", entryNames(rows))
+	}
+	if got := b.get(exportTarget("demo-raw", "path", "docs", "dry", "1")); got.status != 409 || got.object(t)["path"] != `docs/a\b/inner.txt` {
+		t.Fatalf("the folder above it: %d %s", got.status, got.body)
+	}
+}
+
+// The dry call lists at most leftOutShown of the paths it leaves out and
+// counts them all.
+func TestExportBoundsTheListOfLeftOutPaths(t *testing.T) {
+	blobs := []testkit.BlobSpec{spec("demo-raw", "docs/fine.txt", []byte("fine"), "text/plain")}
+	for i := 0; i < leftOutShown+5; i++ {
+		blobs = append(blobs, spec("demo-raw", fmt.Sprintf(`docs/bad\%03d.txt`, i), []byte("bad"), "text/plain"))
+	}
+	a := startExport(t, exportOptions{blobs: blobs, defs: []*pyjson.Object{def("demo-raw", "raw", "hosted")}})
+	dry := dryOf(t, a.get(exportTarget("demo-raw", "path", "docs", "dry", "1")))
+	paths, _ := dry["left_out_paths"].([]any)
+	if dry["left_out"] != json.Number(fmt.Sprint(leftOutShown+5)) || len(paths) != leftOutShown || paths[0] != `docs/bad\000.txt` {
+		t.Fatalf("dry %v", dry)
+	}
+	// the twin: a folder without such a path lists none
+	ok := startExport(t, exportOptions{blobs: blobs[:1], defs: []*pyjson.Object{def("demo-raw", "raw", "hosted")}})
+	if dry := dryOf(t, ok.get(exportTarget("demo-raw", "path", "docs", "dry", "1"))); dry["left_out"] != json.Number("0") || fmt.Sprint(dry["left_out_paths"]) != "[]" {
+		t.Fatalf("clean dry %v", dry)
 	}
 }
 
@@ -404,25 +450,34 @@ func TestExportNpmTarballsOfOneFileNameStayApart(t *testing.T) {
 }
 
 // A stored file beside a folder of its name would be the entries a and a/b,
-// which no unpack can hold both of: 409 with the path, before the first
-// byte. The twin: the folder alone exports.
-func TestExportRefusesAFileBesideAFolderOfItsName(t *testing.T) {
+// which no unpack can hold both of: the file stays and the paths below it
+// are left out, so the folders above export their other files. The folder
+// that holds only such paths answers 409 with the first of them.
+func TestExportLeavesOutAPathBelowAFileOfItsName(t *testing.T) {
 	blobs := []testkit.BlobSpec{spec("demo-raw", "top/a", []byte("file a"), "text/plain"),
-		spec("demo-raw", "top/a/b", []byte("file b"), "text/plain")}
+		spec("demo-raw", "top/a/b", []byte("file b"), "text/plain"), spec("demo-raw", "top/c", []byte("file c"), "text/plain")}
 	a := startExport(t, exportOptions{blobs: blobs, defs: []*pyjson.Object{def("demo-raw", "raw", "hosted")}})
-	if len(walked(t, a, "demo-raw", "top")) != 2 {
+	if len(walked(t, a, "demo-raw", "top")) != 3 {
 		t.Fatal("top/a and top/a/b did not both reach the index")
 	}
-	for _, dry := range []string{"", "1"} {
-		got := a.get(exportTarget("demo-raw", "path", "top", "dry", dry))
-		if got.status != 409 || got.object(t)["path"] != "top/a" {
-			t.Fatalf("dry %q: %d %s", dry, got.status, got.body)
+	for _, folder := range []string{"top", ""} {
+		dry := dryOf(t, a.get(exportTarget("demo-raw", "path", folder, "dry", "1")))
+		if dry["files"] != json.Number("2") || dry["left_out"] != json.Number("1") || fmt.Sprint(dry["left_out_paths"]) != "[top/a/b]" {
+			t.Fatalf("%q: dry %v", folder, dry)
+		}
+		rows := readZip(t, a.get(exportTarget("demo-raw", "path", folder)).body)
+		prefix := "top/" // the zip form names entries below the folder
+		if folder != "" {
+			prefix = ""
+		}
+		if fmt.Sprint(entryNames(rows)) != fmt.Sprintf("[%sa %sc]", prefix, prefix) || string(rows[0].data) != "file a" {
+			t.Fatalf("%q: entries %v", folder, entryNames(rows))
 		}
 	}
-	ok := startExport(t, exportOptions{blobs: blobs[1:], defs: []*pyjson.Object{def("demo-raw", "raw", "hosted")}})
-	rows := readZip(t, ok.get(exportTarget("demo-raw", "path", "top")).body)
-	if len(rows) != 1 || rows[0].name != "a/b" {
-		t.Fatalf("the folder alone gave %v", rows)
+	// the folder below the file exports alone, its names below it hold no clash
+	rows := readZip(t, a.get(exportTarget("demo-raw", "path", "top/a")).body)
+	if len(rows) != 1 || rows[0].name != "b" {
+		t.Fatalf("the folder top/a gave %v", entryNames(rows))
 	}
 }
 
@@ -715,16 +770,21 @@ func TestExportLogLineQuotesTheFolder(t *testing.T) {
 // GET refuses, answers 409 with its stored path: the entry keeps the
 // package path, so the entry name guard sees the segment. The twin: the
 // tarball of a plain package path exports.
-func TestExportNpmRefusesADotSegmentInThePackagePath(t *testing.T) {
+func TestExportNpmLeavesOutADotSegmentInThePackagePath(t *testing.T) {
 	for _, bad := range []string{"../-/escape-1.0.0.tgz", "./-/dot-1.0.0.tgz", "@demo/../-/scoped-1.0.0.tgz"} {
 		blobs := []testkit.BlobSpec{spec("demo-npm", "fine/-/fine-1.0.0.tgz", []byte("fine"), "application/x-tgz"),
 			spec("demo-npm", bad, []byte("bad"), "application/x-tgz")}
 		a := startExport(t, exportOptions{blobs: blobs, defs: []*pyjson.Object{def("demo-npm", "npm", "hosted")}})
-		for _, dry := range []string{"", "1"} {
-			got := a.get(exportTarget("demo-npm", "form", "npm", "dry", dry))
-			if got.status != 409 || got.object(t)["path"] != bad {
-				t.Fatalf("%q dry %q: %d %s", bad, dry, got.status, got.body)
-			}
+		dry := dryOf(t, a.get(exportTarget("demo-npm", "form", "npm", "dry", "1")))
+		if dry["left_out"] != json.Number("1") || fmt.Sprint(dry["left_out_paths"]) != fmt.Sprint([]any{bad}) {
+			t.Fatalf("%q: dry %v", bad, dry)
+		}
+		if rows := readZip(t, a.get(exportTarget("demo-npm", "form", "npm")).body); len(rows) != 1 || rows[0].name != "fine/fine-1.0.0.tgz" {
+			t.Fatalf("%q: entries %v", bad, entryNames(rows))
+		}
+		alone := startExport(t, exportOptions{blobs: blobs[1:], defs: []*pyjson.Object{def("demo-npm", "npm", "hosted")}})
+		if got := alone.get(exportTarget("demo-npm", "form", "npm")); got.status != 409 || got.object(t)["path"] != bad {
+			t.Fatalf("%q alone: %d %s", bad, got.status, got.body)
 		}
 		ok := startExport(t, exportOptions{blobs: blobs[:1], defs: []*pyjson.Object{def("demo-npm", "npm", "hosted")}})
 		rows := readZip(t, ok.get(exportTarget("demo-npm", "form", "npm")).body)
@@ -732,4 +792,44 @@ func TestExportNpmRefusesADotSegmentInThePackagePath(t *testing.T) {
 			t.Fatalf("the plain package gave %v", rows)
 		}
 	}
+}
+
+// A maven2 group counts a merged maven-metadata.xml with the size of the
+// merge, which is larger than the document of either member: the dry call
+// gives the bytes the archive holds, and a byte limit of one byte less
+// refuses the export. The twin: the limit at the merged size exports.
+func TestExportGroupCountsTheMergedMetadata(t *testing.T) {
+	folder := "com/example/demo-lib"
+	merged := bodyOf(t, startExport(t, exportOptions{}).get("/repository/demo-group/"+folder+"/maven-metadata.xml"))
+	if len(merged) <= len(metadataXML("1.0.0")) {
+		t.Fatalf("the merge has %d bytes, the member %d", len(merged), len(metadataXML("1.0.0")))
+	}
+	a := startExport(t, exportOptions{})
+	dry := dryOf(t, a.get(exportTarget("demo-group", "path", folder, "dry", "1")))
+	rows := readZip(t, a.get(exportTarget("demo-group", "path", folder)).body)
+	var total int64
+	for _, r := range rows {
+		total += int64(len(r.data))
+		if r.name == folder+"/maven-metadata.xml" && !bytes.Equal(r.data, merged) {
+			t.Fatalf("the entry is not the merge: %s", r.data)
+		}
+	}
+	if dry["bytes"] != json.Number(fmt.Sprint(total)) || dry["files"] != json.Number(fmt.Sprint(len(rows))) {
+		t.Fatalf("dry %v, archive %d files %d bytes", dry, len(rows), total)
+	}
+	over := startExport(t, exportOptions{limits: export.Limits{MaxFiles: 100, MaxBytes: total - 1}})
+	if got := over.get(exportTarget("demo-group", "path", folder)); got.status != 413 {
+		t.Fatalf("one byte below the archive: %d %s", got.status, got.body)
+	}
+	at := startExport(t, exportOptions{limits: export.Limits{MaxFiles: 100, MaxBytes: total}})
+	if rows := readZip(t, at.get(exportTarget("demo-group", "path", folder)).body); len(rows) != 5 {
+		t.Fatalf("at the limit: %d entries", len(rows))
+	}
+}
+
+// bodyOf is the body of a 200 answer.
+func bodyOf(t *testing.T, got *answer) []byte {
+	t.Helper()
+	status(t, got, 200)
+	return got.body
 }

@@ -29,10 +29,12 @@ type scanCancelled struct{ message string }
 func (e *scanCancelled) Error() string { return e.message }
 
 // cancellableStore is _CancellableStore: its walk stops with scanCancelled
-// once cancel is set.
+// once cancel is set, or stop, the stop of the task that started the scan
+// (leg 6-kinds; nil for a scan of POST /api/scan).
 type cancellableStore struct {
 	stores.Store
 	cancel *atomic.Bool
+	stop   *atomic.Bool
 }
 
 func (c *cancellableStore) Entries(counts *stores.ScanCounts, yield func(stores.Entry) error) error {
@@ -49,9 +51,19 @@ func (c *cancellableStore) Walk(counts *stores.ScanCounts, yield func(stores.Ent
 	return w.Walk(counts, c.stoppable(yield), marked)
 }
 
+// WalkLoose is Walk that also gives the bytes files without properties of
+// the write store to loose (writescan.go).
+func (c *cancellableStore) WalkLoose(counts *stores.ScanCounts, yield func(stores.Entry) error, marked func(stores.Marked) error, loose func(string) error) error {
+	w, ok := c.Store.(looseWalker)
+	if !ok {
+		return c.Walk(counts, yield, marked)
+	}
+	return w.WalkLoose(counts, c.stoppable(yield), marked, loose)
+}
+
 func (c *cancellableStore) stoppable(yield func(stores.Entry) error) func(stores.Entry) error {
 	return func(e stores.Entry) error {
-		if c.cancel.Load() {
+		if c.cancel.Load() || c.stop != nil && c.stop.Load() {
 			return &scanCancelled{"scan of store " + c.Name() + " cancelled"}
 		}
 		return yield(e)
@@ -90,13 +102,20 @@ func (j *scanJob) setRun(run scanRunner) {
 
 // start is false while a scan runs or the server stops.
 func (j *scanJob) start(s stores.Store) bool {
+	_, ok := j.startStoppable(s, nil)
+	return ok
+}
+
+// startStoppable is start with the stop of a task, nil for none; done is
+// closed when the scan ends.
+func (j *scanJob) startStoppable(s stores.Store, stop *atomic.Bool) (done chan struct{}, ok bool) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	if j.running || j.cancelled.Load() {
-		return false
+		return nil, false
 	}
 	j.running, j.store, j.progress, j.startedMS = true, s.Name(), 0, nowMS()
-	done := make(chan struct{})
+	done = make(chan struct{})
 	j.done = done
 	run := j.run
 	if j.runFor != nil {
@@ -104,8 +123,8 @@ func (j *scanJob) start(s stores.Store) bool {
 			run = own
 		}
 	}
-	go j.work(s, run, done)
-	return true
+	go j.work(s, run, done, stop)
+	return done, true
 }
 
 func (j *scanJob) onProgress(live int) {
@@ -116,14 +135,14 @@ func (j *scanJob) onProgress(live int) {
 
 // work is _run: the outcome keeps the key order of the Python dict, which
 // takes the fields of the result over in place and adds hints and error.
-func (j *scanJob) work(s stores.Store, run scanRunner, done chan struct{}) {
+func (j *scanJob) work(s stores.Store, run scanRunner, done chan struct{}, stop *atomic.Bool) {
 	defer close(done)
 	outcome := pyjson.NewObject()
 	for _, key := range []string{"live", "deleted", "copies", "no_bytes", "unparsable", "seconds"} {
 		outcome.Set(key, nil)
 	}
 	outcome.Set("store", s.Name())
-	result, err := run(&cancellableStore{Store: s, cancel: &j.cancelled}, j.index, j.onProgress)
+	result, err := run(&cancellableStore{Store: s, cancel: &j.cancelled, stop: stop}, j.index, j.onProgress)
 	var cancelled *scanCancelled
 	switch {
 	case err == nil:
@@ -137,7 +156,7 @@ func (j *scanJob) work(s stores.Store, run scanRunner, done chan struct{}) {
 	case errors.As(err, &cancelled):
 		outcome.Set("error", "cancelled")
 	default:
-		logAt(slog.LevelError, serverLogger, "scan of store %s failed\n%s: %s", s.Name(), PyClass(err), PyText(err))
+		logLines(slog.LevelError, serverLogger, "scan of store %s failed\n%s: %s", s.Name(), PyClass(err), PyText(err))
 		text := PyText(err)
 		if text == "" {
 			text = PyClass(err)
