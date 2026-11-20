@@ -36,6 +36,9 @@ COSIGN_IMAGE="ghcr.io/sigstore/cosign/cosign:v3.1.4@sha256:0f06154836d2de34f887a
 SYFT_IMAGE="ghcr.io/anchore/syft:v1.57.1@sha256:03215d0e98b661d0ecbc8575dbc14d65be1743b5de5df6410aecb7e80f95b060"
 # The signing configuration of the kit (config/cosign/signing-config.json):
 # no transparency log and no timestamp authority.
+# cosign runs as the user of this script, so it reads a key of mode 0600 that
+# this user owns; the image's own user cannot (seen on a GitHub runner).
+AS_USER=(--user "$(id -u):$(id -g)" -e HOME=/tmp)
 SIGNING_CONFIG='{"mediaType":"application/vnd.dev.sigstore.signingconfig.v0.2+json","rekorTlogConfig":{},"tsaConfig":{}}'
 # The Syft configuration that the plan of the pipeline writes for a repository
 # without exclude entries in .pipesmith-ci.toml.
@@ -98,7 +101,7 @@ elif [ ! -e "$KEY_DIR/cosign.key" ] && [ ! -e "$KEY_DIR/cosign.pub" ]; then
   echo "making a test key pair"
   mkdir -p "$KEY_DIR"
   chmod 0700 "$KEY_DIR"
-  COSIGN_PASSWORD="" docker run --rm --network none -e COSIGN_PASSWORD -v "$KEY_DIR:/k" \
+  COSIGN_PASSWORD="" docker run --rm --network none "${AS_USER[@]}" -e COSIGN_PASSWORD -v "$KEY_DIR:/k" \
     "$COSIGN_IMAGE" generate-key-pair --output-key-prefix /k/cosign
 elif [ ! -f "$KEY_DIR/cosign.key" ] || [ ! -f "$KEY_DIR/cosign.pub" ]; then
   fail "$KEY_DIR holds only one of cosign.key and cosign.pub"
@@ -155,11 +158,11 @@ chmod 0644 "$STAGE"/sbom.spdx.json "$STAGE"/sbom.cdx.json "$STAGE"/image.tar "$S
 if [ "$SIGN" -eq 1 ]; then
 echo "== signature"
 printf '%s\n' "$SIGNING_CONFIG" > "$TMP/signing-config.json"
-COSIGN_PASSWORD="${COSIGN_PASSWORD:-}" docker run --rm --network none -e COSIGN_PASSWORD \
+COSIGN_PASSWORD="${COSIGN_PASSWORD:-}" docker run --rm --network none "${AS_USER[@]}" -e COSIGN_PASSWORD \
   -v "$KEY_DIR:/k:ro" -v "$TMP:/c:ro" -v "$STAGE:/r" "$COSIGN_IMAGE" \
   sign-blob --yes --key /k/cosign.key --signing-config /c/signing-config.json \
   --bundle /r/SHA256SUMS.sigstore.json /r/SHA256SUMS
-docker run --rm --network none -v "$KEY_DIR:/k:ro" -v "$STAGE:/r:ro" "$COSIGN_IMAGE" \
+docker run --rm --network none "${AS_USER[@]}" -v "$KEY_DIR:/k:ro" -v "$STAGE:/r:ro" "$COSIGN_IMAGE" \
   verify-blob --key /k/cosign.pub --insecure-ignore-tlog \
   --bundle /r/SHA256SUMS.sigstore.json /r/SHA256SUMS
 cp "$KEY_DIR/cosign.pub" "$STAGE/cosign.pub"
