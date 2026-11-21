@@ -207,7 +207,7 @@ func TestSettingsRefusals(t *testing.T) {
 	r.publish(published{version: "0.2.0"})
 	r.start()
 	for name, cfg := range map[string]map[string]any{
-		"no channel":         {"trusted_key": r.trusted.Pub},
+		"empty channel":      {"trusted_key": r.trusted.Pub, "channel": map[string]any{}},
 		"channel null":       {"trusted_key": r.trusted.Pub, "channel": nil},
 		"no server":          {"trusted_key": r.trusted.Pub, "channel": map[string]any{"owner": "acme"}},
 		"no owner":           {"trusted_key": r.trusted.Pub, "channel": map[string]any{"server": r.srv.URL}},

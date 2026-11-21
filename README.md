@@ -6,7 +6,7 @@ Pipesmith Registry is a single static binary that serves the file blob stores of
 
 ## State of 0.1
 
-Version 0.2.0. It never writes the blob stores it imports. With `serve --writes`, new uploads go into a blob store of its own.
+Version 0.2.1. It never writes the blob stores it imports. With `serve --writes`, new uploads go into a blob store of its own.
 
 What works:
 
@@ -46,7 +46,7 @@ The screenshots show invented data.
 The release has binaries for `linux-amd64`, `linux-arm64` and `darwin-arm64`. Download one of them with the checksum file and check it:
 
 ```bash
-VERSION=0.2.0
+VERSION=0.2.1
 BASE=https://github.com/iogentic/pipesmith-registry/releases/download/v$VERSION
 curl -fLO "$BASE/pipesmith-registry-linux-amd64"
 curl -fLO "$BASE/SHA256SUMS"
@@ -86,7 +86,7 @@ Without imported users there is no sign in, and the server stays on the local ad
 The image is on Docker Hub, built for linux/amd64. It runs as user 65532 and keeps its data in `/data`. Put `/data` on a Docker volume:
 
 ```bash
-IMAGE=iogentic/pipesmith-registry:0.2.0
+IMAGE=iogentic/pipesmith-registry:0.2.1
 docker volume create pipesmith-data
 docker run --rm -v pipesmith-data:/data -v /srv/blobs/default:/stores/default:ro "$IMAGE" store add default --kind <blob store kind> --root /stores/default
 docker run --rm -v pipesmith-data:/data -v "$PWD/export:/import:ro" "$IMAGE" import /import

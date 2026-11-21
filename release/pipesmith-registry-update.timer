@@ -1,11 +1,12 @@
-# Runs pipesmith-registry-update.service once a day. Installed disabled:
+# Runs pipesmith-registry-update.service every hour, so a window of
+# update.json of a few hours is met. Installed disabled:
 # systemctl enable --now pipesmith-registry-update.timer turns it on.
 [Unit]
-Description=Daily update check of Pipesmith Registry
+Description=Hourly update check of Pipesmith Registry
 
 [Timer]
-OnCalendar=daily
-RandomizedDelaySec=1h
+OnCalendar=hourly
+RandomizedDelaySec=10min
 Persistent=true
 Unit=pipesmith-registry-update.service
 

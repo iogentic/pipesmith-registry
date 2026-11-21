@@ -78,6 +78,8 @@ const (
 	CodeRemoteSecret      Code = "remote-secret"      // an upstream authentication this server cannot store or use (ST9)
 	CodeWriteStore        Code = "write-store"        // a repository that would write into another store than local-write (ST2)
 	CodeStoreUnknown      Code = "store-unknown"      // a repository that names no store or a store that does not exist
+	CodeStoreReadOnly     Code = "store-read-only"    // a hosted repository that would write into an imported store (SR5)
+	CodeStoreFixed        Code = "store-fixed"        // a save that would move a repository to another store (SR7)
 	CodeDockerPort        Code = "docker-port"        // a Docker port in a create or save, which the host sets (ST7)
 	CodeMemberInUse       Code = "member-in-use"      // a delete of a repository that a group names as a member (ST5)
 	CodePathInvalid       Code = "path-invalid"       // a store path outside <data>/stores/, holding files, or another store's (ST1)
@@ -101,6 +103,16 @@ const (
 const (
 	CodePreviewRepository Code = "preview-repository" // the repository of a preview is missing, a group or of another format (Q8)
 	CodeFormatUnknown     Code = "format-unknown"     // a cleanup policy format other than *, maven2, npm, docker and raw (Q15)
+	CodeNotesBound        Code = "notes-bound"        // new notes of a cleanup policy above 400 characters (CP12)
+)
+
+// Codes of the tokens and the own account (leg 6-api, contract S29 and
+// S41).
+const (
+	CodeTokenKind     Code = "token-kind"     // a token kind this server does not issue on request, docker or one whose realm is off (AP1)
+	CodeTokenName     Code = "token-name"     // a token name outside the name pattern or above 64 characters (AP2)
+	CodePasswordWrong Code = "password-wrong" // a current password that does not verify (AP7)
+	CodeTokenLimit    Code = "token-limit"    // a named token of a user who holds the most named tokens of the kind
 )
 
 // Codes that later legs return. TaskRefusal returns not-found, unavailable
@@ -184,11 +196,14 @@ var answers = map[Code]answer{
 	CodeLDAPOrder:         {http.StatusBadRequest, formFields, ""},
 	CodePreviewRepository: {http.StatusBadRequest, formFields, ""},
 	CodeFormatUnknown:     {http.StatusBadRequest, formFields, ""},
+	CodeNotesBound:        {http.StatusBadRequest, formFields, ""},
 	CodeRepositoryKind:    {http.StatusNotImplemented, formMessageArea, ""},
 	CodeRemoteInvalid:     {http.StatusBadRequest, formFields, ""},
 	CodeRemoteSecret:      {http.StatusBadRequest, formFields, ""},
 	CodeWriteStore:        {http.StatusBadRequest, formFields, ""},
 	CodeStoreUnknown:      {http.StatusBadRequest, formFields, ""},
+	CodeStoreReadOnly:     {http.StatusBadRequest, formFields, ""},
+	CodeStoreFixed:        {http.StatusBadRequest, formFields, ""},
 	CodeDockerPort:        {http.StatusBadRequest, formFields, ""},
 	CodeMemberInUse:       {http.StatusConflict, formMessage, ""},
 	CodePathInvalid:       {http.StatusBadRequest, formFields, ""},
@@ -201,6 +216,10 @@ var answers = map[Code]answer{
 	CodeCapabilityType:    {http.StatusBadRequest, formFields, ""},
 	CodePropertySecret:    {http.StatusBadRequest, formFields, ""},
 	CodeReadOnlyState:     {http.StatusConflict, formMessage, ""},
+	CodeTokenKind:         {http.StatusBadRequest, formFields, ""},
+	CodeTokenName:         {http.StatusBadRequest, formFields, ""},
+	CodePasswordWrong:     {http.StatusBadRequest, formFields, ""},
+	CodeTokenLimit:        {http.StatusConflict, formMessage, ""},
 	CodeNotFound:          {http.StatusNotFound, formMessage, ""},
 	CodeForbidden:         {http.StatusForbidden, formMessage, ""},
 	CodeRequestToken:      {http.StatusForbidden, formMessage, "missing or wrong request token"},

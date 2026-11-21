@@ -205,11 +205,29 @@ type markedWalk struct {
 }
 
 func (m *markedWalk) Entries(counts *stores.ScanCounts, yield func(stores.Entry) error) error {
+	return m.Walk(counts, yield, nil)
+}
+
+// Walk is Entries that also gives every marked blob to marked after the
+// marked of the walk, so that the scan counts them (stores.MarkedWalker,
+// ruling SR14).
+func (m *markedWalk) Walk(counts *stores.ScanCounts, yield func(stores.Entry) error, marked func(stores.Marked) error) error {
+	both := m.marked
+	if marked != nil {
+		both = func(x stores.Marked) error {
+			if m.marked != nil {
+				if err := m.marked(x); err != nil {
+					return err
+				}
+			}
+			return marked(x)
+		}
+	}
 	if w, ok := m.Store.(looseWalker); ok && m.loose != nil {
-		return w.WalkLoose(counts, yield, m.marked, m.loose)
+		return w.WalkLoose(counts, yield, both, m.loose)
 	}
 	if w, ok := m.Store.(walker); ok {
-		return w.Walk(counts, yield, m.marked)
+		return w.Walk(counts, yield, both)
 	}
 	return m.Store.Entries(counts, yield)
 }
@@ -219,6 +237,14 @@ func (m *markedWalk) Entries(counts *stores.ScanCounts, yield func(stores.Entry)
 func (wp *writePath) scanRunnerFor(s stores.Store) scanRunner {
 	if wp.store != nil && s == stores.Store(wp.store) {
 		return wp.scanStore
+	}
+	for _, o := range wp.created.all() {
+		if s == stores.Store(o.store) {
+			return wp.scanWith(o.store, o.writer) // a created store (SR3)
+		}
+	}
+	if b, ok := s.(*stores.BlobStore); ok && wp.created.readOnly(b) {
+		return (&writePath{store: b, file: wp.file}).scanStore // a created store while writes are off: no delete mark
 	}
 	if late := wp.late.Load(); late != nil && s == stores.Store(late) {
 		return (&writePath{store: late, file: wp.file}).scanStore // writes are off: no delete mark
@@ -231,41 +257,49 @@ func (wp *writePath) scanRunnerFor(s stores.Store) scanRunner {
 // writes are on. With writes off the store is read only and the marks wait
 // for a scan with writes on.
 func (wp *writePath) scanStore(s stores.Store, ix *index.Index, progress func(live int)) (scan.Result, error) {
-	arbiter := &writeScan{order: newWriteOrder(wp.store.Root()), deletes: map[[2]string]stores.Entry{}}
-	walk := &markedWalk{Store: s, marked: arbiter.marked}
-	if wp.writer != nil {
-		walk.loose = wp.removeLoose
-	}
-	result, err := scan.RunIn(wp.file, walk, ix, progress, arbiter)
-	if err == nil {
-		wp.noteDeletes(arbiter.deletes)
-	}
-	if err != nil || wp.writer == nil {
-		return result, err
-	}
-	marked := 0
-	for _, blob := range arbiter.stale {
-		if wp.markStale(ix, blob) {
-			marked++
-		}
-	}
-	if len(arbiter.stale) > 0 {
-		logAt(slogInfo, serverLogger, "the scan of store %s found %d live blobs that a later write or delete of their path replaces; %d have their delete mark now",
-			wp.writer.Name(), len(arbiter.stale), marked)
-	}
-	return result, nil
+	return wp.scanWith(wp.store, wp.writer)(s, ix, progress)
 }
 
-// removeLoose removes a bytes file without properties that the walk of a
-// scan with writes on meets (N2). The scan holds the index for its walk, so
-// no write of this process is between the renames of its two files; a file
-// that cannot be removed stays and the scan goes on.
-func (wp *writePath) removeLoose(location string) error {
-	if err := wp.writer.RemoveLoose(location); err != nil {
-		logAt(slogWarn, serverLogger, "the bytes file %s of store %s has no properties and stays: %v", location, wp.writer.Name(), err)
+// scanWith is the scan runner of the write store st with its writer w, nil
+// with writes off: local-write or a created store (SR3).
+func (wp *writePath) scanWith(st *stores.BlobStore, w *blobwrite.Writer) scanRunner {
+	return func(s stores.Store, ix *index.Index, progress func(live int)) (scan.Result, error) {
+		arbiter := &writeScan{order: newWriteOrder(st.Root()), deletes: map[[2]string]stores.Entry{}}
+		walk := &markedWalk{Store: s, marked: arbiter.marked}
+		if w != nil {
+			walk.loose = func(location string) error { return removeLoose(w, location) }
+		}
+		result, err := scan.RunIn(wp.file, walk, ix, progress, arbiter)
+		if err == nil {
+			wp.noteDeletes(arbiter.deletes)
+		}
+		if err != nil || w == nil {
+			return result, err
+		}
+		marked := 0
+		for _, blob := range arbiter.stale {
+			if wp.markStale(ix, w.Name(), blob) {
+				marked++
+			}
+		}
+		if len(arbiter.stale) > 0 {
+			logAt(slogInfo, serverLogger, "the scan of store %s found %d live blobs that a later write or delete of their path replaces; %d have their delete mark now",
+				w.Name(), len(arbiter.stale), marked)
+		}
+		return result, nil
+	}
+}
+
+// removeLoose removes a bytes file without properties of the store of w that
+// the walk of a scan with writes on meets (N2). The scan holds the index for
+// its walk, so no write of this process is between the renames of its two
+// files; a file that cannot be removed stays and the scan goes on.
+func removeLoose(w *blobwrite.Writer, location string) error {
+	if err := w.RemoveLoose(location); err != nil {
+		logAt(slogWarn, serverLogger, "the bytes file %s of store %s has no properties and stays: %v", location, w.Name(), err)
 		return nil
 	}
-	logAt(slogInfo, serverLogger, "the scan of store %s removed the bytes file %s, which had no properties", wp.writer.Name(), location)
+	logAt(slogInfo, serverLogger, "the scan of store %s removed the bytes file %s, which had no properties", w.Name(), location)
 	return nil
 }
 
@@ -280,7 +314,7 @@ func ScanWriteStore(s *stores.BlobStore, ix *index.Index, progress func(live int
 // markStale sets the delete mark of a stale blob under the lock of its path,
 // unless the row of the path names the blob now. A mark that fails waits as
 // the mark of a replaced blob does (marks.go).
-func (wp *writePath) markStale(ix *index.Index, blob staleBlob) bool {
+func (wp *writePath) markStale(ix *index.Index, store string, blob staleBlob) bool {
 	unlock := wp.locks.lock(blob.Repo, blob.Path)
 	defer unlock()
 	rows, err := ix.Rows(blob.Repo, blob.Path)
@@ -289,12 +323,12 @@ func (wp *writePath) markStale(ix *index.Index, blob staleBlob) bool {
 		return false
 	}
 	for _, row := range rows {
-		if row.Store == wp.writer.Name() && row.Location == blob.Location {
+		if row.Store == store && row.Location == blob.Location {
 			return false
 		}
 	}
-	if err := wp.mark(blob.Location, blob.reason); err != nil {
-		if wp.wait(blob.Repo, blob.Path, blob.Location) {
+	if err := wp.mark(store, blob.Location, blob.reason); err != nil {
+		if wp.wait(blob.Repo, blob.Path, store, blob.Location) {
 			logAt(slogWarn, serverLogger, "blob %s of %s/%s is stale and has no delete mark: %v; it is tried again, and the writable status answers 503 until then",
 				blob.Location, blob.Repo, blob.Path, err)
 		}

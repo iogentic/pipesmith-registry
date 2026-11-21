@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Pipesmith Registry API",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "Pipesmith Registry serves the files of existing blob stores, with a JSON and REST API for its web interface. Every address in this document is relative to the main port of the server. A Docker repository also answers the registry API under /v2/ on a port of its own, and on the main port under /repository/<name>/v2/. With security on (the data directory holds state.sqlite) a client sends HTTP Basic credentials of a local or LDAP user, a user token as password, or a token in the header Authorization: Bearer; the web interface signs in through POST /api/session and then sends the session cookie. npm login and the Docker token route issue tokens; npm logout revokes one. Writes are off unless serve starts with --writes or config.json sets writes, and they need state.sqlite; while they are off a write below /repository/ answers 405 and a REST write answers 501 or 404. Operations marked with x-pipesmith-needs exist only with what it names: state.sqlite for security on, writes for writes on; without security no permission is checked. An operation of the tag Not Served answers 501 with the area it belongs to, after sign in; a method that a path does not list answers 405 with the header Allow. Permission strings are shown without the prefix that the imported data carries. Answer bodies are described in words in this version.",
     "license": {
       "name": "Apache License 2.0",
@@ -41,7 +41,7 @@
     },
     {
       "name": "Security",
-      "description": "Privileges, roles, users, realms, anonymous access and LDAP connections."
+      "description": "Privileges, roles, users, realms, anonymous access, LDAP connections and the own account."
     },
     {
       "name": "Session",
@@ -49,11 +49,11 @@
     },
     {
       "name": "Tokens",
-      "description": "npm login, whoami and logout, and Docker bearer tokens."
+      "description": "npm login, whoami and logout, Docker bearer tokens, and the npm and user tokens of the web interface."
     },
     {
       "name": "System",
-      "description": "Routing rules, capabilities, tasks, the read only mode and the system information."
+      "description": "Routing rules, cleanup policies, capabilities, tasks, the read only mode and the system information."
     },
     {
       "name": "Not Served",
@@ -83,20 +83,93 @@
     "/api/account": {
       "put": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area account. After sign in the server answers 501 with the area.",
+        "summary": "Save the own names and mail",
+        "description": "Works with security on, writes on or off, for any signed in user. While the server is frozen a change answers 503. A key the body lacks keeps the stored value; roles and status stay.",
         "operationId": "put_api_account",
+        "requestBody": {
+          "description": "The names and the mail of the caller, at most 65536 bytes.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "firstName",
+                  "lastName",
+                  "emailAddress"
+                ],
+                "properties": {
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "emailAddress": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
+          "204": {
+            "description": "The account is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. At *: the body is no JSON object.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller signed in with a token; a session or the password changes the own account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The user belongs to an LDAP directory, which keeps its names, mail and password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -108,28 +181,95 @@
           }
         ],
         "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "account"
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/account/password": {
       "post": {
         "tags": [
-          "Not Served"
+          "Security"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area account. After sign in the server answers 501 with the area.",
+        "summary": "Change the own password",
+        "description": "Works with security on, writes on or off, for any signed in user. While the server is frozen a change answers 503. The current password is checked as a sign in checks it. After the change the old password signs in no more and every session of the user ends. A wrong current password counts as a failed sign in; after too many the answer is 429 with Retry-After and an empty body, as for a sign in.",
         "operationId": "post_api_account_password",
+        "requestBody": {
+          "description": "The current and the new password, at most 65536 bytes.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
+          "204": {
+            "description": "The new password is stored."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. At currentPassword: the current password is wrong. At newPassword: empty, above 1024 bytes or with a control character.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
+          "403": {
+            "description": "The caller signed in with a token; a session or the password changes the own account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "409": {
+            "description": "The user belongs to an LDAP directory, which keeps its names, mail and password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many failed sign ins of this user from this address; the header Retry-After names the seconds to wait."
+          },
+          "503": {
+            "description": "The server has no identity store or changes no passwords.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -141,9 +281,8 @@
           }
         ],
         "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "account"
+        "x-pipesmith-caller": "A wrong current password counts as a failed sign in; after too many the answer is 429 with Retry-After and an empty body, as for a sign in.",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/areas": {
@@ -253,7 +392,7 @@
           "Blob Stores"
         ],
         "summary": "Blobs of a store with the delete mark",
-        "description": "Counts the blobs of the file store that carry the delete mark, by a walk of its properties files.",
+        "description": "The count of the blobs of the file store that carry the delete mark, and their bytes, as catalog.sqlite keeps it: a scan of the store writes it, and each delete mark of this server and each blob a compaction removes moves it. A store without a count takes once its entry of marked-counts.json in the data directory (a store of the existing install), or a walk of its properties files in the background, two at a time, whose count is then kept; a request waits for that walk at most 2 s.",
         "operationId": "get_api_blob_stores_name_deleted",
         "parameters": [
           {
@@ -268,7 +407,7 @@
         ],
         "responses": {
           "200": {
-            "description": "{name, blobCount, bytes}.",
+            "description": "{name, blobCount, bytes, counting, countedAt}. blobCount and bytes are null while the first count of a store runs; counting is true while it runs, and the request may ask again; countedAt is the time of the count the numbers start from; reason, given only without a count, names why there is none, as a folder of the store that does not exist.",
             "content": {
               "application/json": {}
             }
@@ -291,6 +430,16 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "description": "The count failed and no earlier count is kept, for example because the walk of the store fails; it is tried again after 30 s. A store whose folder is missing answers 200 with reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -432,20 +581,25 @@
     "/api/cleanup-policies": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area cleanup-policies. After sign in the server answers 501 with the area.",
+        "summary": "Cleanup policies",
         "operationId": "get_api_cleanup_policies",
         "responses": {
+          "200": {
+            "description": "Array of {name, format, notes, criteria, usedBy}: criteria holds lastBlobUpdatedDays and lastDownloadedDays, null for one that is not set, and an imported criterion this server does not know as it is stored; such a policy never runs. usedBy names the repositories that apply the policy, sorted, sorted by name.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -456,27 +610,94 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "cleanup-policies"
+        "x-pipesmith-permission": "settings:read",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area cleanup-policies. After sign in the server answers 501 with the area.",
+        "summary": "Create a cleanup policy",
+        "description": "The body is {name, format, notes, criteria}, at most 65536 bytes; usedBy and other keys are ignored. Of the criteria lastBlobUpdatedDays and lastDownloadedDays at least one is a whole number of days, 1 or more; a null one is not stored. The new policy counts as made on this server. A repository that names the policy already applies it at once.",
         "operationId": "post_api_cleanup_policies",
+        "requestBody": {
+          "description": "{name, format, notes, criteria}; format is *, maven2, npm, docker or raw, notes at most 400 characters.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "format",
+                  "notes"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "format": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
+          "201": {
+            "description": "{name, format, notes, criteria, usedBy}: criteria holds lastBlobUpdatedDays and lastDownloadedDays, null for one that is not set, and an imported criterion this server does not know as it is stored; such a policy never runs. usedBy names the repositories that apply the policy, sorted.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A format other than the five, notes above 400 characters, a criterion this server does not know or a value that is no whole number of 1 or more (at criteria.<name>), no criterion set (at criteria), or a value of another type. A name outside the name pattern, or no format or no criteria.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "A cleanup policy of the name exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -487,29 +708,76 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "cleanup-policies"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/cleanup-policies/preview": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area cleanup-policies. After sign in the server answers 501 with the area.",
+        "summary": "What a cleanup policy would remove from one repository",
+        "description": "The body is {policy, repository}, policy in the form of a create, at most 65536 bytes; its name is not checked and no stored policy is read. The preview is the dry run of a cleanup run: nothing is removed or written, also while the server is frozen. A repository the caller may not browse answers as one that does not exist. One preview runs at a time per server; it reads every asset of the repository.",
         "operationId": "post_api_cleanup_policies_preview",
         "responses": {
+          "200": {
+            "description": "{items, total, truncated}: at most 100 items {repository, group, name, version, path}, sorted by path, then the docker layers a run marks; total counts all.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. At policy.<field> what the create of the policy refuses but the name; at repository a repository that is missing, may not be browsed, is a group or has another format than the policy.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Another preview runs; the header Retry-After gives 5 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The repositories, the catalog or the index cannot be read; the message says which.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The server has no state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -520,25 +788,22 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "cleanup-policies"
+        "x-pipesmith-permission": "settings:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/cleanup-policies/{name}": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area cleanup-policies. After sign in the server answers 501 with the area.",
+        "summary": "One cleanup policy",
         "operationId": "get_api_cleanup_policies_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the cleanup policy.",
             "required": true,
             "schema": {
               "type": "string"
@@ -546,14 +811,30 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "{name, format, notes, criteria, usedBy}: criteria holds lastBlobUpdatedDays and lastDownloadedDays, null for one that is not set, and an imported criterion this server does not know as it is stored; such a policy never runs. usedBy names the repositories that apply the policy, sorted.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Cleanup policy not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
           }
         },
         "security": [
@@ -564,38 +845,102 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "cleanup-policies"
+        "x-pipesmith-permission": "settings:read",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "put": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area cleanup-policies. After sign in the server answers 501 with the area.",
+        "summary": "Save a cleanup policy",
+        "description": "The body is {name, format, notes, criteria}, at most 65536 bytes; usedBy and other keys are ignored. Of the criteria lastBlobUpdatedDays and lastDownloadedDays at least one is a whole number of days, 1 or more; a null one is not stored. The name cannot change; without format the stored one stays. A value the stored policy holds is never refused, an imported format or criterion included. A saved policy counts as made on this server, so a later import keeps it.",
         "operationId": "put_api_cleanup_policies_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the cleanup policy.",
             "required": true,
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "description": "{name, format, notes, criteria}; format is *, maven2, npm, docker or raw, notes at most 400 characters.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "format",
+                  "notes"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "format": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
+          "204": {
+            "description": "The policy is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A format other than the five, notes above 400 characters, a criterion this server does not know or a value that is no whole number of 1 or more (at criteria.<name>), no criterion set (at criteria), or a value of another type. Another name in the body, or a format other than * while a repository of another format applies the policy.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Cleanup policy not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -606,23 +951,21 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "cleanup-policies"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area cleanup-policies. After sign in the server answers 501 with the area.",
+        "summary": "Delete a cleanup policy",
+        "description": "A policy of any origin is deleted; an imported one comes back with the next import unless a policy made on this server holds its name. A cleanup task that runs keeps the policies it read at its start and sees the delete at its next run.",
         "operationId": "delete_api_cleanup_policies_name",
         "parameters": [
           {
             "name": "name",
             "in": "path",
-            "description": "Name of the object.",
+            "description": "Name of the cleanup policy.",
             "required": true,
             "schema": {
               "type": "string"
@@ -630,14 +973,47 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The policy is deleted."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Cleanup policy not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A repository applies the policy; the message names every one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no identity store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -648,10 +1024,8 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "cleanup-policies"
+        "x-pipesmith-permission": "settings:update",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/export/{repository}": {
@@ -2136,20 +2510,35 @@
     "/api/task-types": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "Task types this server runs",
         "operationId": "get_api_task_types",
         "responses": {
+          "200": {
+            "description": "A list of {id, name, description, fields}; each field is {id, label, type, required, default} with options for a select. type is string, number, boolean, select, repository or blobstore.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2160,29 +2549,94 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:read",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/tasks": {
       "post": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "Create a task",
+        "description": "Works with security on, writes on or off; the scheduler takes the change at once. While the server is frozen a change answers 503. The new task is enabled unless the body says otherwise and waits for its first instant at once.",
         "operationId": "post_api_tasks",
+        "requestBody": {
+          "description": "TaskSettings without id, at most 65536 bytes: typeId, name, enabled, schedule {type, startAt, weekDays, monthDays, cron} and properties, an object of strings. startAt is a UTC time in RFC 3339.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "typeId",
+                  "name",
+                  "enabled",
+                  "schedule",
+                  "properties"
+                ],
+                "properties": {
+                  "typeId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "enabled": {
+                    "type": "string"
+                  },
+                  "schedule": {
+                    "type": "string"
+                  },
+                  "properties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
+          "201": {
+            "description": "{id}, the id the server gives the task: 16 lowercase hex characters.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. At *: the body is no JSON object. At typeId: an unknown type or another type than the stored one. At name: empty or above 256 characters. At enabled: no boolean. At schedule.<field>: a schedule the scheduler refuses. At properties.<id>: a missing, unknown or unfit property, or one the task type refuses when it loads the task.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2193,25 +2647,22 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:create",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/tasks/{id}": {
       "get": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "The settings of a task",
         "operationId": "get_api_tasks_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the task.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2219,14 +2670,40 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "TaskSettings {id, typeId, name, enabled, schedule, properties}: schedule is {type} with startAt in RFC 3339 UTC, weekDays, monthDays and cron where the type uses them; properties is an object of strings.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Task not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2237,38 +2714,110 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:read",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "put": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "Save a task",
+        "description": "Works with security on, writes on or off; the scheduler takes the change at once. While the server is frozen a change answers 503. The type cannot change. A run that is going keeps its settings; the saved ones apply from the next run. A saved task counts as made on this server, so an imported task saved enabled leaves the paused state.",
         "operationId": "put_api_tasks_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the task.",
             "required": true,
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "description": "TaskSettings without id, at most 65536 bytes: typeId, name, enabled, schedule {type, startAt, weekDays, monthDays, cron} and properties, an object of strings. startAt is a UTC time in RFC 3339.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "typeId",
+                  "name",
+                  "enabled",
+                  "schedule",
+                  "properties"
+                ],
+                "properties": {
+                  "typeId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "enabled": {
+                    "type": "string"
+                  },
+                  "schedule": {
+                    "type": "string"
+                  },
+                  "properties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
+          "204": {
+            "description": "The task is saved."
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. At *: the body is no JSON object. At typeId: an unknown type or another type than the stored one. At name: empty or above 256 characters. At enabled: no boolean. At schedule.<field>: a schedule the scheduler refuses. At properties.<id>: a missing, unknown or unfit property, or one the task type refuses when it loads the task.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Task not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2279,23 +2828,21 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:update",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "delete": {
         "tags": [
-          "Not Served"
+          "System"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tasks. After sign in the server answers 501 with the area.",
+        "summary": "Delete a task",
+        "description": "Works with security on, writes on or off; the scheduler takes the change at once. While the server is frozen a change answers 503. The runs of the task stay in the history.",
         "operationId": "delete_api_tasks_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the task.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2303,14 +2850,47 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The task is deleted."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Task not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task is running; stop it or wait for the end of its run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server has no tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2321,29 +2901,60 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tasks"
+        "x-pipesmith-permission": "tasks:delete",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/tokens": {
       "get": {
         "tags": [
-          "Not Served"
+          "Tokens"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tokens. After sign in the server answers 501 with the area.",
+        "summary": "Tokens of the caller or of one user",
+        "description": "Works with security on, writes on or off. While the server is frozen a change answers 503. The tokens of another user than the caller need the permission users:update as well.",
         "operationId": "get_api_tokens",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "User whose tokens to list, in every source; the caller when absent.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
+          "200": {
+            "description": "Array of {id, kind, name, userId, created, lastUsed, publicPart}: id is the public half of a token, or imported-<hex> for an imported key, whose name and publicPart are empty; created and lastUsed are UTC times, lastUsed null for a token never used; the npm and user tokens in the order of their issue, then the imported keys of the old product.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, or asks for the tokens of another user without users:update.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server issues no tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2354,27 +2965,98 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tokens"
+        "x-pipesmith-permission": "apikey:*",
+        "x-pipesmith-caller": "The tokens of another user than the caller need the permission users:update as well.",
+        "x-pipesmith-needs": "state.sqlite"
       },
       "post": {
         "tags": [
-          "Not Served"
+          "Tokens"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tokens. After sign in the server answers 501 with the area.",
+        "summary": "Issue a token for the caller",
+        "description": "Works with security on, writes on or off. While the server is frozen a change answers 503. The body is {kind, name}: kind npm or user, name 1 to 64 letters, digits, dots, hyphens and underscores.",
         "operationId": "post_api_tokens",
+        "requestBody": {
+          "description": "Kind and name of the token, at most 65536 bytes.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "name"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
+          "201": {
+            "description": "{id, kind, name, userId, created, lastUsed, publicPart}: id is the public half of a token, or imported-<hex> for an imported key, whose name and publicPart are empty; created and lastUsed are UTC times, lastUsed null for a token never used and secret, the whole token in the wire form; no later answer holds it.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. At kind, checked before the name: docker, which the token route of a Docker repository issues, an unknown kind, or a kind whose realm is not active. At name: a name outside the pattern.",
+            "content": {
+              "application/json": {}
+            }
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, or signed in with a token; a session or the password issues tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The caller holds a token of this kind and name, or holds 20 named tokens of this kind.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server issues no tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2385,25 +3067,23 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tokens"
+        "x-pipesmith-permission": "apikey:*",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/tokens/{id}": {
       "delete": {
         "tags": [
-          "Not Served"
+          "Tokens"
         ],
-        "summary": "Not served yet",
-        "description": "Part of the area tokens. After sign in the server answers 501 with the area.",
+        "summary": "Revoke a token",
+        "description": "Works with security on, writes on or off. While the server is frozen a change answers 503. A token of another user than the caller needs the permission users:update as well; without it the token answers 404.",
         "operationId": "delete_api_tokens_id",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Id of the object.",
+            "description": "Id of the token from the list.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2411,14 +3091,44 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "The token is revoked."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The caller lacks the permission, or signed in with a token; a session or the password revokes tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
-          "501": {
-            "$ref": "#/components/responses/NotServed"
+          "503": {
+            "description": "The server issues no tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2429,10 +3139,9 @@
             "session": []
           }
         ],
-        "x-pipesmith-permission": "signed in",
-        "x-pipesmith-needs": "state.sqlite",
-        "x-pipesmith-refused": true,
-        "x-pipesmith-area": "tokens"
+        "x-pipesmith-permission": "apikey:*",
+        "x-pipesmith-caller": "A token of another user than the caller needs the permission users:update as well; without it the token answers 404.",
+        "x-pipesmith-needs": "state.sqlite"
       }
     },
     "/api/updates": {
@@ -2440,12 +3149,49 @@
         "tags": [
           "Status"
         ],
-        "summary": "Update and signing state of the install root",
-        "description": "Read only. The install root is the one of the running binary, <root>/releases/<version>/pipesmith-registry beside the link <root>/current. The server never writes the trusted key.",
+        "summary": "Update state, releases and history of the install",
+        "description": "Read only. The install root is the one of the running binary, <root>/releases/<version>/pipesmith-registry beside the link <root>/current. The server never writes the trusted key. The releases come from the cache of the last release check, <data>/updates/releases.json; this request sends no request to the source.",
         "operationId": "get_api_updates",
         "responses": {
           "200": {
-            "description": "{installed, message, binary}; when installed also root, config {path, found, error}, key {path, found, state, problem, sha256, hint} with state good, missing, refused or unchecked, check {ran, passed, message} of the owner and mode rule, and release {name, from, note}.",
+            "description": "{installed, message, binary, version, repository {name, url, releases_url}, source {kind, name, state, message, note, checked_at, retry_at, next_check_at, interval_hours, background} with state never, ok, rate_limited, unreachable, error or unsupported, status up_to_date, update_available or unknown, latest and releases of {version, tag, name, published_at, url, body, truncated, prerelease, complete} with body the release notes in Markdown, last_update}; when installed also root, config {path, found, error}, key {path, found, state, problem, sha256, hint} with state good, missing, refused or unchecked, check {ran, passed, message} of the owner and mode rule, release {name, from, note}, auto {enabled, window, error, timer {readable, unit, active, enabled, next, last, message}, last_run {time, result, version, message}} and history, the newest 50 lines of releases/history.jsonl, newest first.",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "security": [
+          {
+            "basic": []
+          },
+          {
+            "session": []
+          }
+        ],
+        "x-pipesmith-permission": "atlas:read",
+        "x-pipesmith-needs": "state.sqlite"
+      }
+    },
+    "/api/updates/check": {
+      "post": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Check the release source for a new version now",
+        "description": "Reads the releases of the channel of update.json, GitHub releases of iogentic/pipesmith-registry by default, and writes the cache. It downloads and installs nothing, and it sends no request while a rate limit of the source lasts or another check runs, or within 300 s of the last request; source.skipped then says why. Allowed while the server is frozen.",
+        "operationId": "post_api_updates_check",
+        "responses": {
+          "200": {
+            "description": "The answer of GET /api/updates after the check.",
             "content": {
               "application/json": {}
             }
@@ -2949,7 +3695,7 @@
           "Content"
         ],
         "summary": "Deploy or upload a file, publish to npm, push to Docker",
-        "description": "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker that is online takes the write into the write store local-write of the data directory; other repositories keep the refusal. The rule of the read path applies first.",
+        "description": "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker that is online takes the write into the store its write_store names: local-write or a store created on this server; other repositories keep the refusal. The rule of the read path applies first.",
         "operationId": "put_repository_repository_path",
         "parameters": [
           {
@@ -3057,7 +3803,7 @@
           "Content"
         ],
         "summary": "Start or finish a Docker blob upload, or mount a blob",
-        "description": "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker that is online takes the write into the write store local-write of the data directory; other repositories keep the refusal. The rule of the read path applies first.",
+        "description": "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker that is online takes the write into the store its write_store names: local-write or a store created on this server; other repositories keep the refusal. The rule of the read path applies first.",
         "operationId": "post_repository_repository_path",
         "parameters": [
           {
@@ -3165,7 +3911,7 @@
           "Content"
         ],
         "summary": "Delete a file, an npm version or tag, a Docker manifest",
-        "description": "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker that is online takes the write into the write store local-write of the data directory; other repositories keep the refusal. The rule of the read path applies first.",
+        "description": "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker that is online takes the write into the store its write_store names: local-write or a store created on this server; other repositories keep the refusal. The rule of the read path applies first.",
         "operationId": "delete_repository_repository_path",
         "parameters": [
           {
@@ -3401,7 +4147,7 @@
           "Content"
         ],
         "summary": "Append a chunk to a Docker blob upload",
-        "description": "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker that is online takes the write into the write store local-write of the data directory; other repositories keep the refusal. The rule of the read path applies first.",
+        "description": "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker that is online takes the write into the store its write_store names: local-write or a store created on this server; other repositories keep the refusal. The rule of the read path applies first.",
         "operationId": "patch_repository_repository_path",
         "parameters": [
           {
@@ -4082,7 +4828,7 @@
         "operationId": "get_service_rest_v1_blobstores",
         "responses": {
           "200": {
-            "description": "Array of {name, type, unavailable, blobCount, totalSizeInBytes, availableSpaceInBytes, softQuota}, sorted by name.",
+            "description": "Array of {name, type, unavailable, blobCount, totalSizeInBytes, availableSpaceInBytes, softQuota, writable}, sorted by name. writable is true for local-write and the stores created on this server, false for an imported store, which is read only. unavailable is true for a store whose folder is missing or cannot be read, or is empty while the index holds files of it; an empty store is available with 0 blobs.",
             "content": {
               "application/json": {}
             }
@@ -4115,7 +4861,7 @@
           "Blob Stores"
         ],
         "summary": "Create a file blob store",
-        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The body is {name, path, softQuota}. The store is a record with a folder below the folder stores of the data directory; an absent path is stores/<name>, a relative one lies below stores/. The folder is made. New blobs still go into local-write.",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in a write store and a rebuild of maven metadata need writes or upstream on. The body is {name, path, softQuota}. The store is a record with a folder below the folder stores of the data directory; an absent path is stores/<name>, a relative one lies below stores/. The folder is made. A hosted repository that names the store writes its uploads into it.",
         "operationId": "post_service_rest_v1_blobstores_file",
         "responses": {
           "204": {
@@ -4233,7 +4979,7 @@
           "Blob Stores"
         ],
         "summary": "Save the quota of a file blob store",
-        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The body is {path, softQuota}. The path is fixed; a null soft quota removes it.",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in a write store and a rebuild of maven metadata need writes or upstream on. The body is {path, softQuota}. The path is fixed; a null soft quota removes it.",
         "operationId": "put_service_rest_v1_blobstores_file_name",
         "parameters": [
           {
@@ -4314,7 +5060,7 @@
           "Blob Stores"
         ],
         "summary": "Delete a blob store",
-        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The record goes; the folder and its files stay.",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in a write store and a rebuild of maven metadata need writes or upstream on. The record goes and its writer closes; the folder and its files stay.",
         "operationId": "delete_service_rest_v1_blobstores_name",
         "parameters": [
           {
@@ -5461,7 +6207,7 @@
           "Repositories"
         ],
         "summary": "Delete a repository",
-        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The repository goes offline first; then the rows of the index and the catalog go and every blob of the repository in local-write gets the delete mark; then the upstream secret and the record go together.",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in a write store and a rebuild of maven metadata need writes or upstream on. The repository goes offline first; then the rows of the index and the catalog go and every blob of the repository in a write store gets the delete mark; then the upstream secret and the record go together.",
         "operationId": "delete_service_rest_v1_repositories_name",
         "parameters": [
           {
@@ -5508,7 +6254,7 @@
             "$ref": "#/components/responses/TooManyRequests"
           },
           "503": {
-            "description": "The repository holds blobs in local-write and the store is not open, or the index stayed busy.",
+            "description": "The repository holds blobs in a write store and writes and upstream are off, or the index stayed busy.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5614,7 +6360,7 @@
           "Repositories"
         ],
         "summary": "Rebuild the maven metadata of a hosted repository",
-        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. For a hosted maven2 repository maven-metadata.xml and its checksums are written again from its files. Any other repository answers 204 and nothing is done.",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in a write store and a rebuild of maven metadata need writes or upstream on. For a hosted maven2 repository maven-metadata.xml and its checksums are written again from its files. Any other repository answers 204 and nothing is done.",
         "operationId": "post_service_rest_v1_repositories_name_rebuild_index",
         "parameters": [
           {
@@ -5689,7 +6435,7 @@
           "Repositories"
         ],
         "summary": "Create a repository",
-        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The body is the settings of the contract: name, online, storage, and the sections of the format and type. The repository is a record of state.sqlite. A hosted or proxy repository names local-write in storage.blobStoreName. The upstream password or token of a proxy goes into secrets/remote/<name>, never into the record or an answer. A Docker port is set on the host with repos port; docker.httpPort and docker.httpsPort are null. The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, the view privileges of its whole format when it is the first of the format, and the view read permission of every member a group adds. Without the full permission set the remote host of a proxy must resolve to public addresses only, and the proxy never dials a closed address.",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in a write store and a rebuild of maven metadata need writes or upstream on. The body is the settings of the contract: name, online, storage, and the sections of the format and type. The repository is a record of state.sqlite. A hosted repository names in storage.blobStoreName the store its uploads go into: local-write or a store created on this server (writable in the list of blob stores); an imported store is read only. With storage.newBlobStore, an object of path and softQuota, the store of that name is created with the repository, as POST /v1/blobstores/file creates it; both are made or neither. A proxy names local-write, a group any store. The upstream password or token of a proxy goes into secrets/remote/<name>, never into the record or an answer. A Docker port is set on the host with repos port; docker.httpPort and docker.httpsPort are null. A new store needs the permission to create blob stores. The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, the view privileges of its whole format when it is the first of the format, and the view read permission of every member a group adds. Without the full permission set the remote host of a proxy must resolve to public addresses only, and the proxy never dials a closed address.",
         "operationId": "post_service_rest_v1_repositories_segment_type",
         "parameters": [
           {
@@ -5716,7 +6462,7 @@
             "description": "The repository is created."
           },
           "400": {
-            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A field is not valid: the name, the store, the remote address or host, a member, a Docker port, the authentication, a placement or limit set on the host, or a value this server does not offer.",
+            "description": "A list [{\"id\",\"message\"}]; id is the field or *. A field is not valid: the name, the store (unknown, read only, or another than local-write for a proxy), the new store and its path, the remote address or host, a member, a Docker port, the authentication, a placement or limit set on the host, or a value this server does not offer.",
             "content": {
               "application/json": {}
             }
@@ -5725,7 +6471,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "The new repository would give the caller a permission it does not hold.",
+            "description": "The new repository would give the caller a permission it does not hold, or a new store needs the permission to create blob stores.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5735,7 +6481,7 @@
             }
           },
           "409": {
-            "description": "A repository of the name exists.",
+            "description": "A repository of the name exists, or a store of the name of the new store.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5787,7 +6533,7 @@
           }
         ],
         "x-pipesmith-permission": "administration of any repository of the format of the path (add)",
-        "x-pipesmith-caller": "The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, the view privileges of its whole format when it is the first of the format, and the view read permission of every member a group adds. Without the full permission set the remote host of a proxy must resolve to public addresses only, and the proxy never dials a closed address.",
+        "x-pipesmith-caller": "A new store needs the permission to create blob stores. The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, the view privileges of its whole format when it is the first of the format, and the view read permission of every member a group adds. Without the full permission set the remote host of a proxy must resolve to public addresses only, and the proxy never dials a closed address.",
         "x-pipesmith-needs": "state.sqlite"
       }
     },
@@ -5864,7 +6610,7 @@
           "Repositories"
         ],
         "summary": "Save a repository",
-        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in local-write and a rebuild of maven metadata need the write store open. The body is the settings of the contract; the name cannot change. Without httpClient.authentication the stored authentication and secret stay; the type none removes both. Without the full permission set a new remote host must resolve to public addresses only; a member a group adds needs its view read permission.",
+        "description": "Changes the records with security on, writes on or off; the next request sees the change. A delete of blobs in a write store and a rebuild of maven metadata need writes or upstream on. The body is the settings of the contract; the name cannot change, nor the store of a hosted repository, and storage.newBlobStore is not offered. Without httpClient.authentication the stored authentication and secret stay; the type none removes both. Without the full permission set a new remote host must resolve to public addresses only; a member a group adds needs its view read permission.",
         "operationId": "put_service_rest_v1_repositories_segment_type_name",
         "parameters": [
           {

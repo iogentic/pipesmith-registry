@@ -178,7 +178,7 @@ func TestTasks(t *testing.T) {
 		t.Fatalf("%v %v", items, token)
 	}
 	cron, daily, local := items["demo-cron"], items["demo-daily"], items["demo-local"]
-	if cron["name"] != "Invented task demo-cron" || cron["type"] != "blobstore.compact" || cron["message"] != "the task type blobstore.compact is not built yet; leg 6-cleanup builds it" ||
+	if cron["name"] != "Invented task demo-cron" || cron["type"] != "blobstore.compact" || cron["message"] != "the task type blobstore.compact is not built" ||
 		cron["currentState"] != "WAITING" || cron["lastRunResult"] != nil || cron["nextRun"] != nil || cron["lastRun"] != nil || cron["schedule"] != "cron" {
 		t.Fatalf("demo-cron %v", cron)
 	}
@@ -205,7 +205,7 @@ func TestTasks(t *testing.T) {
 	_ = local
 
 	disabled := a.send("POST", tasksPath+"/demo-cron/run", "basic", asAdmin)
-	if disabled.status != 405 || disabled.object(t)["message"] != "the task type blobstore.compact is not built yet; leg 6-cleanup builds it" {
+	if disabled.status != 405 || disabled.object(t)["message"] != "the task type blobstore.compact is not built" {
 		t.Fatalf("run of demo-cron %d %s", disabled.status, disabled.body)
 	}
 	idle := a.send("POST", tasksPath+"/demo-local/stop", "basic", asAdmin)

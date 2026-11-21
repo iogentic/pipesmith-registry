@@ -1,25 +1,22 @@
 package rest
 
 import (
-	"errors"
-	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 	"slices"
+	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/repos"
 	"github.com/iogentic/pipesmith-registry/internal/state"
-	"github.com/iogentic/pipesmith-registry/internal/stores"
 )
 
 // The writes of the blob stores (leg 6-stores, contract S13): create,
 // save and delete of a file store, and the count of its marked blobs. A
 // created store is a record of state.sqlite with a path below
-// <data>/stores/ (ruling ST1); it holds no writer, and new blobs go into
-// local-write (ST2). Every change passes admin.Change.
+// <data>/stores/ (ruling ST1); a hosted repository that names it writes
+// into it (SR1, SR5). Every change passes admin.Change.
 
 // StoreWrite is what a write of a blob store or of a repository needs
 // besides Env.
@@ -44,6 +41,9 @@ type StoreWrite struct {
 	// Rebuild writes the maven metadata of a hosted maven2 repository again
 	// (ruling ST6).
 	Rebuild func(r repos.Repo) (Answer, error)
+	// Release closes the writer of a deleted created store (SR8); nil
+	// closes none.
+	Release func(name string) error
 }
 
 // storeBody is the body of a create or save of a file store.
@@ -169,39 +169,52 @@ func DeleteStore(env *Env, w StoreWrite, name string) (Answer, error) {
 	if err != nil {
 		return refused(err)
 	}
+	if w.Release != nil {
+		if err := w.Release(name); err != nil {
+			return Answer{}, err
+		}
+	}
 	return noContent()
 }
 
-// deletedXO is the answer of GET /api/blob-stores/{name}/deleted.
+// deletedXO is the answer of GET /api/blob-stores/{name}/deleted (SR12):
+// blobCount and bytes are null before the first count of the store ends,
+// counting is true while a count runs, countedAt is the end of the count
+// given.
 type deletedXO struct {
-	Name      string `json:"name"`
-	BlobCount int64  `json:"blobCount"`
-	Bytes     int64  `json:"bytes"`
+	Name      string  `json:"name"`
+	BlobCount *int64  `json:"blobCount"`
+	Bytes     *int64  `json:"bytes"`
+	Counting  bool    `json:"counting"`
+	CountedAt *string `json:"countedAt"`
+	Reason    *string `json:"reason,omitempty"` // why there is no count, when that is no failure (SC1)
 }
 
-// DeletedBlobs is GET /api/blob-stores/{name}/deleted: the blobs of the
-// file store at root that carry the delete mark, counted by a walk of its
-// properties files. A store without its content folder counts none; found
-// false is 404.
-func DeletedBlobs(name, root string, found bool) (Answer, error) {
+// MarkedCount is a count of the blobs of a store that carry the delete
+// mark, as the server keeps it.
+type MarkedCount struct {
+	Have, Counting bool
+	Count, Bytes   int64
+	At             time.Time
+	Reason         string // why there is no count, as a folder that does not exist
+}
+
+// DeletedBlobs is GET /api/blob-stores/{name}/deleted: the count of the
+// marked blobs of the store as the server has it now; found false is 404.
+func DeletedBlobs(name string, found bool, c MarkedCount) Answer {
 	if !found {
-		return refuse(http.StatusNotFound, "blob store "+name+" not found")
+		a, _ := refuse(http.StatusNotFound, "blob store "+name+" not found")
+		return a
 	}
-	xo := deletedXO{Name: name}
-	if _, err := os.Stat(filepath.Join(root, stores.ContentDir)); errors.Is(err, fs.ErrNotExist) {
-		return ok(xo) // a created store that holds no blob yet
+	xo := deletedXO{Name: name, Counting: c.Counting}
+	if c.Reason != "" && !c.Have {
+		reason := c.Reason
+		xo.Reason = &reason
 	}
-	store, err := stores.NewBlobStore(name, root)
-	if err != nil {
-		return Answer{}, err
+	if c.Have {
+		count, size, at := c.Count, c.Bytes, c.At.UTC().Format(time.RFC3339)
+		xo.BlobCount, xo.Bytes, xo.CountedAt = &count, &size, &at
 	}
-	err = store.Walk(nil, func(stores.Entry) error { return nil }, func(m stores.Marked) error {
-		xo.BlobCount++
-		xo.Bytes += m.Size
-		return nil
-	})
-	if err != nil {
-		return Answer{}, err
-	}
-	return ok(xo)
+	a, _ := ok(xo)
+	return a
 }

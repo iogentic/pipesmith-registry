@@ -146,8 +146,8 @@ func TestCreateModesAndSchemaRow(t *testing.T) {
 	if err := db.QueryRow("SELECT value FROM meta WHERE key = 'schema'").Scan(&version); err != nil {
 		t.Fatal(err)
 	}
-	if version != state.SchemaVersion || state.SchemaVersion != 5 {
-		t.Fatalf("schema row %d, constant %d; want 4", version, state.SchemaVersion)
+	if version != state.SchemaVersion || state.SchemaVersion != 6 {
+		t.Fatalf("schema row %d, constant %d; want 6", version, state.SchemaVersion)
 	}
 	var tables []string
 	rows, err := db.Query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")

@@ -77,7 +77,7 @@ func TestRegistryListsEveryStoredTask(t *testing.T) {
 		reason  string
 	}{
 		"a-off":      {false, "the task a-off is disabled"},
-		"b-unbuilt":  {false, "the task type blobstore.compact is not built yet; leg 6-cleanup builds it"},
+		"b-unbuilt":  {false, "the task type blobstore.compact is not built"},
 		"d-imported": {false, "the task d-imported was imported and stays paused until it is saved enabled"},
 		"e-local":    {true, ""},
 		"c-stricter": {false, ""}, // the reason of the cron parser, checked below
@@ -121,7 +121,7 @@ func TestRegistryRefusals(t *testing.T) {
 	}
 	err := r.Run("demo-cron")
 	var disabled *DisabledError
-	if !errors.Is(err, ErrDisabled) || !errors.As(err, &disabled) || disabled.Reason != "the task type blobstore.compact is not built yet; leg 6-cleanup builds it" {
+	if !errors.Is(err, ErrDisabled) || !errors.As(err, &disabled) || disabled.Reason != "the task type blobstore.compact is not built" {
 		t.Fatalf("run of a task without a kind: %v", err)
 	}
 	if err := r.Run("none"); !errors.Is(err, ErrUnknownTask) {

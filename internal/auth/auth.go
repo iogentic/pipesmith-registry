@@ -203,7 +203,11 @@ func (s *Service) Subject(r *http.Request) (*model.Subject, error) {
 	}
 	scheme, credentials, _ := strings.Cut(header, " ")
 	if strings.EqualFold(scheme, "Bearer") {
-		return s.bearer(r.Context(), v, strings.TrimSpace(credentials))
+		subject, err := s.bearer(r.Context(), v, strings.TrimSpace(credentials))
+		if subject != nil {
+			subject.ByToken = true
+		}
+		return subject, err
 	}
 	if !strings.EqualFold(scheme, "Basic") {
 		return nil, model.ErrUnauthorized
@@ -223,6 +227,7 @@ func (s *Service) Subject(r *http.Request) (*model.Subject, error) {
 	if !ok {
 		return nil, model.ErrUnauthorized
 	}
+	got.subject.ByToken = got.by == RealmUserToken
 	return &got.subject, nil
 }
 

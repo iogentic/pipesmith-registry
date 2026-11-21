@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/iogentic/pipesmith-registry/internal/blobwrite"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/policy"
@@ -249,14 +250,21 @@ func (s *Server) uploader(subject *model.Subject) string {
 }
 
 // writeSettingsOf are the write settings of a repository, refused when they
-// name a store this server does not write.
-func (s *Server) writeSettingsOf(repo repos.Repo) (repos.WriteSettings, error) {
+// name a store this server does not write, and the writer of the store
+// they name (SR2): local-write, or a created store, opened on first use.
+func (s *Server) writeSettingsOf(repo repos.Repo) (repos.WriteSettings, *blobwrite.Writer, error) {
 	settings := repo.WriteSettings()
-	if settings.WriteStore != s.writes.writer.Name() {
-		return settings, writeRefused(http.StatusConflict, ruleWriteStore, "repository %s writes into store %s, which this server does not write; its write store is %s",
+	w, err := s.writes.writerOf(settings.WriteStore)
+	if errors.Is(err, errNoWriteStore) {
+		return settings, nil, writeRefused(http.StatusConflict, ruleWriteStore,
+			"repository %s writes into store %s, which this server does not write; it writes into %s and the stores created below its folder stores",
 			repo.Name, settings.WriteStore, s.writes.writer.Name())
 	}
-	return settings, nil
+	if err != nil {
+		return settings, nil, writeRefused(http.StatusConflict, ruleWriteStore, "repository %s writes into store %s, which does not open for writes: %v",
+			repo.Name, settings.WriteStore, err)
+	}
+	return settings, w, nil
 }
 
 // checkWrite applies the policies to the path as the index holds it now,
@@ -290,14 +298,14 @@ func (s *Server) checkWrite(in *ingestRequest, settings repos.WriteSettings, exe
 // so a clock that steps back must not put the new blob behind it (finding
 // S5 of review 4). An equal time stays: the reconciliation log orders the
 // blobs of one millisecond.
-func (s *Server) bounds(repo, path string, a stores.Attributes) (stores.Attributes, error) {
+func (s *Server) bounds(repo, path, store string, a stores.Attributes) (stores.Attributes, error) {
 	rows, err := s.rp.index.Rows(repo, path)
 	if err != nil {
 		return a, err
 	}
 	a.NotBefore = s.writes.deletedTime(repo, path)
 	for _, row := range rows {
-		if row.Store == s.writes.writer.Name() {
+		if row.Store == store {
 			a.NotBefore = max(a.NotBefore, row.CreatedMS)
 		} else {
 			a.NewerThan = max(a.NewerThan, row.CreatedMS)
@@ -306,13 +314,17 @@ func (s *Server) bounds(repo, path string, a stores.Attributes) (stores.Attribut
 	return a, nil
 }
 
-// checkSpace refuses a body the write store has no room for: the floor of
+// checkSpace refuses a body the write store store has no room for: the floor of
 // the repository stays free, and so do the bytes that the other bodies in
 // flight hold (spaceHeld). It returns the room above them, which bounds the
 // stream of a body that declares no length (storeRoom), and holds a
 // declared length until the room is released.
-func (s *Server) checkSpace(size, floor int64) (*storeRoom, error) {
-	free, err := s.writes.freeSpace(s.writes.writer.Root())
+func (s *Server) checkSpace(store string, size, floor int64) (*storeRoom, error) {
+	w, err := s.writes.writerOf(store)
+	if err != nil {
+		return nil, err
+	}
+	free, err := s.writes.freeSpace(w.Root())
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +336,7 @@ func (s *Server) checkSpace(size, floor int64) (*storeRoom, error) {
 	need := uint64(floor) + uint64(size) + uint64(held.bytes) // #nosec G115 -- all three are at least zero.
 	if free < need {
 		return nil, writeRefused(http.StatusInsufficientStorage, ruleNoSpace, "store %s has %d bytes free; the write needs %d with the free space it must leave",
-			s.writes.writer.Name(), free, need)
+			w.Name(), free, need)
 	}
 	limit := int64(math.MaxInt64)
 	if free-uint64(floor) < uint64(math.MaxInt64) { // #nosec G115 -- floor is at least zero and at most free here.
@@ -335,8 +347,8 @@ func (s *Server) checkSpace(size, floor int64) (*storeRoom, error) {
 		left -= held.bytes
 	}
 	held.bytes += size
-	return &storeRoom{left: left, limit: limit, held: held, reserved: size, refusal: writeRefused(http.StatusInsufficientStorage, ruleNoSpace,
-		"the body passes the %d bytes that store %s has free above the %d bytes a write must leave", left, s.writes.writer.Name(), floor)}, nil
+	return &storeRoom{left: left, limit: limit, held: held, reserved: size, writer: w, refusal: writeRefused(http.StatusInsufficientStorage, ruleNoSpace,
+		"the body passes the %d bytes that store %s has free above the %d bytes a write must leave", left, w.Name(), floor)}, nil
 }
 
 // spaceHeld counts the bytes that the bodies in flight hold of the free
@@ -373,6 +385,7 @@ type storeRoom struct {
 	reserved int64      // the bytes this body holds in held
 	taken    int64      // the bytes this body read
 	refusal  error
+	writer   *blobwrite.Writer // the writer of the store the room is of; work files of the body go into its content/tmp (review R3)
 }
 
 // take counts n more bytes of the body; past the room it is the refusal.
@@ -473,14 +486,14 @@ func replacedBlob(replaced *index.Asset, written stores.Entry) *index.Asset {
 // scan met it. A blob that was placed gets its delete mark: a live blob
 // without its row would come back with the next scan, although the client
 // was told the write failed.
-func (wp *writePath) rowRefused(written stores.Written, err error) error {
+func (wp *writePath) rowRefused(store string, written stores.Written, err error) error {
 	if written.ID == "" {
 		if errors.Is(err, index.ErrBusy) {
 			return busyRefused()
 		}
 		return err
 	}
-	return errors.Join(err, wp.mark(written.Entry.Location, reasonNoRow))
+	return errors.Join(err, wp.mark(store, written.Entry.Location, reasonNoRow))
 }
 
 func assetOf(store string, e stores.Entry) index.Asset {
@@ -496,7 +509,7 @@ func (s *Server) ingest(in ingestRequest) (*ingestResult, error) {
 	if s.writes.writer == nil {
 		return nil, errors.New("writes are off")
 	}
-	settings, err := s.writeSettingsOf(in.repo)
+	settings, writer, err := s.writeSettingsOf(in.repo)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +525,7 @@ func (s *Server) ingest(in ingestRequest) (*ingestResult, error) {
 	if in.size > settings.MaxBodyBytes {
 		return nil, tooLarge()
 	}
-	room, err := s.checkSpace(in.size, settings.FreeSpaceFloor)
+	room, err := s.checkSpace(writer.Name(), in.size, settings.FreeSpaceFloor)
 	if err != nil {
 		return nil, err
 	}
@@ -531,7 +544,7 @@ func (s *Server) ingest(in ingestRequest) (*ingestResult, error) {
 	if contentType == "" {
 		contentType = policy.ContentType(in.path, head)
 	}
-	upload, err := s.writes.writer.Upload(body, settings.MaxBodyBytes)
+	upload, err := writer.Upload(body, settings.MaxBodyBytes)
 	if errors.Is(err, stores.ErrTooLarge) {
 		return nil, tooLarge()
 	}
@@ -555,7 +568,7 @@ func (s *Server) ingest(in ingestRequest) (*ingestResult, error) {
 		return nil, err
 	}
 	uploader := s.uploader(in.subject)
-	attributes, err := s.bounds(in.repo.Name, in.path, stores.Attributes{Repo: in.repo.Name, Path: in.path, ContentType: contentType,
+	attributes, err := s.bounds(in.repo.Name, in.path, writer.Name(), stores.Attributes{Repo: in.repo.Name, Path: in.path, ContentType: contentType,
 		CreatedBy: uploader, CreatedByIP: in.address})
 	if err != nil {
 		return nil, err
@@ -567,23 +580,23 @@ func (s *Server) ingest(in ingestRequest) (*ingestResult, error) {
 		return nil, err
 	}
 	var written stores.Written
-	replaced, err := s.rp.index.PutAfter(s.writes.writer.Name(), indexWaitOf(), func() (stores.Entry, error) {
+	replaced, err := s.rp.index.PutAfter(writer.Name(), indexWaitOf(), func() (stores.Entry, error) {
 		var err error
 		written, err = upload.Commit(attributes)
 		return written.Entry, err
 	})
 	if err != nil {
-		return nil, s.writes.rowRefused(written, err)
+		return nil, s.writes.rowRefused(writer.Name(), written, err)
 	}
 	replaced = replacedBlob(replaced, written.Entry)
-	asset := assetOf(s.writes.writer.Name(), written.Entry)
+	asset := assetOf(writer.Name(), written.Entry)
 	if s.writes.catalog != nil {
 		if err := s.writes.catalog.Put(asset, written.Digests, uploader, in.address); err != nil {
 			logAt(slogWarn, serverLogger, "the catalog row of %s/%s is not written: %v", in.repo.Name, in.path, err)
 		}
 	}
 	if replaced != nil {
-		s.writes.markReplaced(in.repo.Name, in.path, replaced.Location)
+		s.writes.markReplaced(in.repo.Name, in.path, writer.Name(), replaced.Location)
 	}
 	s.writes.retryPath(in.repo.Name, in.path)
 	s.writes.forgetDeleted(in.repo.Name, in.path)
@@ -601,7 +614,7 @@ func (s *Server) erase(repo repos.Repo, path string) (*index.Asset, error) {
 	if s.writes.writer == nil {
 		return nil, errors.New("writes are off")
 	}
-	settings, err := s.writeSettingsOf(repo)
+	settings, _, err := s.writeSettingsOf(repo)
 	if err != nil {
 		return nil, err
 	}
@@ -620,7 +633,7 @@ func (s *Server) erase(repo repos.Repo, path string) (*index.Asset, error) {
 		return nil, err
 	}
 	for _, row := range rows {
-		if row.Store != s.writes.writer.Name() {
+		if !s.writes.isWriteStore(row.Store) {
 			return nil, writeRefused(http.StatusConflict, ruleReadOnlyStore, "%s of repository %s lies in store %s, which is read only",
 				path, repo.Name, row.Store)
 		}
@@ -629,7 +642,7 @@ func (s *Server) erase(repo repos.Repo, path string) (*index.Asset, error) {
 	// leaves the blob as it was.
 	marked := false
 	removed, err := s.rp.index.DeleteWithin(repo.Name, path, rows[0].Store, indexWaitOf(), func() error {
-		if err := s.writes.mark(rows[0].Location, reasonDeleted); err != nil {
+		if err := s.writes.mark(rows[0].Store, rows[0].Location, reasonDeleted); err != nil {
 			return err
 		}
 		s.writes.noteDeleted(repo.Name, path, rows[0].CreatedMS)

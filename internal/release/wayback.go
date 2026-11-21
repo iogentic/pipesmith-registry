@@ -77,6 +77,7 @@ func (u *Updater) wayBackSchema(s *session, created string, failed error) error 
 	if err != nil {
 		return fmt.Errorf("%w; went back to %s/%s, which does not answer either%s: %v", failed, ReleasesDir, s.current, words, err)
 	}
+	u.backOK = true
 	return fmt.Errorf("%w; went back to %s/%s, which answers again%s", failed, ReleasesDir, s.current, words)
 }
 

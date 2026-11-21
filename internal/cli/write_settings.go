@@ -5,7 +5,6 @@ import (
 	"maps"
 	"strconv"
 
-	"github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/listeners"
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -31,8 +30,9 @@ func byteCount(value string) (any, error) {
 // state.sqlite. storage.writePolicy keeps the spelling of the old product;
 // max_body_bytes, free_space_floor_bytes and write_store are attributes of
 // this server that REST never takes from a body (ruling ST13), so this
-// command is where the host sets them. write_store takes local-write alone
-// (ST2). A change goes through admin.Change and raises the generation.
+// command is where the host sets them. write_store takes the store the
+// repository writes into already (SR7). A change goes through admin.Change
+// and raises the generation.
 func (c *command) reposWriteSettings() (int, error) {
 	name, _ := c.text("name")
 	policy, setPolicy := c.text("write_policy")
@@ -42,8 +42,6 @@ func (c *command) reposWriteSettings() (int, error) {
 	switch {
 	case setMax && maxBody < 1:
 		return 1, refuse("--max-body-bytes is at least 1; to refuse every write, use --write-policy DENY")
-	case setStore && store != admin.WriteStore:
-		return 1, refuse("a repository of this server writes into the store %s, not into %s; nothing changed", admin.WriteStore, store)
 	}
 	return c.withState(false, func(st *state.Store, cfg *config.Config) (int, error) {
 		defined, err := listeners.LoadRepositories(cfg, openIndexReader)
@@ -61,6 +59,10 @@ func (c *command) reposWriteSettings() (int, error) {
 			case i < 0:
 				return repo, i, refuse("%s has no record in state.sqlite, so it has no write settings to change; "+
 					"write the records with import or import-state", name)
+			case setStore && store != repo.WriteSettings().WriteStore:
+				// ruling SR7 of leg 6-stores-b: the store of a repository is fixed
+				return repo, i, refuse("repository %s writes into the store %s, not into %s; the store of a repository is fixed, nothing changed",
+					name, repo.WriteSettings().WriteStore, store)
 			}
 			return repo, i, nil
 		}

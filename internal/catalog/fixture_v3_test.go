@@ -81,8 +81,8 @@ func TestStep3MakesTheSchemaOfTheFixture(t *testing.T) {
 // Version 4 adds downloads and request_days (decisions L11 and L12 of the
 // phase 7 plan). Neither table has a column for a user or an address.
 func TestVersion4HasTheUsageTables(t *testing.T) {
-	if SchemaVersion != 4 {
-		t.Fatalf("SchemaVersion %d, want 4", SchemaVersion)
+	if SchemaVersion < 4 {
+		t.Fatalf("SchemaVersion %d, want 4 or later", SchemaVersion)
 	}
 	dir := filepath.Join(t.TempDir(), "data")
 	c := mustOpen(t, dir)
@@ -124,11 +124,14 @@ func TestVersion4HasTheUsageTables(t *testing.T) {
 // and leaves the file as it was.
 func TestVersion3BinaryRefusesAVersion4File(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "data")
-	c := mustOpen(t, dir)
+	path := Path(dir)
+	c, err := openWith(path, steps[:4])
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := c.Close(); err != nil {
 		t.Fatal(err)
 	}
-	path := Path(dir)
 	before := dump(t, path, true)
 	old, err := openWith(path, steps[:3])
 	if err == nil {

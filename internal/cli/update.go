@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/iogentic/pipesmith-registry/internal/catalog"
 	"github.com/iogentic/pipesmith-registry/internal/channel"
@@ -43,9 +44,15 @@ const updateHelpBody = `Updates
                                        and version answer; it restarts nothing; a V not
                                        higher than the running version needs
                                        --allow-downgrade
-  update --fetch --scheduled           the same, then the switch stage on the version
-                                       staged in this run when scheduled_switch of
-                                       <root>/update.json is true (the timer unit)
+  update --fetch --install [--version V|latest] [--allow-downgrade] [--root DIR]
+                                       the same, then the switch to the version it
+                                       staged, as update --switch; latest is the
+                                       highest complete version
+  update --fetch --scheduled           the same as --fetch, then the switch stage on the
+                                       version staged in this run when scheduled_switch of
+                                       <root>/update.json is true and the time lies in its
+                                       window (the timer unit); writes the outcome to
+                                       <root>/releases/scheduled.json
   rollback [--root DIR]                switch current back to previous, restart the unit
                                        and wait for its health
                                        (--root defaults to /opt/pipesmith-registry)
@@ -70,6 +77,7 @@ func addUpdateCommands(commands map[string]*parser, sub func(map[string]*parser,
 	update.add(&action{dest: "switch_version", options: []string{"--switch"}, metavar: "VERSION"})
 	update.add(&action{dest: "no_catalog_backup", options: []string{"--no-catalog-backup"}, nargs: "0", flag: true})
 	update.add(&action{dest: "scheduled", options: []string{"--scheduled"}, nargs: "0", flag: true})
+	update.add(&action{dest: "install", options: []string{"--install"}, nargs: "0", flag: true})
 	update.add(&action{dest: "directory", nargs: "?"})
 	update.defaults["run"] = "cmd_update"
 
@@ -145,6 +153,10 @@ func (c *command) update() (int, error) {
 		return 2, &usageError{program + " update: --version needs --fetch"}
 	case c.ns.values["scheduled"] == true && !fetch:
 		return 2, &usageError{program + " update: --scheduled needs --fetch"}
+	case c.ns.values["install"] == true && !fetch:
+		return 2, &usageError{program + " update: --install needs --fetch"}
+	case c.ns.values["install"] == true && c.ns.values["scheduled"] == true:
+		return 2, &usageError{program + " update: give one of --install and --scheduled"}
 	case forms == 0:
 		return 2, &usageError{program + " update: give a release directory, --fetch or --switch <version>"}
 	case fetch && opts.NoCatalogBackup:
@@ -191,9 +203,14 @@ func (c *command) rollback() (int, error) {
 	return 0, nil
 }
 
-// fetch runs the fetch stage on the install root. With --scheduled and
-// scheduled_switch true in update.json it runs the switch stage on the
-// version this run staged.
+// scheduledNow is the clock of the window; tests replace it.
+var scheduledNow = time.Now
+
+// fetch runs the fetch stage on the install root. With --install it
+// switches to the version it staged. With --scheduled and scheduled_switch
+// true in update.json it runs the switch stage on the version this run
+// staged when the time lies in the window, and writes the outcome to
+// releases/scheduled.json.
 func (c *command) fetch() (int, error) {
 	root := release.DefaultRoot
 	if _, ok := c.text("root"); ok {
@@ -203,13 +220,84 @@ func (c *command) fetch() (int, error) {
 		}
 		root = dir
 	}
+	if c.ns.values["install"] == true {
+		return c.fetchInstall(root)
+	}
+	if c.ns.values["scheduled"] != true {
+		return c.scheduledFetch(root, &release.LastRun{})
+	}
+	run := &release.LastRun{}
+	code, err := c.scheduledFetch(root, run)
+	switch {
+	case err != nil && run.Result != release.RunBack:
+		run.Result, run.Message = release.RunFailed, err.Error()
+	case err != nil:
+		run.Message = err.Error()
+	case run.Result == "":
+		run.Result = release.RunNothing
+	}
+	if werr := release.WriteLastRun(root, *run); werr != nil {
+		fmt.Fprintf(c.out, "warning: %s/%s: %v\n", release.ReleasesDir, release.LastRunFile, werr)
+	}
+	return code, err
+}
+
+// fetchVersion is --version, with latest the same as none.
+func (c *command) fetchVersion() string {
+	v, _ := c.text("fetch_version")
+	if v == "latest" {
+		return ""
+	}
+	return v
+}
+
+// fetchInstall fetches and switches to the version it staged.
+func (c *command) fetchInstall(root string) (int, error) {
+	opts := channel.Options{Version: c.fetchVersion(), AllowDowngrade: c.ns.values["allow_downgrade"] == true}
+	f := &channel.Fetcher{Root: root, Out: c.out}
+	res, err := f.Fetch(opts)
+	if err != nil {
+		return 1, err
+	}
+	if res.Nothing {
+		return 0, nil
+	}
+	u, err := c.updater()
+	if err != nil {
+		return 1, err
+	}
+	// a switch the timer marked as due is now the one of this command
+	if err := channel.ClearSwitchDue(root, res.Version); err != nil {
+		return 1, err
+	}
+	fmt.Fprintf(c.out, "install: switching to %s\n", res.Version)
+	if err := u.Switch(res.Version, release.UpdateOptions{AllowDowngrade: opts.AllowDowngrade}); err != nil {
+		if u.SwitchBegan() {
+			// the timer does not try a release again whose switch failed
+			if merr := channel.MarkSwitchFailed(root, res.Version, err); merr != nil {
+				return 1, fmt.Errorf("%w; the mark of the failed switch was not written: %v", err, merr)
+			}
+		}
+		return 1, err
+	}
+	return 0, nil
+}
+
+// scheduledFetch is the fetch stage, and with --scheduled the switch stage;
+// run receives the outcome of a scheduled run.
+func (c *command) scheduledFetch(root string, run *release.LastRun) (int, error) {
 	scheduled := false
+	var window release.Window
+	hasWindow := false
 	if c.ns.values["scheduled"] == true {
 		cfg, err := release.LoadUpdateConfig(root)
 		if err != nil {
 			return 1, err
 		}
 		if scheduled, err = cfg.ScheduledSwitch(); err != nil {
+			return 1, err
+		}
+		if window, hasWindow, err = cfg.Window(); err != nil {
 			return 1, err
 		}
 		if scheduled {
@@ -223,8 +311,7 @@ func (c *command) fetch() (int, error) {
 			return code, err
 		}
 	}
-	version, _ := c.text("fetch_version")
-	opts := channel.Options{Version: version, AllowDowngrade: c.ns.values["allow_downgrade"] == true}
+	opts := channel.Options{Version: c.fetchVersion(), AllowDowngrade: c.ns.values["allow_downgrade"] == true}
 	f := &channel.Fetcher{Root: root, Out: c.out}
 	res, err := f.Fetch(opts)
 	if err != nil {
@@ -235,6 +322,9 @@ func (c *command) fetch() (int, error) {
 	}
 	switch {
 	case !scheduled:
+		if !res.Nothing && !res.Existed {
+			run.Result, run.Version = release.RunStaged, res.Version
+		}
 		fmt.Fprintln(c.out, "scheduled_switch: off, nothing restarted")
 		return 0, nil
 	case res.Existed:
@@ -274,11 +364,22 @@ func (c *command) fetch() (int, error) {
 			return 0, nil
 		}
 	}
+	if now := scheduledNow(); hasWindow && !window.Contains(now) {
+		if err := channel.MarkSwitchDue(root, res.Version); err != nil {
+			return 1, fmt.Errorf("window: the mark of the switch to %s was not written: %w", res.Version, err)
+		}
+		run.Result, run.Version = release.RunWaiting, res.Version
+		fmt.Fprintf(c.out, "window: %s is outside %s, nothing restarted; a scheduled run inside it switches to %s\n",
+			now.Format("15:04"), window.Text, res.Version)
+		return 0, nil
+	}
 	fmt.Fprintf(c.out, "scheduled_switch: switching to %s\n", res.Version)
+	run.Version = res.Version
 	u, err := c.updater()
 	if err != nil {
 		return 1, err
 	}
+	u.Auto = true
 	if err := channel.MarkSwitchDue(root, res.Version); err != nil {
 		return 1, fmt.Errorf("scheduled_switch: the mark of the switch to %s was not written: %w", res.Version, err)
 	}
@@ -290,11 +391,15 @@ func (c *command) fetch() (int, error) {
 		fmt.Fprintf(c.out, "warning: the mark of the switch to %s was not removed: %v\n", res.Version, derr)
 	}
 	if err != nil {
+		if u.WentBack() {
+			run.Result = release.RunBack
+		}
 		if merr := channel.MarkSwitchFailed(root, res.Version, err); merr != nil {
 			return 1, fmt.Errorf("%w; the mark of the failed switch was not written: %v", err, merr)
 		}
 		return 1, err
 	}
+	run.Result = release.RunSwitched
 	return 0, nil
 }
 
@@ -315,6 +420,7 @@ func (c *command) endRecord(root string, scheduled bool) (int, error) {
 	if err != nil {
 		return 1, err
 	}
+	u.Auto = true
 	if err := u.EndSwitch(); err != nil {
 		return 1, fmt.Errorf("scheduled run: %w", err)
 	}

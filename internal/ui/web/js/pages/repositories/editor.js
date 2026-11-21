@@ -13,12 +13,15 @@ import { urlCell } from "./list.js";
 const FORMATS = ["maven2", "npm", "docker", "raw"];
 const KINDS = ["hosted", "proxy", "group"];
 const NAME = { regex: /^[A-Za-z0-9][A-Za-z0-9._-]*$/, message: "Use letters, digits, dots, hyphens and underscores, starting with a letter or a digit." };
+// The choice of the store select that creates a new store with the repository (SR6).
+const NEW_STORE = "\u0000new-blob-store";
 
 function defaults(format, type) {
   const v = { name: "", online: true, storage: { blobStoreName: null, strictContentTypeValidation: true } };
   if (type === "hosted") {
     v.storage.writePolicy = format === "maven2" || format === "npm" ? "ALLOW_ONCE" : "ALLOW";
     v.cleanup = { policyNames: [] };
+    v.newStore = { name: "", path: "" };
   }
   if (type === "proxy") {
     v.proxy = { remoteUrl: "", contentMaxAge: format === "maven2" ? -1 : 1440, metadataMaxAge: 1440 };
@@ -45,6 +48,11 @@ function toBody(values, format, type) {
   delete body.url;
   delete body.format;
   delete body.type;
+  if (body.storage && body.storage.blobStoreName === NEW_STORE) {
+    body.storage.blobStoreName = values.newStore.name;
+    body.storage.newBlobStore = { path: (values.newStore && values.newStore.path) || null };
+  }
+  delete body.newStore;
   if (type === "hosted") body.component = { proprietaryComponents: false };
   if (type === "proxy") {
     body.routingRule = body.routingRuleName || null;
@@ -261,6 +269,13 @@ function sections({ format, type, creating, stores, policies, rules, members, na
     });
   }
 
+  // A hosted repository writes into local-write or a store created here, a proxy caches into
+  // local-write, a group may name any store; imported stores are read only (SR4, SR5).
+  const offered = creating ? stores.filter((s) => (type === "hosted" ? s.writable : type === "proxy" ? s.name === "local-write" : true)) : stores;
+  // local-write is the store of the data directory; the list of blob stores does not name it.
+  if (creating && type !== "group" && !offered.some((s) => s.name === "local-write")) offered.unshift({ name: "local-write", writable: true });
+  const storeOptions = offered.map((s) => ({ value: s.name, label: s.unavailable ? `${s.name} (unavailable)` : s.name }));
+  if (creating && type === "hosted") storeOptions.push({ value: NEW_STORE, label: "New blob store" });
   const storageFields = [
     {
       name: "storage.blobStoreName",
@@ -268,13 +283,42 @@ function sections({ format, type, creating, stores, policies, rules, members, na
       type: "select",
       required: true,
       readOnly: !creating,
-      options: stores.map((s) => ({ value: s.name, label: s.unavailable ? `${s.name} (unavailable)` : s.name })),
-      help: creating ? "Where the files are kept. It cannot change later." : "Fixed when the repository was created."
-    },
-    { name: "storage.strictContentTypeValidation", label: "Check that the content of each upload matches its type", type: "checkbox", wide: true }
+      options: storeOptions,
+      help: creating
+        ? type === "hosted"
+          ? "Where uploads are kept: a store of this server, or a new one made with the repository. It cannot change later. Imported stores are read only."
+          : "Where the files are kept. It cannot change later."
+        : "Fixed when the repository was created."
+    }
   ];
+  if (creating && type === "hosted") {
+    storageFields.push(
+      {
+        name: "newStore.name",
+        label: "Name of the new blob store",
+        type: "text",
+        required: true,
+        pattern: NAME,
+        mono: true,
+        autocomplete: "off",
+        help: "Names are unique without regard to letter case.",
+        show: (v) => v.storage && v.storage.blobStoreName === NEW_STORE
+      },
+      {
+        name: "newStore.path",
+        label: "Path of the new blob store",
+        type: "text",
+        mono: true,
+        autocomplete: "off",
+        placeholder: "<name>",
+        help: "Optional. A folder below stores/ of the data directory, given without stores/; empty means stores/<name>.",
+        show: (v) => v.storage && v.storage.blobStoreName === NEW_STORE
+      }
+    );
+  }
+  storageFields.push({ name: "storage.strictContentTypeValidation", label: "Check that the content of each upload matches its type", type: "checkbox", wide: true });
   if (type === "hosted") {
-    storageFields.splice(1, 0, {
+    storageFields.splice(storageFields.length - 1, 0, {
       name: "storage.writePolicy",
       label: "Deployment policy",
       type: "select",
@@ -416,7 +460,7 @@ export async function render(ctx) {
 
   const messages = h("div", { class: "stack page-messages" });
   if (!canEdit) messages.append(notice("info", "Read only", ctx.readOnlyText("Your roles let you read this repository's settings, not change them.")));
-  if (!stores.length) messages.append(notice("warning", "No blob store", "Create a blob store first; every repository needs one."));
+  if (!stores.length && !(creating && type === "hosted")) messages.append(notice("warning", "No blob store", "Create a blob store first; every repository needs one."));
 
   const f = form({ sections: sections({ format, type, creating, stores, policies, rules, members, name }), values, readOnly: !canEdit });
   ctx.setDirty(() => f.isDirty());

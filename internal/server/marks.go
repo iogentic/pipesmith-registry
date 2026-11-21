@@ -34,11 +34,15 @@ const maxWaitingMarks = 1024
 type marks struct {
 	mu      sync.Mutex
 	fault   func(location, reason string) error // tests: an error in place of a mark
-	waiting map[[2]string][]string              // repository and path: the blobs whose mark failed
+	waiting map[[2]string][]blobAt              // repository and path: the blobs whose mark failed
 	count   int
 	now     func() time.Time // the clock of the retries of the writable status; time.Now when nil
 	retried time.Time        // the last retry of every waiting mark (retryDue)
 }
+
+// blobAt is a blob of a write store: the store and the location in it
+// (SR3: a mark carries its store).
+type blobAt struct{ store, location string }
 
 // retryClock sets the clock of the retries of the writable status; tests
 // move it.
@@ -50,17 +54,17 @@ func (wp *writePath) retryClock(now func() time.Time) {
 
 // wait keeps a blob of a path whose delete mark failed; beyond
 // maxWaitingMarks a blob is not kept.
-func (wp *writePath) wait(repo, path, location string) bool {
+func (wp *writePath) wait(repo, path, store, location string) bool {
 	wp.marks.mu.Lock()
 	defer wp.marks.mu.Unlock()
 	if wp.marks.count >= maxWaitingMarks {
 		return false
 	}
 	if wp.marks.waiting == nil {
-		wp.marks.waiting = map[[2]string][]string{}
+		wp.marks.waiting = map[[2]string][]blobAt{}
 	}
 	key := [2]string{repo, path}
-	wp.marks.waiting[key] = append(wp.marks.waiting[key], location)
+	wp.marks.waiting[key] = append(wp.marks.waiting[key], blobAt{store, location})
 	wp.marks.count++
 	return true
 }
@@ -72,8 +76,9 @@ func (wp *writePath) waiting() int {
 	return wp.marks.count
 }
 
-// mark sets the delete mark on the blob of the write store at location.
-func (wp *writePath) mark(location, reason string) error {
+// mark sets the delete mark on the blob at location of the write store
+// store: local-write or a created store (SR3).
+func (wp *writePath) mark(store, location, reason string) error {
 	wp.marks.mu.Lock()
 	fault := wp.marks.fault
 	wp.marks.mu.Unlock()
@@ -82,7 +87,18 @@ func (wp *writePath) mark(location, reason string) error {
 			return err
 		}
 	}
-	return wp.writer.MarkDeleted(location, reason)
+	w, err := wp.markWriter(store)
+	if err != nil {
+		return err
+	}
+	size, set, err := w.Mark(location, reason)
+	if err != nil {
+		return err
+	}
+	if set && wp.onMark != nil {
+		wp.onMark(w.Name(), size) // the kept count of the marked blobs of the store moves by one (SR15)
+	}
+	return nil
 }
 
 // failMarks makes every mark that fault refuses fail; nil ends it. Tests
@@ -95,12 +111,12 @@ func (wp *writePath) failMarks(fault func(location, reason string) error) {
 
 // markReplaced sets the delete mark on the blob a write of a path
 // replaced; a failure is logged and the blob waits.
-func (wp *writePath) markReplaced(repo, path, location string) {
-	err := wp.mark(location, reasonReplaced)
+func (wp *writePath) markReplaced(repo, path, store, location string) {
+	err := wp.mark(store, location, reasonReplaced)
 	if err == nil {
 		return
 	}
-	if wp.wait(repo, path, location) {
+	if wp.wait(repo, path, store, location) {
 		logAt(slogWarn, serverLogger, "blob %s of %s/%s, replaced, has no delete mark: %v; it is tried again, and the writable status answers 503 until then",
 			location, repo, path, err)
 		return
@@ -114,7 +130,7 @@ func (wp *writePath) markReplaced(repo, path, location string) {
 func (wp *writePath) retryPath(repo, path string) {
 	key := [2]string{repo, path}
 	wp.marks.mu.Lock()
-	locations := append([]string(nil), wp.marks.waiting[key]...)
+	locations := append([]blobAt(nil), wp.marks.waiting[key]...)
 	wp.marks.mu.Unlock()
 	if len(locations) > 0 {
 		wp.retry(key, locations)
@@ -151,9 +167,9 @@ func (wp *writePath) retryDue() int {
 // retryAll tries every waiting mark again and returns how many still wait.
 func (wp *writePath) retryAll() int {
 	wp.marks.mu.Lock()
-	all := make(map[[2]string][]string, len(wp.marks.waiting))
+	all := make(map[[2]string][]blobAt, len(wp.marks.waiting))
 	for key, locations := range wp.marks.waiting {
-		all[key] = append([]string(nil), locations...)
+		all[key] = append([]blobAt(nil), locations...)
 	}
 	wp.marks.mu.Unlock()
 	for key, locations := range all {
@@ -224,11 +240,36 @@ func (wp *writePath) forgetDeleted(repo, path string) {
 	delete(wp.deleted.times, [2]string{repo, path})
 }
 
+// dropWaiting forgets every waiting mark of the store name and returns how
+// many went (releaseStore).
+func (wp *writePath) dropWaiting(store string) int {
+	wp.marks.mu.Lock()
+	defer wp.marks.mu.Unlock()
+	dropped := 0
+	for key, list := range wp.marks.waiting {
+		kept := list[:0]
+		for _, b := range list {
+			if b.store == store {
+				dropped++
+				continue
+			}
+			kept = append(kept, b)
+		}
+		if len(kept) == 0 {
+			delete(wp.marks.waiting, key)
+		} else {
+			wp.marks.waiting[key] = kept
+		}
+	}
+	wp.marks.count -= dropped
+	return dropped
+}
+
 // retry tries the marks of locations of a path and forgets each that is
 // set now.
-func (wp *writePath) retry(key [2]string, locations []string) {
+func (wp *writePath) retry(key [2]string, locations []blobAt) {
 	for _, location := range locations {
-		if err := wp.mark(location, reasonReplaced); err != nil {
+		if err := wp.mark(location.store, location.location, reasonReplaced); err != nil {
 			continue
 		}
 		wp.marks.mu.Lock()
@@ -246,6 +287,6 @@ func (wp *writePath) retry(key [2]string, locations []string) {
 			wp.marks.waiting[key] = kept
 		}
 		wp.marks.mu.Unlock()
-		logAt(slogInfo, serverLogger, "blob %s of %s/%s, replaced, has its delete mark now", location, key[0], key[1])
+		logAt(slogInfo, serverLogger, "blob %s of %s/%s in store %s, replaced, has its delete mark now", location.location, key[0], key[1], location.store)
 	}
 }

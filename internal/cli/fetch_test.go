@@ -97,13 +97,13 @@ func TestUpdateFetchRefusals(t *testing.T) {
 	if code != 0 || !strings.HasSuffix(out, "staged: releases/0.0.9\n") {
 		t.Fatalf("--allow-downgrade: %d %q\n%s", code, errOut, out)
 	}
-	if err := os.WriteFile(filepath.Join(f.root, release.ConfigFile), []byte(`{"trusted_key": "`+f.signer.Pub+`"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(f.root, release.ConfigFile), []byte(`{"trusted_key": "`+f.signer.Pub+`", "channel": {}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	requests := len(f.stub.Requests())
 	code, _, errOut = run(t, "update", "--fetch", "--root", f.root)
-	if code != 1 || !strings.Contains(errOut, "has no key channel") || len(f.stub.Requests()) != requests {
-		t.Fatalf("no channel: %d %q", code, errOut)
+	if code != 1 || !strings.Contains(errOut, "no server and no github") || len(f.stub.Requests()) != requests {
+		t.Fatalf("empty channel: %d %q", code, errOut)
 	}
 }
 

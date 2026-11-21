@@ -21,7 +21,8 @@ import (
 // The fixtures in testdata/state: v<N>.sqlite is a state file of schema N
 // with invented rows. v1.sqlite is a state file as release 0.1.1 writes it,
 // v2.sqlite one as release 0.1.3 writes it, v3.sqlite one with the routing
-// tables of step 3 (phase 5), v4.sqlite one with the imported keys of step 4. The generator below holds each
+// tables of step 3 (phase 5), v4.sqlite one with the imported keys of step 4, v5.sqlite
+// one as release 0.2.0 writes it, with the tables of phase 6. The generator below holds each
 // schema as its release creates it and writes the rows with plain SQL, so
 // the steps of migrations.go never change a fixture. The files are written
 // again with
@@ -76,6 +77,35 @@ var schemaV3 = []string{
 var schemaV4 = []string{
 	"CREATE TABLE IF NOT EXISTS imported_keys (digest BLOB PRIMARY KEY, kind TEXT NOT NULL," +
 		" user_id TEXT NOT NULL, source TEXT NOT NULL, created INTEGER NOT NULL, last_used INTEGER) WITHOUT ROWID",
+}
+
+// schemaV5 is what step 5 adds as release 0.2.0 creates it: task_runs and
+// the tables of the cleanup policies, the tasks and the capabilities.
+var schemaV5 = []string{
+	"CREATE TABLE IF NOT EXISTS task_runs (id INTEGER PRIMARY KEY, task_id TEXT NOT NULL, started_ms INTEGER NOT NULL," +
+		" ended_ms INTEGER, result TEXT, message TEXT NOT NULL)",
+	"CREATE INDEX IF NOT EXISTS task_runs_task_started ON task_runs (task_id, started_ms)",
+	"CREATE TABLE IF NOT EXISTS cleanup_policies (name TEXT PRIMARY KEY, format TEXT NOT NULL, notes TEXT NOT NULL," +
+		" criteria TEXT NOT NULL, origin TEXT NOT NULL CHECK (origin IN ('import', 'local'))) WITHOUT ROWID",
+	"CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, name TEXT NOT NULL, type_id TEXT NOT NULL," +
+		" enabled INTEGER NOT NULL, schedule TEXT NOT NULL, properties TEXT NOT NULL, imported_state TEXT," +
+		" origin TEXT NOT NULL CHECK (origin IN ('import', 'local'))) WITHOUT ROWID",
+	"CREATE TABLE IF NOT EXISTS capabilities (id TEXT PRIMARY KEY, type_id TEXT NOT NULL, enabled INTEGER NOT NULL," +
+		" notes TEXT NOT NULL, properties TEXT NOT NULL, origin TEXT NOT NULL CHECK (origin IN ('import', 'local'))) WITHOUT ROWID",
+}
+
+// rowsV5 are the rows v5.sqlite holds beyond those of v4.sqlite: a user
+// token of demo-admin beside its npm token, and one ended run of a task.
+// Load gives neither.
+var rowsV5 = []struct {
+	table  string
+	values []any
+}{
+	{"tokens", []any{"BBBBBBBBBBB", "user", "demo-admin", "default",
+		[]byte{0x61, 0x9e, 0x04, 0xd7, 0x3b, 0x82, 0xf0, 0x15, 0xa9, 0x6c, 0x2d, 0xe4, 0x57, 0x10, 0xbb, 0x38,
+			0xc5, 0x7a, 0x93, 0x0f, 0x46, 0xde, 0x21, 0x8b, 0x7c, 0x05, 0xf9, 0x62, 0xae, 0x34, 0xd0, 0x1b},
+		int64(1795122000000), nil}},
+	{"task_runs", []any{1, "demo-task", int64(1795123000000), int64(1795123060000), "OK", "3 files"}},
 }
 
 // rowsV4 are the rows v4.sqlite holds beyond those of v3.sqlite: one
@@ -228,11 +258,12 @@ func recordsV1() *model.Snapshot {
 
 // fixtureRecords are the records Load gives for each fixture, by version.
 // The token of v2.sqlite, the routing rows of v3.sqlite and the imported
-// key of v4.sqlite are no records of Load.
-var fixtureRecords = map[int]func() *model.Snapshot{1: recordsV1, 2: recordsV1, 3: recordsV1, 4: recordsV1}
+// key of v4.sqlite and the run of v5.sqlite are no records of Load.
+var fixtureRecords = map[int]func() *model.Snapshot{1: recordsV1, 2: recordsV1, 3: recordsV1, 4: recordsV1,
+	5: recordsV1}
 
 // fixtureVersions are the schemas of the committed fixtures.
-var fixtureVersions = []int{1, 2, 3, 4}
+var fixtureVersions = []int{1, 2, 3, 4, 5}
 
 // generateFixture writes v<version>.sqlite at path, which must not exist:
 // WAL mode, the schema up to version and the schema row in one
@@ -278,6 +309,9 @@ func generateFixture(path string, version int) error {
 			if version >= 4 {
 				statements = append(statements, schemaV4...)
 			}
+			if version >= 5 {
+				statements = append(statements, schemaV5...)
+			}
 			for _, statement := range statements {
 				if _, err := tx.Exec(statement); err != nil {
 					return err
@@ -298,6 +332,9 @@ func generateFixture(path string, version int) error {
 			}
 			if version >= 4 {
 				rows = append(rows, rowsV4...)
+			}
+			if version >= 5 {
+				rows = append(rows, rowsV5...)
 			}
 			for _, row := range rows {
 				marks := strings.TrimSuffix(strings.Repeat("?, ", len(row.values)), ", ")
@@ -422,10 +459,11 @@ func dump(t *testing.T, path string, rows bool) string {
 
 // keptTables are the tables of each schema whose rows the records of
 // fixtureRecords do not cover: the tokens of step 2, the routing rules of
-// step 3 and the imported keys of step 4. A migration keeps their rows as
+// step 3, the imported keys of step 4 and the task runs of step 5. A migration keeps their rows as
 // they are.
 var keptTables = map[int][]string{2: {"tokens"}, 3: {"tokens", "routing_rules", "routing_links"},
-	4: {"tokens", "routing_rules", "routing_links", "imported_keys"}}
+	4: {"tokens", "routing_rules", "routing_links", "imported_keys"},
+	5: {"tokens", "routing_rules", "routing_links", "imported_keys", "task_runs"}}
 
 // keptRows are the rows of the kept tables of the file at path, by table.
 func keptRows(t *testing.T, path string, version int) map[string]string {
@@ -521,6 +559,11 @@ func TestFixturesReachTheLastSchema(t *testing.T) {
 				t.Fatal(err)
 			}
 			sameRecords(t, got, fixtureRecords[version]())
+			// step 6 gives every token row of an older file the empty name
+			if _, kept := before["tokens"]; kept && version < 6 {
+				before["tokens"] = strings.ReplaceAll(before["tokens"]+"\n", "\n", `, text ""`+"\n")
+				before["tokens"] = strings.TrimSuffix(before["tokens"], "\n")
+			}
 			if after := keptRows(t, Path(dir), version); !reflect.DeepEqual(after, before) {
 				t.Fatalf("rows after the open\n%v\nrows of the fixture\n%v", after, before)
 			}

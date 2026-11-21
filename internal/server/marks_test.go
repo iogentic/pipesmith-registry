@@ -157,7 +157,7 @@ func TestAWaitingMarkGoesWithTheNextWriteOfThePath(t *testing.T) {
 		t.Fatalf("%d marks wait", n)
 	}
 	for i := range maxWaitingMarks + 5 {
-		w.srv.writes.wait("demo-raw", fmt.Sprintf("docs/%d.txt", i), fmt.Sprintf("content/x/%d.bytes", i))
+		w.srv.writes.wait("demo-raw", fmt.Sprintf("docs/%d.txt", i), "local-write", fmt.Sprintf("content/x/%d.bytes", i))
 	}
 	if n := w.srv.writes.waiting(); n != maxWaitingMarks {
 		t.Fatalf("%d marks wait, the bound is %d", n, maxWaitingMarks)

@@ -24,6 +24,9 @@ type body struct {
 	contentType string
 	file        *os.File
 	data        []byte
+	// repo and path are the asset of a stored file, whose download sets its
+	// last download time (decision A19); empty for a generated answer
+	repo, path string
 }
 
 func (b *body) close() {
@@ -61,7 +64,7 @@ func fileBody(asset *index.Asset, f *os.File, size int64) *body {
 		contentType = *asset.ContentType
 	}
 	created := asset.CreatedMS
-	return &body{size: size, etag: etag, modifiedMS: &created, contentType: contentType, file: f}
+	return &body{size: size, etag: etag, modifiedMS: &created, contentType: contentType, file: f, repo: asset.Repo, path: asset.Path}
 }
 
 var quotedEtag = regexp.MustCompile(`(?:W/)?"[^"]*"`)
@@ -300,7 +303,7 @@ func send(w http.ResponseWriter, req *request, b *body, extra [][2]string) error
 	}
 	h.Set("Content-Length", strconv.FormatInt(length, 10))
 	setExtra()
-	markDownload(req, status, start)
+	markDownload(w, req, b, status, start)
 	if req.head {
 		b.close()
 		w.WriteHeader(status)

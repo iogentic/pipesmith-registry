@@ -107,6 +107,7 @@ type entry struct {
 	run     *run          // set from the start of a run until its function returns
 	ending  chan struct{} // closed once the store has taken or refused the end of the last run
 	refused *runEnd       // the end of a run the store refused, offered again before the next start
+	held    bool          // a removal waits for its commit; the task neither waits nor starts
 }
 
 type run struct {
@@ -204,7 +205,7 @@ func (s *Scheduler) Run(id string) error {
 		return ErrNotStarted
 	case !e.task.Enabled:
 		return fmt.Errorf("task %q: %w", id, ErrDisabled)
-	case e.run != nil:
+	case e.run != nil, e.held:
 		return fmt.Errorf("task %q: %w", id, ErrRunning)
 	}
 	return s.begin(e)
@@ -297,7 +298,7 @@ func (s *Scheduler) entry(id string) (*entry, error) {
 // clock have gone back. It does nothing while e may not start.
 func (s *Scheduler) arm(e *entry) {
 	s.disarm(e)
-	if !s.started || s.closed || !e.task.Enabled || e.run != nil {
+	if !s.started || s.closed || !e.task.Enabled || e.run != nil || e.held {
 		return
 	}
 	now := s.clock.Now()
@@ -380,7 +381,7 @@ func (s *Scheduler) begin(e *entry) error {
 		return err
 	}
 	r.id = id
-	go s.execute(ctx, e, r)
+	go s.execute(ctx, e, r, e.task.Run)
 	return nil
 }
 
@@ -406,9 +407,9 @@ func (s *Scheduler) offer(e *entry) error {
 // its next instant, and the end goes to the store without the lock; the
 // next start of the task waits for that. An end the store refuses is kept
 // for the next start and for Close.
-func (s *Scheduler) execute(ctx context.Context, e *entry, r *run) {
+func (s *Scheduler) execute(ctx context.Context, e *entry, r *run, work Func) {
 	defer s.runs.Done()
-	message, err := call(ctx, e.task.Run)
+	message, err := call(ctx, work)
 	ended := s.clock.Now().UTC()
 	s.mu.Lock()
 	r.cancel()
@@ -447,4 +448,72 @@ func call(ctx context.Context, f Func) (message string, err error) {
 		}
 	}()
 	return f(ctx)
+}
+
+// Replace takes the schedule, enabled and the work of t for the task of its
+// id. A run that is going keeps the work it started with; the task waits
+// for an instant of the new schedule after it. The schedule is checked as
+// Add checks it.
+func (s *Scheduler) Replace(t Task) error {
+	if t.Run == nil {
+		return fmt.Errorf("task %q has no function", t.ID)
+	}
+	trigger, err := t.Schedule.Trigger()
+	if err != nil {
+		return fmt.Errorf("task %q: %w", t.ID, err)
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e, err := s.entry(t.ID)
+	switch {
+	case err != nil:
+		return err
+	case s.closed:
+		return ErrClosed
+	}
+	// the id stays, so a run that reads it needs no lock
+	e.task.Schedule, e.task.Enabled, e.task.Run = t.Schedule, t.Enabled, t.Run
+	e.trigger = trigger
+	s.arm(e)
+	return nil
+}
+
+// Remove takes the task away once commit, called without the lock, has
+// returned nil. A running task is refused with ErrRunning and commit is not
+// called; while commit runs the task neither waits nor starts. Before
+// commit the store has the end of the last run: Remove waits for it and
+// offers an end the store refused once more; while the store refuses it,
+// Remove gives that error and commit is not called. A commit that fails
+// leaves the task as it was and gives its error.
+func (s *Scheduler) Remove(id string, commit func() error) error {
+	s.mu.Lock()
+	e, err := s.entry(id)
+	switch {
+	case err != nil:
+		s.mu.Unlock()
+		return err
+	case e.run != nil || e.held:
+		s.mu.Unlock()
+		return fmt.Errorf("task %q: %w", id, ErrRunning)
+	}
+	e.held = true
+	s.disarm(e)
+	ending := e.ending
+	s.mu.Unlock()
+	if ending != nil {
+		<-ending
+	}
+	if err = s.offer(e); err == nil {
+		err = commit()
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e.held = false
+	if err != nil {
+		s.arm(e)
+		return err
+	}
+	delete(s.tasks, id)
+	s.order = slices.DeleteFunc(s.order, func(x *entry) bool { return x == e })
+	return nil
 }

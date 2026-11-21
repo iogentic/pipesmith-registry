@@ -103,6 +103,9 @@ type stage struct {
 	pub     *ecdsa.PublicKey
 	running release.Version
 	c       *client
+	// assets maps a version of the GitHub form to its files and their
+	// addresses, from the listing.
+	assets map[string]map[string]string
 }
 
 // Fetch runs the fetch stage.
@@ -160,7 +163,11 @@ func (f *Fetcher) Fetch(opt Options) (*Result, error) {
 	defer cancel()
 	s.c.stage, s.c.stageLimit = ctx, s.set.Stage
 
-	versions, err := f.list(s)
+	list := f.list
+	if s.set.GitHub != nil {
+		list = f.listGitHub
+	}
+	versions, err := list(s)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +193,7 @@ func (f *Fetcher) Fetch(opt Options) (*Result, error) {
 			return nil, err
 		}
 		if !complete {
-			f.step("skipped: v%s is incomplete, %s answers 404", name, release.PublicKeyFile)
+			f.step("skipped: v%s is incomplete, %s", name, f.missing(s, name))
 			continue
 		}
 		f.step("candidate: v%s", name)
@@ -210,10 +217,19 @@ func (f *Fetcher) named(s *stage, versions []release.Version, v release.Version)
 		return nil, err
 	}
 	if !complete {
-		return nil, fmt.Errorf("%w: v%s, %s answers 404", ErrIncomplete, name, release.PublicKeyFile)
+		return nil, fmt.Errorf("%w: v%s, %s", ErrIncomplete, name, f.missing(s, name))
 	}
 	f.step("candidate: v%s", name)
 	return f.fetch(s, name)
+}
+
+// missing names what makes version name incomplete.
+func (f *Fetcher) missing(s *stage, name string) string {
+	if s.set.GitHub != nil {
+		_, file := f.completeGitHub(s, name)
+		return "its release has no asset " + file
+	}
+	return release.PublicKeyFile + " answers 404"
 }
 
 // staged returns a result when releases/<name>/ exists already and passes
@@ -460,7 +476,13 @@ func (f *Fetcher) get(s *stage, name, file, dir string, limit int64) error {
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrStage, err)
 	}
-	n, err := s.c.download(s.fileURL(name, file), limit, out)
+	var n int64
+	target := s.fileURL(name, file)
+	if target == "" {
+		err = errNotFound
+	} else {
+		n, err = s.c.download(target, limit, out)
+	}
 	if err == nil {
 		err = out.Sync()
 	}

@@ -41,6 +41,9 @@ func (s *Server) auditRequest(w *recorder, req *request, rt *route, err *error) 
 	ctx, detail := audit.With(req.r.Context())
 	req.r = req.r.WithContext(ctx)
 	action, objectType, objectName := audit.Default(req.r.Method, logs.MaskTarget(maskToken(req.path)))
+	if rt.Rule.audit != "" {
+		action = rt.Rule.audit
+	}
 	w.audit = &pendingAudit{req: req, detail: detail, event: logs.AuditEvent{Action: action, ObjectType: objectType,
 		ObjectName: objectName}}
 	return func() {

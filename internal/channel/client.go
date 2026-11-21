@@ -9,7 +9,9 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -36,6 +38,9 @@ type client struct {
 	// stage ends with the deadline of the whole fetch stage, stageLimit long.
 	stage      context.Context
 	stageLimit time.Duration
+	// github sends the headers of the GitHub API and reads its rate limit.
+	github bool
+	now    func() time.Time
 }
 
 func newClient(set *Settings, token string, dial dialFunc, tlsConfig *tls.Config) *client {
@@ -54,14 +59,34 @@ func newClient(set *Settings, token string, dial dialFunc, tlsConfig *tls.Config
 		DisableCompression:    true,
 		MaxIdleConnsPerHost:   2,
 	}
-	return &client{
-		total: set.Timeouts.Total,
-		stage: context.Background(),
-		http: &http.Client{
-			Transport:     &tokenTransport{base: transport, server: set.Server, token: token},
-			CheckRedirect: checkRedirect,
-		},
+	c := &client{
+		total:  set.Timeouts.Total,
+		stage:  context.Background(),
+		github: set.GitHub != nil,
+		now:    time.Now,
 	}
+	redirect := checkRedirect
+	if c.github && set.Server.Scheme == "https" && set.Server.Hostname() == "api.github.com" {
+		redirect = gitHubRedirect
+	}
+	c.http = &http.Client{
+		Transport:     &tokenTransport{base: transport, server: set.Server, token: token},
+		CheckRedirect: redirect,
+	}
+	return c
+}
+
+// gitHubRedirect is checkRedirect that also lets api.github.com send an
+// asset to the hosts it stores assets on, over https. The checks after the
+// download rest on the signature, not on the host.
+func gitHubRedirect(req *http.Request, via []*http.Request) error {
+	if req.URL.Scheme == "https" && slices.Contains(gitHubAssetHosts, req.URL.Hostname()) && req.URL.Port() == "" {
+		if len(via) > maxRedirects {
+			return fmt.Errorf("%w: more than %d redirects", ErrRedirect, maxRedirects)
+		}
+		return nil
+	}
+	return checkRedirect(req, via)
 }
 
 // origin is scheme, host and port of u, the port spelled out.
@@ -125,6 +150,16 @@ func (c *client) get(target string) (*http.Response, func(), error) {
 		cancel()
 		return nil, nil, err
 	}
+	// GitHub refuses a request without User-Agent; the name carries no version
+	req.Header.Set("User-Agent", "pipesmith-registry")
+	if c.github {
+		req.Header.Set("X-GitHub-Api-Version", gitHubVersion)
+		if strings.Contains(req.URL.Path, "/releases/assets/") {
+			req.Header.Set("Accept", "application/octet-stream")
+		} else {
+			req.Header.Set("Accept", "application/vnd.github+json")
+		}
+	}
 	resp, err := c.http.Do(req)
 	if err != nil {
 		err = c.plain(ctx, err)
@@ -140,6 +175,9 @@ func (c *client) plain(ctx context.Context, err error) error {
 	var ue *url.Error
 	if errors.As(err, &ue) {
 		err = ue.Err
+	}
+	if errors.Is(c.stage.Err(), context.Canceled) {
+		return context.Canceled
 	}
 	if c.stage.Err() != nil {
 		return c.deadline()
@@ -166,6 +204,11 @@ func (c *client) copyCapped(target string, limit int64, w io.Writer) (int64, htt
 	defer done()
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		if c.github {
+			if err := rateLimit(resp, c.now()); err != nil {
+				return 0, nil, err
+			}
+		}
 		return 0, nil, statusError(resp.StatusCode)
 	}
 	if resp.ContentLength > limit {

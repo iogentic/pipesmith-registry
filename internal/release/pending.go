@@ -90,6 +90,10 @@ func (u *Updater) EndSwitch() error {
 // switch: before that, a failure changed no link and restarted nothing.
 func (u *Updater) SwitchBegan() bool { return u.began }
 
+// WentBack reports whether the last update or rollback failed and its way
+// back ended with the release before answering healthy.
+func (u *Updater) WentBack() bool { return u.backOK }
+
 // markBack records that the way back of the switch to name began.
 func (u *Updater) markBack(s *session, name string) error { return u.recordPending(s, name, true) }
 

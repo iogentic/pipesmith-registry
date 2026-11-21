@@ -8,7 +8,7 @@ import (
 
 // SchemaVersion is the version of the last step, the value of the schema row
 // of a file this binary writes.
-const SchemaVersion = 4
+const SchemaVersion = 6
 
 // steps are the schema steps of catalog.sqlite, numbered from 1. A further
 // table or column is the next step, and SchemaVersion follows it in the same
@@ -19,6 +19,8 @@ var steps = []migrate.Step{
 	{Version: 2, Apply: schema2},
 	{Version: 3, Apply: schema3},
 	{Version: 4, Apply: schema4},
+	{Version: 5, Apply: schema5},
+	{Version: 6, Apply: schema6},
 }
 
 // schema1 holds what a scan fills: one row per store and path in blobs, the
@@ -70,6 +72,23 @@ var schema4 = statements(
 		" bytes INTEGER NOT NULL, PRIMARY KEY (repo, day)) WITHOUT ROWID",
 	"CREATE TABLE IF NOT EXISTS request_days (day TEXT PRIMARY KEY, requests INTEGER NOT NULL,"+
 		" bytes_sent INTEGER NOT NULL) WITHOUT ROWID",
+)
+
+// schema5 holds facts of the file itself (ruling CL3 of leg 6-cleanup), with
+// their accessors in downloads.go: built_ms, the time the file was built new,
+// which Open writes once when it takes every step from version 0. A file of
+// an older version gets the table and no row.
+var schema5 = statements(
+	"CREATE TABLE IF NOT EXISTS facts (key TEXT PRIMARY KEY, value INTEGER NOT NULL) WITHOUT ROWID",
+)
+
+// schema6 holds the count of the blobs with the delete mark and their bytes
+// per store (rulings SR14 and SR15 of leg 6-stores-b), with its accessors in
+// marks.go: a scan writes it, the write path and the compaction move it, and
+// GET /api/blob-stores/{name}/deleted reads it.
+var schema6 = statements(
+	"CREATE TABLE IF NOT EXISTS store_marks (store TEXT PRIMARY KEY, blobs INTEGER NOT NULL, bytes INTEGER NOT NULL," +
+		" counted_ms INTEGER NOT NULL) WITHOUT ROWID",
 )
 
 func statements(list ...string) func(tx *sql.Tx) error {

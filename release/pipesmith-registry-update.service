@@ -1,8 +1,11 @@
-# The daily update check of Pipesmith Registry, started by
+# The hourly update check of Pipesmith Registry, started by
 # pipesmith-registry-update.timer. It runs the fetch stage: it downloads and
 # checks the highest complete version above the running one into
-# /opt/pipesmith-registry/releases/. It restarts the server only when
-# scheduled_switch of /opt/pipesmith-registry/update.json is true.
+# /opt/pipesmith-registry/releases/, from the GitHub releases of
+# iogentic/pipesmith-registry unless update.json names another channel. It
+# restarts the server only when scheduled_switch of
+# /opt/pipesmith-registry/update.json is true and the time lies in its
+# window. Its outcome goes to /opt/pipesmith-registry/releases/scheduled.json.
 [Unit]
 Description=Pipesmith Registry update check
 After=network-online.target

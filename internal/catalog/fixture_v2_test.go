@@ -139,7 +139,7 @@ func TestFixturesOfEachEarlierVersionEqualAFreshFile(t *testing.T) {
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
-	fixtures := map[int]string{1: fixtureV1, 2: fixtureV2, 3: fixtureV3}
+	fixtures := map[int]string{1: fixtureV1, 2: fixtureV2, 3: fixtureV3, 4: fixtureV4, 5: fixtureV5}
 	if len(fixtures) != SchemaVersion-1 {
 		t.Fatalf("%d fixtures for the %d versions before %d", len(fixtures), SchemaVersion-1, SchemaVersion)
 	}

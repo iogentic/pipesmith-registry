@@ -61,10 +61,10 @@ var tagWords = [][2]string{
 	{"Repositories", "Repositories and their settings."},
 	{"Search", "Search of components."},
 	{"Blob Stores", "Blob stores, their sizes and quotas."},
-	{"Security", "Privileges, roles, users, realms, anonymous access and LDAP connections."},
+	{"Security", "Privileges, roles, users, realms, anonymous access, LDAP connections and the own account."},
 	{"Session", "Sign in and sign out of the web interface."},
-	{"Tokens", "npm login, whoami and logout, and Docker bearer tokens."},
-	{"System", "Routing rules, capabilities, tasks, the read only mode and the system information."},
+	{"Tokens", "npm login, whoami and logout, Docker bearer tokens, and the npm and user tokens of the web interface."},
+	{"System", "Routing rules, cleanup policies, capabilities, tasks, the read only mode and the system information."},
 	{"Not Served", "Operations of the interface contract that this server does not serve yet."},
 }
 
@@ -167,7 +167,7 @@ func errorBody(status, text string) reply { return reply{status: status, ctype: 
 // storeNote is the note of the writes of the blob stores and the
 // repositories (leg 6-stores).
 const storeNote = "Changes the records with security on, writes on or off; the next request sees the change. " +
-	"A delete of blobs in local-write and a rebuild of maven metadata need the write store open."
+	"A delete of blobs in a write store and a rebuild of maven metadata need writes or upstream on."
 
 const identityNote = "Works with security on, writes on or off. Every change empties the credential cache, and the next request sees it."
 
@@ -185,6 +185,19 @@ const freezeNote = "The read only mode lives in memory: a start of the server re
 const taskNote = "Works with security on, writes on or off. Every run and stop empties the credential cache, as a change does."
 
 var tasksUnavailableReply = message("503", "The server has no tasks.")
+
+// The words of the task settings of the web interface (contract S39 and S40).
+const (
+	taskSettingsNote = "Works with security on, writes on or off; the scheduler takes the change at once. While the server is frozen a change answers 503."
+	taskSettingsBody = "TaskSettings without id, at most 65536 bytes: typeId, name, enabled, schedule {type, startAt, weekDays, monthDays, cron} " +
+		"and properties, an object of strings. startAt is a UTC time in RFC 3339."
+	taskSettingsText = "TaskSettings {id, typeId, name, enabled, schedule, properties}: schedule is {type} with startAt in RFC 3339 UTC, " +
+		"weekDays, monthDays and cron where the type uses them; properties is an object of strings."
+)
+
+var taskSettingsFields = identityFields("At *: the body is no JSON object. At typeId: an unknown type or another type than the stored one. " +
+	"At name: empty or above 256 characters. At enabled: no boolean. At schedule.<field>: a schedule the scheduler refuses. " +
+	"At properties.<id>: a missing, unknown or unfit property, or one the task type refuses when it loads the task.")
 
 func taskXOText(prefix string) string {
 	return prefix + "{id, name, type, message, currentState, lastRunResult, nextRun, lastRun, schedule}: type is the task type, " +
@@ -223,6 +236,23 @@ const (
 )
 
 var routingUnavailable = message("503", "The server keeps no routing rules.")
+
+// The words of the tokens of the web interface (contract S29).
+const (
+	// #nosec G101 -- the words that describe the token routes in the OpenAPI document, no credential.
+	tokensNote = "Works with security on, writes on or off. While the server is frozen a change answers 503."
+	tokenText  = "{id, kind, name, userId, created, lastUsed, publicPart}: id is the public half of a token, or imported-<hex> for an imported key, " +
+		"whose name and publicPart are empty; created and lastUsed are UTC times, lastUsed null for a token never used"
+)
+
+var tokensUnavailableReply = message("503", "The server issues no tokens.")
+
+// The words of the own account of the web interface (contract S41).
+const accountNote = "Works with security on, writes on or off, for any signed in user. While the server is frozen a change answers 503."
+
+var accountToken = message("403", "The caller signed in with a token; a session or the password changes the own account.")
+
+var accountDirectory = message("409", "The user belongs to an LDAP directory, which keeps its names, mail and password.")
 
 // identityFields is the answer 400 of a write with the list of field errors.
 func identityFields(text string) reply {
@@ -386,21 +416,24 @@ var operationWords = map[string]words{
 			message("503", "Requests to remotes are off (the switch upstream), or the state of the proxies cannot be written.")}},
 	"POST /service/rest/v1/repositories/{}/{}": {path: restV1 + "/repositories/{segment}/{type}", tag: "Repositories", summary: "Create a repository",
 		description: storeNote + " The body is the settings of the contract: name, online, storage, and the sections of the format and type. " +
-			"The repository is a record of state.sqlite. A hosted or proxy repository names local-write in storage.blobStoreName. " +
+			"The repository is a record of state.sqlite. A hosted repository names in storage.blobStoreName the store its uploads go into: " +
+			"local-write or a store created on this server (writable in the list of blob stores); an imported store is read only. " +
+			"With storage.newBlobStore, an object of path and softQuota, the store of that name is created with the repository, as POST /v1/blobstores/file creates it; " +
+			"both are made or neither. A proxy names local-write, a group any store. " +
 			"The upstream password or token of a proxy goes into secrets/remote/<name>, never into the record or an answer. " +
 			"A Docker port is set on the host with repos port; docker.httpPort and docker.httpsPort are null.",
-		caller: "The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, " +
+		caller: "A new store needs the permission to create blob stores. The caller holds the full permission set or every permission the new repository grants: its administration and view privileges, " +
 			"the view privileges of its whole format when it is the first of the format, and the view read permission of every member a group adds. " +
 			"Without the full permission set the remote host of a proxy must resolve to public addresses only, and the proxy never dials a closed address.",
 		pathWords: map[string]string{"segment": "maven, npm, docker or raw.", "type": "hosted, proxy or group."},
 		answers: []reply{{status: "201", text: "The repository is created."},
-			identityFields("A field is not valid: the name, the store, the remote address or host, a member, a Docker port, the authentication, " +
-				"a placement or limit set on the host, or a value this server does not offer."),
-			message("403", "The new repository would give the caller a permission it does not hold."),
-			message("409", "A repository of the name exists."), message("501", "The format or the type is not one of this server."),
+			identityFields("A field is not valid: the name, the store (unknown, read only, or another than local-write for a proxy), the new store and its path, " +
+				"the remote address or host, a member, a Docker port, the authentication, a placement or limit set on the host, or a value this server does not offer."),
+			message("403", "The new repository would give the caller a permission it does not hold, or a new store needs the permission to create blob stores."),
+			message("409", "A repository of the name exists, or a store of the name of the new store."), message("501", "The format or the type is not one of this server."),
 			identityTooLarge, identityUnavailable}},
 	"PUT /service/rest/v1/repositories/{}/{}/{}": {path: restV1 + "/repositories/{segment}/{type}/{name}", tag: "Repositories", summary: "Save a repository",
-		description: storeNote + " The body is the settings of the contract; the name cannot change. " +
+		description: storeNote + " The body is the settings of the contract; the name cannot change, nor the store of a hosted repository, and storage.newBlobStore is not offered. " +
 			"Without httpClient.authentication the stored authentication and secret stay; the type none removes both.",
 		caller:    "Without the full permission set a new remote host must resolve to public addresses only; a member a group adds needs its view read permission.",
 		pathWords: map[string]string{"segment": "maven, npm, docker or raw.", "type": "hosted, proxy or group.", "name": "Name of the repository."},
@@ -409,12 +442,12 @@ var operationWords = map[string]words{
 			message("409", "repositories.json of the host defines the repository."),
 			identityTooLarge, identityUnavailable}},
 	"DELETE /service/rest/v1/repositories/{}": {path: restV1 + "/repositories/{name}", tag: "Repositories", summary: "Delete a repository",
-		description: storeNote + " The repository goes offline first; then the rows of the index and the catalog go and every blob of the repository in local-write gets the delete mark; " +
+		description: storeNote + " The repository goes offline first; then the rows of the index and the catalog go and every blob of the repository in a write store gets the delete mark; " +
 			"then the upstream secret and the record go together.",
 		pathWords: map[string]string{"name": "Name of the repository."},
 		answers: []reply{{status: "204", text: "The repository is deleted."}, message("404", "Repository not found."),
 			message("409", "A group names the repository, repositories.json of the host defines it, or a store of the old product holds files of it."),
-			message("503", "The repository holds blobs in local-write and the store is not open, or the index stayed busy."), identityUnavailable}},
+			message("503", "The repository holds blobs in a write store and writes and upstream are off, or the index stayed busy."), identityUnavailable}},
 	"POST /service/rest/v1/repositories/{}/rebuild-index": {path: restV1 + "/repositories/{name}/rebuild-index", tag: "Repositories",
 		summary:     "Rebuild the maven metadata of a hosted repository",
 		description: storeNote + " For a hosted maven2 repository maven-metadata.xml and its checksums are written again from its files. Any other repository answers 204 and nothing is done.",
@@ -536,7 +569,9 @@ var operationWords = map[string]words{
 			message("404", "Component not found."), message("422", "The component id is malformed."),
 			message("503", "catalog.sqlite is behind the index; the message names the store to scan.")}},
 	"GET /service/rest/v1/blobstores": {path: restV1 + "/blobstores", tag: "Blob Stores", summary: "Blob stores with counts and sizes",
-		answers: []reply{ok200("Array of {name, type, unavailable, blobCount, totalSizeInBytes, availableSpaceInBytes, softQuota}, sorted by name.")}},
+		answers: []reply{ok200("Array of {name, type, unavailable, blobCount, totalSizeInBytes, availableSpaceInBytes, softQuota, writable}, sorted by name. " +
+			"writable is true for local-write and the stores created on this server, false for an imported store, which is read only. " +
+			"unavailable is true for a store whose folder is missing or cannot be read, or is empty while the index holds files of it; an empty store is available with 0 blobs.")}},
 	"GET /service/rest/v1/blobstores/file/{}": {path: restV1 + "/blobstores/file/{name}", tag: "Blob Stores", summary: "Path and quota of a file blob store",
 		pathWords: map[string]string{"name": "Name of the blob store."},
 		answers:   []reply{ok200("{path, softQuota}."), {status: "404"}}},
@@ -545,7 +580,7 @@ var operationWords = map[string]words{
 		answers:   []reply{ok200("{isViolation, message, blobStoreName}."), {status: "404"}}},
 	"POST /service/rest/v1/blobstores/file": {path: restV1 + "/blobstores/file", tag: "Blob Stores", summary: "Create a file blob store",
 		description: storeNote + " The body is {name, path, softQuota}. The store is a record with a folder below the folder stores of the data directory; " +
-			"an absent path is stores/<name>, a relative one lies below stores/. The folder is made. New blobs still go into local-write.",
+			"an absent path is stores/<name>, a relative one lies below stores/. The folder is made. A hosted repository that names the store writes its uploads into it.",
 		answers: []reply{{status: "204", text: "The store is created."},
 			identityFields("The name is not allowed, the path lies outside stores/ with its links resolved, holds files or is the path of another store, or the soft quota is not valid."),
 			message("409", "A store of the name exists."), identityTooLarge, identityUnavailable}},
@@ -555,14 +590,20 @@ var operationWords = map[string]words{
 		answers: []reply{{status: "204", text: "The store is saved."}, identityFields("Another path, or a soft quota that is not valid."),
 			message("404", "Blob store not found."), identityTooLarge, identityUnavailable}},
 	"DELETE /service/rest/v1/blobstores/{}": {path: restV1 + "/blobstores/{name}", tag: "Blob Stores", summary: "Delete a blob store",
-		description: storeNote + " The record goes; the folder and its files stay.",
+		description: storeNote + " The record goes and its writer closes; the folder and its files stay.",
 		pathWords:   map[string]string{"name": "Name of the blob store."},
 		answers: []reply{{status: "204", text: "The store is deleted."}, message("404", "Blob store not found."),
 			message("409", "A repository names the store, or it is local-write or a store that config.json attaches."), identityUnavailable}},
 	"GET /api/blob-stores/{}/deleted": {path: "/api/blob-stores/{name}/deleted", tag: "Blob Stores", summary: "Blobs of a store with the delete mark",
-		description: "Counts the blobs of the file store that carry the delete mark, by a walk of its properties files.",
-		pathWords:   map[string]string{"name": "Name of the blob store."},
-		answers:     []reply{ok200("{name, blobCount, bytes}."), message("404", "Blob store not found.")}},
+		description: "The count of the blobs of the file store that carry the delete mark, and their bytes, as catalog.sqlite keeps it: " +
+			"a scan of the store writes it, and each delete mark of this server and each blob a compaction removes moves it. " +
+			"A store without a count takes once its entry of marked-counts.json in the data directory (a store of the existing install), " +
+			"or a walk of its properties files in the background, two at a time, whose count is then kept; a request waits for that walk at most 2 s.",
+		pathWords: map[string]string{"name": "Name of the blob store."},
+		answers: []reply{ok200("{name, blobCount, bytes, counting, countedAt}. blobCount and bytes are null while the first count of a store runs; " +
+			"counting is true while it runs, and the request may ask again; countedAt is the time of the count the numbers start from; " +
+			"reason, given only without a count, names why there is none, as a folder of the store that does not exist."), message("404", "Blob store not found."),
+			message("500", "The count failed and no earlier count is kept, for example because the walk of the store fails; it is tried again after 30 s. A store whose folder is missing answers 200 with reason.")}},
 	"GET /service/rest/v1/security/privileges": {path: restV1 + "/security/privileges", tag: "Security", summary: "Privileges",
 		answers: []reply{ok200("Array of privileges with type, name, description, readOnly, the fields of the type and actions, sorted by name.")}},
 	"GET /service/rest/v1/security/privileges/{}": {path: restV1 + "/security/privileges/{name}", tag: "Security", summary: "One privilege",
@@ -755,6 +796,42 @@ var operationWords = map[string]words{
 		answers: []reply{ok200("{items}; each item is {repository, type, format, rule, allowed}, rule null for a repository without a rule."),
 			identityFields("An unknown key, a scope other than all, group and proxy, no path or one above 4096 characters, or a body above 65536 bytes."),
 			message("503", "The routing rules cannot be read now.")}},
+	"GET /api/cleanup-policies": {path: "/api/cleanup-policies", tag: "System", summary: "Cleanup policies",
+		answers: []reply{ok200("Array of " + policyXOText + ", sorted by name.")}},
+	"GET /api/cleanup-policies/{}": {path: "/api/cleanup-policies/{name}", tag: "System", summary: "One cleanup policy",
+		pathWords: map[string]string{"name": "Name of the cleanup policy."},
+		answers:   []reply{ok200(policyXOText + "."), message("404", "Cleanup policy not found.")}},
+	"POST /api/cleanup-policies": {path: "/api/cleanup-policies", tag: "System", summary: "Create a cleanup policy",
+		description: policyNote + " The new policy counts as made on this server. A repository that names the policy already applies it at once.",
+		body:        &bodyWords{ctype: jsonType, text: policyBodyText, fields: []string{"name", "format", "notes"}},
+		answers: []reply{{status: "201", ctype: jsonType, text: policyXOText + "."},
+			identityFields(policyFields + " A name outside the name pattern, or no format or no criteria."),
+			message("409", "A cleanup policy of the name exists."), identityTooLarge, identityUnavailable}},
+	"PUT /api/cleanup-policies/{}": {path: "/api/cleanup-policies/{name}", tag: "System", summary: "Save a cleanup policy",
+		description: policyNote + " The name cannot change; without format the stored one stays. A value the stored policy holds is never refused, " +
+			"an imported format or criterion included. A saved policy counts as made on this server, so a later import keeps it.",
+		pathWords: map[string]string{"name": "Name of the cleanup policy."},
+		body:      &bodyWords{ctype: jsonType, text: policyBodyText, fields: []string{"name", "format", "notes"}},
+		answers: []reply{{status: "204", text: "The policy is saved."},
+			identityFields(policyFields + " Another name in the body, or a format other than * while a repository of another format applies the policy."),
+			message("404", "Cleanup policy not found."), identityTooLarge, identityUnavailable}},
+	"DELETE /api/cleanup-policies/{}": {path: "/api/cleanup-policies/{name}", tag: "System", summary: "Delete a cleanup policy",
+		description: "A policy of any origin is deleted; an imported one comes back with the next import unless a policy made on this server holds its name. " +
+			"A cleanup task that runs keeps the policies it read at its start and sees the delete at its next run.",
+		pathWords: map[string]string{"name": "Name of the cleanup policy."},
+		answers: []reply{{status: "204", text: "The policy is deleted."}, message("404", "Cleanup policy not found."),
+			message("409", "A repository applies the policy; the message names every one."), identityUnavailable}},
+	"POST /api/cleanup-policies/preview": {path: "/api/cleanup-policies/preview", tag: "System", summary: "What a cleanup policy would remove from one repository",
+		description: "The body is {policy, repository}, policy in the form of a create, at most 65536 bytes; its name is not checked and no stored policy is read. " +
+			"The preview is the dry run of a cleanup run: nothing is removed or written, also while the server is frozen. " +
+			"A repository the caller may not browse answers as one that does not exist. One preview runs at a time per server; it reads every asset of the repository.",
+		answers: []reply{ok200("{items, total, truncated}: at most 100 items {repository, group, name, version, path}, sorted by path, then the docker layers a run marks; total counts all."),
+			identityFields("At policy.<field> what the create of the policy refuses but the name; at repository a repository that is missing, " +
+				"may not be browsed, is a group or has another format than the policy."),
+			identityTooLarge,
+			message("429", "Another preview runs; the header Retry-After gives 5 seconds."),
+			message("500", "The repositories, the catalog or the index cannot be read; the message says which."),
+			message("503", "The server has no state.")}},
 	"GET /service/rest/v1/tasks": {path: restV1 + "/tasks", tag: "System", summary: "Tasks",
 		description: "Every stored task on one page, sorted by id. A task whose type this server does not run is listed with the reason as its message.",
 		answers:     []reply{ok200(taskXOText("{items, continuationToken}; continuationToken is null, and each item is ")), tasksUnavailableReply}},
@@ -772,6 +849,29 @@ var operationWords = map[string]words{
 		pathWords:   map[string]string{"id": "Id of the task."},
 		answers: []reply{{status: "204", text: "The run is told to stop."}, message("404", "Task not found."),
 			message("409", "The task is not running."), tasksUnavailableReply}},
+	"GET /api/task-types": {path: "/api/task-types", tag: "System", summary: "Task types this server runs",
+		answers: []reply{ok200("A list of {id, name, description, fields}; each field is {id, label, type, required, default} with options for a select. " +
+			"type is string, number, boolean, select, repository or blobstore."), tasksUnavailableReply}},
+	"GET /api/tasks/{}": {path: "/api/tasks/{id}", tag: "System", summary: "The settings of a task",
+		pathWords: map[string]string{"id": "Id of the task."},
+		answers:   []reply{ok200(taskSettingsText), message("404", "Task not found."), tasksUnavailableReply}},
+	"POST /api/tasks": {path: "/api/tasks", tag: "System", summary: "Create a task",
+		description: taskSettingsNote + " The new task is enabled unless the body says otherwise and waits for its first instant at once.",
+		body:        &bodyWords{ctype: jsonType, text: taskSettingsBody, fields: []string{"typeId", "name", "enabled", "schedule", "properties"}},
+		answers: []reply{{status: "201", ctype: jsonType, text: "{id}, the id the server gives the task: 16 lowercase hex characters."},
+			taskSettingsFields, identityTooLarge, tasksUnavailableReply}},
+	"PUT /api/tasks/{}": {path: "/api/tasks/{id}", tag: "System", summary: "Save a task",
+		description: taskSettingsNote + " The type cannot change. A run that is going keeps its settings; the saved ones apply from the next run. " +
+			"A saved task counts as made on this server, so an imported task saved enabled leaves the paused state.",
+		pathWords: map[string]string{"id": "Id of the task."},
+		body:      &bodyWords{ctype: jsonType, text: taskSettingsBody, fields: []string{"typeId", "name", "enabled", "schedule", "properties"}},
+		answers: []reply{{status: "204", text: "The task is saved."}, taskSettingsFields, message("404", "Task not found."),
+			identityTooLarge, tasksUnavailableReply}},
+	"DELETE /api/tasks/{}": {path: "/api/tasks/{id}", tag: "System", summary: "Delete a task",
+		description: taskSettingsNote + " The runs of the task stay in the history.",
+		pathWords:   map[string]string{"id": "Id of the task."},
+		answers: []reply{{status: "204", text: "The task is deleted."}, message("404", "Task not found."),
+			message("409", "The task is running; stop it or wait for the end of its run."), tasksUnavailableReply}},
 	"GET /service/rest/v1/status/check": {path: restV1 + "/status/check", tag: "Status", summary: "Health checks of blob stores and index",
 		answers: []reply{ok200("Object with the checks Blob Stores and Index, each {healthy, message, error, details, time, duration, timestamp}.")}},
 	"GET /service/rest/v1/read-only": {path: restV1 + "/read-only", tag: "Status", summary: "Read only state",
@@ -793,12 +893,56 @@ var operationWords = map[string]words{
 		description: freezeNote + " Only while systemInitiated is true.",
 		answers: []reply{{status: "204", text: "The freeze has ended."},
 			message("409", "The server is not frozen, or a user froze it, which a release ends."), identityUnavailable}},
-	"GET /api/updates": {path: "/api/updates", tag: "Status", summary: "Update and signing state of the install root",
+	"GET /api/updates": {path: "/api/updates", tag: "Status", summary: "Update state, releases and history of the install",
 		description: "Read only. The install root is the one of the running binary, <root>/releases/<version>/pipesmith-registry beside the link <root>/current. " +
-			"The server never writes the trusted key.",
-		answers: []reply{ok200("{installed, message, binary}; when installed also root, config {path, found, error}, " +
+			"The server never writes the trusted key. The releases come from the cache of the last release check, <data>/updates/releases.json; " +
+			"this request sends no request to the source.",
+		answers: []reply{ok200("{installed, message, binary, version, repository {name, url, releases_url}, " +
+			"source {kind, name, state, message, note, checked_at, retry_at, next_check_at, interval_hours, background} with state never, ok, rate_limited, unreachable, error or unsupported, " +
+			"status up_to_date, update_available or unknown, latest and releases of {version, tag, name, published_at, url, body, truncated, prerelease, complete} with body the release notes in Markdown, " +
+			"last_update}; when installed also root, config {path, found, error}, " +
 			"key {path, found, state, problem, sha256, hint} with state good, missing, refused or unchecked, " +
-			"check {ran, passed, message} of the owner and mode rule, and release {name, from, note}.")}},
+			"check {ran, passed, message} of the owner and mode rule, release {name, from, note}, " +
+			"auto {enabled, window, error, timer {readable, unit, active, enabled, next, last, message}, last_run {time, result, version, message}} " +
+			"and history, the newest 50 lines of releases/history.jsonl, newest first.")}},
+	"GET /api/tokens": {path: "/api/tokens", tag: "Tokens", summary: "Tokens of the caller or of one user",
+		description: tokensNote,
+		caller:      "The tokens of another user than the caller need the permission users:update as well.",
+		params:      []param{query("userId", "string", "User whose tokens to list, in every source; the caller when absent.")},
+		answers: []reply{ok200("Array of " + tokenText + "; the npm and user tokens in the order of their issue, then the imported keys of the old product."),
+			message("403", "The caller lacks the permission, or asks for the tokens of another user without users:update."), tokensUnavailableReply}},
+	"POST /api/tokens": {path: "/api/tokens", tag: "Tokens", summary: "Issue a token for the caller",
+		description: tokensNote + " The body is {kind, name}: kind npm or user, name 1 to 64 letters, digits, dots, hyphens and underscores.",
+		body:        &bodyWords{ctype: jsonType, text: "Kind and name of the token, at most 65536 bytes.", fields: []string{"kind", "name"}},
+		answers: []reply{{status: "201", ctype: jsonType, text: tokenText + " and secret, the whole token in the wire form; no later answer holds it."},
+			identityFields("At kind, checked before the name: docker, which the token route of a Docker repository issues, an unknown kind, or a kind whose realm is not active. At name: a name outside the pattern."),
+			message("403", "The caller lacks the permission, or signed in with a token; a session or the password issues tokens."),
+			message("409", "The caller holds a token of this kind and name, or holds 20 named tokens of this kind."), identityTooLarge, tokensUnavailableReply}},
+	"DELETE /api/tokens/{}": {path: "/api/tokens/{id}", tag: "Tokens", summary: "Revoke a token",
+		description: tokensNote,
+		caller:      "A token of another user than the caller needs the permission users:update as well; without it the token answers 404.",
+		pathWords:   map[string]string{"id": "Id of the token from the list."},
+		answers: []reply{{status: "204", text: "The token is revoked."},
+			message("403", "The caller lacks the permission, or signed in with a token; a session or the password revokes tokens."),
+			message("404", "Token not found."), tokensUnavailableReply}},
+	"PUT /api/account": {path: "/api/account", tag: "Security", summary: "Save the own names and mail",
+		description: accountNote + " A key the body lacks keeps the stored value; roles and status stay.",
+		body:        &bodyWords{ctype: jsonType, text: "The names and the mail of the caller, at most 65536 bytes.", fields: []string{"firstName", "lastName", "emailAddress"}},
+		answers: []reply{{status: "204", text: "The account is saved."}, identityFields("At *: the body is no JSON object."),
+			accountToken, accountDirectory, identityTooLarge, identityUnavailable}},
+	"POST /api/account/password": {path: "/api/account/password", tag: "Security", summary: "Change the own password",
+		description: accountNote + " The current password is checked as a sign in checks it. After the change the old password signs in no more and every session of the user ends.",
+		caller:      "A wrong current password counts as a failed sign in; after too many the answer is 429 with Retry-After and an empty body, as for a sign in.",
+		body:        &bodyWords{ctype: jsonType, text: "The current and the new password, at most 65536 bytes.", fields: []string{"currentPassword", "newPassword"}},
+		answers: []reply{{status: "204", text: "The new password is stored."},
+			identityFields("At currentPassword: the current password is wrong. At newPassword: empty, above 1024 bytes or with a control character."),
+			accountToken, accountDirectory, identityTooLarge, {status: "429", text: "Too many failed sign ins of this user from this address; the header Retry-After names the seconds to wait."},
+			message("503", "The server has no identity store or changes no passwords.")}},
+	"POST /api/updates/check": {path: "/api/updates/check", tag: "Status", summary: "Check the release source for a new version now",
+		description: "Reads the releases of the channel of update.json, GitHub releases of iogentic/pipesmith-registry by default, and writes the cache. " +
+			"It downloads and installs nothing, and it sends no request while a rate limit of the source lasts or another check runs, or within 300 s of the last request; source.skipped then says why. " +
+			"Allowed while the server is frozen.",
+		answers: []reply{ok200("The answer of GET /api/updates after the check.")}},
 	"GET /api/areas": {path: "/api/areas", tag: "Status", summary: "Read only state and refused operations",
 		answers: []reply{ok200("{readOnly, refused}; refused lists method, path and area of every operation of the tag Not Served, " +
 			"and with writes off also of the three writes of the area content that answer 501 then.")}},
@@ -950,7 +1094,7 @@ var writeAnswers = []reply{
 func writeWords(summary string, own []reply) words {
 	return words{path: "/repository/{repository}/{path}", tag: "Content", summary: summary,
 		description: "With writes off every write is refused as before writes existed. With writes on, a hosted repository of maven2, raw, npm or docker " +
-			"that is online takes the write into the write store local-write of the data directory; other repositories keep the refusal. The rule of the read path applies first.",
+			"that is online takes the write into the store its write_store names: local-write or a store created on this server; other repositories keep the refusal. The rule of the read path applies first.",
 		pathWords: clientPathWords,
 		params: []param{
 			query("digest", "string", "Docker, with writes on: digest of the whole blob, on the closing PUT or a monolithic POST."),
@@ -970,3 +1114,15 @@ var deferredSearch = func() []param {
 	}
 	return out
 }()
+
+// policyXOText is the answer shape of a cleanup policy.
+const policyXOText = "{name, format, notes, criteria, usedBy}: criteria holds lastBlobUpdatedDays and lastDownloadedDays, null for one that is not set, " +
+	"and an imported criterion this server does not know as it is stored; such a policy never runs. usedBy names the repositories that apply the policy, sorted"
+
+const (
+	policyNote = "The body is {name, format, notes, criteria}, at most 65536 bytes; usedBy and other keys are ignored. " +
+		"Of the criteria lastBlobUpdatedDays and lastDownloadedDays at least one is a whole number of days, 1 or more; a null one is not stored."
+	policyBodyText = "{name, format, notes, criteria}; format is *, maven2, npm, docker or raw, notes at most 400 characters."
+	policyFields   = "A format other than the five, notes above 400 characters, a criterion this server does not know or a value that is no whole number of 1 or more (at criteria.<name>), " +
+		"no criterion set (at criteria), or a value of another type."
+)

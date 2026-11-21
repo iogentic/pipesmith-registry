@@ -286,7 +286,7 @@ func (s *Server) mountBlob(w *recorder, req *request, st *state, repo repos.Repo
 		return false, err
 	}
 	address := peerAddress(w)
-	if source.Store == s.writes.writer.Name() {
+	if source.Store == repo.WriteSettings().WriteStore {
 		_, err = s.linkCopy(repo, path, source, octet, stores.Digests{}, false, false, subject, address) // a blob by its digest: the same bytes
 	} else {
 		err = s.copyFromStore(st, repo, path, source, digest, subject, address)
@@ -368,13 +368,13 @@ func (s *Server) patchUpload(w *recorder, req *request, repo repos.Repo, setting
 		return s.dockerFailed(w, req, writeRefused(http.StatusRequestEntityTooLarge, ruleTooLarge,
 			"the upload passes the limit of %d bytes of repository %s", settings.MaxBodyBytes, repo.Name))
 	}
-	room, err := s.checkSpace(max(length, 0), settings.FreeSpaceFloor)
+	room, err := s.checkSpace(settings.WriteStore, max(length, 0), settings.FreeSpaceFloor)
 	if err != nil {
 		return s.dockerFailed(w, req, err)
 	}
 	defer room.release() // the chunk lands in the file of the session, which the next measure counts
 	body := newTimedBody(w, req)
-	n, err := s.appendChunk(sess, room.reader(body), settings.MaxBodyBytes-sess.size)
+	n, err := s.appendChunk(sess, room.writer, room.reader(body), settings.MaxBodyBytes-sess.size)
 	var refusal *writeRefusal
 	switch {
 	case errors.Is(err, stores.ErrTooLarge):
@@ -422,11 +422,14 @@ func (s *Server) chunkFits(w *recorder, req *request, repo repos.Repo, sess *upl
 }
 
 // appendChunk appends at most limit bytes of body to the work file of the
-// session and returns their count; more than limit fail with
+// session, made in content/tmp of the store of w and returns their count; more than limit fail with
 // stores.ErrTooLarge. On an error the work file is as it was before.
-func (s *Server) appendChunk(sess *uploadSession, body io.Reader, limit int64) (int64, error) {
+func (s *Server) appendChunk(sess *uploadSession, w *blobwrite.Writer, body io.Reader, limit int64) (int64, error) {
 	if sess.work == "" {
-		sess.work = workFileIn(s.writes.writer.Root(), sess.id)
+		if w == nil {
+			w = s.writes.writer
+		}
+		sess.work = workFileIn(w.Root(), sess.id) // content/tmp of the store of the repository (review R3)
 	}
 	f, err := os.OpenFile(sess.work, os.O_WRONLY|os.O_CREATE, 0o600) // #nosec G304 -- content/tmp of the write store and a name of two UUIDs.
 	if err != nil {

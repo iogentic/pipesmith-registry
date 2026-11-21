@@ -333,7 +333,7 @@ func (s *Server) storeManifest(member repos.Repo, name, reference string, subjec
 		if err != nil || sameBytes(tagRow, data) {
 			return err
 		}
-		if digestRow.Store == s.writes.writer.Name() {
+		if digestRow.Store == member.WriteSettings().WriteStore {
 			_, err = s.linkCopy(member, tagPath, digestRow, mediaType, digests, false, false, subject, address)
 		} else {
 			_, err = s.ingest(ingestRequest{repo: member, path: tagPath, body: bytes.NewReader(data), size: int64(len(data)),

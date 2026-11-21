@@ -133,7 +133,7 @@ func TestDeletedBlobsOfTheWriteStore(t *testing.T) {
 		}
 		return (&answer{status: r.status, body: r.body}).object(t)
 	}
-	if c := count(); c["name"] != "local-write" || c["blobCount"].(interface{ String() string }).String() != "0" {
+	if c := count(); c["name"] != "local-write" || c["blobCount"].(interface{ String() string }).String() != "0" || c["counting"] != false || c["countedAt"] == nil {
 		t.Fatalf("before: %v", c)
 	}
 	if r := do(t, w.addr(), "PUT", "/repository/demo-raw/a.txt", []byte("seven b"), "basic", asAdmin); r.status != 201 {

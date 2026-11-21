@@ -303,6 +303,7 @@ export const api = {
   writable: () => request("GET", `${REST}/status/writable`),
   systemInformation: () => get(`${BETA}/system/information`),
   updates: () => get("/api/updates"),
+  updatesCheck: () => post("/api/updates/check", undefined, { effect: false }),
 
   capabilities: {
     list: () => get(`${REST}/capabilities`),

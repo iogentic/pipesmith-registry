@@ -134,6 +134,10 @@ type Options struct {
 	// installRoot gives the install root and the path of the binary in
 	// tests; nil reads them from the running executable (updates.go).
 	installRoot func() (root, binary string)
+	// releaseList and timerShow replace the release source and systemctl
+	// show of the screen Updates in tests (releasecheck.go, timer.go).
+	releaseList releaseLister
+	timerShow   timerShow
 	// upstreamConfig fixes the clock and the limits of the proxies in tests.
 	upstreamConfig proxy.Config
 	// Secure reports a request that reached a reverse proxy of
@@ -193,6 +197,7 @@ type Server struct {
 	exports     *exports                 // the export of a folder (export.go)
 
 	writes  *writePath      // the write path of phase 4 (writestore.go, ingest.go)
+	marked  *markedCounter  // the counts of the marked blobs of each store (markedcount.go, SR12)
 	oci     ociWrites       // the Docker upload sessions of the writes (write_oci.go)
 	proxies *proxy.Proxies  // the proxies of phase 5 (upstream.go); nil while upstream is off
 	routes  *liveRouting    // the routing rules of the proxies, live with security (upstream.go)
@@ -208,6 +213,10 @@ type Server struct {
 
 	trust       func(root, key string) error // Options.TrustRule
 	installRoot func() (root, binary string) // the install root of GET /api/updates (updates.go)
+	releases    *releaseChecker              // the release check of the screen Updates (releasecheck.go)
+	releaseStop func()                       // ends the background release check; nil when none runs
+	timer       timerShow                    // systemctl show of the update timer (timer.go)
+	preview     previewSlot                  // the one cleanup preview at a time (policies_api.go)
 }
 
 // New opens the index and attaches the stores of cfg. dockerPorts maps a
@@ -224,6 +233,15 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 		_ = writes.close() // the error of the set up is the one returned
 		return nil, err
 	}
+	writes.created.find = findCreated(cfg, snapshotOf(opts.Security), rp.attachedNames)
+	writes.created.dataDir = cfg.DataDir
+	if writes.writer != nil {
+		writes.openCreated(rp.currentSnapshot())
+	} else {
+		writes.created.read = readCreated(cfg.DataDir, rp.currentSnapshot(), rp.attachedNames())
+	}
+	rp.created, rp.createdAt = writes.created.list, writes.created.gen.Load
+	rp.attachCreatedNow()
 	if writes.writer != nil {
 		if err := writes.repairAtStart(rp.index); err != nil {
 			_ = rp.index.Close() // the error of the scan is the one returned
@@ -247,11 +265,17 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 		escape: hex.EncodeToString(token) + "~", trusted: newTrustedHosts(forwardedAllowIPs()), port: cfg.Port,
 		job: newScanJob(rp.index, takeOver), writes: writes, proxies: openUpstream(cfg, opts), routes: routes,
 		secure: opts.Secure, forwarded: opts.Forwarded, exports: newExports(opts), started: time.Now(),
-		trust: opts.TrustRule, installRoot: opts.installRoot}
+		trust: opts.TrustRule, installRoot: opts.installRoot, releases: newReleaseChecker(cfg.DataDir, opts.releaseList),
+		timer: opts.timerShow}
 	if s.installRoot == nil {
 		s.installRoot = runningRoot
 	}
 	s.job.runFor = writes.scanRunnerFor
+	s.marked = newMarkedCounter()
+	s.marked.rows = func() (*catalog.Catalog, error) { return s.side().catalog() }
+	s.marked.seed = func(name, root string) (catalog.Marks, bool) { return readSeed(cfg.DataDir, name, root) }
+	s.marked.own = writes.ownStore
+	writes.onMark = func(store string, size int64) { s.marked.delta(store, 1, size) }
 	if opts.CatalogFile != nil {
 		// leg F1b: the one opening of catalog.sqlite follows the writes and fills at every scan
 		s.job.run = scanIn(opts.CatalogFile)
@@ -296,11 +320,18 @@ func New(cfg *config.Config, dockerPorts map[int]string, opts Options) (*Server,
 // file and gives the lock of the write store back. A scan that does not stop
 // within scanStopTimeout keeps the index open until the process exits.
 func (s *Server) Close() error {
+	if s.releaseStop != nil {
+		s.releaseStop()
+	}
 	s.closeTasks() // ruling KN10: the runs end before the stores close
 	if s.proxies != nil {
 		s.proxies.Close()
 	}
 	s.oci.endAll()
+	if s.marked != nil {
+		s.marked.close() // writes the deltas that wait through the catalog of the side data
+		s.closeSide()
+	}
 	err := s.writes.close()
 	if !s.job.stop(scanStopTimeout) {
 		logAt(slogWarn, serverLogger, "a scan did not stop within %s s; the index is left to the process exit",

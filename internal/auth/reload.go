@@ -21,8 +21,9 @@ type Store interface {
 	// SetPasswordHash replaces the stored form of a local user while the row
 	// still holds old; false when it holds another form.
 	SetPasswordHash(userID, old, hash string) (bool, error)
-	// AddToken writes a token row and revokes the oldest of the same user,
-	// source and kind beyond keep.
+	// AddToken writes a token row and revokes the oldest npm logins of the
+	// same user, source and kind beyond keep; a named row beyond keep named
+	// rows is refused.
 	AddToken(t model.Token, keep int) ([]string, error)
 	// Token is the row of a public half; false when there is none.
 	Token(public string) (model.Token, bool, error)

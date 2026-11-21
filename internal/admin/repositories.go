@@ -5,10 +5,12 @@ import (
 	"maps"
 	"net/netip"
 	"net/url"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/iogentic/pipesmith-registry/internal/model"
 	"github.com/iogentic/pipesmith-registry/internal/proxy"
 )
 
@@ -144,29 +146,162 @@ func textAt(m map[string]any, path string) (string, bool) {
 	return s, ok
 }
 
-// CheckStorage checks the store of a repository create or save (ST2): a
-// hosted or proxy repository names local-write in storage.blobStoreName, a
-// group a store of stores. write_store is a server owned attribute
-// (CheckServerAttributes). A value the stored record holds is never
-// refused (R6);
-// stored is nil for a create.
-func CheckStorage(kind string, body, stored map[string]any, stores []string) error {
+// CheckStorage checks the store of a repository create or save (ST2,
+// SR4, SR5, SR7). stores are the names of every store, writable the write
+// stores among them: local-write and the created stores (WritableStore).
+// A hosted repository names a write store, a proxy local-write, a group any
+// store. Names compare exactly; one that differs from a store only in
+// letter case is unknown, with the name of the store (ST14). The store of a
+// stored hosted repository is fixed: a save names the stored one (R6, SR7);
+// a group keeps the rule of its create.
+// write_store is a server owned attribute (CheckServerAttributes); stored
+// is nil for a create.
+func CheckStorage(kind string, body, stored map[string]any, stores, writable []string) error {
 	var list Refusals
 	name, _ := textAt(body, "storage.blobStoreName")
 	held, _ := textAt(stored, "storage.blobStoreName")
+	field := "storage.blobStoreName"
 	switch {
 	case stored != nil && name == held && name != "":
+	case stored != nil && held != "" && kind == "hosted":
+		list = append(list, &Refusal{Code: CodeStoreFixed, Field: field, Message: fmt.Sprintf(
+			"the blob store of a repository is fixed when it is created; this one keeps %s", held)})
 	case name == "":
-		list = append(list, &Refusal{Code: CodeStoreUnknown, Field: "storage.blobStoreName",
+		list = append(list, &Refusal{Code: CodeStoreUnknown, Field: field,
 			Message: "a repository needs storage.blobStoreName, the name of a blob store"})
-	case kind != "group" && name != WriteStore:
-		list = append(list, &Refusal{Code: CodeWriteStore, Field: "storage.blobStoreName", Message: fmt.Sprintf(
-			"a %s repository of this server writes into the store %s, not into %s; name %s", kind, WriteStore, name, WriteStore)})
 	case !slices.Contains(stores, name):
-		list = append(list, &Refusal{Code: CodeStoreUnknown, Field: "storage.blobStoreName", Message: fmt.Sprintf(
-			"the blob store %s does not exist", name)})
+		message := fmt.Sprintf("the blob store %s does not exist", name)
+		if i := slices.IndexFunc(stores, func(s string) bool { return strings.EqualFold(s, name) }); i >= 0 {
+			message = fmt.Sprintf("the blob store %s does not exist; names keep their letter case, the store is %s", name, stores[i])
+		}
+		list = append(list, &Refusal{Code: CodeStoreUnknown, Field: field, Message: message})
+	case kind == "proxy" && name != WriteStore:
+		list = append(list, &Refusal{Code: CodeWriteStore, Field: field, Message: fmt.Sprintf(
+			"a proxy repository of this server caches into the store %s, not into %s; name %s", WriteStore, name, WriteStore)})
+	case kind == "hosted" && !slices.Contains(writable, name):
+		list = append(list, &Refusal{Code: CodeStoreReadOnly, Field: field, Message: fmt.Sprintf(
+			"the blob store %s was imported and is read only; a hosted repository names a store this server writes", name)})
 	}
 	return list.err()
+}
+
+// NewStore is storage.newBlobStore of a create of a hosted repository
+// (SR6): the blob store of storage.blobStoreName is created in the same
+// change, with this path and soft quota. Path nil is <data>/stores/<name>.
+type NewStore struct {
+	Path      *string
+	SoftQuota *model.SoftQuota
+}
+
+// NewStoreOf reads storage.newBlobStore of a body (SR6): nil when it is
+// absent or null. It is offered on a create of a hosted repository only
+// (400 not-offered), as an object with an optional path and soft quota; the
+// name is storage.blobStoreName (400 body-invalid for anything else).
+func NewStoreOf(kind string, body map[string]any, create bool) (*NewStore, error) {
+	const field = "storage.newBlobStore"
+	v, _ := valueAt(body, field)
+	if v == nil {
+		return nil, nil
+	}
+	switch {
+	case !create:
+		return nil, &Refusal{Code: CodeNotOffered, Field: field, Message: "a new blob store is made on a create only; send storage.newBlobStore as null"}
+	case kind != "hosted":
+		return nil, &Refusal{Code: CodeNotOffered, Field: field, Message: "a new blob store is made with a hosted repository only; send storage.newBlobStore as null"}
+	}
+	m, ok := v.(map[string]any)
+	if !ok {
+		return nil, &Refusal{Code: CodeBodyInvalid, Field: field, Message: "storage.newBlobStore is no object"}
+	}
+	var out NewStore
+	var list Refusals
+	for _, key := range slices.Sorted(maps.Keys(m)) {
+		item := m[key]
+		switch key {
+		case "path":
+			if item == nil {
+				continue
+			}
+			p, ok := item.(string)
+			if !ok {
+				list = append(list, &Refusal{Code: CodeBodyInvalid, Field: field + ".path", Message: "the path of a new blob store is no text"})
+				continue
+			}
+			out.Path = &p
+		case "softQuota":
+			if item == nil {
+				continue
+			}
+			q, ok := quotaOf(item)
+			if !ok {
+				list = append(list, &Refusal{Code: CodeBodyInvalid, Field: field + ".softQuota", Message: "the soft quota of a new blob store has no type and limit"})
+				continue
+			}
+			out.SoftQuota = q
+		default:
+			list = append(list, &Refusal{Code: CodeBodyInvalid, Field: field + "." + key, Message: fmt.Sprintf(
+				"storage.newBlobStore takes path and softQuota; the name of the store is storage.blobStoreName, not %s", key)})
+		}
+	}
+	if err := list.err(); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// quotaOf reads a soft quota of a decoded body: type text and limit a number.
+func quotaOf(v any) (*model.SoftQuota, bool) {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	kind, ok := m["type"].(string)
+	if !ok {
+		return nil, false
+	}
+	limit, err := strconv.ParseInt(textOf(m["limit"]), 10, 64)
+	if err != nil {
+		return nil, false
+	}
+	return &model.SoftQuota{Type: kind, Limit: limit}, true
+}
+
+// WritableStore reports whether a stored blob store is a created store this
+// server writes (SR1): its path lies strictly below the folder stores of the
+// data directory, both resolved, config.json attaches no store of its name,
+// and it is not equal to, inside or around the folder of local-write or the
+// path of another record of others, compared without regard to letter case
+// (review R7, the rule of StorePath). Every other record is an imported
+// store and stays read only.
+func WritableStore(dataDir string, b model.BlobStore, attached []string, others []model.BlobStore) bool {
+	if b.Name == "" || b.Name == WriteStore || b.Path == "" || slices.Contains(attached, b.Name) {
+		return false
+	}
+	root, err := filepath.EvalSymlinks(filepath.Join(dataDir, StoresDir))
+	if err != nil {
+		return false
+	}
+	p, err := resolveLoose(b.Path)
+	if err != nil || !within(p, root) {
+		return false
+	}
+	overlaps := func(other string) bool {
+		o, err := resolveLoose(other)
+		if err != nil {
+			return true // a path that cannot be resolved may be anywhere
+		}
+		lowP, lowO := strings.ToLower(p), strings.ToLower(o)
+		return lowP == lowO || within(lowP, lowO) || within(lowO, lowP)
+	}
+	if overlaps(filepath.Join(root, WriteStore)) {
+		return false
+	}
+	for _, o := range others {
+		if o.Name != b.Name && o.Path != "" && overlaps(o.Path) {
+			return false
+		}
+	}
+	return true
 }
 
 // CheckDockerPort refuses a non null docker.httpPort or docker.httpsPort of
@@ -354,6 +489,17 @@ var ServerAttributes = map[string]any{
 	"remote_public_only":     nil,
 }
 
+// CreateAttributes are the server owned attributes of a create of the kind
+// with the body (ST13, SR5): ServerAttributes, and for a hosted repository
+// write_store set to the store the body names, where its uploads land.
+func CreateAttributes(kind string, body map[string]any) map[string]any {
+	out := maps.Clone(ServerAttributes)
+	if name, _ := textAt(body, "storage.blobStoreName"); kind == "hosted" && name != "" {
+		out["write_store"] = name
+	}
+	return out
+}
+
 // sameText compares two decoded values in their text form, so that a
 // number of the body and one of the record compare by value.
 func sameText(a, b any) bool { return textOf(a) == textOf(b) }
@@ -369,8 +515,9 @@ func textOf(v any) string {
 // owned attribute of a body whose value differs from the stored one, or on
 // a create from the default (ruling ST13). null and an absent key send no
 // value.
-func CheckServerAttributes(body, stored map[string]any, create bool) error {
+func CheckServerAttributes(kind string, body, stored map[string]any, create bool) error {
 	var list Refusals
+	defaults := CreateAttributes(kind, body)
 	for _, key := range slices.Sorted(maps.Keys(ServerAttributes)) {
 		v, sent := body[key]
 		if !sent || v == nil {
@@ -378,7 +525,7 @@ func CheckServerAttributes(body, stored map[string]any, create bool) error {
 		}
 		held, found := stored[key]
 		if create || stored == nil {
-			held, found = ServerAttributes[key], ServerAttributes[key] != nil
+			held, found = defaults[key], defaults[key] != nil
 		}
 		if found && sameText(held, v) {
 			continue

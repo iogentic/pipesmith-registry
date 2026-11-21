@@ -102,7 +102,7 @@ func writingSecureApp(t *testing.T) *secureApp {
 }
 
 func TestAreasNamesEveryRefusalOfTheContract(t *testing.T) {
-	// with writes off 19 of the 104 requests of the contract at 1e6d884 are
+	// with writes off 3 of the 104 requests of the contract at 1e6d884 are
 	// refused, as the list of TestContractRefusals counts them, and the one
 	// request of beyondContract; with writes on the 4 of writeRefusals are
 	// served; POST .../invalidate-cache (leg 5c of phase 5), the nine writes
@@ -113,12 +113,15 @@ func TestAreasNamesEveryRefusalOfTheContract(t *testing.T) {
 	// seven of the routing rules, the four of the tasks and the three
 	// changes of the read only mode (leg 6-system), the two figures per day
 	// of S43 (task 7.23 of phase 7), the six requests of the log files
-	// and logger levels (task 7.24) and the node id (F2) are served in both
+	// and logger levels (task 7.24), the node id (F2), the three of the
+	// tokens, the two of the own account and the five of the task types and
+	// settings (leg 6-api-a), and the six requests of the cleanup policies
+	// (leg 6-api-b) are served in both
 	for _, c := range []struct {
 		name  string
 		app   *secureApp
 		count int
-	}{{"writes off", newSecureApp(t, newFakeSecurity()), 20}, {"writes on", writingSecureApp(t), 16}} {
+	}{{"writes off", newSecureApp(t, newFakeSecurity()), 4}, {"writes on", writingSecureApp(t), 0}} {
 		t.Run(c.name, func(t *testing.T) { refusalsOfTheContract(t, c.app, c.count) })
 	}
 }
@@ -187,12 +190,12 @@ func TestAreasWithWritesOffAsBefore(t *testing.T) {
 }
 
 func TestNoOtherRequestOfTheContractAnswers501(t *testing.T) {
-	// 85 requests outside the list with writes off, 88 with writes on
+	// 101 requests outside the list with writes off, 104 with writes on
 	for _, c := range []struct {
 		name   string
 		app    *secureApp
 		served int
-	}{{"writes off", newSecureApp(t, newFakeSecurity()), 85}, {"writes on", writingSecureApp(t), 88}} {
+	}{{"writes off", newSecureApp(t, newFakeSecurity()), 101}, {"writes on", writingSecureApp(t), 104}} {
 		t.Run(c.name, func(t *testing.T) { servedOfTheContract(t, c.app, c.served) })
 	}
 }
@@ -225,17 +228,18 @@ func servedOfTheContract(t *testing.T, a *secureApp, want int) {
 }
 
 func TestAPlaceholderIsOneSegment(t *testing.T) {
-	// with writes off the templates of writeRefusals are refusals too: 5
-	// templates with a placeholder of one segment give 9 requests; with
-	// writes on 3 give 7
+	// with writes off the templates of writeRefusals are refusals too: 4
+	// templates with a placeholder of one segment give 2 requests; with
+	// writes on they give none (the tokens and the task settings left the
+	// refusals in leg 6-api-a, one cleanup policy in 6-api-b)
 	for _, c := range []struct {
 		name  string
 		app   *secureApp
 		table []refusalDecl
 		count int
 	}{
-		{"writes off", newSecureApp(t, newFakeSecurity()), slices.Concat(writeRefusals, refusalTable), 9},
-		{"writes on", writingSecureApp(t), refusalTable, 7},
+		{"writes off", newSecureApp(t, newFakeSecurity()), slices.Concat(writeRefusals, refusalTable), 2},
+		{"writes on", writingSecureApp(t), refusalTable, 0},
 	} {
 		t.Run(c.name, func(t *testing.T) { placeholdersAreOneSegment(t, c.app, c.table, c.count) })
 	}

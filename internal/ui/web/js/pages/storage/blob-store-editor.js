@@ -87,19 +87,51 @@ export async function render(ctx) {
   let stored = { name: "", path: "", softQuota: null };
   const known = { info: null, quota: null, marked: null, repos: null, reposFailed: false };
 
+  // The count of the blobs marked for deletion is a walk of the whole store on the server and can take
+  // minutes on a large one (SR13). The page does not wait for it: it asks again while the server counts.
+  const MARKED_POLL_MS = 3000;
+  const MARKED_POLLS = 100;
+  async function loadMarked(polls) {
+    try {
+      known.marked = await api.blobStores.deleted(name);
+    } catch (error) {
+      known.marked = { failed: errorText(error) };
+    }
+    if (!usage.isConnected) return;
+    if (known.marked && known.marked.counting && polls >= MARKED_POLLS) known.marked.stopped = true;
+    drawUsage();
+    if (known.marked && known.marked.counting && polls < MARKED_POLLS) {
+      setTimeout(() => {
+        if (usage.isConnected) loadMarked(polls + 1);
+      }, MARKED_POLL_MS);
+    }
+  }
+
+  function markedValue(marked) {
+    if (marked && marked.stopped && marked.blobCount == null) return h("span", { class: "muted", text: "Still counting; open the page again later to see the count." });
+    if (marked && marked.reason && marked.blobCount == null) return h("span", { class: "muted", text: `Not counted: ${marked.reason}` });
+    if (!marked || (marked.blobCount == null && !marked.failed)) return h("span", { class: "muted", role: "status", text: "Counting" });
+    if (marked.failed) return h("span", { class: "muted", text: `Not counted: ${marked.failed}` });
+    return h(
+      "div",
+      { class: "stack-tight" },
+      h("span", { text: marked.blobCount ? `${plural(marked.blobCount, "blob")}, ${bytes(marked.bytes)}` : "None" }),
+      marked.blobCount ? h("div", { class: "muted small", text: "A compact task removes them from the disk." }) : null,
+      marked.counting && !marked.stopped ? h("div", { class: "muted small", role: "status", text: "Counting again; this count may be old." }) : null
+    );
+  }
+
   async function load() {
-    const [one, list, quota, marked, settings] = await Promise.allSettled([
+    const [one, list, quota, settings] = await Promise.allSettled([
       api.blobStores.get(name),
       api.blobStores.list(),
       api.blobStores.quota(name),
-      api.blobStores.deleted(name),
       canSeeRepos ? api.repositories.settings() : Promise.resolve(null)
     ]);
     if (one.status === "rejected") throw one.reason;
     stored = { name, path: one.value.path, softQuota: one.value.softQuota || null };
     known.info = list.status === "fulfilled" ? (list.value || []).find((s) => s.name === name) || null : null;
     known.quota = quota.status === "fulfilled" ? quota.value : null;
-    known.marked = marked.status === "fulfilled" ? marked.value : null;
     known.reposFailed = settings.status === "rejected";
     known.repos = settings.status === "fulfilled" && settings.value ? settings.value.filter((r) => (r.storage || {}).blobStoreName === name) : null;
   }
@@ -160,7 +192,7 @@ export async function render(ctx) {
     messages
   );
   if (!creating && known.info && known.info.unavailable) {
-    messages.append(notice("warning", "Unavailable", "The server cannot read the folder of this store. Repositories that use it answer with errors until the folder is back. Check the path and the disk."));
+    messages.append(notice("warning", "Unavailable", "The server cannot read the folder of this store, or the folder is empty while the index holds files of it, as when its disk is not mounted. Repositories that use it answer with errors until the folder is back. Check the path and the disk."));
   }
   if (!creating && !canSave) messages.append(notice("info", "Read only", ctx.readOnlyText("Your roles let you read this blob store, not change it.")));
 
@@ -189,17 +221,7 @@ export async function render(ctx) {
         ["Used space", info ? (down ? unknown.cloneNode(true) : bytes(info.totalSizeInBytes)) : null],
         ["Free on its disk", info ? (down ? unknown.cloneNode(true) : bytes(info.availableSpaceInBytes)) : null],
         ["Soft quota", quotaValue],
-        [
-          "Marked for deletion",
-          marked
-            ? h(
-                "div",
-                { class: "stack-tight" },
-                h("span", { text: marked.blobCount ? `${plural(marked.blobCount, "blob")}, ${bytes(marked.bytes)}` : "None" }),
-                marked.blobCount ? h("div", { class: "muted small", text: "A compact task removes them from the disk." }) : null
-              )
-            : h("span", { class: "muted", text: "Not known" })
-        ]
+        ["Marked for deletion", markedValue(marked)]
       ])
     );
     let body;
@@ -214,6 +236,7 @@ export async function render(ctx) {
   if (!creating) {
     drawUsage();
     ctx.main.append(h("div", { class: "split store-facts" }, usage, users));
+    loadMarked(0);
   }
 
   const f = form({ sections: sections(creating, canSave), values: toValues(stored), readOnly: !canSave });

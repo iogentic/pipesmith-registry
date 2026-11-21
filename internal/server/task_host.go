@@ -134,6 +134,9 @@ const defaultTasksClose = 10 * time.Second
 // within the bound of the options, before the server closes its stores and
 // its index (ruling KN10); the host goes away after the runs ended.
 func (s *Server) closeTasks() {
+	// leg 6-cleanup: the download times and the catalog of the cleanup
+	// close once the runs ended
+	defer s.closeSide()
 	if s.tasks == nil {
 		return
 	}
@@ -366,8 +369,10 @@ func (s *Server) RemoveWorkFiles(ctx context.Context, store string, age time.Dur
 // upload session or a running upload of the writer holds (ruling KN15).
 func (s *Server) heldByUpload(root, name string) bool {
 	path := filepath.Join(root, "content", blobwrite.TmpDir, name)
-	if w := s.writes.writer; w != nil && w.Holds(name) && sameDir(filepath.Join(w.Root(), "content", blobwrite.TmpDir, name), path) {
-		return true
+	for _, o := range s.writes.writers() {
+		if w := o.writer; w.Holds(name) && sameDir(filepath.Join(w.Root(), "content", blobwrite.TmpDir, name), path) {
+			return true
+		}
 	}
 	o := &s.oci
 	o.mu.Lock()

@@ -94,3 +94,73 @@ func TestAboutNamesTheCopyrightHolder(t *testing.T) {
 		t.Errorf("js/app.js holds %d copyright lines, want the one of the About dialog", n)
 	}
 }
+
+// Ruling SR5 and SR6 of leg 6-stores-b: the create of a hosted repository
+// offers the stores it may write into and a new store, whose name and path
+// travel as storage.blobStoreName and storage.newBlobStore; a proxy offers
+// local-write only.
+func TestTheRepositoryFormPicksOrCreatesAStore(t *testing.T) {
+	raw, err := fs.ReadFile(files, "web/js/pages/repositories/editor.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	editor := string(raw)
+	for _, want := range []string{
+		`const NEW_STORE = "`,
+		`label: "New blob store"`,
+		`name: "newStore.name"`,
+		`name: "newStore.path"`,
+		`show: (v) => v.storage && v.storage.blobStoreName === NEW_STORE`,
+		`body.storage.newBlobStore = { path: (values.newStore && values.newStore.path) || null };`,
+		`body.storage.blobStoreName = values.newStore.name;`,
+		`delete body.newStore;`,
+		// review R12: a relative path is read below stores/, so the placeholder does not start with it
+		`placeholder: "<name>",`,
+		`type === "hosted" ? s.writable : type === "proxy" ? s.name === "local-write" : true`,
+		`if (creating && type !== "group" && !offered.some((s) => s.name === "local-write")) offered.unshift({ name: "local-write", writable: true });`,
+	} {
+		if !strings.Contains(editor, want) {
+			t.Errorf("js/pages/repositories/editor.js holds no %q", want)
+		}
+	}
+}
+
+// Ruling SR13 (finding F2 of the test host): the blob store page renders
+// without the count of the marked blobs, asks for it after, shows Counting
+// while the server counts and Not counted on a failure. Ruling SR11 (F1):
+// the text of an unavailable store names both causes. Ruling SC1 of leg
+// 6-stores-c: a count with a reason shows Not counted with that reason.
+func TestTheBlobStorePageDoesNotWaitForTheMarkedCount(t *testing.T) {
+	raw, err := fs.ReadFile(files, "web/js/pages/storage/blob-store-editor.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	editor := string(raw)
+	load := between(t, editor, "  async function load() {", "\n  }\n")
+	if strings.Contains(load, "deleted(") {
+		t.Errorf("load waits for the marked count:\n%s", load)
+	}
+	for _, want := range []string{
+		`known.marked = await api.blobStores.deleted(name);`,
+		`if (known.marked && known.marked.counting && polls < MARKED_POLLS) {`,
+		`text: "Counting"`,
+		"text: `Not counted: ${marked.failed}`",
+		"if (marked && marked.reason && marked.blobCount == null) return h(\"span\", { class: \"muted\", text: `Not counted: ${marked.reason}` });",
+		"ctx.main.append(h(\"div\", { class: \"split store-facts\" }, usage, users));\n    loadMarked(0);",
+		"or the folder is empty while the index holds files of it",
+		// review H8: after the last poll the page says so
+		`if (known.marked && known.marked.counting && polls >= MARKED_POLLS) known.marked.stopped = true;`,
+		`text: "Still counting; open the page again later to see the count."`,
+	} {
+		if !strings.Contains(editor, want) {
+			t.Errorf("js/pages/storage/blob-store-editor.js holds no %q", want)
+		}
+	}
+	list, err := fs.ReadFile(files, "web/js/pages/storage/blob-stores.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(list), "or the folder is empty while the index holds files of it") {
+		t.Error("js/pages/storage/blob-stores.js names one cause of an unavailable store only")
+	}
+}

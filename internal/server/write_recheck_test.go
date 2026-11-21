@@ -33,7 +33,7 @@ func (w *writing) deleteMeanwhile(t *testing.T, repo, path string) {
 		t.Fatalf("the row of %s/%s: %+v %v", repo, path, row, err)
 	}
 	if _, err := w.srv.rp.index.DeleteWithin(repo, path, row.Store, indexWaitOf(), func() error {
-		return w.srv.writes.mark(row.Location, reasonDeleted)
+		return w.srv.writes.mark(row.Store, row.Location, reasonDeleted)
 	}); err != nil {
 		t.Fatal(err)
 	}

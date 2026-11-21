@@ -2,6 +2,7 @@ package state_test
 
 import (
 	"crypto/sha256"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -275,5 +276,119 @@ func TestTokenCapKeepsTheNewTokenAfterTheClockStepsBack(t *testing.T) {
 	}
 	if _, ok, err := st.Token("c4"); err != nil || !ok {
 		t.Fatalf("the token issued after the clock stepped back is gone: %v %v", ok, err)
+	}
+}
+
+// Step 6 (ruling AP2 of leg 6-api): a token row has a name, the empty one
+// for an npm login. A name that is not empty is unique per user, source
+// and kind; another kind or another user may hold it.
+func TestTokenNames(t *testing.T) {
+	_, st := create(t)
+	named := func(public, kind, user, name string) model.Token {
+		tok := token(public, kind, user)
+		tok.Name = name
+		return tok
+	}
+	for _, tok := range []model.Token{
+		named("AAAAAAAAAAA", "npm", "demo-admin", "laptop"),
+		named("BBBBBBBBBBB", "user", "demo-admin", "laptop"),
+		named("CCCCCCCCCCC", "npm", "demo-reader", "laptop"),
+		named("DDDDDDDDDDD", "npm", "demo-admin", ""),
+		named("EEEEEEEEEEE", "npm", "demo-admin", ""),
+	} {
+		if _, err := st.AddToken(tok, 20); err != nil {
+			t.Fatalf("%s: %v", tok, err)
+		}
+	}
+	before := generation(t, st)
+	if _, err := st.AddToken(named("FFFFFFFFFFF", "npm", "demo-admin", "laptop"), 20); !errors.Is(err, model.ErrTokenName) {
+		t.Fatalf("a second npm token named laptop: %v", err)
+	}
+	if after := generation(t, st); after != before {
+		t.Fatalf("the refused name raised the generation from %d to %d", before, after)
+	}
+	if _, found, err := st.Token("FFFFFFFFFFF"); err != nil || found {
+		t.Fatalf("the refused row is stored: %v %v", found, err)
+	}
+	list, err := st.Tokens("demo-admin", "default")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, tok := range list {
+		names = append(names, tok.Kind+":"+tok.Name)
+	}
+	if want := []string{"npm:laptop", "user:laptop", "npm:", "npm:"}; !reflect.DeepEqual(names, want) {
+		t.Fatalf("names %v, want %v", names, want)
+	}
+	if got, _, _ := st.Token("AAAAAAAAAAA"); got.Name != "laptop" {
+		t.Fatalf("Token gives the name %q", got.Name)
+	}
+}
+
+// ImportedKeyRows gives the imported keys of a user with their digests, or
+// every key for an empty user.
+func TestImportedKeyRows(t *testing.T) {
+	_, st := create(t)
+	keys := []model.ImportedKey{
+		{Kind: "npm", UserID: "demo-admin", Source: "default", Digest: sha256.Sum256([]byte("a")), Created: created},
+		{Kind: "docker", UserID: "demo-reader", Source: "default", Digest: sha256.Sum256([]byte("b")), Created: created},
+	}
+	if err := st.WriteImport(nil, nil, keys); err != nil {
+		t.Fatal(err)
+	}
+	mine, err := st.ImportedKeyRows("demo-admin", "default")
+	if err != nil || len(mine) != 1 || mine[0].Digest != keys[0].Digest || mine[0].Kind != "npm" || !mine[0].Created.Equal(created) {
+		t.Fatalf("keys of demo-admin: %v %v", mine, err)
+	}
+	all, err := st.ImportedKeyRows("", "")
+	if err != nil || len(all) != 2 {
+		t.Fatalf("every key: %v %v", all, err)
+	}
+}
+
+// The bound of keep revokes npm logins only, the rows with the empty name,
+// and counts only those; a named row is never revoked by it. A named row
+// beyond keep named rows is refused with model.ErrTokenLimit.
+func TestTokenCapSparesNamedRows(t *testing.T) {
+	_, st := create(t)
+	named := func(public, name string) model.Token {
+		row := token(public, "npm", "admin")
+		row.Name = name
+		return row
+	}
+	for _, row := range []model.Token{named("n1", "laptop"), token("p1", "npm", "admin"), named("n2", "ci"),
+		token("p2", "npm", "admin"), token("p3", "npm", "admin")} {
+		if gone, err := st.AddToken(row, 3); err != nil || len(gone) != 0 {
+			t.Fatalf("%s: %q %v", row.Public, gone, err)
+		}
+	}
+	var revoked []string
+	for _, public := range []string{"p4", "p5"} {
+		gone, err := st.AddToken(token(public, "npm", "admin"), 3)
+		if err != nil {
+			t.Fatal(err)
+		}
+		revoked = append(revoked, gone...)
+	}
+	if !reflect.DeepEqual(revoked, []string{"p1", "p2"}) {
+		t.Fatalf("revoked %q, want the logins p1 and p2", revoked)
+	}
+	if gone, err := st.AddToken(named("n3", "desk"), 3); err != nil || len(gone) != 0 {
+		t.Fatalf("the third named row: %q %v", gone, err)
+	}
+	if _, err := st.AddToken(named("n4", "spare"), 3); !errors.Is(err, model.ErrTokenLimit) {
+		t.Fatalf("a fourth named row with keep 3: %v, want ErrTokenLimit", err)
+	}
+	list, err := st.Tokens("admin", "default")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var publics []string
+	for _, row := range list {
+		publics = append(publics, row.Public)
+	}
+	if want := []string{"n1", "n2", "p3", "p4", "p5", "n3"}; !reflect.DeepEqual(publics, want) {
+		t.Fatalf("rows %q, want %q", publics, want)
 	}
 }

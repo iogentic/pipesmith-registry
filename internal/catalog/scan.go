@@ -89,6 +89,14 @@ func (s *Scan) Hold() {
 	}
 }
 
+// SetMarks gives the count of the marked blobs of the walk to the fill
+// (Fill.SetMarks), written with the rows of the store.
+func (s *Scan) SetMarks(m Marks) {
+	if s.err == nil {
+		s.fill.SetMarks(m)
+	}
+}
+
 // Add hands over one entry the index took.
 func (s *Scan) Add(e stores.Entry) {
 	if s.err == nil {

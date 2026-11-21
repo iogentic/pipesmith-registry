@@ -114,6 +114,8 @@ type Updater struct {
 	HealthCert func(*UpdateConfig) (string, error)
 	// Out receives one line per finished step; nil discards them.
 	Out io.Writer
+	// Auto marks the history lines as those of a scheduled run.
+	Auto bool
 
 	// Zero values take the defaults above.
 	HealthTimeout  time.Duration
@@ -128,6 +130,7 @@ type Updater struct {
 	hook    func(point string) error
 	now     func() time.Time // the clock; nil is time.Now
 	began   bool             // the last update or rollback wrote the record of its switch
+	backOK  bool             // the way back of the last switch ended with the release before answering healthy
 	// freeSpace replaces migrate.FreeSpace in tests.
 	freeSpace func(dir string) (uint64, error)
 }
@@ -177,6 +180,7 @@ type session struct {
 // health wait. withKey checks the trusted key as well. It changes nothing.
 func (u *Updater) begin(withKey bool) (*session, error) {
 	u.began = false
+	u.backOK = false
 	l := Layout{Root: u.Root}
 	euid, ownerOf, statOf := os.Geteuid, fileOwner, lstatFile
 	if u.euid != nil {
@@ -526,6 +530,7 @@ func (u *Updater) wayBack(s *session, name, created string, cause error) error {
 	if err != nil {
 		return fmt.Errorf("%w; went back to %s/%s, which does not answer either: %v", failed, ReleasesDir, s.current, err)
 	}
+	u.backOK = true
 	return fmt.Errorf("%w; went back to %s/%s, which answers again", failed, ReleasesDir, s.current)
 }
 

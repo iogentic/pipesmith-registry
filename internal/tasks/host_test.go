@@ -60,6 +60,18 @@ func (f *fakeHost) RemoveWorkFiles(ctx context.Context, store string, age time.D
 	return WorkFileCounts{Removed: 4, Kept: 2}, f.record(fmt.Sprintf("work %s %s", store, age), ctx)
 }
 
+func (f *fakeHost) CleanupAll(ctx context.Context, repository string) (CleanupCounts, error) {
+	return CleanupCounts{Runs: 2, Refused: 1, Selected: 6, Removed: 3, Kept: 2, Skipped: 1}, f.record("cleanup "+repository, ctx)
+}
+
+func (f *fakeHost) Compact(ctx context.Context, store string, age time.Duration) (CompactCounts, error) {
+	return CompactCounts{Removed: 5, Kept: 2, Skipped: 1, Bytes: 2048}, f.record(fmt.Sprintf("compact %s %s", store, age), ctx)
+}
+
+func (f *fakeHost) RemoveSnapshots(ctx context.Context, repository string, keep int, age time.Duration) (SnapshotCounts, error) {
+	return SnapshotCounts{Selected: 4, Removed: 3, Kept: 1}, f.record(fmt.Sprintf("snapshots %s keep %d %s", repository, keep, age), ctx)
+}
+
 func TestHostRef(t *testing.T) {
 	ref := &HostRef{}
 	if h, err := ref.Host(); h != nil || !errors.Is(err, ErrNoHost) {
@@ -175,6 +187,19 @@ func TestBuiltKindsCallTheHost(t *testing.T) {
 			"state file copied to state-20261120T100000Z.sqlite, 4096 bytes"},
 		{task("demo-work", TypeWorkFiles, map[string]string{"blobStoreName": "local-write", "olderThanHours": "2"}), "work local-write 2h0m0s",
 			"work files: 4 removed, 2 kept"},
+		{task("demo-compact", TypeCompact, map[string]string{"blobStoreName": "local-write", "olderThanDays": "3"}), "compact local-write 72h0m0s",
+			"store compacted: 5 removed, 2048 bytes, 2 kept, 1 skipped"},
+		// the key of the old product, blobstoreName, and the default of 7 days
+		{task("demo-compact-old-key", TypeCompact, map[string]string{"blobstoreName": "demo-files"}), "compact demo-files 168h0m0s",
+			"store compacted: 5 removed, 2048 bytes, 2 kept, 1 skipped"},
+		{task("demo-cleanup", TypeCleanup, map[string]string{}), "cleanup *",
+			"cleanup policies: 2 runs, 1 refused, 6 selected, 3 removed, 2 kept, 1 skipped"},
+		{task("demo-cleanup-one", TypeCleanup, map[string]string{"repositoryName": "demo-raw"}), "cleanup demo-raw",
+			"cleanup policies: 2 runs, 1 refused, 6 selected, 3 removed, 2 kept, 1 skipped"},
+		{task("demo-snapshots", TypeRemoveSnapshots, map[string]string{"repositoryName": "demo-snapshots"}),
+			"snapshots demo-snapshots keep 1 720h0m0s", "maven snapshots: 4 selected, 3 removed, 1 kept, 0 skipped"},
+		{task("demo-snapshots-all", TypeRemoveSnapshots, map[string]string{"repositoryName": "demo-snapshots", "minimumRetained": "0",
+			"snapshotRetentionDays": "0"}), "snapshots demo-snapshots keep 0 0s", "maven snapshots: 4 selected, 3 removed, 1 kept, 0 skipped"},
 	}
 	for _, c := range cases {
 		host := &fakeHost{}
@@ -202,6 +227,14 @@ func TestPropertiesThatDisableATask(t *testing.T) {
 		task("demo-6", TypeWorkFiles, map[string]string{"blobStoreName": "local-write", "olderThanHours": "99999999"}),
 		task("demo-7", TypeBackup, map[string]string{"location": "relative/demo-secretvalue"}),
 		task("demo-8", TypeBackup, map[string]string{}),
+		task("demo-9", TypeCompact, map[string]string{}),
+		task("demo-10", TypeCompact, map[string]string{"blobStoreName": "local-write", "olderThanDays": "-5"}),
+		task("demo-11", TypeCompact, map[string]string{"blobStoreName": "local-write", "olderThanDays": "3651"}),
+		task("demo-12", TypeCompact, map[string]string{"blobStoreName": "local-write", "olderThanDays": "7.5"}),
+		task("demo-13", TypeRemoveSnapshots, map[string]string{"repositoryName": "*"}),
+		task("demo-14", TypeRemoveSnapshots, map[string]string{}),
+		task("demo-15", TypeRemoveSnapshots, map[string]string{"repositoryName": "demo-snapshots", "minimumRetained": "1001"}),
+		task("demo-16", TypeRemoveSnapshots, map[string]string{"repositoryName": "demo-snapshots", "snapshotRetentionDays": "-7"}),
 	}
 	_, _, r := setUpRegistry(t, Kinds(&HostRef{}), "")
 	if err := r.Load(cases); err != nil {

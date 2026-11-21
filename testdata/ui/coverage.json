@@ -3,9 +3,9 @@
  "sources": {
   "docs/ui/API.md": "7f0ac72b2c749335b1089bbe471985e10642f221ee98e6d7b07c7ba520508566",
   "docs/ui/INVENTORY.md": "23a7a13cb9726a64394f1ab80e3e89863a300cad78c605c00e93970fb4b41580",
-  "tools/ui_coverage.py": "2946c38f3d51fab0ffc64fd8dc181dbc0bc6af3621b9a2da38b8f5c340b93334"
+  "tools/ui_coverage.py": "88a1083f4e2af009c73254f0dd5aeb3f2ffd6f04fd128d1e960e4c2e74343f69"
  },
- "digest": "7e38a4f690560ecf1e10a1e0be954a7a6ead4ae851520c3f0093e1becc2da43c",
+ "digest": "b765356df9532d39973ecaccefc804a32400b0ef73a7ea5ed2f3af3372b59972",
  "rows": [
   {
    "id": "S01",
@@ -2115,6 +2115,10 @@
  },
  "total": 104,
  "served": {
+  "account": [
+   "POST /api/account/password",
+   "PUT /api/account"
+  ],
   "blob-stores": [
    "DELETE /service/rest/v1/blobstores/{name}",
    "GET /api/blob-stores/{name}/deleted",
@@ -2135,6 +2139,14 @@
    "GET /api/capabilities/support",
    "GET /service/rest/v1/capabilities",
    "PUT /service/rest/v1/capabilities/{id}"
+  ],
+  "cleanup-policies": [
+   "DELETE /api/cleanup-policies/{name}",
+   "GET /api/cleanup-policies",
+   "GET /api/cleanup-policies/{name}",
+   "POST /api/cleanup-policies",
+   "POST /api/cleanup-policies/preview",
+   "PUT /api/cleanup-policies/{name}"
   ],
   "content": [
    "DELETE /service/rest/v1/assets/{id}",
@@ -2230,10 +2242,20 @@
    "POST /service/rest/v1/read-only/release"
   ],
   "tasks": [
+   "DELETE /api/tasks/{id}",
+   "GET /api/task-types",
+   "GET /api/tasks/{id}",
    "GET /service/rest/v1/tasks",
    "GET /service/rest/v1/tasks/{id}",
+   "POST /api/tasks",
    "POST /service/rest/v1/tasks/{id}/run",
-   "POST /service/rest/v1/tasks/{id}/stop"
+   "POST /service/rest/v1/tasks/{id}/stop",
+   "PUT /api/tasks/{id}"
+  ],
+  "tokens": [
+   "DELETE /api/tokens/{id}",
+   "GET /api/tokens",
+   "POST /api/tokens"
   ]
  },
  "choices": [
@@ -2407,7 +2429,7 @@
   {
    "id": "K3",
    "source": "docs/ui/API.md, section Proposed Paths; internal/server route table",
-   "text": "The section lists the paths the server does not have yet, but 20 of its 36 requests are served: DELETE /api/logging/loggers/{name}, DELETE /api/session, GET /api/areas, GET /api/blob-stores/{name}/deleted, GET /api/capabilities/support, GET /api/logging/loggers, GET /api/logs, GET /api/logs/{name}, GET /api/metrics/downloads, GET /api/metrics/requests, GET /api/session, POST /api/ldap/clear-cache, POST /api/ldap/verify-connection, POST /api/ldap/verify-login, POST /api/ldap/verify-user-mapping, POST /api/logging/reset, POST /api/routing-rules/preview, POST /api/routing-rules/test, POST /api/session, PUT /api/logging/loggers/{name}."
+   "text": "The section lists the paths the server does not have yet, but 36 of its 36 requests are served: DELETE /api/cleanup-policies/{name}, DELETE /api/logging/loggers/{name}, DELETE /api/session, DELETE /api/tasks/{id}, DELETE /api/tokens/{id}, GET /api/areas, GET /api/blob-stores/{name}/deleted, GET /api/capabilities/support, GET /api/cleanup-policies, GET /api/cleanup-policies/{name}, GET /api/logging/loggers, GET /api/logs, GET /api/logs/{name}, GET /api/metrics/downloads, GET /api/metrics/requests, GET /api/session, GET /api/task-types, GET /api/tasks/{id}, GET /api/tokens, POST /api/account/password, POST /api/cleanup-policies, POST /api/cleanup-policies/preview, POST /api/ldap/clear-cache, POST /api/ldap/verify-connection, POST /api/ldap/verify-login, POST /api/ldap/verify-user-mapping, POST /api/logging/reset, POST /api/routing-rules/preview, POST /api/routing-rules/test, POST /api/session, POST /api/tasks, POST /api/tokens, PUT /api/account, PUT /api/cleanup-policies/{name}, PUT /api/logging/loggers/{name}, PUT /api/tasks/{id}."
   },
   {
    "id": "K4",

@@ -54,7 +54,11 @@ var standIns = map[string][]string{
 	`internal/server/stores.go|path`: {`^/service/rest/v1/repositories/([^/]+)/([^/]+)/([^/]+)$`,
 		`^/service/rest/v1/blobstores/file/([^/]+)$`, `^/service/rest/v1/repositories/([^/]+)/rebuild\-index$`},
 	`internal/server/system.go|path`: {`^/service/rest/v1/routing\-rules/([^/]+)$`, `^/api/routing\-rules/preview$`,
-		`^/service/rest/v1/tasks/([^/]+)/run$`, `^/service/rest/v1/tasks/([^/]+)$`},
+		`^/service/rest/v1/tasks/([^/]+)/run$`, `^/service/rest/v1/tasks/([^/]+)$`, `^/api/task\-types$`, `^/api/tasks/([^/]+)$`},
+	// tokenAPIRoute and accountRoute: exact() of the tokens and own account
+	// paths (leg 6-api).
+	`internal/server/tokens_api.go|path`: {`^/api/tokens$`, `^/api/tokens/([^/]+)$`},
+	`internal/server/account.go|path`:    {`^/api/account$`, `^/api/account/password$`},
 	// freezeRoute: one of the three names of the read only mode.
 	`internal/server/system.go|restBase+"/read-only/"+name`: {`^/service/rest/v1/read\-only/freeze$`,
 		`^/service/rest/v1/read\-only/force\-release$`},

@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -51,6 +52,8 @@ type HistoryEntry struct {
 	From   string `json:"from"`
 	To     string `json:"to"`
 	Reason string `json:"reason"`
+	// Auto marks a line of a scheduled run of the timer.
+	Auto bool `json:"auto,omitempty"`
 }
 
 func newEntry(action, result, from, to, reason string) HistoryEntry {
@@ -64,6 +67,7 @@ func newEntry(action, result, from, to, reason string) HistoryEntry {
 // record appends e to releases/history.jsonl. A failed write does not fail
 // the update; it prints one warning.
 func (u *Updater) record(s *session, e HistoryEntry) {
+	e.Auto = u.Auto
 	if err := appendHistory(s.l.Releases(), e); err != nil {
 		u.step("warning: %s/%s: %v", ReleasesDir, HistoryFile, err)
 	}
@@ -302,4 +306,33 @@ func LastSwitch(dir string) (*HistoryEntry, error) {
 		}
 	}
 	return last, sc.Err()
+}
+
+// History is up to n lines of history.jsonl in dir, newest first; nil when
+// there is no file.
+func History(dir string, n int) ([]HistoryEntry, error) {
+	data, err := tailOf(filepath.Join(dir, HistoryFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var all []HistoryEntry
+	sc := bufio.NewScanner(bytes.NewReader(data))
+	sc.Buffer(make([]byte, 64<<10), maxHistory)
+	for sc.Scan() {
+		var e HistoryEntry
+		if json.Unmarshal(sc.Bytes(), &e) == nil && e.ID != "" {
+			all = append(all, e)
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return nil, err
+	}
+	slices.Reverse(all)
+	if len(all) > n {
+		all = all[:n]
+	}
+	return all, nil
 }

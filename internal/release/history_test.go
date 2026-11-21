@@ -75,12 +75,20 @@ func TestHistoryLines(t *testing.T) {
 			r.u.HealthTimeout = 200 * time.Millisecond
 			return r.u.Update(r.release(versionScript("0.2.0")), false)
 		}, "back", "failed", "0.2.0", "went back to releases/0.1.0, which answers again"},
+		"way back to a release that does not answer": {func(r *rig) error {
+			r.svc.unhealthy["0.2.0"], r.svc.unhealthy["0.1.0"] = true, true
+			r.u.HealthTimeout = 200 * time.Millisecond
+			return r.u.Update(r.release(versionScript("0.2.0")), false)
+		}, "back", "failed", "0.2.0", "went back to releases/0.1.0, which does not answer either"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			r := newRig(t, "0.1.0")
 			err := c.run(r)
 			if (err == nil) != (c.result == "ok") {
 				t.Fatalf("run: %v", err)
+			}
+			if want := strings.Contains(c.reason, "which answers again"); r.u.WentBack() != want {
+				t.Fatalf("WentBack %v, want %v", r.u.WentBack(), want)
 			}
 			history := jsonLines(t, filepath.Join(r.l.Releases(), HistoryFile))
 			if len(history) != 1 {

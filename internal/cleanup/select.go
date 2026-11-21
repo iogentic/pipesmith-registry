@@ -24,6 +24,7 @@ const secondsPerDay = 24 * 60 * 60
 type Asset struct {
 	Repository string // assets.repo
 	Path       string // assets.path
+	Store      string // assets.store, the store of the winning blob
 	Group      string // components.namespace, empty for none
 	Name       string // components.name
 	Version    string // components.version, empty for none
@@ -125,7 +126,12 @@ func Select(criteria map[string]any, in Input) Selection {
 // PreviewOf is the preview of the criteria over in: the assets Select
 // gives, in its order, the first PreviewLimit of them as items.
 func PreviewOf(criteria map[string]any, in Input) Preview {
-	selected := Select(criteria, in).Assets
+	return PreviewList(Select(criteria, in).Assets)
+}
+
+// PreviewList is the preview of a list of assets in its order: the first
+// PreviewLimit as items, the count of all, and whether there are more.
+func PreviewList(selected []Asset) Preview {
 	shown := selected[:min(len(selected), PreviewLimit)]
 	items := make([]Item, len(shown))
 	for i, a := range shown {

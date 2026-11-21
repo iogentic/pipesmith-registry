@@ -30,11 +30,11 @@ func TestTwoBodiesTogetherStopAtTheFloor(t *testing.T) {
 	}
 
 	t.Run("without a length", func(t *testing.T) {
-		first, err := w.srv.checkSpace(-1, floor)
+		first, err := w.srv.checkSpace("local-write", -1, floor)
 		if err != nil {
 			t.Fatal(err)
 		}
-		second, err := w.srv.checkSpace(-1, floor)
+		second, err := w.srv.checkSpace("local-write", -1, floor)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -45,7 +45,7 @@ func TestTwoBodiesTogetherStopAtTheFloor(t *testing.T) {
 		noSpace(t, "the second body beside the first", err)
 		first.release()
 		second.release()
-		third, err := w.srv.checkSpace(-1, floor)
+		third, err := w.srv.checkSpace("local-write", -1, floor)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,14 +56,14 @@ func TestTwoBodiesTogetherStopAtTheFloor(t *testing.T) {
 	})
 
 	t.Run("with a length", func(t *testing.T) {
-		first, err := w.srv.checkSpace(room*3/4, floor)
+		first, err := w.srv.checkSpace("local-write", room*3/4, floor)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = w.srv.checkSpace(room*3/4, floor)
+		_, err = w.srv.checkSpace("local-write", room*3/4, floor)
 		noSpace(t, "the second body beside the first", err)
 		first.release()
-		second, err := w.srv.checkSpace(room*3/4, floor)
+		second, err := w.srv.checkSpace("local-write", room*3/4, floor)
 		if err != nil {
 			t.Fatalf("the second body after the first ended: %v", err)
 		}

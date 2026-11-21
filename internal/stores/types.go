@@ -34,3 +34,10 @@ type Store interface {
 	// root or is not a regular file.
 	Open(location string) (*os.File, error)
 }
+
+// MarkedWalker is a store that gives its blobs with the delete mark to
+// marked while it walks its live entries, as BlobStore.Walk does; a scan
+// counts them (ruling SR14 of leg 6-stores-b).
+type MarkedWalker interface {
+	Walk(counts *ScanCounts, yield func(Entry) error, marked func(Marked) error) error
+}

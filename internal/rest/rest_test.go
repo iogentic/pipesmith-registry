@@ -205,8 +205,9 @@ func TestBlobStores(t *testing.T) {
 		counts[s.Store] = [2]int64{s.Files, s.Bytes}
 	}
 	for _, item := range items {
+		// the keys of GenericBlobStoreApiResponse and writable of ruling SR9
 		if got := keys(item); !reflect.DeepEqual(got, []string{"availableSpaceInBytes", "blobCount", "name", "softQuota", "totalSizeInBytes",
-			"type", "unavailable"}) {
+			"type", "unavailable", "writable"}) {
 			t.Fatalf("keys %v", got)
 		}
 		name := item["name"].(string)

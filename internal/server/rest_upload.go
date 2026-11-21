@@ -176,7 +176,7 @@ func (s *Server) uploadComponent(w *recorder, req *request, _ []string) error {
 		s.message(w, req, http.StatusBadRequest, text)
 		return nil
 	}
-	settings, err := s.writeSettingsOf(repo)
+	settings, _, err := s.writeSettingsOf(repo)
 	if err != nil {
 		return s.restWriteFailed(w, req, err)
 	}
@@ -188,7 +188,7 @@ func (s *Server) uploadComponent(w *recorder, req *request, _ []string) error {
 		s.message(w, req, http.StatusUnsupportedMediaType, "an upload is a multipart/form-data body with its boundary")
 		return nil
 	}
-	room, err := s.checkSpace(max(req.r.ContentLength, 0), settings.FreeSpaceFloor)
+	room, err := s.checkSpace(settings.WriteStore, max(req.r.ContentLength, 0), settings.FreeSpaceFloor)
 	if err != nil {
 		return s.restWriteFailed(w, req, err)
 	}
@@ -309,7 +309,7 @@ func (u *upload) check(files []uploadFile) error {
 		}
 		total += size
 	}
-	room, err := u.s.checkSpace(total, u.settings.FreeSpaceFloor)
+	room, err := u.s.checkSpace(u.settings.WriteStore, total, u.settings.FreeSpaceFloor)
 	if err != nil {
 		return u.failed("*", err)
 	}

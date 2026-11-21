@@ -111,6 +111,10 @@ type Registry struct {
 
 	log *slog.Logger
 
+	// change orders the creates, saves and removals against the runs on
+	// request: a run holds it for reading while it starts
+	change sync.RWMutex
+
 	mu           sync.Mutex
 	tasks        map[string]*registered
 	paused       func() (bool, uint64)
@@ -170,14 +174,50 @@ func ScheduleOf(s model.TaskSchedule) Schedule {
 // registered once.
 func (r *Registry) Load(list []model.Task) error {
 	for _, t := range list {
-		if err := r.add(t); err != nil {
+		if err := r.add(t, false); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *Registry) add(t model.Task) error {
+// add registers t. committed: the store holds t already, so a closed
+// scheduler is no error (stored).
+func (r *Registry) add(t model.Task, committed bool) error {
+	e, run := r.build(t)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.tasks[t.ID]; ok {
+		return fmt.Errorf("task %q: %w", t.ID, ErrDuplicate)
+	}
+	if e.inSched {
+		err := r.s.Add(r.task(e, run))
+		if committed {
+			err = r.stored(t.ID, err)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	r.tasks[t.ID] = e
+	return nil
+}
+
+// stored is the answer of a change of the scheduler after the change of
+// the task of id is stored: ErrClosed, the scheduler of a shutdown, is
+// logged and no error, since the store holds the change and nothing runs
+// any more.
+func (r *Registry) stored(id string, err error) error {
+	if !errors.Is(err, ErrClosed) {
+		return err
+	}
+	r.log.Warn(fmt.Sprintf("the change of the task %s is stored; the scheduler is closed, and the next start of the server loads it", id), "logger", loggerName)
+	return nil
+}
+
+// build is the entry of a stored task and its work. inSched tells whether
+// the scheduler takes the schedule.
+func (r *Registry) build(t model.Task) (*registered, Func) {
 	e := &registered{task: t, schedule: ScheduleOf(t.Schedule)}
 	if r.secrets != nil {
 		e.secrets = slices.Clone(r.secrets(t))
@@ -210,31 +250,104 @@ func (r *Registry) add(t model.Task) error {
 		}
 	}
 	e.reason = r.clean(e.reason, e.secrets)
+	e.inSched = scheduleErr == nil
+	return e, run
+}
+
+// task is the task of the scheduler of an entry.
+func (r *Registry) task(e *registered, run Func) Task {
+	clean := r.cleaning(e.secrets)
+	return Task{ID: e.task.ID, Schedule: e.schedule, Enabled: e.enabled, Run: func(ctx context.Context) (message string, err error) {
+		// a panic is a failed run whose text is cleaned like any other
+		defer func() {
+			if p := recover(); p != nil {
+				message, err = "", errors.New(clean(fmt.Sprintf("the task panicked: %v", p)))
+			}
+		}()
+		if message, err = run(ctx); err != nil {
+			return "", errors.New(clean(err.Error()))
+		}
+		return clean(message), nil
+	}}
+}
+
+// Create registers the task that commit stores, once commit returns it
+// without an error (ruling AP5). The task waits for its first instant at
+// once. A scheduler closed by a shutdown is logged, and the stored create
+// is no error.
+func (r *Registry) Create(commit func() (model.Task, error)) error {
+	r.change.Lock()
+	defer r.change.Unlock()
+	t, err := commit()
+	if err != nil {
+		return err
+	}
+	return r.add(t, true)
+}
+
+// Save replaces the registered task of the id with the task that commit
+// stores, once commit returns it without an error (ruling AP5). A run that
+// is going keeps its work; the saved task applies from its next run. A task
+// that is not registered is refused with ErrUnknownTask before commit. A
+// scheduler closed by a shutdown is logged, and the stored save is no
+// error.
+func (r *Registry) Save(id string, commit func() (model.Task, error)) error {
+	r.change.Lock()
+	defer r.change.Unlock()
+	r.mu.Lock()
+	old := r.tasks[id]
+	r.mu.Unlock()
+	if old == nil {
+		return fmt.Errorf("task %q: %w", id, ErrUnknownTask)
+	}
+	t, err := commit()
+	if err != nil {
+		return err
+	}
+	if t.ID != id {
+		return fmt.Errorf("the save of the task %s gives the task %s", id, t.ID)
+	}
+	e, run := r.build(t)
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if _, ok := r.tasks[t.ID]; ok {
-		return fmt.Errorf("task %q: %w", t.ID, ErrDuplicate)
-	}
-	if scheduleErr == nil {
-		clean := r.cleaning(e.secrets)
-		err := r.s.Add(Task{ID: t.ID, Schedule: e.schedule, Enabled: e.enabled, Run: func(ctx context.Context) (message string, err error) {
-			// a panic is a failed run whose text is cleaned like any other
-			defer func() {
-				if p := recover(); p != nil {
-					message, err = "", errors.New(clean(fmt.Sprintf("the task panicked: %v", p)))
-				}
-			}()
-			if message, err = run(ctx); err != nil {
-				return "", errors.New(clean(err.Error()))
-			}
-			return clean(message), nil
-		}})
-		if err != nil {
-			return err
-		}
+	switch {
+	case e.inSched && old.inSched:
+		err = r.s.Replace(r.task(e, run))
+	case e.inSched:
+		err = r.s.Add(r.task(e, run))
+	case old.inSched:
+		// the scheduler keeps the task, disabled, under its last schedule
+		err = r.s.Replace(Task{ID: id, Schedule: old.schedule, Run: notBuilt(t.TypeID)})
 		e.inSched = true
 	}
-	r.tasks[t.ID] = e
+	r.tasks[id] = e
+	return r.stored(id, err)
+}
+
+// Remove takes the registered task of the id away once commit returns nil
+// (ruling AP5). A running task is refused with ErrRunning and commit is not
+// called; no run of the task starts while commit runs or after it.
+func (r *Registry) Remove(id string, commit func() error) error {
+	r.change.Lock()
+	defer r.change.Unlock()
+	r.mu.Lock()
+	e := r.tasks[id]
+	r.mu.Unlock()
+	if e == nil {
+		return fmt.Errorf("task %q: %w", id, ErrUnknownTask)
+	}
+	var err error
+	if e.inSched {
+		err = r.s.Remove(id, commit)
+	} else {
+		err = commit()
+	}
+	if err != nil {
+		return err
+	}
+	r.mu.Lock()
+	delete(r.tasks, id)
+	r.mu.Unlock()
 	return nil
 }
 
@@ -298,6 +411,8 @@ func (r *Registry) Status(id string) (Status, bool) {
 // Run starts a run of the task now. A disabled task is refused with a
 // DisabledError; the other refusals are those of Scheduler.Run.
 func (r *Registry) Run(id string) error {
+	r.change.RLock()
+	defer r.change.RUnlock()
 	r.mu.Lock()
 	e := r.tasks[id]
 	r.mu.Unlock()

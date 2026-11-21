@@ -43,7 +43,11 @@ type AssetDetails interface {
 // Store is one store the read path attaches.
 type Store struct {
 	Name, Kind, Root string
-	Available        bool
+	// Available is false when the store looks unmounted: its folder, or
+	// content/ of a blob store, is missing, unreadable or empty
+	// (stores.LooksUnmounted). Readable is true when its root folder opens and
+	// lists (SR11): an empty store is readable.
+	Available, Readable bool
 }
 
 // Env is what one answer is built from.
@@ -75,6 +79,9 @@ type Env struct {
 	// StoresRoot is the folder of the stores created over REST,
 	// <data>/stores (admin.StoresDir); empty for none.
 	StoresRoot string
+	// Attached names the stores config.json attaches; none of them is a
+	// write store (SR1).
+	Attached []string
 }
 
 // Answer is a JSON answer of the old product's shape.

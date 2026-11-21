@@ -27,6 +27,16 @@ type Host interface {
 	// RemoveWorkFiles removes the work files of a store of this server
 	// older than age that no running upload holds (ruling KN7).
 	RemoveWorkFiles(ctx context.Context, store string, age time.Duration) (WorkFileCounts, error)
+	// CleanupAll runs every cleanup policy over the repositories whose
+	// attributes name it, all repositories for "*" or one (ruling CL1).
+	CleanupAll(ctx context.Context, repository string) (CleanupCounts, error)
+	// Compact removes the blobs of a store of this server whose delete mark
+	// is older than age (rulings CL4 and CL5).
+	Compact(ctx context.Context, store string, age time.Duration) (CompactCounts, error)
+	// RemoveSnapshots removes the snapshot builds of a hosted maven2
+	// repository older than age beyond the newest keep of each snapshot
+	// version, then rebuilds the metadata it touched (ruling CL7).
+	RemoveSnapshots(ctx context.Context, repository string, keep int, age time.Duration) (SnapshotCounts, error)
 }
 
 // MavenScope is the part of a repository a maven metadata rebuild takes:
@@ -51,6 +61,22 @@ type BackupFile struct {
 
 // WorkFileCounts are the work files a removal removed and kept.
 type WorkFileCounts struct{ Removed, Kept int }
+
+// CleanupCounts are the runs of policy over repository a cleanup made and
+// refused, and the assets they selected, removed, kept and skipped (ruling
+// CL10).
+type CleanupCounts struct{ Runs, Refused, Selected, Removed, Kept, Skipped int }
+
+// CompactCounts are the blobs a compaction removed with their bytes, kept
+// because their mark is young, and skipped because a write holds them.
+type CompactCounts struct {
+	Removed, Kept, Skipped int
+	Bytes                  int64
+}
+
+// SnapshotCounts are the files of snapshot builds a removal selected,
+// removed, kept because a store of the old product holds them, and skipped.
+type SnapshotCounts struct{ Selected, Removed, Kept, Skipped int }
 
 // Failure is an error of a host whose text a run message shows: a fixed
 // text with counts, no path, no record name and no text of the system

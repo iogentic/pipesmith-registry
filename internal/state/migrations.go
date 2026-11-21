@@ -8,7 +8,7 @@ import (
 
 // SchemaVersion is the version of the last step, the value of the schema row
 // of a file this binary writes.
-const SchemaVersion = 5
+const SchemaVersion = 6
 
 // steps are the schema steps of state.sqlite, numbered from 1. Schema 1 is
 // the one of releases 0.1.0 and 0.1.1 and never changes: a further table or
@@ -23,6 +23,8 @@ var steps = []migrate.Step{
 	{Version: 4, Apply: schemaImportedKeys},
 	// schema5.go of phase 6: the tables of the administration and task_runs.
 	{Version: 5, Apply: schema5},
+	// schema6.go of phase 6: the name of a token.
+	{Version: 6, Apply: schema6},
 }
 
 // schema1 creates the tables of schema 1 beside the meta table of the runner.

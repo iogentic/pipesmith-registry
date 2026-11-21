@@ -72,16 +72,16 @@ var systemRoutes = []route{
 	freezeRoute("freeze", (*adminrules.ReadOnlyMode).Freeze),
 	freezeRoute("release", (*adminrules.ReadOnlyMode).Release),
 	freezeRoute("force-release", (*adminrules.ReadOnlyMode).ForceRelease),
-	taskRoute("GET", tasksBase, "nexus:tasks:read", func(s *Server, _ []string) (rest.Answer, error) {
+	taskRoute("GET", tasksBase, "nexus:tasks:read", func(s *Server, _ *request, _ []string) (rest.Answer, error) {
 		return rest.Tasks(s.tasks, s.runs)
 	}),
-	taskRoute("GET", tasksBase+"/"+segment, "nexus:tasks:read", func(s *Server, m []string) (rest.Answer, error) {
+	taskRoute("GET", tasksBase+"/"+segment, "nexus:tasks:read", func(s *Server, _ *request, m []string) (rest.Answer, error) {
 		return rest.Task(s.tasks, s.runs, m[1])
 	}),
-	taskRoute("POST", tasksBase+"/"+segment+"/run", "nexus:tasks:start", func(s *Server, m []string) (rest.Answer, error) {
+	taskRoute("POST", tasksBase+"/"+segment+"/run", "nexus:tasks:start", func(s *Server, _ *request, m []string) (rest.Answer, error) {
 		return rest.RunTask(s.identity, s.tasks, m[1])
 	}),
-	taskRoute("POST", tasksBase+"/"+segment+"/stop", "nexus:tasks:stop", func(s *Server, m []string) (rest.Answer, error) {
+	taskRoute("POST", tasksBase+"/"+segment+"/stop", "nexus:tasks:stop", func(s *Server, _ *request, m []string) (rest.Answer, error) {
 		return rest.StopTask(s.identity, s.tasks, m[1])
 	}),
 }
@@ -149,6 +149,9 @@ func (s *Server) systemInformation(w *recorder, req *request, _ []string) error 
 // startTasks starts the scheduler of the stored tasks, once the server is
 // built and before it answers.
 func (s *Server) startTasks() error {
+	if s.sec != nil {
+		s.startReleaseChecks()
+	}
 	if s.tasks == nil {
 		return nil
 	}
@@ -162,13 +165,13 @@ func (s *Server) startTasks() error {
 // taskRoute is a request of the tasks with the permission the contract
 // names. A server without a registry, or without the identity store whose
 // hook a run and a stop end in, answers 503.
-func taskRoute(method, path, permission string, build func(s *Server, match []string) (rest.Answer, error)) route {
+func taskRoute(method, path, permission string, build func(s *Server, req *request, match []string) (rest.Answer, error)) route {
 	return entry(exact(path), []string{method}, perm(permission), func(s *Server, w *recorder, req *request, match []string) error {
 		if s.tasks == nil || s.identity == nil {
 			s.message(w, req, http.StatusServiceUnavailable, tasksUnavailable)
 			return nil
 		}
-		a, err := build(s, match)
+		a, err := build(s, req, match)
 		if err != nil {
 			return err
 		}

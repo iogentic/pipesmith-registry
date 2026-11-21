@@ -476,3 +476,18 @@ table.data thead th.resizable { position: relative; padding-right: calc(var(--s4
   .col-resize, .table-tools .col-reset { display: none; }
   table.data.sized { table-layout: auto; }
 }
+
+/* release notes of the screen Updates (markdown.js): text only, headings below the panel heading */
+.release-notes { overflow-wrap: anywhere; }
+.release-notes > * + * { margin-top: var(--s2); }
+.release-notes h3, .release-notes h4 { margin: var(--s4) 0 var(--s2); font-size: var(--size-h3); }
+.release-notes h4 { font-size: var(--font-size); }
+.release-notes ul, .release-notes ol { margin: 0; padding-left: var(--s5); }
+.release-notes li + li { margin-top: var(--s1); }
+.release-notes blockquote { margin: 0; padding-left: var(--s3); border-left: 3px solid var(--border); color: var(--text-muted); }
+.release-notes code { background: var(--surface-2); border-radius: var(--radius-small); padding: 0 4px; }
+.release-notes pre code { background: transparent; padding: 0; }
+.release-notes hr { border: 0; border-top: 1px solid var(--border); }
+details.release { border: 1px solid var(--border); border-radius: var(--radius-small); padding: var(--s2) var(--s3); }
+details.release > summary { cursor: pointer; font-weight: 560; }
+details.release[open] > summary { margin-bottom: var(--s3); }

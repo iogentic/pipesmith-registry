@@ -138,7 +138,16 @@ func connect(path string, steps []migrate.Step) (c *Catalog, err error) {
 		return nil, err
 	}
 	c.readers.SetMaxIdleConns(readerPool)
-	if _, err := migrate.Run(c.writer, path, steps, migrate.Options{Kind: "catalog file", Create: true, CopyWhen: migrate.CopyRule(migrate.FreeSpace)}); err != nil {
+	res, err := migrate.Run(c.writer, path, steps, migrate.Options{Kind: "catalog file", Create: true, CopyWhen: migrate.CopyRule(migrate.FreeSpace)})
+	// a file built new, or migrated from before the step of the build time,
+	// takes the time now (ruling CL3 as the review of leg 6-cleanup set it)
+	if err == nil && res.From < builtStep && steps[len(steps)-1].Version >= builtStep {
+		err = c.write(func(tx *sql.Tx) error {
+			_, err := tx.ExecContext(bg, "INSERT INTO facts VALUES ('built_ms', ?) ON CONFLICT (key) DO NOTHING", buildClock().UnixMilli())
+			return err
+		})
+	}
+	if err != nil {
 		_ = c.Close() // cleanup; the migration error is returned
 		return nil, err
 	}

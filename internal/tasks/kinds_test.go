@@ -133,13 +133,15 @@ func TestKindsCoverTheFixture(t *testing.T) {
 	}
 }
 
-// KN1: the deleting kinds wait for leg 6-cleanup; KN2: npm metadata and the
-// docker manifest removal are disabled; KN4: the catalog rebuild and the
-// recount are the rescan.
+// Leg 6-cleanup builds the deleting kinds (ruling CL8): the class of
+// unused maven2 snapshots is the snapshot removal, the scheduling of
+// compaction is the compaction kind, and the removal of unused components
+// waits for leg 6-cleanup-b; KN2: npm metadata and the docker manifest
+// removal are disabled; KN4: the catalog rebuild and the recount are the
+// rescan.
 func TestKindTreatments(t *testing.T) {
-	for id, leg := range map[string]string{"blobstore.compact": "6-cleanup", "repository.cleanup": "6-cleanup",
-		"repository.maven.remove-snapshots": "6-cleanup"} {
-		if r, ok := KindRowOf(id); !ok || r.Treatment != TreatmentLater || r.Leg != leg {
+	for _, id := range []string{TypeCompact, TypeCleanup, TypeRemoveSnapshots} {
+		if r, ok := KindRowOf(id); !ok || r.Treatment != TreatmentBuild || r.Leg != "" || r.Own {
 			t.Errorf("%s %+v", id, r)
 		}
 	}
@@ -148,10 +150,15 @@ func TestKindTreatments(t *testing.T) {
 	for _, c := range classes {
 		byClass[c.Class] = c
 	}
-	for _, class := range []string{"removal of unused maven2 snapshots", "removal of unused components", "compaction scheduling by expiry"} {
-		if c := byClass[class]; c.Treatment != TreatmentLater || c.Leg != "6-cleanup" {
+	for class, by := range map[string]string{"removal of unused maven2 snapshots": TypeRemoveSnapshots,
+		"compaction scheduling by expiry": TypeCompact} {
+		if c := byClass[class]; c.Treatment != TreatmentReplaced || c.ReplacedBy != by {
 			t.Errorf("%s %+v", class, c)
 		}
+	}
+	if c := byClass["removal of unused components"]; c.Treatment != TreatmentLater || c.Leg != "6-cleanup-b" ||
+		c.Reason != "the owner has to give its rule" {
+		t.Errorf("unused components %+v", c)
 	}
 	for _, class := range []string{"rebuild of npm metadata", "removal of unused docker manifests and layers"} {
 		if c := byClass[class]; c.Treatment != TreatmentDisabled || c.Reason != "not built in this release" {
@@ -161,6 +168,11 @@ func TestKindTreatments(t *testing.T) {
 	for _, class := range []string{"rebuild of the catalog, which replaces the search rebuild", "recount of a store"} {
 		if c := byClass[class]; c.Treatment != TreatmentReplaced || c.ReplacedBy != TypeRescan {
 			t.Errorf("%s %+v", class, c)
+		}
+	}
+	for _, r := range append(slices.Clone(classes), func() []KindRow { types, _ := KindRows(); return types }()...) {
+		if r.Leg == "6-cleanup" {
+			t.Errorf("a row still waits for leg 6-cleanup: %+v", r)
 		}
 	}
 }
@@ -173,16 +185,21 @@ func TestTypeList(t *testing.T) {
 	for _, tt := range list {
 		ids = append(ids, tt.ID)
 	}
-	want := []string{TypeBackup, TypeMavenMetadata, TypeRescan, TypeUploadPurge, TypeWorkFiles}
+	want := []string{TypeCompact, TypeBackup, TypeCleanup, TypeRemoveSnapshots, TypeMavenMetadata, TypeRescan, TypeUploadPurge, TypeWorkFiles}
 	if !slices.Equal(ids, want) {
 		t.Fatalf("types %v, want %v", ids, want)
 	}
-	backup := list[0]
+	compact := list[0]
+	if len(compact.Fields) != 2 || !reflect.DeepEqual(compact.Fields[1], TaskField{ID: "olderThanDays", Label: "Older than (days)",
+		Type: PropertyNumber, Required: true, Default: float64(7)}) {
+		t.Fatalf("%+v", compact)
+	}
+	backup := list[1]
 	if len(backup.Fields) != 1 || !reflect.DeepEqual(backup.Fields[0], TaskField{ID: "location", Label: "Directory", Type: PropertyString, Required: true}) {
 		t.Fatalf("%+v", backup)
 	}
-	list[0].Fields[0].ID = "changed"
-	if TypeList()[0].Fields[0].ID != "location" {
+	list[1].Fields[0].ID = "changed"
+	if TypeList()[1].Fields[0].ID != "location" {
 		t.Fatal("TypeList shares its fields")
 	}
 }
@@ -192,8 +209,8 @@ func TestTypeList(t *testing.T) {
 // without a kind is not built (ruling KN1, KN3).
 func TestReasonOfARow(t *testing.T) {
 	for id, want := range map[string]string{
-		"blobstore.compact":   "the task type blobstore.compact is not built yet; leg 6-cleanup builds it",
-		"repository.cleanup":  "the task type repository.cleanup is not built yet; leg 6-cleanup builds it",
+		"blobstore.compact":   "the task type blobstore.compact is not built",
+		"repository.cleanup":  "the task type repository.cleanup is not built",
 		"demo.unknown":        "the task type demo.unknown is not known",
 		TypeBackup:            "the task type db.backup is not built",
 		"":                    "the task type  is not known",

@@ -55,7 +55,7 @@ export async function render(ctx) {
       notice(
         "warning",
         unavailable.length === 1 ? "One store is unavailable" : `${unavailable.length} stores are unavailable`,
-        `The server cannot read the folder of ${unavailable.length === 1 ? "the store" : "the stores"} ${names(unavailable)}. Repositories that use ${unavailable.length === 1 ? "it" : "them"} answer with errors until the folder is back.`
+        `The server cannot read the folder of ${unavailable.length === 1 ? "the store" : "the stores"} ${names(unavailable)}, or the folder is empty while the index holds files of it, as when its disk is not mounted. Repositories that use ${unavailable.length === 1 ? "it" : "them"} answer with errors until the folder is back.`
       )
     );
   }

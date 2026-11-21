@@ -242,7 +242,7 @@ func missing(t *testing.T, names ...string) {
 	}
 }
 
-// A fresh file has schema 4 with the tables of every step and no search
+// A fresh file has schema 6 with the tables of every step and no search
 // table, mode 0600, WAL mode, foreign keys on and one writer connection.
 func TestFreshFileHasTheLastSchema(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "data")
@@ -257,8 +257,8 @@ func TestFreshFileHasTheLastSchema(t *testing.T) {
 	if perm := info.Mode().Perm(); perm != 0o600 {
 		t.Fatalf("mode %o, want 600: the file holds the names and addresses of uploaders", perm)
 	}
-	if got := scalar[int](t, c.writer, "SELECT value FROM meta WHERE key = 'schema'"); got != SchemaVersion || SchemaVersion != 4 {
-		t.Fatalf("schema %d, SchemaVersion %d, want 4", got, SchemaVersion)
+	if got := scalar[int](t, c.writer, "SELECT value FROM meta WHERE key = 'schema'"); got != SchemaVersion || SchemaVersion != 6 {
+		t.Fatalf("schema %d, SchemaVersion %d, want 6", got, SchemaVersion)
 	}
 	rows, err := c.readers.Query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
 	if err != nil {
@@ -275,7 +275,7 @@ func TestFreshFileHasTheLastSchema(t *testing.T) {
 	if err := rows.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"assets", "blobs", "components", "downloads", "imported_assets", "meta", "proxy_state", "request_days", "scans"}; !slices.Equal(tables, want) {
+	if want := []string{"assets", "blobs", "components", "downloads", "facts", "imported_assets", "meta", "proxy_state", "request_days", "scans", "store_marks"}; !slices.Equal(tables, want) {
 		t.Fatalf("tables %v, want %v", tables, want)
 	}
 	if mode := scalar[string](t, c.writer, "PRAGMA journal_mode"); mode != "wal" {

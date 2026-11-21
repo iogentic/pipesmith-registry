@@ -35,6 +35,9 @@ func (s *stage) apiURL(path string) string {
 }
 
 func (s *stage) fileURL(version, file string) string {
+	if s.set.GitHub != nil {
+		return s.assets[version][file]
+	}
 	return s.apiURL("/api/packages/" + url.PathEscape(s.set.Owner) + "/generic/" + Package + "/v" + version + "/" + file)
 }
 
@@ -99,6 +102,10 @@ func hasNext(h http.Header) bool {
 // complete reports whether cosign.pub of version name answers 200. Its body
 // is never read.
 func (f *Fetcher) complete(s *stage, name string) (bool, error) {
+	if s.set.GitHub != nil {
+		ok, _ := f.completeGitHub(s, name)
+		return ok, nil
+	}
 	status, err := s.c.status(s.fileURL(name, release.PublicKeyFile))
 	if err != nil {
 		return false, fmt.Errorf("%w: %s of v%s: %w", ErrList, release.PublicKeyFile, name, err)

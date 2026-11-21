@@ -1,15 +1,33 @@
 {
- "note": "The task kinds of docs/plans/phase-6-administration.md, section Task Kinds, each with its treatment (leg 6-kinds, rulings KN1 to KN4). types are the rows with a type id: the four ids of the content fixture (testdata/export/fixture-content/qrtz_job_details.jsonl) and the ids of this server, marked own; a built type carries its fields in the shape of the task type list of the contract. classes are the kinds without a known id, with the number of kinds of the capture each holds; their ids are an owner point. A stored task of a type not listed here stays disabled as not known. internal/tasks holds a Go copy, and a test fails when the two differ.",
+ "note": "The task kinds of docs/plans/phase-6-administration.md, section Task Kinds, each with its treatment (legs 6-kinds and 6-cleanup, rulings KN1 to KN4 and CL8). types are the rows with a type id: the four ids of the content fixture (testdata/export/fixture-content/qrtz_job_details.jsonl) and the ids of this server, marked own; a built type carries its fields in the shape of the task type list of the contract. classes are the kinds without a known id, with the number of kinds of the capture each holds; their ids are an owner point. A stored task of a type not listed here stays disabled as not known. internal/tasks holds a Go copy, and a test fails when the two differ.",
  "types": [
-  {"id": "blobstore.compact", "class": "compaction of a store", "treatment": "later", "leg": "6-cleanup"},
+  {"id": "blobstore.compact", "class": "compaction of a store", "treatment": "build",
+   "type": {"id": "blobstore.compact", "name": "Compact blob store",
+    "description": "Removes the blobs of a store of this server whose delete mark is older than the given days, with their files.",
+    "fields": [
+     {"id": "blobStoreName", "label": "Blob store", "type": "blobstore", "required": true, "default": null},
+     {"id": "olderThanDays", "label": "Older than (days)", "type": "number", "required": true, "default": 7}
+    ]}},
   {"id": "db.backup", "class": "backup of state.sqlite", "treatment": "build",
    "type": {"id": "db.backup", "name": "Back up the state file",
     "description": "Copies state.sqlite while the server runs into a new file in a directory outside the data directory.",
     "fields": [
      {"id": "location", "label": "Directory", "type": "string", "required": true, "default": null}
     ]}},
-  {"id": "repository.cleanup", "class": "cleanup run over all policies", "treatment": "later", "leg": "6-cleanup"},
-  {"id": "repository.maven.remove-snapshots", "class": "removal of maven2 snapshots", "treatment": "later", "leg": "6-cleanup"},
+  {"id": "repository.cleanup", "class": "cleanup run over all policies", "treatment": "build",
+   "type": {"id": "repository.cleanup", "name": "Run cleanup policies",
+    "description": "Runs every cleanup policy over the repositories that name it, all of them or the one given, and removes what each selects.",
+    "fields": [
+     {"id": "repositoryName", "label": "Repository", "type": "repository", "required": false, "default": "*"}
+    ]}},
+  {"id": "repository.maven.remove-snapshots", "class": "removal of maven2 snapshots", "treatment": "build",
+   "type": {"id": "repository.maven.remove-snapshots", "name": "Remove Maven snapshots",
+    "description": "Removes the snapshot builds of a hosted Maven repository that are older than the given days, beyond the newest builds of each snapshot version that are kept, and writes the metadata of the touched versions again.",
+    "fields": [
+     {"id": "repositoryName", "label": "Repository", "type": "repository", "required": true, "default": null},
+     {"id": "minimumRetained", "label": "Minimum snapshot count", "type": "number", "required": true, "default": 1},
+     {"id": "snapshotRetentionDays", "label": "Snapshot retention (days)", "type": "number", "required": true, "default": 30}
+    ]}},
   {"id": "maven.rebuild-metadata", "own": true, "class": "rebuild of maven2 metadata", "treatment": "build",
    "type": {"id": "maven.rebuild-metadata", "name": "Rebuild Maven metadata",
     "description": "Writes the maven-metadata.xml files and their checksums of a hosted Maven repository again from the files it holds.",
@@ -43,13 +61,13 @@
  "classes": [
   {"class": "rebuild of the catalog, which replaces the search rebuild", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.rescan"},
   {"class": "recount of a store", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.rescan"},
-  {"class": "removal of unused maven2 snapshots", "count": 1, "treatment": "later", "leg": "6-cleanup"},
-  {"class": "removal of unused components", "count": 1, "treatment": "later", "leg": "6-cleanup"},
+  {"class": "removal of unused maven2 snapshots", "count": 1, "treatment": "replaced", "replacedBy": "repository.maven.remove-snapshots"},
+  {"class": "removal of unused components", "count": 1, "treatment": "later", "leg": "6-cleanup-b", "reason": "the owner has to give its rule"},
   {"class": "rebuild of npm metadata", "count": 1, "treatment": "disabled", "reason": "not built in this release"},
   {"class": "removal of unused docker manifests and layers", "count": 1, "treatment": "disabled", "reason": "not built in this release"},
   {"class": "repair of maven2 base versions", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.rescan"},
   {"class": "reconcile of npm search data", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.rescan"},
-  {"class": "compaction scheduling by expiry", "count": 1, "treatment": "later", "leg": "6-cleanup"},
+  {"class": "compaction scheduling by expiry", "count": 1, "treatment": "replaced", "replacedBy": "blobstore.compact"},
   {"class": "kinds of a format without assets", "count": 6, "treatment": "disabled", "reason": "the format holds no asset in this server"},
   {"class": "removal of orphaned keys", "count": 1, "treatment": "disabled", "reason": "a token row is removed with its user"},
   {"class": "malware scan", "count": 1, "treatment": "disabled", "reason": "decision P12 of the plans"},

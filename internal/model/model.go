@@ -7,6 +7,7 @@ package model
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"errors"
 	"net/http"
 	"time"
 )
@@ -246,7 +247,16 @@ type Token struct {
 	Digest   [32]byte `audit:"secret"` // SHA-256 of the secret half
 	Created  time.Time
 	LastUsed time.Time // zero while the token was never used
+	Name     string    // the name POST /api/tokens gives it; empty for an npm login
 }
+
+// ErrTokenName is the refusal of a token whose name another token of the
+// same user, source and kind holds.
+var ErrTokenName = errors.New("a token of this user and kind has this name")
+
+// ErrTokenLimit is the refusal of a named token when the user holds the
+// most named tokens of the kind already.
+var ErrTokenLimit = errors.New("this user holds the most named tokens of this kind")
 
 // String names the token by its public half and owner, without the digest.
 func (t Token) String() string {
@@ -269,6 +279,7 @@ type Subject struct {
 	Realm       string
 	Permissions []string // expanded permission strings of the old product
 	Session     string   // the session id for a cookie session, empty for Basic
+	ByToken     bool     // signed in with a token: a bearer token, or a user token as the Basic password
 }
 
 // Security is what the server needs from the identity code. A nil Security

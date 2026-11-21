@@ -290,20 +290,29 @@ func (w *Writer) RemoveLoose(location string) error {
 // properties of the blob, replaced through a work file. No file is removed.
 // A blob that carries the key deleted already stays as it is.
 func (w *Writer) MarkDeleted(location, reason string) error {
+	_, _, err := w.Mark(location, reason)
+	return err
+}
+
+// Mark is MarkDeleted that reports whether this call set the mark, and the
+// size of the blob from its properties (ruling SR15 of leg 6-stores-b: the
+// kept count of the marked blobs moves by what a call set).
+func (w *Writer) Mark(location, reason string) (size int64, set bool, err error) {
 	if err := w.open(); err != nil {
-		return err
+		return 0, false, err
 	}
 	w.markMu.Lock()
 	defer w.markMu.Unlock()
 	b, err := w.blobAt(location)
 	if err != nil {
-		return err
+		return 0, false, err
 	}
+	size, _ = strconv.ParseInt(strings.TrimSpace(b.items["size"]), 10, 64)
 	if _, deleted := b.items["deleted"]; deleted {
-		return nil
+		return size, false, nil
 	}
 	if !utf8.ValidString(reason) {
-		return fmt.Errorf("delete reason %q is not UTF-8", reason)
+		return 0, false, fmt.Errorf("delete reason %q is not UTF-8", reason)
 	}
 	at := w.now()
 	minute := minuteDir(at)
@@ -317,10 +326,10 @@ func (w *Writer) MarkDeleted(location, reason string) error {
 			items[key] = value
 		}
 		if err := w.mkdirs(minute); err != nil {
-			return err
+			return 0, false, err
 		}
 		if err := w.replace(minute+"/"+b.id+stores.PropertiesSuffix, items, at); err != nil {
-			return err
+			return 0, false, err
 		}
 	}
 	items := map[string]string{
@@ -334,7 +343,10 @@ func (w *Writer) MarkDeleted(location, reason string) error {
 			items[key] = value
 		}
 	}
-	return w.replace(b.dir+"/"+b.id+stores.PropertiesSuffix, items, at)
+	if err := w.replace(b.dir+"/"+b.id+stores.PropertiesSuffix, items, at); err != nil {
+		return 0, false, err
+	}
+	return size, true, nil
 }
 
 // replace writes a properties file through a work file in content/tmp and a

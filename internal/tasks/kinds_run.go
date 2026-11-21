@@ -26,11 +26,14 @@ const defaultHours = 24
 // Kinds are the kinds of the built types of the table, on the host of ref.
 func Kinds(ref *HostRef) map[string]Kind {
 	return map[string]Kind{
-		TypeBackup:        backupKind(ref),
-		TypeMavenMetadata: mavenKind(ref),
-		TypeRescan:        rescanKind(ref),
-		TypeUploadPurge:   purgeKind(ref),
-		TypeWorkFiles:     workFilesKind(ref),
+		TypeBackup:          backupKind(ref),
+		TypeMavenMetadata:   mavenKind(ref),
+		TypeRescan:          rescanKind(ref),
+		TypeUploadPurge:     purgeKind(ref),
+		TypeWorkFiles:       workFilesKind(ref),
+		TypeCompact:         compactKind(ref),
+		TypeCleanup:         cleanupKind(ref),
+		TypeRemoveSnapshots: snapshotsKind(ref),
 	}
 }
 
@@ -233,6 +236,103 @@ func workFilesKind(ref *HostRef) Kind {
 				return "", err
 			}
 			return fmt.Sprintf("work files: %d removed, %d kept", c.Removed, c.Kept), nil
+		})}, nil
+	}
+}
+
+// The bounds and defaults of the deleting kinds (rulings CL4 and CL7).
+const (
+	maxDays              = 3650
+	defaultCompactDays   = 7
+	maxRetained          = 1000
+	defaultRetained      = 1
+	defaultRetentionDays = 30
+)
+
+// whole is a property of whole numbers from low to high, def when the task
+// sets none.
+func whole(t model.Task, key string, low, high, def int) (int, error) {
+	value, set := t.Properties[key]
+	if !set || value == "" {
+		return def, nil
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil || n < low || n > high {
+		return 0, refuseProperty(key, "the property %s needs a whole number from %d to %d", key, low, high)
+	}
+	return n, nil
+}
+
+// dayCount is whole of days as a duration.
+func dayCount(t model.Task, key string, low, def int) (time.Duration, error) {
+	n, err := whole(t, key, low, maxDays, def)
+	return time.Duration(n) * 24 * time.Hour, err
+}
+
+func compactKind(ref *HostRef) Kind {
+	return func(t model.Task) (Job, error) {
+		store := t.Properties["blobStoreName"]
+		if store == "" {
+			// the key of the old product, which an imported task holds
+			store = t.Properties["blobstoreName"]
+		}
+		if store == "" {
+			return Job{}, refuseProperty("blobStoreName", "the property blobStoreName is not set")
+		}
+		age, err := dayCount(t, "olderThanDays", 1, defaultCompactDays)
+		if err != nil {
+			return Job{}, err
+		}
+		return Job{Run: withHost(ref, func(ctx context.Context, h Host) (string, error) {
+			c, err := h.Compact(ctx, store, age)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("store compacted: %d removed, %d bytes, %d kept, %d skipped", c.Removed, c.Bytes, c.Kept, c.Skipped), nil
+		})}, nil
+	}
+}
+
+func cleanupKind(ref *HostRef) Kind {
+	return func(t model.Task) (Job, error) {
+		repository := t.Properties["repositoryName"]
+		if repository == "" {
+			repository = "*"
+		}
+		return Job{Run: withHost(ref, func(ctx context.Context, h Host) (string, error) {
+			c, err := h.CleanupAll(ctx, repository)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("cleanup policies: %d runs, %d refused, %d selected, %d removed, %d kept, %d skipped",
+				c.Runs, c.Refused, c.Selected, c.Removed, c.Kept, c.Skipped), nil
+		})}, nil
+	}
+}
+
+func snapshotsKind(ref *HostRef) Kind {
+	return func(t model.Task) (Job, error) {
+		repository, err := required(t, "repositoryName")
+		if err != nil {
+			return Job{}, err
+		}
+		if repository == "*" {
+			return Job{}, refuseProperty("repositoryName", "the property repositoryName needs one hosted maven2 repository, not every repository")
+		}
+		keep, err := whole(t, "minimumRetained", 0, maxRetained, defaultRetained)
+		if err != nil {
+			return Job{}, err
+		}
+		age, err := dayCount(t, "snapshotRetentionDays", 0, defaultRetentionDays)
+		if err != nil {
+			return Job{}, err
+		}
+		return Job{Run: withHost(ref, func(ctx context.Context, h Host) (string, error) {
+			c, err := h.RemoveSnapshots(ctx, repository, keep, age)
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("maven snapshots: %d selected, %d removed, %d kept, %d skipped", c.Selected, c.Removed, c.Kept, c.Skipped), nil
 		})}, nil
 	}
 }

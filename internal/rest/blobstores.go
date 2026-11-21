@@ -1,7 +1,10 @@
 package rest
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"math"
 	"net/http"
 	"os"
@@ -10,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/model"
 )
 
@@ -22,6 +26,9 @@ type blobStoreXO struct {
 	TotalSizeInBytes      int64            `json:"totalSizeInBytes"`
 	AvailableSpaceInBytes int64            `json:"availableSpaceInBytes"`
 	SoftQuota             *model.SoftQuota `json:"softQuota"`
+	// Writable is true for a store this server writes into: local-write
+	// and the created stores (SR9); an imported store is read only.
+	Writable bool `json:"writable"`
 }
 
 // blobStore is one blob store: the stored definition, the store the read
@@ -87,17 +94,21 @@ func (env *Env) blobStoreXOs() ([]blobStoreXO, error) {
 	}
 	list := []blobStoreXO{}
 	for _, b := range env.blobStores() {
-		xo := blobStoreXO{Name: b.name, Type: b.kind, Unavailable: true, SoftQuota: b.quota}
+		xo := blobStoreXO{Name: b.name, Type: b.kind, Unavailable: true, SoftQuota: b.quota, Writable: env.writable(b)}
 		if b.attached != nil {
 			c := counts[b.name]
 			xo.BlobCount, xo.TotalSizeInBytes = c[0], c[1]
-			if b.attached.Available {
+			// SR11: a readable store is available, an empty one with 0 blobs; one
+			// that looks empty while the index holds rows of it is a disk that is
+			// not mounted, and one whose folder cannot be read is unavailable
+			if b.attached.Available || b.attached.Readable && c[0] == 0 {
 				xo.Unavailable = false
 				xo.AvailableSpaceInBytes = freeBytes(b.attached.Root)
 			}
-		} else if info, err := os.Stat(b.path); err == nil && info.IsDir() && env.created(b.path) {
-			// a store created over REST (ruling ST1): a record with a folder,
-			// which holds no blob of the index
+		} else if b.path != "" && (env.created(b.path) || holdsNoBlob(b.path) && counts[b.name][0] == 0) && ReadableStore(b.path, true) {
+			// a record with a folder that config.json does not attach: a store
+			// created over REST (ruling ST1), or an empty one of the import of
+			// which the index holds no row (SR11, review H4)
 			xo.Unavailable = false
 			xo.AvailableSpaceInBytes = freeBytes(b.path)
 		}
@@ -196,4 +207,80 @@ func (env *Env) created(path string) bool {
 	}
 	rel, err := filepath.Rel(root, real)
 	return err == nil && rel != "." && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// writable reports a store this server writes into (SR9): local-write, or
+// a record whose path lies below the stores folder and that config.json
+// does not attach (admin.WritableStore).
+func (env *Env) writable(b blobStore) bool {
+	if b.name == admin.WriteStore {
+		return true
+	}
+	if b.path == "" || env.StoresRoot == "" || !env.recorded(b.name) {
+		return false
+	}
+	return admin.WritableStore(filepath.Dir(env.StoresRoot), model.BlobStore{Name: b.name, Path: b.path}, env.Attached, env.Snapshot.BlobStores)
+}
+
+// recorded reports a store with a record in the state.
+func (env *Env) recorded(name string) bool {
+	if env.Snapshot == nil {
+		return false
+	}
+	for _, b := range env.Snapshot.BlobStores {
+		if b.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+// ReadableDir reports a folder that opens and lists.
+func ReadableDir(dir string) bool {
+	f, err := os.Open(dir) // #nosec G304 -- the path of a blob store record.
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	_, err = f.Readdirnames(1)
+	return err == nil || errors.Is(err, io.EOF)
+}
+
+// holdsNoBlob reports a store folder whose content/ is missing or holds
+// nothing but the folder of the work files (SR11).
+func holdsNoBlob(root string) bool {
+	entries, err := os.ReadDir(filepath.Join(root, "content"))
+	if errors.Is(err, fs.ErrNotExist) {
+		return true
+	}
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if e.Name() != "tmp" {
+			return false
+		}
+	}
+	return true
+}
+
+// ReadableStore reports a store whose folder can be read (SR11, review H2):
+// the root opens and lists, and for a blob store content/ is missing or a
+// folder that opens and lists, its links resolved.
+func ReadableStore(root string, blob bool) bool {
+	if !ReadableDir(root) {
+		return false
+	}
+	if !blob {
+		return true
+	}
+	content := filepath.Join(root, "content")
+	if _, err := os.Lstat(content); errors.Is(err, fs.ErrNotExist) {
+		return true
+	}
+	return ReadableDir(content)
 }

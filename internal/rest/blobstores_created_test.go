@@ -22,7 +22,9 @@ func TestACreatedStoreIsAvailableByItsFolder(t *testing.T) {
 	data := t.TempDir()
 	inside := filepath.Join(data, "stores", "demo-made")
 	outside := filepath.Join(data, "elsewhere", "stores", "demo-old")
-	for _, dir := range []string{inside, outside} {
+	// the store outside holds blobs: an empty readable record is available
+	// since ruling SR11, whatever its folder
+	for _, dir := range []string{inside, filepath.Join(outside, "content", "vol-01")} {
 		if err := os.MkdirAll(dir, 0o750); err != nil {
 			t.Fatal(err)
 		}

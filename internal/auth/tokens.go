@@ -47,7 +47,7 @@ const (
 
 // Bounds of the tokens.
 const (
-	MaxTokensPerKind = 20                // a user's tokens per kind (N10)
+	MaxTokensPerKind = 20                // a user's npm logins per kind, and its named tokens per kind (N10)
 	DockerTokenTime  = 300 * time.Second // the life of a Docker bearer token (N11)
 	MaxDockerTokens  = 10_000            // Docker bearer tokens in memory (hardening line 9)
 	TouchInterval    = time.Minute       // the last use of a token row is written at most this often
@@ -295,8 +295,12 @@ func (s *Service) NpmLogin(r *http.Request, user, password string) (model.Issued
 	if err != nil {
 		return model.IssuedToken{}, err
 	}
-	if _, err := s.store.AddToken(row, MaxTokensPerKind); err != nil {
+	revoked, err := s.store.AddToken(row, MaxTokensPerKind)
+	if err != nil {
 		return model.IssuedToken{}, err
+	}
+	for _, public := range revoked {
+		s.bindings.drop(public)
 	}
 	if got.principal.realm == RealmLDAP {
 		s.bindings.holds(row.Public, got.principal.user.Entry)

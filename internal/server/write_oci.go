@@ -105,12 +105,12 @@ func (s *Server) linkCopy(repo repos.Repo, path string, source *index.Asset, con
 	if s.writes.writer == nil {
 		return nil, errors.New("writes are off")
 	}
-	if source.Store != s.writes.writer.Name() {
-		return nil, errors.New("a copy is a hard link of a blob of the write store")
-	}
-	settings, err := s.writeSettingsOf(repo)
+	settings, writer, err := s.writeSettingsOf(repo)
 	if err != nil {
 		return nil, err
+	}
+	if source.Store != writer.Name() {
+		return nil, errors.New("a copy is a hard link of a blob of the write store of the repository")
 	}
 	exempt := repo.Format == "docker" && settings.LatestRedeploy && policy.LatestTag(path)
 	// a proxy takes no client write, so a copy into one is the tag of a fetched manifest (ruling P5-3)
@@ -128,30 +128,30 @@ func (s *Server) linkCopy(repo repos.Repo, path string, source *index.Asset, con
 		return nil, err
 	}
 	uploader := s.uploader(subject)
-	attributes, err := s.bounds(repo.Name, path, stores.Attributes{Repo: repo.Name, Path: path, ContentType: contentType,
+	attributes, err := s.bounds(repo.Name, path, writer.Name(), stores.Attributes{Repo: repo.Name, Path: path, ContentType: contentType,
 		CreatedBy: uploader, CreatedByIP: address})
 	if err != nil {
 		return nil, err
 	}
 	var written stores.Written
-	replaced, err := s.rp.index.PutAfter(s.writes.writer.Name(), indexWaitOf(), func() (stores.Entry, error) {
+	replaced, err := s.rp.index.PutAfter(writer.Name(), indexWaitOf(), func() (stores.Entry, error) {
 		var err error
-		written, err = s.writes.writer.Link(source.Location, attributes)
+		written, err = writer.Link(source.Location, attributes)
 		return written.Entry, err
 	})
 	if err != nil {
-		return nil, s.writes.rowRefused(written, err)
+		return nil, s.writes.rowRefused(writer.Name(), written, err)
 	}
 	replaced = replacedBlob(replaced, written.Entry)
 	digests.SHA1 = written.Digests.SHA1
-	asset := assetOf(s.writes.writer.Name(), written.Entry)
+	asset := assetOf(writer.Name(), written.Entry)
 	if s.writes.catalog != nil {
 		if err := s.writes.catalog.Put(asset, digests, uploader, address); err != nil {
 			logAt(slogWarn, serverLogger, "the catalog row of %s/%s is not written: %v", repo.Name, path, err)
 		}
 	}
 	if replaced != nil {
-		s.writes.markReplaced(repo.Name, path, replaced.Location)
+		s.writes.markReplaced(repo.Name, path, writer.Name(), replaced.Location)
 	}
 	s.writes.retryPath(repo.Name, path)
 	s.writes.forgetDeleted(repo.Name, path)
@@ -168,7 +168,7 @@ func (s *Server) heldRows(repo string, paths []string) (*index.Asset, error) {
 			return nil, err
 		}
 		for i := range rows {
-			if rows[i].Store != s.writes.writer.Name() {
+			if !s.writes.isWriteStore(rows[i].Store) {
 				return &rows[i], nil
 			}
 		}

@@ -3,8 +3,10 @@ package server
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -20,6 +22,7 @@ import (
 	adminrules "github.com/iogentic/pipesmith-registry/internal/admin"
 	"github.com/iogentic/pipesmith-registry/internal/blobwrite"
 	"github.com/iogentic/pipesmith-registry/internal/catalog"
+	"github.com/iogentic/pipesmith-registry/internal/channel"
 	"github.com/iogentic/pipesmith-registry/internal/config"
 	"github.com/iogentic/pipesmith-registry/internal/index"
 	"github.com/iogentic/pipesmith-registry/internal/model"
@@ -146,6 +149,11 @@ type appOptions struct {
 	// installRoot and trustRule are Options.installRoot and Options.TrustRule
 	installRoot func() (string, string)
 	trustRule   func(root, key string) error
+	// releaseList and timerShow are Options.releaseList and
+	// Options.timerShow; startApp refuses any release request without one,
+	// so no test reaches the network
+	releaseList releaseLister
+	timerShow   timerShow
 	// tasks and taskRuns are Options.Tasks and Options.TaskRuns; startApp
 	// starts the registry as Serve does
 	tasks    *tasks.Registry
@@ -197,6 +205,14 @@ func newApp(t *testing.T, storeCfgs []config.StoreConfig, opts appOptions) *app 
 func startApp(t *testing.T, base string, cfg *config.Config, opts appOptions) *app {
 	t.Helper()
 	a := &app{t: t, base: base, cfg: cfg, access: &syncBuffer{}, docker: map[string]*httptest.Server{}}
+	if opts.releaseList == nil {
+		opts.releaseList = func(context.Context, *channel.Settings) ([]channel.Release, error) {
+			return nil, errors.New("no release source in this test")
+		}
+	}
+	if opts.timerShow == nil {
+		opts.timerShow = func(context.Context, string) (string, error) { return "", errors.New("no systemctl in this test") }
+	}
 	ports := map[int]string{}
 	listeners := map[string]net.Listener{}
 	for _, repo := range opts.dockerRepos {
@@ -218,7 +234,7 @@ func startApp(t *testing.T, base string, cfg *config.Config, opts appOptions) *a
 	srv, err := New(cfg, ports, Options{AccessLog: a.access, Security: opts.security, Identity: identity, HostNames: opts.hostNames,
 		Writes: opts.writes, writeOptions: opts.writeOptions, marksFault: opts.marksFault, Catalog: opts.catalog, CatalogFile: opts.catalogFile, Upstream: opts.upstream, Routing: opts.routing,
 		ProxyState: opts.proxyState, upstreamConfig: opts.upstreamConfig, Secure: opts.secure, Tasks: opts.tasks, TaskRuns: opts.taskRuns,
-		installRoot: opts.installRoot, TrustRule: opts.trustRule})
+		installRoot: opts.installRoot, TrustRule: opts.trustRule, releaseList: opts.releaseList, timerShow: opts.timerShow})
 	if err != nil {
 		t.Fatal(err)
 	}

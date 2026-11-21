@@ -50,6 +50,7 @@ func TestRepositoryVectors(t *testing.T) {
 		return out, nil
 	}
 	stores := []string{WriteStore, "demo-store", "store-a", "store-b"}
+	writable := []string{WriteStore, "store-a", "store-b"} // demo-store is imported (SR5)
 	counts := tally{}
 	for i, c := range file.Cases {
 		label := fmt.Sprintf("case %d (%s %s %s %s %v)", i, c.Row, c.Op, c.Segment, c.Type, c.Body)
@@ -69,9 +70,11 @@ func TestRepositoryVectors(t *testing.T) {
 		case "host":
 			err = CheckRemoteHost(*c.Remote, lookup, holds)
 		case "storage":
-			err = CheckStorage(c.Type, c.Body, c.Stored, stores)
+			err = CheckStorage(c.Type, c.Body, c.Stored, stores, writable)
 		case "server":
-			err = CheckServerAttributes(c.Body, c.Stored, c.Create)
+			err = CheckServerAttributes(c.Type, c.Body, c.Stored, c.Create)
+		case "new-store":
+			_, err = NewStoreOf(c.Type, c.Body, c.Create)
 		case "docker-port":
 			err = CheckDockerPort(c.Body, c.Stored)
 		case "secret":
@@ -94,7 +97,7 @@ func TestRepositoryVectors(t *testing.T) {
 			counts.add(c.Row, len(*c.Refusals) > 0)
 		}
 	}
-	counts.check(t, "repositories", "A5", "ST8", "ST2", "ST7", "ST9", "ST5", "ST10", "ST12", "ST13")
+	counts.check(t, "repositories", "A5", "ST8", "ST2", "ST7", "ST9", "ST5", "ST10", "ST12", "ST13", "SR4", "SR5", "SR6", "SR7")
 }
 
 // Every format of A5 is served by its segment, and the segment of a format
@@ -142,7 +145,7 @@ func TestServerAttributeLimitsAreNumbers(t *testing.T) {
 		if got, ok := ServerAttributes[key].(int64); !ok || got != want {
 			t.Errorf("%s: %#v, want the number %d", key, ServerAttributes[key], want)
 		}
-		if err := CheckServerAttributes(map[string]any{key: float64(want)}, nil, true); err != nil {
+		if err := CheckServerAttributes("hosted", map[string]any{key: float64(want)}, nil, true); err != nil {
 			t.Errorf("%s: the default sent as a number of a body is refused: %v", key, err)
 		}
 	}

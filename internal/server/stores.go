@@ -58,7 +58,7 @@ func (s *Server) storeWrite(iw rest.IdentityWrite) (rest.StoreWrite, error) {
 	}
 	w := rest.StoreWrite{Store: iw.Store, Subject: iw.Subject, DataDir: s.rp.cfg.DataDir,
 		Roots: []string{writeStoreRoot(s.rp.cfg.DataDir)}, Lookup: func(host string) ([]netip.Addr, error) { return lookupHost(host) }, Erase: s.eraseRepository,
-		OldRows: s.oldRows}
+		OldRows: s.oldRows, Release: s.writes.releaseStore}
 	for _, sc := range st.configs {
 		w.Attached = append(w.Attached, sc.Name)
 		if sc.Root != "" && !slices.Contains(w.Roots, sc.Root) {
@@ -130,7 +130,15 @@ var storeRoutes = []route{
 			if err != nil {
 				return rest.Answer{}, err
 			}
-			return rest.DeletedBlobs(m[1], root, found)
+			if !found {
+				return rest.DeletedBlobs(m[1], false, rest.MarkedCount{}), nil
+			}
+			got := s.marked.get(m[1], root) // SR12: within markedWait, never a walk per request
+			if got.err != nil {
+				return rest.Answer{}, got.err
+			}
+			return rest.DeletedBlobs(m[1], true, rest.MarkedCount{Have: got.have, Counting: got.counting, Count: got.result.Count,
+				Bytes: got.result.Bytes, At: got.result.At, Reason: got.reason}), nil
 		})
 	}),
 }
@@ -149,20 +157,16 @@ func unavailableRefusal(format string, args ...any) error {
 	return &adminrules.Refusal{Code: adminrules.CodeUnavailable, Message: fmt.Sprintf(format, args...)}
 }
 
-// oldRows names the stores other than the write store that hold rows of
-// the repository name (ruling ST17), sorted.
+// oldRows names the stores other than the write stores that hold rows of
+// the repository name (ruling ST17, SR3), sorted.
 func (s *Server) oldRows(name string) ([]string, error) {
 	rows, err := s.rp.index.RepoRows(name)
 	if err != nil {
 		return nil, err
 	}
-	writeStore := repos.DefaultWriteStore
-	if s.writes.writer != nil {
-		writeStore = s.writes.writer.Name()
-	}
 	var names []string
 	for _, row := range rows {
-		if row.Store != writeStore && !slices.Contains(names, row.Store) {
+		if !s.writes.ownStore(row.Store) && !slices.Contains(names, row.Store) {
 			names = append(names, row.Store)
 		}
 	}
@@ -172,7 +176,7 @@ func (s *Server) oldRows(name string) ([]string, error) {
 
 // eraseRepository removes the content of the repository name before its
 // record goes (A7, ruling ST5): every row of the index, the blob of a row
-// of the write store with the delete mark first, the rows of the catalog
+// of a write store (SR3) with the delete mark first, the rows of the catalog
 // and the proxy state. A blob of a store of the old product stays as it
 // is; only its row goes. A row in the write store needs the writer: without
 // it the answer is 503 and nothing is removed.
@@ -181,28 +185,21 @@ func (s *Server) eraseRepository(name string) error {
 	if err != nil {
 		return err
 	}
-	writeStore := repos.DefaultWriteStore
-	if s.writes.writer != nil {
-		writeStore = s.writes.writer.Name()
-	}
-	if s.writes.writer == nil && slices.ContainsFunc(rows, func(a index.Asset) bool { return a.Store == writeStore }) {
-		return unavailableRefusal("the repository %s holds blobs in %s, which get the delete mark, and the store is not open; start the server with writes or upstream on", name, writeStore)
+	if s.writes.writer == nil {
+		if i := slices.IndexFunc(rows, func(a index.Asset) bool { return s.writes.ownStore(a.Store) }); i >= 0 {
+			return unavailableRefusal("the repository %s holds blobs in %s, which get the delete mark, and the store is not open; start the server with writes or upstream on",
+				name, rows[i].Store)
+		}
 	}
 	for _, row := range rows {
-		if row.Store != writeStore {
+		if !s.writes.ownStore(row.Store) {
 			if _, err := s.rp.index.Delete(name, row.Path, row.Store); err != nil {
 				return err
 			}
 			continue
 		}
 		unlock := s.writes.locks.lock(name, row.Path)
-		_, err := s.rp.index.DeleteWithin(name, row.Path, row.Store, indexWaitOf(), func() error {
-			if err := s.writes.mark(row.Location, reasonDeleted); err != nil {
-				return err
-			}
-			s.writes.noteDeleted(name, row.Path, row.CreatedMS)
-			return nil
-		})
+		_, err := s.eraseWriteRow(row)
 		unlock()
 		if errors.Is(err, index.ErrBusy) {
 			return unavailableRefusal("the index stayed busy; the repository %s is partly removed, delete it again", name)
@@ -232,6 +229,21 @@ func (s *Server) eraseRepository(name string) error {
 		return err
 	}
 	return nil
+}
+
+// eraseWriteRow removes one row of the write store, the erase step of a
+// repository delete and of a cleanup run (A7, ruling CL2): once the index
+// holds its write lock, the delete mark of the blob, then the row. The
+// caller holds the lock of the path. A mark that fails keeps the row and is
+// the error; a busy index is index.ErrBusy and leaves the blob as it was.
+func (s *Server) eraseWriteRow(row index.Asset) (*index.Asset, error) {
+	return s.rp.index.DeleteWithin(row.Repo, row.Path, row.Store, indexWaitOf(), func() error {
+		if err := s.writes.mark(row.Store, row.Location, reasonDeleted); err != nil {
+			return err
+		}
+		s.writes.noteDeleted(row.Repo, row.Path, row.CreatedMS)
+		return nil
+	})
 }
 
 // rebuildIndex writes the maven metadata of the hosted maven2 repository

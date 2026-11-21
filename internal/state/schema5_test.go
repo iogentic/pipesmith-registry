@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -43,12 +44,11 @@ func columnsOf(t *testing.T, path, table string) []string {
 	return columns
 }
 
-// Step 5 is the last step of the numbered list (decision E3). A fresh file
-// at schema 5 has task_runs and the tables of the cleanup policies, the
+// Step 5 is in the numbered list (decision E3). A fresh file has task_runs and the tables of the cleanup policies, the
 // tasks and the capabilities, each with the column origin (rulings S1 to
 // S3).
 func TestStep5IsInTheList(t *testing.T) {
-	if SchemaVersion != 5 || len(steps) != 5 || steps[4].Version != 5 {
+	if len(steps) < 5 || steps[4].Version != 5 {
 		t.Fatalf("SchemaVersion %d with %d steps", SchemaVersion, len(steps))
 	}
 	dir := filepath.Join(t.TempDir(), "data")
@@ -60,8 +60,8 @@ func TestStep5IsInTheList(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := Path(dir)
-	if schema := dump(t, path, false); !strings.Contains(schema, `text "schema", int64 5`) {
-		t.Fatalf("a fresh file is not at schema 5:\n%s", schema)
+	if schema := dump(t, path, false); !strings.Contains(schema, `text "schema", int64 `+strconv.Itoa(SchemaVersion)) {
+		t.Fatalf("a fresh file is not at schema %d:\n%s", SchemaVersion, schema)
 	}
 	for table, want := range map[string][]string{
 		"task_runs": {"id INTEGER null key", "task_id TEXT not null", "started_ms INTEGER not null", "ended_ms INTEGER null",
@@ -99,5 +99,31 @@ func TestOriginIsImportOrLocal(t *testing.T) {
 		}); err == nil {
 			t.Errorf("origin %q was stored", origin)
 		}
+	}
+}
+
+// Step 6 is the last step (ruling AP2 of leg 6-api): the tokens table has
+// the column name, empty by default, and a unique index over user,
+// source, kind and a name that is not empty.
+func TestStep6IsTheLastStep(t *testing.T) {
+	if SchemaVersion != 6 || len(steps) != 6 || steps[5].Version != 6 {
+		t.Fatalf("SchemaVersion %d with %d steps", SchemaVersion, len(steps))
+	}
+	dir := filepath.Join(t.TempDir(), "data")
+	st, err := Create(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Close(); err != nil {
+		t.Fatal(err)
+	}
+	path := Path(dir)
+	want := []string{"public TEXT not null", "kind TEXT not null", "user_id TEXT not null", "source TEXT not null",
+		"digest BLOB not null", "created INTEGER not null", "last_used INTEGER null", "name TEXT not null"}
+	if got := columnsOf(t, path, "tokens"); !slices.Equal(got, want) {
+		t.Fatalf("columns of tokens\n%q\nwant\n%q", got, want)
+	}
+	if schema := dump(t, path, false); !strings.Contains(schema, "index tokens_name on tokens: CREATE UNIQUE INDEX tokens_name ON tokens (user_id, source, kind, name) WHERE name != ''") {
+		t.Fatalf("no unique index of the names:\n%s", schema)
 	}
 }

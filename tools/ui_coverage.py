@@ -180,11 +180,19 @@ SCREEN_GROUPS = {
 
 # The requests of the contract that the route table serves up to this
 # phase, read from Routes(true) on 2026-11-20 at 50c4ee4, with the log and
-# figure routes of phase 7 (597a364, 90a97ff) and the node id of F2. The Go
-# test fails when this list and Routes(true) differ.
+# figure routes of phase 7 (597a364, 90a97ff), the node id of F2, and the
+# requests of leg 6-api-a: GET and POST /api/tokens, DELETE /api/tokens/{id},
+# PUT /api/account, POST /api/account/password, GET /api/task-types, POST
+# /api/tasks, GET, PUT and DELETE /api/tasks/{id}, and those of leg
+# 6-api-b: GET and POST /api/cleanup-policies, GET, PUT and DELETE
+# /api/cleanup-policies/{name}, POST /api/cleanup-policies/preview.
+# The Go test fails when this list and Routes(true) differ.
 SERVED = {
+    "DELETE /api/cleanup-policies/{name}",
     "DELETE /api/logging/loggers/{name}",
     "DELETE /api/session",
+    "DELETE /api/tasks/{id}",
+    "DELETE /api/tokens/{id}",
     "DELETE /service/rest/v1/assets/{id}",
     "DELETE /service/rest/v1/blobstores/{name}",
     "DELETE /service/rest/v1/capabilities/{id}",
@@ -198,6 +206,8 @@ SERVED = {
     "GET /api/blob-stores/{name}/deleted",
     "GET /api/browse/{repository}",
     "GET /api/capabilities/support",
+    "GET /api/cleanup-policies",
+    "GET /api/cleanup-policies/{name}",
     "GET /api/logging/loggers",
     "GET /api/logs",
     "GET /api/logs/{name}",
@@ -206,6 +216,9 @@ SERVED = {
     "GET /api/repositories",
     "GET /api/session",
     "GET /api/status",
+    "GET /api/task-types",
+    "GET /api/tasks/{id}",
+    "GET /api/tokens",
     "GET /service/rest/beta/system/information",
     "GET /service/rest/v1/assets/{id}",
     "GET /service/rest/v1/blobstores",
@@ -237,6 +250,9 @@ SERVED = {
     "GET /service/rest/v1/system/node",
     "GET /service/rest/v1/tasks",
     "GET /service/rest/v1/tasks/{id}",
+    "POST /api/account/password",
+    "POST /api/cleanup-policies",
+    "POST /api/cleanup-policies/preview",
     "POST /api/ldap/clear-cache",
     "POST /api/ldap/verify-connection",
     "POST /api/ldap/verify-login",
@@ -245,6 +261,8 @@ SERVED = {
     "POST /api/routing-rules/preview",
     "POST /api/routing-rules/test",
     "POST /api/session",
+    "POST /api/tasks",
+    "POST /api/tokens",
     "POST /service/rest/v1/blobstores/file",
     "POST /service/rest/v1/components",
     "POST /service/rest/v1/read-only/force-release",
@@ -260,7 +278,10 @@ SERVED = {
     "POST /service/rest/v1/security/users",
     "POST /service/rest/v1/tasks/{id}/run",
     "POST /service/rest/v1/tasks/{id}/stop",
+    "PUT /api/account",
+    "PUT /api/cleanup-policies/{name}",
     "PUT /api/logging/loggers/{name}",
+    "PUT /api/tasks/{id}",
     "PUT /service/rest/v1/blobstores/file/{name}",
     "PUT /service/rest/v1/capabilities/{id}",
     "PUT /service/rest/v1/repositories/{segment}/{type}/{name}",

@@ -688,23 +688,6 @@ var refusals = []struct{ method, target, area string }{
 	{"DELETE", "/service/rest/v1/assets/" + rest.AssetID("demo-maven", jarPath), "content"},
 	{"GET", "/service/rest/v1/formats/maven2/upload-specs", "content"},
 	{"POST", "/service/rest/v1/components?repository=demo-maven", "content"},
-	{"GET", "/api/cleanup-policies", "cleanup-policies"},
-	{"GET", "/api/cleanup-policies/weekly", "cleanup-policies"},
-	{"POST", "/api/cleanup-policies", "cleanup-policies"},
-	{"PUT", "/api/cleanup-policies/weekly", "cleanup-policies"},
-	{"DELETE", "/api/cleanup-policies/weekly", "cleanup-policies"},
-	{"POST", "/api/cleanup-policies/preview", "cleanup-policies"},
-	{"GET", "/api/tokens", "tokens"},
-	{"GET", "/api/tokens?userId=demo-admin", "tokens"},
-	{"POST", "/api/tokens", "tokens"},
-	{"DELETE", "/api/tokens/t-1", "tokens"},
-	{"PUT", "/api/account", "account"},
-	{"POST", "/api/account/password", "account"},
-	{"GET", "/api/tasks/t-1", "tasks"},
-	{"POST", "/api/tasks", "tasks"},
-	{"PUT", "/api/tasks/t-1", "tasks"},
-	{"DELETE", "/api/tasks/t-1", "tasks"},
-	{"GET", "/api/task-types", "tasks"},
 }
 
 func TestContractRefusals(t *testing.T) {
@@ -736,7 +719,7 @@ func TestContractRefusals(t *testing.T) {
 		}
 	}
 	// docs/ui/API.md at 1e6d884 names 104 distinct requests (method and path,
-	// testdata/ui-contract-requests.txt); 85 are served, GET /api/areas,
+	// testdata/ui-contract-requests.txt); 101 are served, GET /api/areas,
 	// POST .../invalidate-cache, the nine writes of the area security, the
 	// five writes of the LDAP connections and the three checks of an LDAP
 	// form (identity.go), the four writes of the blob stores and the four
@@ -745,9 +728,11 @@ func TestContractRefusals(t *testing.T) {
 	// four of the tasks and the three changes of the read only mode
 	// (system.go), the two figures per day of S43 (figures_routes.go) and
 	// the six requests of the log files and logger levels (logs_routes.go)
-	// and the node id (node.go) among them, the other 19 are this list,
-	// GET /api/tokens twice
-	if len(refusals) != 20 {
+	// the node id (node.go), the three of the tokens, the two of the own
+	// account and the five of the task types and settings (leg 6-api-a) and
+	// the six requests of the cleanup policies (leg 6-api-b) among them,
+	// the other 3 are this list
+	if len(refusals) != 3 {
 		t.Fatalf("%d refusals", len(refusals))
 	}
 }

@@ -19,8 +19,11 @@ type Settings struct {
 	Server    *url.URL // scheme, host, optional port and path prefix, no trailing slash
 	Owner     string
 	TokenFile string // a plain file name below <data directory>/secrets/; empty without a token
-	Limits    Limits
-	Timeouts  Timeouts
+	// GitHub is the repository of the GitHub form; Server is then the
+	// address of the API. Nil is the forge form.
+	GitHub   *Repo
+	Limits   Limits
+	Timeouts Timeouts
 	// Stage bounds the whole fetch stage, every request included
 	// (timeouts.stage_seconds).
 	Stage time.Duration
@@ -61,22 +64,92 @@ var tokenFileName = regexp.MustCompile(`^[A-Za-z0-9_-][A-Za-z0-9._-]*$`)
 
 var ownerName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 
-// ParseSettings reads the key channel of update.json.
+// DefaultRepository is the GitHub repository of the releases, the channel
+// when update.json has no key channel.
+const DefaultRepository = "iogentic/pipesmith-registry"
+
+// DefaultAPI is the address of the GitHub API.
+const DefaultAPI = "https://api.github.com"
+
+// Repo is owner and name of a GitHub repository.
+type Repo struct{ Owner, Name string }
+
+func (r Repo) String() string { return r.Owner + "/" + r.Name }
+
+var repoName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}/[A-Za-z0-9._-]{1,100}$`)
+
+// ParseSettings reads the key channel of update.json. Without it the channel
+// is the GitHub repository DefaultRepository. The key holds either the forge
+// form {"server", "owner", "token_file"} or the GitHub form {"github":
+// "owner/repo", "api"}.
 func ParseSettings(cfg *release.UpdateConfig) (*Settings, error) {
 	raw, ok := cfg.Member("channel")
-	if !ok || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
-		return nil, fmt.Errorf("%w: %s has no key channel; it names server and owner of the package registry", ErrSettings, cfg.Path)
+	var s *Settings
+	var err error
+	switch {
+	case !ok:
+		s, err = gitHubSettings(cfg, DefaultRepository, nil)
+	case bytes.Equal(bytes.TrimSpace(raw), []byte("null")):
+		return nil, fmt.Errorf("%w: %s: channel is null; leave the key out for the GitHub releases of %s, or name a forge or a repository", ErrSettings, cfg.Path, DefaultRepository)
+	default:
+		s, err = channelSettings(cfg, raw)
 	}
+	if err != nil {
+		return nil, err
+	}
+	if err := s.bounds(cfg); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// gitHubSettings is the GitHub form: repo owner/name, api the address of
+// the API (nil is DefaultAPI).
+func gitHubSettings(cfg *release.UpdateConfig, repo string, api *string) (*Settings, error) {
+	if !repoName.MatchString(repo) || strings.Contains(repo, "..") {
+		return nil, fmt.Errorf("%w: %s: channel.github %s is not owner/repo", ErrSettings, cfg.Path, bounded(repo))
+	}
+	text := DefaultAPI
+	if api != nil {
+		text = *api
+	}
+	server, err := parseServer(text)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s: channel.api: %v", ErrSettings, cfg.Path, err)
+	}
+	if server.Scheme == "http" && !Loopback(server.Hostname()) {
+		return nil, fmt.Errorf("%w: %s: channel.api %s: plain http only to a loopback address", ErrSettings, cfg.Path, server.Redacted())
+	}
+	owner, name, _ := strings.Cut(repo, "/")
+	return &Settings{Server: server, GitHub: &Repo{Owner: owner, Name: name}, Limits: defaultLimits, Timeouts: defaultTimeouts,
+		Stage: defaultStage, Candidates: defaultCandidates}, nil
+}
+
+func channelSettings(cfg *release.UpdateConfig, raw json.RawMessage) (*Settings, error) {
 	var doc struct {
 		Server    *string `json:"server"`
 		Owner     *string `json:"owner"`
 		TokenFile *string `json:"token_file"`
+		GitHub    *string `json:"github"`
+		API       *string `json:"api"`
 	}
 	if err := strictDecode(raw, &doc); err != nil {
 		return nil, fmt.Errorf("%w: %s: channel: %v", ErrSettings, cfg.Path, err)
 	}
+	if doc.GitHub != nil {
+		switch {
+		case doc.Server != nil || doc.Owner != nil:
+			return nil, fmt.Errorf("%w: %s: channel names github together with server or owner; give one form", ErrSettings, cfg.Path)
+		case doc.TokenFile != nil:
+			return nil, fmt.Errorf("%w: %s: channel.token_file: the GitHub releases are read without a token", ErrToken, cfg.Path)
+		}
+		return gitHubSettings(cfg, *doc.GitHub, doc.API)
+	}
+	if doc.API != nil {
+		return nil, fmt.Errorf("%w: %s: channel.api belongs to the form with github", ErrSettings, cfg.Path)
+	}
 	if doc.Server == nil || *doc.Server == "" {
-		return nil, fmt.Errorf("%w: %s: channel has no server", ErrSettings, cfg.Path)
+		return nil, fmt.Errorf("%w: %s: channel has no server and no github", ErrSettings, cfg.Path)
 	}
 	if doc.Owner == nil || !ownerName.MatchString(*doc.Owner) {
 		return nil, fmt.Errorf("%w: %s: channel.owner is missing or not a plain owner name", ErrSettings, cfg.Path)
@@ -100,6 +173,11 @@ func ParseSettings(cfg *release.UpdateConfig) (*Settings, error) {
 	if server.Scheme == "http" && !Loopback(server.Hostname()) {
 		return nil, fmt.Errorf("%w: %s: channel.server %s: plain http only to a loopback address", ErrSettings, cfg.Path, server.Redacted())
 	}
+	return s, nil
+}
+
+// bounds reads the keys limits and timeouts of update.json into s.
+func (s *Settings) bounds(cfg *release.UpdateConfig) error {
 	limits := map[string]*int64{"sums_bytes": &s.Limits.Sums, "bundle_bytes": &s.Limits.Bundle,
 		"binary_bytes": &s.Limits.Binary, "bill_bytes": &s.Limits.Bill}
 	candidates := int64(defaultCandidates)
@@ -114,15 +192,15 @@ func ParseSettings(cfg *release.UpdateConfig) (*Settings, error) {
 		}
 		return ok
 	}); err != nil {
-		return nil, err
+		return err
 	}
 	if candidates > maxCandidates {
-		return nil, fmt.Errorf("%w: %s: limits.candidates is %d, want a whole number from 1 to %d", ErrSettings, cfg.Path, candidates, maxCandidates)
+		return fmt.Errorf("%w: %s: limits.candidates is %d, want a whole number from 1 to %d", ErrSettings, cfg.Path, candidates, maxCandidates)
 	}
 	s.Candidates = int(candidates)
 	for key, n := range map[string]int64{"sums_bytes": s.Limits.Sums, "bundle_bytes": s.Limits.Bundle} {
 		if n > checkedCap {
-			return nil, fmt.Errorf("%w: %s: limits.%s is %d; the release check accepts at most %d bytes", ErrSettings, cfg.Path, key, n, checkedCap)
+			return fmt.Errorf("%w: %s: limits.%s is %d; the release check accepts at most %d bytes", ErrSettings, cfg.Path, key, n, checkedCap)
 		}
 	}
 	timeouts := map[string]*time.Duration{"dial_seconds": &s.Timeouts.Dial, "header_seconds": &s.Timeouts.Header,
@@ -134,9 +212,9 @@ func ParseSettings(cfg *release.UpdateConfig) (*Settings, error) {
 		}
 		return ok
 	}); err != nil {
-		return nil, err
+		return err
 	}
-	return s, nil
+	return nil
 }
 
 // numbers reads the object key of update.json whose members are whole

@@ -391,3 +391,20 @@ func TestRemoveLoose(t *testing.T) {
 		t.Fatalf("after the removal: %+v %+v", counts, live)
 	}
 }
+
+// Ruling SR15 of leg 6-stores-b: Mark reports the size of the blob and
+// whether this call set the mark; a second call sets none.
+func TestMarkReportsWhatItSet(t *testing.T) {
+	root := newStore(t)
+	w := openTestWriter(t, root, Options{Now: func() time.Time { return fixedNow }, NewID: idList(id1)})
+	blob, err := w.Write(strings.NewReader("payload"), attributes("demo-raw", "docs/a.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if size, set, err := w.Mark(blob.Entry.Location, "Removed by a test"); err != nil || !set || size != int64(len("payload")) {
+		t.Fatalf("first mark %d %v %v", size, set, err)
+	}
+	if size, set, err := w.Mark(blob.Entry.Location, "Removed by a test"); err != nil || set || size != int64(len("payload")) {
+		t.Fatalf("second mark %d %v %v", size, set, err)
+	}
+}

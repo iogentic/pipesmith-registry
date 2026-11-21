@@ -49,6 +49,11 @@ type writePath struct {
 	// its start (readPath.attachLate), so that a scan of it keeps the rule
 	// of its write order.
 	late atomic.Pointer[stores.BlobStore]
+	// created are the writers of the created stores (writestores.go, SR1).
+	created createdStores
+	// onMark is told the store and the size of each delete mark set
+	// (markedcount.go, SR15); nil for none.
+	onMark func(store string, size int64)
 }
 
 // lateStore gives the write store once it exists, for a server without
@@ -85,6 +90,7 @@ func openWrites(cfg *config.Config, opts Options) (*writePath, stores.Store, err
 		return nil, nil, err
 	}
 	wp := &writePath{writer: writer, clients: opts.Writes, store: store, catalog: opts.Catalog, file: opts.CatalogFile, freeSpace: freeBytes}
+	wp.created.opts = opts.writeOptions
 	wp.marks.fault = opts.marksFault
 	if store == nil {
 		return wp, nil, nil
@@ -110,27 +116,33 @@ func (wp *writePath) writableBy(access func(path string, mode uint32) error) boo
 	if wp.writer == nil || !wp.clients {
 		return false
 	}
-	for _, dir := range wp.writeDirs() {
-		if err := access(dir, accessWrite); err != nil {
-			return false
+	for _, o := range wp.writers() {
+		for _, dir := range writeDirsOf(o.writer) {
+			if err := access(dir, accessWrite); err != nil {
+				return false
+			}
 		}
 	}
 	return true
 }
 
-// writeDirs are the directories of the write store a write creates files in.
-func (wp *writePath) writeDirs() []string {
-	root := wp.writer.Root()
+// writeDirs are the directories of local-write a write creates files in.
+func (wp *writePath) writeDirs() []string { return writeDirsOf(wp.writer) }
+
+// writeDirsOf are the directories of the store of w a write creates files
+// in; every open write store is asked (SR3).
+func writeDirsOf(w *blobwrite.Writer) []string {
+	root := w.Root()
 	return []string{filepath.Join(root, stores.ContentDir, blobwrite.TmpDir), filepath.Join(root, stores.ContentDir),
 		filepath.Join(root, blobwrite.ReconciliationDir)}
 }
 
-// close gives the lock of the write store back.
+// close gives the locks of the write stores back.
 func (wp *writePath) close() error {
 	if wp.writer == nil {
 		return nil
 	}
-	return wp.writer.Close()
+	return errors.Join(wp.created.closeAll(), wp.writer.Close())
 }
 
 // openWriteStore gives the write store of the data directory. With writes
@@ -201,20 +213,32 @@ func (wp *writePath) repairAtStart(ix *index.Index) error {
 	if err != nil {
 		return err
 	}
-	known := slices.ContainsFunc(stats, func(stat index.StoreStat) bool { return stat.Store == wp.writer.Name() })
-	if !holdsBlobs(wp.writer.Root()) {
+	for _, o := range wp.writers() {
+		if err := wp.repairStore(ix, stats, o); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// repairStore is repairAtStart for one write store: local-write or a
+// created store (SR3).
+func (wp *writePath) repairStore(ix *index.Index, stats []index.StoreStat, o openStore) error {
+	name := o.writer.Name()
+	known := slices.ContainsFunc(stats, func(stat index.StoreStat) bool { return stat.Store == name })
+	if !holdsBlobs(o.writer.Root()) {
 		return nil
 	}
 	if !known {
-		logAt(slogInfo, serverLogger, "the index holds no row of store %s; the store is scanned before writes start", wp.writer.Name())
+		logAt(slogInfo, serverLogger, "the index holds no row of store %s; the store is scanned before writes start", name)
 	}
-	result, err := wp.scanStore(wp.store, ix, nil)
+	result, err := wp.scanWith(o.store, o.writer)(o.store, ix, nil)
 	if err != nil {
 		if !known {
-			return fmt.Errorf("the scan of store %s before writes start failed: %w", wp.writer.Name(), err)
+			return fmt.Errorf("the scan of store %s before writes start failed: %w", name, err)
 		}
 		logAt(slogWarn, serverLogger, "the scan of store %s before writes start failed: %v; its live blobs are repaired by the next scan of it",
-			wp.writer.Name(), err)
+			name, err)
 		return nil
 	}
 	logAt(slogInfo, serverLogger, "scan %s: live=%d deleted=%d copies=%d no_bytes=%d unparsable=%d seconds=%.2f", result.Store, result.Live,

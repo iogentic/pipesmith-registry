@@ -74,7 +74,7 @@ func (s *Server) dockerWrite(w *recorder, req *request, st *state, repo repos.Re
 			[][2]string{{"Allow", c.allow}})
 		return nil
 	}
-	settings, err := s.writeSettingsOf(repo)
+	settings, _, err := s.writeSettingsOf(repo)
 	if err != nil {
 		return s.dockerFailed(w, req, err)
 	}

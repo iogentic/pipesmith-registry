@@ -27,6 +27,7 @@ var HintOrder = [...]string{"docker", "npm", "maven2"}
 type Result struct {
 	Store                                      string
 	Live, Deleted, Copies, NoBytes, Unparsable int
+	DeletedBytes                               int64 // the bytes of the Deleted blobs of a blob store (SR14)
 	Seconds                                    float64
 	// Hints maps a repository to its format. Python keeps them in a dict in
 	// sorted order, the order pyjson writes a map in.
@@ -97,13 +98,25 @@ func RunIn(file *catalog.Catalog, s stores.Store, ix *index.Index, progress func
 	// that lands after the first read of the walk then waits for the scan
 	// instead of losing its row to it.
 	var walkErr error
+	var markedBytes int64
+	walker, counted := s.(stores.MarkedWalker)
 	next, stop := iter.Pull(func(yield func(stores.Entry) bool) {
-		walkErr = s.Entries(&counts, func(e stores.Entry) error {
+		give := func(e stores.Entry) error {
 			if !yield(e) {
 				return errStopped
 			}
 			return nil
-		})
+		}
+		if counted {
+			// a blob store gives its marked blobs as it walks: their count and
+			// bytes go into store_marks of catalog.sqlite (ruling SR14)
+			walkErr = walker.Walk(&counts, give, func(m stores.Marked) error {
+				markedBytes += m.Size
+				return nil
+			})
+			return
+		}
+		walkErr = s.Entries(&counts, give)
 	})
 	defer stop()
 
@@ -145,6 +158,9 @@ func RunIn(file *catalog.Catalog, s stores.Store, ix *index.Index, progress func
 			entry, ok = next()
 		}
 		if walkErr == nil {
+			if counted {
+				fill.SetMarks(catalog.Marks{Blobs: int64(counts.Deleted), Bytes: markedBytes, Counted: time.Now()})
+			}
 			fill.Hold()
 		}
 		return walkErr
@@ -168,14 +184,15 @@ func RunIn(file *catalog.Catalog, s stores.Store, ix *index.Index, progress func
 		progress(counts.Live)
 	}
 	return Result{
-		Store:      s.Name(),
-		Live:       counts.Live,
-		Deleted:    counts.Deleted,
-		Copies:     counts.Copies,
-		NoBytes:    counts.NoBytes,
-		Unparsable: counts.Unparsable,
-		Seconds:    time.Since(started).Seconds(),
-		Hints:      hints,
+		Store:        s.Name(),
+		Live:         counts.Live,
+		Deleted:      counts.Deleted,
+		DeletedBytes: markedBytes,
+		Copies:       counts.Copies,
+		NoBytes:      counts.NoBytes,
+		Unparsable:   counts.Unparsable,
+		Seconds:      time.Since(started).Seconds(),
+		Hints:        hints,
 	}, nil
 }
 

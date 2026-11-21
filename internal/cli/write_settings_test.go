@@ -29,6 +29,8 @@ func writeSettingsData(t *testing.T) string {
 			"storage": map[string]any{"blobStoreName": "default", "writePolicy": "ALLOW_ONCE", "strictContentTypeValidation": true}}},
 		{Name: "demo-raw-proxy", Format: "raw", Type: "proxy", Online: true, Attributes: map[string]any{
 			"proxy": map[string]any{"remoteUrl": "https://repo.example.com/raw/"}}},
+		{Name: "demo-team", Format: "raw", Type: "hosted", Online: true, Attributes: map[string]any{
+			"storage": map[string]any{"blobStoreName": "demo-team-store", "writePolicy": "ALLOW"}, "write_store": "demo-team-store"}},
 	}}
 	if err := st.Write([]state.Kind{state.KindRepositories}, snap); err != nil {
 		t.Fatal(err)
@@ -128,6 +130,8 @@ func TestReposWriteSettingsRefusals(t *testing.T) {
 		{[]string{"demo-missing", "--write-policy", "DENY"}, 1, "no repository named demo-missing"},
 		{[]string{"demo-raw-proxy", "--write-policy", "DENY"}, 1, "demo-raw-proxy is a proxy repository"},
 		{[]string{"demo-raw", "--write-store", "other-store"}, 1, "writes into the store local-write"},
+		// ruling SR7 of leg 6-stores-b: the store of a repository is fixed, also on the host
+		{[]string{"demo-team", "--write-store", "local-write"}, 1, "writes into the store demo-team-store"},
 		{[]string{"demo-raw", "--max-body-bytes", "0"}, 1, "--max-body-bytes is at least 1"},
 		{[]string{"demo-raw", "--max-body-bytes", "-1"}, 2, "argument --max-body-bytes"},
 		{[]string{"demo-raw", "--free-space-floor-bytes", "1e9"}, 2, "argument --free-space-floor-bytes"},

@@ -60,7 +60,7 @@ func (s *Server) npmWrite(w *recorder, req *request, st *state, repo repos.Repo,
 		return nil
 	}
 	method := req.r.Method
-	settings, err := s.writeSettingsOf(repo)
+	settings, _, err := s.writeSettingsOf(repo)
 	if err != nil {
 		return s.npmFailed(w, req, err)
 	}
@@ -216,8 +216,12 @@ type spoolFile struct {
 }
 
 func (s *Server) newSpool(limit int64, room *storeRoom) (*spoolFile, error) {
-	path := workFileIn(s.writes.writer.Root(), newUUID())
-	release := s.writes.writer.Hold(filepath.Base(path))
+	w := s.writes.writer
+	if room != nil && room.writer != nil {
+		w = room.writer // the store of the repository (review R3)
+	}
+	path := workFileIn(w.Root(), newUUID())
+	release := w.Hold(filepath.Base(path))
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- content/tmp of the write store and a name of two UUIDs.
 	if err != nil {
 		release()
@@ -256,7 +260,7 @@ func (sp *spoolFile) remove() {
 // npmPut is PUT /<name>: a publish when the document carries an
 // attachment, else a deprecation of its versions.
 func (s *Server) npmPut(w *recorder, req *request, st *state, repo repos.Repo, settings repos.WriteSettings, call npm.WritePath) error {
-	room, err := s.checkSpace(max(req.r.ContentLength, 0), settings.FreeSpaceFloor)
+	room, err := s.checkSpace(settings.WriteStore, max(req.r.ContentLength, 0), settings.FreeSpaceFloor)
 	if err != nil {
 		return s.npmFailed(w, req, err)
 	}

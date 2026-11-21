@@ -43,7 +43,8 @@ type Fill struct {
 	store string
 	stage *staging
 	done  bool
-	held  bool // Hold took the writer; Commit or Discard gives it back
+	held  bool   // Hold took the writer; Commit or Discard gives it back
+	marks *Marks // the count of the marked blobs of the walk (SetMarks); nil writes no row
 }
 
 func addressable(path string) bool {
@@ -150,7 +151,15 @@ func (f *Fill) Commit(formats Formats, held []string) error {
 		if f.held {
 			write = f.c.writeLocked
 		}
-		err = write(func(tx *sql.Tx) error { return f.apply(tx, source, formats, held) })
+		err = write(func(tx *sql.Tx) error {
+			if err := f.apply(tx, source, formats, held); err != nil {
+				return err
+			}
+			if f.marks != nil {
+				return setMarks(tx, f.store, *f.marks)
+			}
+			return nil
+		})
 		err = errors.Join(err, source.close())
 	}
 	return errors.Join(err, f.Discard())

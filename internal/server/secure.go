@@ -70,6 +70,7 @@ type rule struct {
 	permissions []string // ruleApp: any of them
 	group       int      // ruleView, ruleAdmin, ruleAssetID: the match group of the repository or id
 	action      string   // ruleView: browse or read; ruleAdmin: empty for read, or edit
+	audit       string   // the action of the audit line of the route, also when it refuses; empty for the default
 }
 
 var (
@@ -85,6 +86,12 @@ var (
 func (r rule) Empty() bool { return r.kind == ruleNone }
 
 func perm(permissions ...string) rule { return rule{kind: ruleApp, permissions: permissions} }
+
+// audited is r with the action of the audit line of its route.
+func audited(r rule, action string) rule {
+	r.audit = action
+	return r
+}
 
 func view(group int, action string) rule { return rule{kind: ruleView, group: group, action: action} }
 
@@ -130,9 +137,13 @@ const (
 )
 
 // secureRoutes are the routes that exist only with security on, matched
-// before those of step 2. The permission of each read is the one the
-// contract names for its screen.
-var secureRoutes = []route{
+// before those of step 2: the base routes, then the proposed paths of leg
+// 6-api. The permission of each read is the one the contract names for its
+// screen.
+var secureRoutes = slices.Concat(baseRoutes, tokenRoutes, accountRoutes, taskSettingsRoutes, policyRoutes)
+
+// baseRoutes are the routes of security on before leg 6-api.
+var baseRoutes = []route{
 	entry(exact("/api/session"), []string{"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}, public, (*Server).session),
 	get(restBase+"/repositories", signedIn, plain(rest.Repositories)),
 	get(restBase+"/repositories/"+segment, view(1, "browse"), named(rest.Repository)),
@@ -165,6 +176,7 @@ var secureRoutes = []route{
 	get(restBase+"/security/ldap/"+segment, perm("nexus:ldap:read"), named(rest.LDAPServer)),
 	get(restBase+"/status/check", perm("nexus:atlas:read"), plain(rest.StatusChecks)),
 	entry(exact("/api/updates"), []string{"GET"}, perm("nexus:atlas:read"), (*Server).apiUpdates),
+	entry(exact("/api/updates/check"), []string{"POST"}, perm("nexus:atlas:read"), (*Server).apiUpdatesCheck),
 	get(restBase+"/read-only", perm(settingsRead), func(s *Server, w *recorder, req *request, _ []string) error {
 		return s.restAnswer(w, req, func(*rest.Env, url.Values) (rest.Answer, error) {
 			return rest.ReadOnly(s.readOnly.State(), !s.writes.clients), nil
@@ -188,14 +200,30 @@ var (
 	npmLogoutPattern = exact(repositoryPrefix + segment + npmTokenPath + `(.+)`)
 )
 
+// unfrozenWrite is a write the read only mode lets through: its path, and
+// the methods it takes there, every write method when methods is nil.
+type unfrozenWrite struct {
+	*regexp.Regexp
+	methods []string
+}
+
+// takes reports whether the write passes the read only mode.
+func (u unfrozenWrite) takes(method, path string) bool {
+	return (u.methods == nil || slices.Contains(u.methods, method)) && u.MatchString(path)
+}
+
 // unfrozen are the writes the read only mode lets through (ruling SB2): the
 // session, the sign in and sign out of npm, the end of a freeze, the stop
 // of a task (ruling SB8), and the tests and previews, which change nothing.
-var unfrozen = []*regexp.Regexp{
-	exact("/api/session"), npmLoginPattern, npmLogoutPattern,
-	exact(restBase + "/read-only/(release|force-release)"), exact(restBase + "/tasks/" + segment + "/stop"),
-	exact("/api/routing-rules/(test|preview)"), exact("/api/cleanup-policies/preview"),
-	exact("/api/ldap/verify-(connection|user-mapping|login)"),
+// Each is bound to its method, so a write of another method on the same
+// path, such as the save of a policy named preview, waits (review F2).
+var unfrozen = []unfrozenWrite{
+	{exact("/api/session"), nil}, {npmLoginPattern, []string{"PUT"}}, {npmLogoutPattern, []string{"DELETE"}},
+	{exact(restBase + "/read-only/(release|force-release)"), []string{"POST"}},
+	{exact(restBase + "/tasks/" + segment + "/stop"), []string{"POST"}},
+	{exact("/api/routing-rules/(test|preview)"), []string{"POST"}}, {exact("/api/cleanup-policies/preview"), []string{"POST"}},
+	{exact("/api/ldap/verify-(connection|user-mapping|login)"), []string{"POST"}},
+	{exact("/api/updates/check"), []string{"POST"}},
 }
 
 // taskRunPattern is the run of a task, which the read only mode refuses
@@ -219,7 +247,7 @@ func (s *Server) freezeGate(w *recorder, req *request) (end func(), refused bool
 		return noEnd, false
 	}
 	for _, p := range unfrozen {
-		if p.MatchString(req.path) {
+		if p.takes(req.r.Method, req.path) {
 			return noEnd, false
 		}
 	}
@@ -296,19 +324,9 @@ func keptMiss(req *request) bool {
 }
 
 // refusalTable holds the other requests of docs/ui/API.md at the taken
-// commit of the interface (1e6d884).
-var refusalTable = []refusalDecl{
-	refusal("/api/cleanup-policies", "cleanup-policies", "GET", "POST"),
-	refusal("/api/cleanup-policies/preview", "cleanup-policies", "POST"),
-	refusal("/api/cleanup-policies/{name}", "cleanup-policies", "GET", "PUT", "DELETE"),
-	refusal("/api/tokens", "tokens", "GET", "POST"),
-	refusal("/api/tokens/{id}", "tokens", "DELETE"),
-	refusal("/api/account", "account", "PUT"),
-	refusal("/api/account/password", "account", "POST"),
-	refusal("/api/tasks", "tasks", "POST"),
-	refusal("/api/tasks/{id}", "tasks", "GET", "PUT", "DELETE"),
-	refusal("/api/task-types", "tasks", "GET"),
-}
+// commit of the interface (1e6d884) that this server does not serve: none
+// since leg 6-api-b served the cleanup policies.
+var refusalTable = []refusalDecl{}
 
 // templatePart finds the variable parts of a refusal template.
 var templatePart = regexp.MustCompile(`\{[A-Za-z]+\+?\}|\([a-z-]+(\|[a-z-]+)+\)`)
@@ -376,7 +394,7 @@ func routesOf(table []refusalDecl) []route {
 
 // refusedOf is the list of GET /api/areas: one entry per method and path.
 func refusedOf(table []refusalDecl) []rest.Refused {
-	var out []rest.Refused
+	out := []rest.Refused{}
 	for _, d := range table {
 		for _, method := range d.methods {
 			for _, path := range d.paths() {
@@ -786,9 +804,12 @@ func (s *Server) restEnv(req *request) (*rest.Env, error) {
 		return nil, err
 	}
 	list := make([]rest.Store, 0, len(st.configs))
+	attached := make([]string, 0, len(st.configs))
 	for _, sc := range st.configs {
 		store := st.stores[sc.Name]
-		list = append(list, rest.Store{Name: sc.Name, Kind: sc.Kind, Root: sc.Root, Available: store != nil && !stores.LooksUnmounted(store)})
+		list = append(list, rest.Store{Name: sc.Name, Kind: sc.Kind, Root: sc.Root, Available: store != nil && !stores.LooksUnmounted(store),
+			Readable: store != nil && rest.ReadableStore(store.Root(), sc.Kind == stores.KindBlobStore)})
+		attached = append(attached, sc.Name)
 	}
 	subject := req.subject
 	env := &rest.Env{
@@ -801,6 +822,7 @@ func (s *Server) restEnv(req *request) (*rest.Env, error) {
 		Permits:      func(p string) bool { return s.sec.Permits(subject, p) },
 		Base:         baseURL(req),
 		StoresRoot:   filepath.Join(s.rp.cfg.DataDir, adminrules.StoresDir),
+		Attached:     attached,
 	}
 	if s.writes.file != nil {
 		env.Details = s.writes.file // leg F1b: the side data of the writes

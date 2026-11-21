@@ -133,7 +133,7 @@ func (s *Server) putManifest(w *recorder, req *request, repo repos.Repo, setting
 		// one that a delete removed meanwhile asks add
 		addOnly := !s.mayEdit(subject, addressed(req, repo))
 		editOnly := !s.mayAdd(subject, addressed(req, repo))
-		if digestRow.Store == s.writes.writer.Name() {
+		if digestRow.Store == repo.WriteSettings().WriteStore {
 			_, err = s.linkCopy(repo, tagPath, digestRow, mediaType, digests, addOnly, editOnly, subject, address)
 		} else {
 			_, err = s.ingest(ingestRequest{repo: repo, path: tagPath, body: bytes.NewReader(data), size: int64(len(data)),

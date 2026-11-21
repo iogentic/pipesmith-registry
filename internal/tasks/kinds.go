@@ -24,6 +24,10 @@ const (
 	TypeRescan        = "blobstore.rescan"
 	TypeUploadPurge   = "docker.upload-purge"
 	TypeWorkFiles     = "blobstore.work-files"
+	// the deleting kinds of leg 6-cleanup, ids of the old product
+	TypeCompact         = "blobstore.compact"
+	TypeCleanup         = "repository.cleanup"
+	TypeRemoveSnapshots = "repository.maven.remove-snapshots"
 )
 
 // KindRow is a row of the table: a type with its id, or a class of kinds
@@ -42,19 +46,38 @@ type KindRow struct {
 
 // The legs and the reason the table names.
 const (
-	legCleanup     = "6-cleanup"
-	reasonNotBuilt = "not built in this release"
+	legCleanupB     = "6-cleanup-b"
+	reasonNotBuilt  = "not built in this release"
+	reasonOwnerRule = "the owner has to give its rule"
 )
 
 // kindTypes is the Go copy of the types of kinds.json.
 var kindTypes = []KindRow{
-	{ID: "blobstore.compact", Class: "compaction of a store", Treatment: TreatmentLater, Leg: legCleanup},
+	{ID: TypeCompact, Class: "compaction of a store", Treatment: TreatmentBuild, Type: &TaskType{ID: TypeCompact,
+		Name:        "Compact blob store",
+		Description: "Removes the blobs of a store of this server whose delete mark is older than the given days, with their files.",
+		Fields: []TaskField{
+			{ID: "blobStoreName", Label: "Blob store", Type: PropertyBlobStore, Required: true},
+			{ID: "olderThanDays", Label: "Older than (days)", Type: PropertyNumber, Required: true, Default: float64(defaultCompactDays)},
+		}}},
 	{ID: TypeBackup, Class: "backup of state.sqlite", Treatment: TreatmentBuild, Type: &TaskType{ID: TypeBackup,
 		Name:        "Back up the state file",
 		Description: "Copies state.sqlite while the server runs into a new file in a directory outside the data directory.",
 		Fields:      []TaskField{{ID: "location", Label: "Directory", Type: PropertyString, Required: true}}}},
-	{ID: "repository.cleanup", Class: "cleanup run over all policies", Treatment: TreatmentLater, Leg: legCleanup},
-	{ID: "repository.maven.remove-snapshots", Class: "removal of maven2 snapshots", Treatment: TreatmentLater, Leg: legCleanup},
+	{ID: TypeCleanup, Class: "cleanup run over all policies", Treatment: TreatmentBuild, Type: &TaskType{ID: TypeCleanup,
+		Name:        "Run cleanup policies",
+		Description: "Runs every cleanup policy over the repositories that name it, all of them or the one given, and removes what each selects.",
+		Fields:      []TaskField{{ID: "repositoryName", Label: "Repository", Type: PropertyRepository, Default: "*"}}}},
+	{ID: TypeRemoveSnapshots, Class: "removal of maven2 snapshots", Treatment: TreatmentBuild, Type: &TaskType{ID: TypeRemoveSnapshots,
+		Name: "Remove Maven snapshots",
+		Description: "Removes the snapshot builds of a hosted Maven repository that are older than the given days, beyond the newest builds " +
+			"of each snapshot version that are kept, and writes the metadata of the touched versions again.",
+		Fields: []TaskField{
+			{ID: "repositoryName", Label: "Repository", Type: PropertyRepository, Required: true},
+			{ID: "minimumRetained", Label: "Minimum snapshot count", Type: PropertyNumber, Required: true, Default: float64(defaultRetained)},
+			{ID: "snapshotRetentionDays", Label: "Snapshot retention (days)", Type: PropertyNumber, Required: true,
+				Default: float64(defaultRetentionDays)},
+		}}},
 	{ID: TypeMavenMetadata, Own: true, Class: "rebuild of maven2 metadata", Treatment: TreatmentBuild, Type: &TaskType{ID: TypeMavenMetadata,
 		Name:        "Rebuild Maven metadata",
 		Description: "Writes the maven-metadata.xml files and their checksums of a hosted Maven repository again from the files it holds.",
@@ -88,13 +111,13 @@ var kindTypes = []KindRow{
 var kindClasses = []KindRow{
 	{Class: "rebuild of the catalog, which replaces the search rebuild", Count: 1, Treatment: TreatmentReplaced, ReplacedBy: TypeRescan},
 	{Class: "recount of a store", Count: 1, Treatment: TreatmentReplaced, ReplacedBy: TypeRescan},
-	{Class: "removal of unused maven2 snapshots", Count: 1, Treatment: TreatmentLater, Leg: legCleanup},
-	{Class: "removal of unused components", Count: 1, Treatment: TreatmentLater, Leg: legCleanup},
+	{Class: "removal of unused maven2 snapshots", Count: 1, Treatment: TreatmentReplaced, ReplacedBy: TypeRemoveSnapshots},
+	{Class: "removal of unused components", Count: 1, Treatment: TreatmentLater, Leg: legCleanupB, Reason: reasonOwnerRule},
 	{Class: "rebuild of npm metadata", Count: 1, Treatment: TreatmentDisabled, Reason: reasonNotBuilt},
 	{Class: "removal of unused docker manifests and layers", Count: 1, Treatment: TreatmentDisabled, Reason: reasonNotBuilt},
 	{Class: "repair of maven2 base versions", Count: 1, Treatment: TreatmentReplaced, ReplacedBy: TypeRescan},
 	{Class: "reconcile of npm search data", Count: 1, Treatment: TreatmentReplaced, ReplacedBy: TypeRescan},
-	{Class: "compaction scheduling by expiry", Count: 1, Treatment: TreatmentLater, Leg: legCleanup},
+	{Class: "compaction scheduling by expiry", Count: 1, Treatment: TreatmentReplaced, ReplacedBy: TypeCompact},
 	{Class: "kinds of a format without assets", Count: 6, Treatment: TreatmentDisabled, Reason: "the format holds no asset in this server"},
 	{Class: "removal of orphaned keys", Count: 1, Treatment: TreatmentDisabled, Reason: "a token row is removed with its user"},
 	{Class: "malware scan", Count: 1, Treatment: TreatmentDisabled, Reason: "decision P12 of the plans"},

@@ -64,6 +64,10 @@ type state struct {
 	reposKey       reposKey
 	definitions    []repos.Repo
 	repositories   *repos.Repositories
+	// createdGen and createdNames are the generation of the created stores
+	// this state attaches and their names (attachCreated, SR1).
+	createdGen   uint64
+	createdNames []string
 }
 
 // readPath is ReadPath of the Python module: stores, index and
@@ -84,6 +88,11 @@ type readPath struct {
 	// dropped removes the side data of a row the read path dropped
 	// (catalog.Drop, leg F1b); nil for none.
 	dropped func(repo, path, store string) error
+	// created gives the created stores to attach beside config.json, and
+	// createdAt their generation, an atomic read for the fast path of sync
+	// (writestores.go, SR1, review R10); nil for none.
+	created   func() []stores.Store
+	createdAt func() uint64
 }
 
 // attach makes the stores of config.json, and adds extra, the write store,
@@ -189,7 +198,7 @@ func (rp *readPath) sync() (*state, error) {
 	}
 	key := reposKey{keyOf(rp.cfg.RepositoriesPath()), generation, rp.currentSnapshot(), rp.routing.links()}
 	st := rp.current.Load()
-	if configKey == st.configKey && key == st.reposKey {
+	if configKey == st.configKey && key == st.reposKey && rp.createdGen() == st.createdGen {
 		return st, nil
 	}
 	rp.mu.Lock()
@@ -197,11 +206,16 @@ func (rp *readPath) sync() (*state, error) {
 	next := *rp.current.Load()
 	defer func() { rp.current.Store(&next) }()
 	rp.attachLate(&next)
+	reloaded := false
 	if configKey != next.configKey {
 		next.configKey = configKey
 		if err := rp.reloadStores(&next); err != nil {
 			return nil, err
 		}
+		reloaded = true
+	}
+	if gen := rp.createdGen(); reloaded || gen != next.createdGen {
+		rp.attachCreated(&next, gen)
 	}
 	if key != next.reposKey {
 		next.reposKey = key
@@ -210,6 +224,48 @@ func (rp *readPath) sync() (*state, error) {
 		}
 	}
 	return &next, nil
+}
+
+// createdGen is the generation of the created stores, 0 for none.
+func (rp *readPath) createdGen() uint64 {
+	if rp.createdAt == nil {
+		return 0
+	}
+	return rp.createdAt()
+}
+
+// attachCreated attaches the created stores beside the stores of
+// config.json (SR1, SR3): a store a writer opened since, and none that was
+// closed. A store of config.json keeps its name.
+func (rp *readPath) attachCreated(next *state, gen uint64) {
+	if rp.created == nil {
+		return
+	}
+	list := rp.created()
+	attached := maps.Clone(next.stores)
+	for _, name := range next.createdNames {
+		if !slices.ContainsFunc(next.configs, func(sc config.StoreConfig) bool { return sc.Name == name }) {
+			delete(attached, name)
+		}
+	}
+	next.createdNames = nil
+	for _, s := range list {
+		if attached[s.Name()] == nil {
+			attached[s.Name()] = s
+			next.createdNames = append(next.createdNames, s.Name())
+		}
+	}
+	next.stores, next.createdGen = attached, gen
+}
+
+// attachCreatedNow attaches the created stores to the state of now, at a
+// start once rp.created is set.
+func (rp *readPath) attachCreatedNow() {
+	rp.mu.Lock()
+	defer rp.mu.Unlock()
+	next := *rp.current.Load()
+	rp.attachCreated(&next, rp.createdGen())
+	rp.current.Store(&next)
 }
 
 // attachLate attaches the write store when it appeared after the start of a
@@ -462,4 +518,14 @@ func (rp *readPath) anyIsDir(members []repos.Repo, directory string) (bool, erro
 		}
 	}
 	return false, nil
+}
+
+// attachedNames are the names of the stores config.json attaches now.
+func (rp *readPath) attachedNames() []string {
+	st := rp.current.Load()
+	names := make([]string, 0, len(st.configs))
+	for _, sc := range st.configs {
+		names = append(names, sc.Name)
+	}
+	return names
 }
